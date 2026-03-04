@@ -210,8 +210,8 @@ main {
 .day-nav-btn {
   width: 48px;
   height: 48px;
-  border: 2px solid #fff;
-  background: transparent;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
   border-radius: 10px;
   font-size: 24px;
@@ -223,15 +223,14 @@ main {
   transition: all .3s cubic-bezier(.34, 1.56, .64, 1);
   flex-shrink: 0;
   position: relative;
+  backdrop-filter: blur(8px);
 }
 
 .day-nav-btn:hover {
-  border-color: #fff;
-  color: var(--primary);
-  background: #fff;
-  transform: scale(1.12);
-  animation: arrowGlow .6s ease-out;
-  box-shadow: 0 4px 16px rgba(245, 158, 11, .3);
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px rgba(255, 255, 255, 0.2);
 }
 
 .day-nav-btn:active {

@@ -36,9 +36,18 @@ export function renderDayView(todos) {
   const navDate = state.navDate;
   const items = getTodosForDate(navDate, todos);
   const isToday = DS(navDate)===DS(new Date());
+
+  // Calculate previous and next day names
+  const prevDate = new Date(navDate);
+  prevDate.setDate(prevDate.getDate() - 1);
+  const nextDate = new Date(navDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+  const prevDayName = state.DAY_FULL[prevDate.getDay()];
+  const nextDayName = state.DAY_FULL[nextDate.getDay()];
+
   return `<div class="day-view">
     <div class="day-header-wrapper">
-      <button class="day-nav-btn" onclick="window.app.navigate(-1)">←</button>
+      <button class="day-nav-btn" onclick="window.app.navigate(-1)" title="${prevDayName}">←</button>
       <div class="day-header">
         <div class="day-name-large">${state.DAY_FULL[navDate.getDay()]}</div>
         <div class="day-date-line">
@@ -46,7 +55,7 @@ export function renderDayView(todos) {
           <span class="day-month-inline">${state.MONTHS[navDate.getMonth()]} ${navDate.getFullYear()}</span>
         </div>
       </div>
-      <button class="day-nav-btn" onclick="window.app.navigate(1)">→</button>
+      <button class="day-nav-btn" onclick="window.app.navigate(1)" title="${nextDayName}">→</button>
     </div>
     ${(() => {
       if (items.length === 0) return `<div style="padding: 32px 24px; background: var(--surface); border-radius: 12px; border: 1.5px solid var(--border); backdrop-filter: blur(10px); margin-top: 20px; text-align: center;">
