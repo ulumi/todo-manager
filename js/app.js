@@ -26,7 +26,7 @@ import {
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData } from './modules/admin.js';
 
 // Initialize state
 state.initializeState();
@@ -531,6 +531,11 @@ class TodoApp {
 
   clearAllSuggestedTasks() {
     clearAllSuggestedTasks();
+  }
+
+  clearAllCalendarData() {
+    clearAllCalendarData();
+    this.render();
   }
 
   adminScrollToSection(id) {

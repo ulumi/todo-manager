@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import * as state from './state.js';
+import { saveTodos } from './storage.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 
@@ -97,6 +98,11 @@ export function openAdminModal() {
           <h3>Import</h3>
           <input type="file" id="importFileInput" accept=".json" style="display:none;">
           <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier</button>
+        </div>
+
+        <div class="admin-section">
+          <h3>Réinitialiser</h3>
+          <button class="btn btn-ghost" onclick="window.app.clearAllCalendarData()" style="width:100%;color:var(--danger);border-color:var(--danger);">Vider toutes les données du calendrier</button>
         </div>
       </section>
     </div>
@@ -223,6 +229,13 @@ export function clearAllSuggestedTasks() {
   const emptyTasks = { daily: [], weekly: [], monthly: [] };
   saveSuggestedTasks(emptyTasks);
   renderAdminLists(emptyTasks);
+}
+
+export function clearAllCalendarData() {
+  if (!confirm('Êtes-vous sûr de vouloir vider TOUTES les données du calendrier ? Cette action est irréversible.')) return;
+  // Clear todos and save
+  saveTodos([]);
+  state.setTodos([]);
 }
 
 export function closeAdminModal() {
