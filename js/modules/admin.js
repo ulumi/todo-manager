@@ -102,7 +102,7 @@ export function openAdminModal() {
 
         <div class="admin-section">
           <h3>Réinitialiser</h3>
-          <button class="btn btn-ghost" onclick="window.app.clearAllCalendarData()" style="width:100%;color:var(--danger);border-color:var(--danger);">Vider toutes les données du calendrier</button>
+          <button class="btn btn-ghost" onclick="window.app.clearAllCalendarData()" style="width:100%;color:var(--danger);border-color:var(--danger);">${state.T.clearAllData}</button>
         </div>
       </section>
     </div>
@@ -232,7 +232,7 @@ export function clearAllSuggestedTasks() {
 }
 
 export function clearAllCalendarData() {
-  if (!confirm('Êtes-vous sûr de vouloir vider TOUTES les données du calendrier ? Cette action est irréversible.')) return;
+  if (!confirm(state.T.confirmClearAllData)) return;
   // Clear todos and save
   saveTodos([]);
   state.setTodos([]);
