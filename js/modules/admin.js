@@ -36,16 +36,6 @@ export function openAdminModal() {
   const tasks = getSuggestedTasks();
   const html = `
     <div class="admin-modal-inner">
-      <!-- Sticky Navigation -->
-      <nav class="admin-nav">
-        <button class="admin-nav-link active" onclick="window.app.adminScrollToSection('section-taches')">
-          📋 Tâches suggérées
-        </button>
-        <button class="admin-nav-link" onclick="window.app.adminScrollToSection('section-donnees')">
-          💾 Données
-        </button>
-      </nav>
-
       <!-- Section 1: Tâches suggérées -->
       <section id="section-taches" class="admin-page-section">
         <h2 class="admin-section-title">Tâches suggérées</h2>
