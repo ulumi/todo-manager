@@ -197,10 +197,15 @@ export function cloudsHTML(date, todos) {
 
   const suggestions = getSuggestions(todos).filter(s => !allSuggestedItems.includes(s));
   state.setSuggestions(suggestions);
-  const recurring = todos.filter(t => t.recurrence && t.recurrence!=='none');
-  if (suggestions.length===0 && recurring.length===0) return '';
+
+  // Check if there's anything to display: suggestions, suggested tasks, or templates
+  const hasSuggestions = suggestions.length > 0;
+  const hasSuggestedTasks = suggestedTasksConfig.daily.length > 0 || suggestedTasksConfig.weekly.length > 0 || suggestedTasksConfig.monthly.length > 0;
+
+  if (!hasSuggestions && !hasSuggestedTasks) return '';
+
   let html = '';
-  if (suggestions.length > 0) {
+  if (hasSuggestions) {
     html += `<div class="clouds-section">
       <span class="cloud-label">${state.T.frequentlyUsed}</span>
       <div class="cloud-chips">${suggestions.map((t,i)=>`<div class="chip" onclick="window.app.openModalWithTitle(window.app._sugg[${i}])">${esc(t)}</div>`).join('')}</div>
