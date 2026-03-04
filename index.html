@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo Manager</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <span class="app-title">✓ Todos</span>
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="day" data-i18n="viewDay">Day</button>
+      <button class="view-tab" data-view="week" data-i18n="viewWeek">Week</button>
+      <button class="view-tab" data-view="month" data-i18n="viewMonth">Month</button>
+      <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
+    </div>
+    <div class="header-sep"></div>
+    <div class="nav-group">
+      <button class="nav-btn" id="prevBtn">‹</button>
+      <button class="today-btn" id="todayBtn" data-i18n="today">Today</button>
+      <button class="nav-btn" id="nextBtn">›</button>
+      <span class="period-label" id="periodLabel"></span>
+    </div>
+    <div class="header-sep"></div>
+    <div class="zoom-group" title="Text size">
+      <button class="size-btn" id="szSmall" onclick="window.app.setZoom(0)">A</button>
+      <button class="size-btn active" id="szMed" onclick="window.app.setZoom(1)">A</button>
+      <button class="size-btn" id="szLarge" onclick="window.app.setZoom(2)">A</button>
+    </div>
+    <select id="langSelect" class="lang-select" onchange="window.app.setLang(this.value)">
+      <option value="en">EN</option>
+      <option value="fr">FR</option>
+    </select>
+    <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
+    <button class="nav-btn" onclick="window.app.openAdminModal()" style="font-size:16px;border:none;" title="Admin">⚙</button>
+    <button class="nav-btn" onclick="window.app.openDataModal()" style="font-size:16px;border:none;" title="Import/Export">💾</button>
+    <button class="add-btn" id="openModalBtn" data-i18n="addTask">＋ Add Task</button>
+  </div>
+</header>
+
+<main id="mainContent"></main>
+
+<!-- Quick Add Float Button -->
+<button id="quickAddBtn" class="quick-add-float-btn" onclick="window.app.openModal();" title="Add task"></button>
+
+<!-- Delete Recurrence Modal -->
+<div class="modal-overlay hidden" id="deleteModalOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Delete recurring task</div>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
+      How would you like to delete "<strong id="deleteTaskName"></strong>"?
+    </p>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button id="deleteOneBtn" style="text-align:left;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div id="deleteOneTitle" style="font-size:14px;font-weight:600;color:var(--text)">This occurrence only</div>
+        <div id="deleteOneDesc" style="font-size:12px;color:var(--text-muted);margin-top:2px">Remove just this date, keep future repeats</div>
+      </button>
+      <button id="deleteFutureBtn" style="text-align:left;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div id="deleteFutureTitle" style="font-size:14px;font-weight:600;color:var(--text)">This and all future occurrences</div>
+        <div id="deleteFutureDesc" style="font-size:12px;color:var(--text-muted);margin-top:2px">Stop repeating from this date onward</div>
+      </button>
+      <button id="deleteAllBtn" style="text-align:left;padding:14px 16px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div id="deleteAllTitle" style="font-size:14px;font-weight:600;color:var(--danger)">All occurrences</div>
+        <div id="deleteAllDesc" style="font-size:12px;color:var(--text-muted);margin-top:2px">Delete the task entirely</div>
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="cancelDeleteModal">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Data Import/Export Modal -->
+<div class="modal-overlay hidden" id="dataModalOverlay">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-title" data-i18n="exportData">Export Data</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Backup and restore your data</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;" data-i18n="exportData">Export All</button>
+      <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendar Only</button>
+      <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Settings Only</button>
+
+      <div style="margin:12px 0;border-top:1px solid var(--border);padding-top:12px;">
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:600;">iCal Subscription</label>
+        <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;margin-bottom:8px;">Download Calendar (.ics)</button>
+        <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copy Subscription Link</button>
+      </div>
+
+      <div style="margin:12px 0;border-top:1px solid var(--border);padding-top:12px;">
+        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:600;" data-i18n="importData">Import Data</label>
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+        <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;" data-i18n="importData">Import From File</button>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="window.app.closeDataModal()" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal modal-two-columns">
+    <div class="modal-left">
+      <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="task">Task</label>
+        <input class="form-input" id="taskTitle" placeholder="What needs to be done?" maxlength="200">
+      </div>
+
+      <div class="form-group" id="dateGroup">
+        <label class="form-label" data-i18n="date">Date</label>
+        <input class="form-input" type="date" id="taskDate">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="repeat">Repeat</label>
+        <div class="rec-options">
+          <div class="rec-option active" data-rec="none" data-i18n="recNone">No repeat</div>
+          <div class="rec-option" data-rec="daily" data-i18n="recDaily">Daily</div>
+          <div class="rec-option" data-rec="weekly" data-i18n="recWeekly">Weekly</div>
+          <div class="rec-option" data-rec="monthly" data-i18n="recMonthly">Monthly</div>
+          <div class="rec-option" data-rec="yearly" data-i18n="recYearly">Yearly</div>
+        </div>
+        <div class="rec-detail" id="recDetail"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancelModal" data-i18n="cancel">Cancel</button>
+        <button class="btn btn-primary" id="saveTask" data-i18n="saveTask">Save Task</button>
+      </div>
+    </div>
+
+    <div class="modal-right">
+      <div id="modalClouds"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal-overlay hidden" id="adminModalOverlay">
+  <div class="modal">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div class="modal-title" style="margin: 0;">Administration</div>
+      <button onclick="window.app.closeAdminModal()" style="width:24px;height:24px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div id="adminClouds"></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
