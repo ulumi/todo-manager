@@ -37,7 +37,6 @@
     </select>
     <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
     <button class="nav-btn" onclick="window.app.openAdminModal()" style="font-size:16px;border:none;" title="Admin">⚙</button>
-    <button class="nav-btn" onclick="window.app.openDataModal()" style="font-size:16px;border:none;" title="Import/Export">💾</button>
     <button class="add-btn" id="openModalBtn" data-i18n="addTask">＋ Add Task</button>
   </div>
 </header>
@@ -70,36 +69,6 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="cancelDeleteModal">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Data Import/Export Modal -->
-<div class="modal-overlay hidden" id="dataModalOverlay">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-title" data-i18n="exportData">Export Data</div>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Backup and restore your data</p>
-
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;" data-i18n="exportData">Export All</button>
-      <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendar Only</button>
-      <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Settings Only</button>
-
-      <div style="margin:12px 0;border-top:1px solid var(--border);padding-top:12px;">
-        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:600;">iCal Subscription</label>
-        <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;margin-bottom:8px;">Download Calendar (.ics)</button>
-        <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copy Subscription Link</button>
-      </div>
-
-      <div style="margin:12px 0;border-top:1px solid var(--border);padding-top:12px;">
-        <label style="display:block;margin-bottom:8px;font-size:13px;font-weight:600;" data-i18n="importData">Import Data</label>
-        <input type="file" id="importFileInput" accept=".json" style="display:none;">
-        <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;" data-i18n="importData">Import From File</button>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="window.app.closeDataModal()" data-i18n="cancel">Cancel</button>
     </div>
   </div>
 </div>

@@ -1319,6 +1319,71 @@ body:has(.bottom-panel:not(.hidden))::before {
   transform: translateY(-1px);
 }
 
+/* ── ADMIN MODAL STRUCTURE ── */
+.admin-modal-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.admin-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  display: flex;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1.5px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.admin-nav-link {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1.5px solid transparent;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-nav-link:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+.admin-nav-link.active {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.admin-page-section {
+  margin-bottom: 36px;
+}
+
+.admin-section-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--primary);
+}
+
+.admin-data-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ── ADMIN RESPONSIVE ── */
 @media (max-width: 1200px) {
   .admin-form {

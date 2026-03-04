@@ -35,33 +35,77 @@ export function saveSuggestedTasks(tasks) {
 export function openAdminModal() {
   const tasks = getSuggestedTasks();
   const html = `
-    <div class="admin-form">
-      <div class="admin-section">
-        <h3>Tâches quotidiennes</h3>
-        <div id="dailyList" class="admin-list"></div>
-        <div class="admin-input-row">
-          <input type="text" id="dailyInput" placeholder="Ajouter une tâche quotidienne">
-          <button onclick="window.app.addSuggestedTask('daily')">Ajouter</button>
-        </div>
-      </div>
+    <div class="admin-modal-inner">
+      <!-- Sticky Navigation -->
+      <nav class="admin-nav">
+        <button class="admin-nav-link active" onclick="window.app.adminScrollToSection('section-taches')">
+          📋 Tâches suggérées
+        </button>
+        <button class="admin-nav-link" onclick="window.app.adminScrollToSection('section-donnees')">
+          💾 Données
+        </button>
+      </nav>
 
-      <div class="admin-section">
-        <h3>Tâches hebdomadaires</h3>
-        <div id="weeklyList" class="admin-list"></div>
-        <div class="admin-input-row">
-          <input type="text" id="weeklyInput" placeholder="Ajouter une tâche hebdomadaire">
-          <button onclick="window.app.addSuggestedTask('weekly')">Ajouter</button>
-        </div>
-      </div>
+      <!-- Section 1: Tâches suggérées -->
+      <section id="section-taches" class="admin-page-section">
+        <h2 class="admin-section-title">Tâches suggérées</h2>
+        <div class="admin-form">
+          <div class="admin-section">
+            <h3>Tâches quotidiennes</h3>
+            <div id="dailyList" class="admin-list"></div>
+            <div class="admin-input-row">
+              <input type="text" id="dailyInput" placeholder="Ajouter une tâche quotidienne">
+              <button onclick="window.app.addSuggestedTask('daily')">Ajouter</button>
+            </div>
+          </div>
 
-      <div class="admin-section">
-        <h3>Tâches mensuelles</h3>
-        <div id="monthlyList" class="admin-list"></div>
-        <div class="admin-input-row">
-          <input type="text" id="monthlyInput" placeholder="Ajouter une tâche mensuelle">
-          <button onclick="window.app.addSuggestedTask('monthly')">Ajouter</button>
+          <div class="admin-section">
+            <h3>Tâches hebdomadaires</h3>
+            <div id="weeklyList" class="admin-list"></div>
+            <div class="admin-input-row">
+              <input type="text" id="weeklyInput" placeholder="Ajouter une tâche hebdomadaire">
+              <button onclick="window.app.addSuggestedTask('weekly')">Ajouter</button>
+            </div>
+          </div>
+
+          <div class="admin-section">
+            <h3>Tâches mensuelles</h3>
+            <div id="monthlyList" class="admin-list"></div>
+            <div class="admin-input-row">
+              <input type="text" id="monthlyInput" placeholder="Ajouter une tâche mensuelle">
+              <button onclick="window.app.addSuggestedTask('monthly')">Ajouter</button>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- Section 2: Données -->
+      <section id="section-donnees" class="admin-page-section">
+        <h2 class="admin-section-title">Données</h2>
+
+        <div class="admin-section">
+          <h3>Export</h3>
+          <div class="admin-data-grid">
+            <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;">Export complet</button>
+            <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendrier seulement</button>
+            <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Paramètres seulement</button>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <h3>iCal</h3>
+          <div class="admin-data-grid">
+            <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;">Télécharger .ics</button>
+            <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copier le lien</button>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <h3>Import</h3>
+          <input type="file" id="importFileInput" accept=".json" style="display:none;">
+          <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier</button>
+        </div>
+      </section>
     </div>
   `;
 
@@ -183,4 +227,25 @@ export function moveSuggestedTask(type, index, direction) {
 
 export function closeAdminModal() {
   document.getElementById('adminModalOverlay').classList.add('hidden');
+}
+
+export function adminScrollToSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  // Scroll smoothly
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Update active state in nav
+  document.querySelectorAll('.admin-nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+
+  // Find and activate the clicked button
+  const btns = document.querySelectorAll('.admin-nav-link');
+  btns.forEach(btn => {
+    if (btn.getAttribute('onclick').includes(id)) {
+      btn.classList.add('active');
+    }
+  });
 }

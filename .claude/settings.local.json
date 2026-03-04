@@ -7,7 +7,11 @@
       "Bash(gh auth status)",
       "Bash(git init)",
       "Bash(git add .)",
-      "Bash(git commit -m \"Initial commit - Todo Manager with iCal export\")"
+      "Bash(git commit -m \"Initial commit - Todo Manager with iCal export\")",
+      "Bash(npx vercel --yes)",
+      "Bash(chmod +x /Users/hugues/Projects/Claude/test2/deploy.sh)",
+      "Bash(git config --global alias.deploy '!bash /Users/hugues/Projects/Claude/test2/deploy.sh')",
+      "Bash(git config --global --get alias.deploy)"
     ]
   }
 }

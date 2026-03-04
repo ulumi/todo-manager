@@ -19,14 +19,14 @@ import {
 } from './modules/calendar.js';
 import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
-  saveTaskLogic, cloudsHTML, openDataModal, closeDataModal, openDeleteModal, closeDeleteModal
+  saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
   getPeriodLabel, getCloudsHTML, renderQACloud
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { openAdminModal, closeAdminModal, addSuggestedTask, removeSuggestedTask, moveSuggestedTask } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask } from './modules/admin.js';
 
 // Initialize state
 state.initializeState();
@@ -271,14 +271,6 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // DATA EXPORT/IMPORT
   // ═══════════════════════════════════════════════════
-  openDataModal() {
-    openDataModal();
-  }
-
-  closeDataModal() {
-    closeDataModal();
-  }
-
   exportAllData() {
     exportAllData(state.todos);
   }
@@ -431,6 +423,10 @@ class TodoApp {
 
   moveSuggestedTask(type, index, direction) {
     moveSuggestedTask(type, index, direction);
+  }
+
+  adminScrollToSection(id) {
+    adminScrollToSection(id);
   }
 
   // ═══════════════════════════════════════════════════
