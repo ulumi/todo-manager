@@ -79,6 +79,9 @@ export function setupEventListeners(app) {
     if (e.key==='n') app.openModal();
   });
 
-  // Import file
-  document.getElementById('importFileInput').addEventListener('change', e => app.handleImportFile(e));
+  // Import file (added dynamically in admin modal, so check first)
+  const importInput = document.getElementById('importFileInput');
+  if (importInput) {
+    importInput.addEventListener('change', e => app.handleImportFile(e));
+  }
 }
