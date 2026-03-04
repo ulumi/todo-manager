@@ -21,12 +21,22 @@ export function openModal(date, todos) {
   document.getElementById('dateGroup').style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   document.getElementById('modalOverlay').classList.remove('hidden');
+  const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
+  gsap.fromTo(modalBox,
+    { scale: 0.92, y: 24, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+  );
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
 export function closeModal() {
   state.setEditingId(null);
-  document.getElementById('modalOverlay').classList.add('hidden');
+  const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
+  const overlay = document.getElementById('modalOverlay');
+  gsap.to(modalBox, {
+    scale: 0.92, y: 16, opacity: 0, duration: 0.2, ease: 'power2.in',
+    onComplete: () => overlay.classList.add('hidden')
+  });
 }
 
 export function openEditModal(id, dateStr, todos) {
@@ -254,10 +264,20 @@ export function openDeleteModal(id, dateStr, todos) {
   state.setPendingDelete({ id, date: parseDS(dateStr) });
   document.getElementById('deleteTaskName').textContent = t.title;
   document.getElementById('deleteModalOverlay').classList.remove('hidden');
+  const deleteModalBox = document.getElementById('deleteModalOverlay').querySelector('.modal');
+  gsap.fromTo(deleteModalBox,
+    { scale: 0.92, y: 24, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+  );
 }
 
 export function closeDeleteModal() {
-  document.getElementById('deleteModalOverlay').classList.add('hidden');
+  const deleteModalBox = document.getElementById('deleteModalOverlay').querySelector('.modal');
+  const overlay = document.getElementById('deleteModalOverlay');
+  gsap.to(deleteModalBox, {
+    scale: 0.92, y: 16, opacity: 0, duration: 0.2, ease: 'power2.in',
+    onComplete: () => overlay.classList.add('hidden')
+  });
   state.setPendingDelete(null);
 }
 

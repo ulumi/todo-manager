@@ -67,6 +67,9 @@ export function openAdminModal() {
             </div>
           </div>
         </div>
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
+          <button class="btn btn-ghost" onclick="window.app.clearAllSuggestedTasks()" style="flex: 1;">Vider tout</button>
+        </div>
       </section>
 
       <!-- Section 2: Données -->
@@ -213,6 +216,13 @@ export function moveSuggestedTask(type, index, direction) {
 
   saveSuggestedTasks(tasks);
   renderAdminLists(tasks);
+}
+
+export function clearAllSuggestedTasks() {
+  if (!confirm('Êtes-vous sûr de vouloir vider toutes les tâches suggérées ?')) return;
+  const emptyTasks = { daily: [], weekly: [], monthly: [] };
+  saveSuggestedTasks(emptyTasks);
+  renderAdminLists(emptyTasks);
 }
 
 export function closeAdminModal() {

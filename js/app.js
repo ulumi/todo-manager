@@ -23,10 +23,10 @@ import {
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  getPeriodLabel, getCloudsHTML, renderQACloud
+  getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks } from './modules/admin.js';
 
 // Initialize state
 state.initializeState();
@@ -45,8 +45,14 @@ class TodoApp {
     this.applyZoom();
     this.initTheme();
     this.applyLang();
+    // Restore saved view
+    const savedView = localStorage.getItem('view');
+    if (savedView && ['day', 'week', 'month', 'year'].includes(savedView)) {
+      state.setView(savedView);
+    }
     this.render();
     setupEventListeners(this);
+    this._animateViewTabs();
   }
 
   // ═══════════════════════════════════════════════════
@@ -116,14 +122,14 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // NAVIGATION
   // ═══════════════════════════════════════════════════
-  navigate(delta) {
+  async navigate(delta) {
     const d = new Date(state.navDate);
     if (state.view==='day')   d.setDate(d.getDate()+delta);
     if (state.view==='week')  d.setDate(d.getDate()+delta*7);
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     state.setNavDate(d);
-    this.render();
+    await this._animateViewChange(delta);
   }
 
   todayNav() {
@@ -131,16 +137,84 @@ class TodoApp {
     this.render();
   }
 
-  setView(v) {
+  async setView(v) {
     state.setView(v);
-    this.render();
+    localStorage.setItem('view', v);
+    await this._animateViewChange();
   }
 
-  setNavDateAndView(date, view) {
+  async _animateViewChange(delta = 0) {
+    const main = document.getElementById('mainContent');
+
+    // 1. Fade out current view
+    await gsap.to(main, {
+      opacity: 0,
+      duration: 0.12,
+      ease: 'power2.in'
+    });
+
+    // 2. Render new view
+    this.render();
+
+    // 2b. Hide blocks immediately (no flash frame)
+    const blocks = document.querySelectorAll('.week-container, .month-cell, .year-month-card');
+    if (blocks.length > 0) {
+      gsap.set(blocks, { opacity: 0, y: 12 });
+    }
+
+    // 3. Fade in container
+    await gsap.to(main, {
+      opacity: 1,
+      duration: 0.25,
+      delay: 0.05,
+      ease: 'power2.out'
+    });
+
+    // 4. Stagger blocks (simple, reliable approach)
+    if (blocks.length > 0) {
+      gsap.to(blocks, {
+        opacity: 1,
+        y: 0,
+        duration: 0.3,
+        stagger: 0.04, // Simple stagger: 40ms between each block
+        ease: 'power3.out',
+        delay: 0.08,
+        overwrite: 'auto'
+      });
+    }
+
+    // 5. Stagger todo items
+    setTimeout(() => {
+      gsap.from('.todo-item', {
+        opacity: 0,
+        y: 10,
+        duration: 0.3,
+        stagger: 0.05,
+        ease: 'power3.out',
+        overwrite: 'auto'
+      });
+    }, 220);
+
+    // Setup hover animations
+    setupTodoItemHoverAnimations();
+  }
+
+  _animateViewTabs() {
+    const tabs = document.querySelectorAll('.view-tab');
+    if (tabs.length === 0) return;
+
+    // Animate tabs from hidden to visible
+    gsap.fromTo(tabs,
+      { opacity: 0, scale: 0.85 }, // from
+      { opacity: 1, scale: 1, duration: 0.25, stagger: 0.05, ease: 'power3.out' } // to
+    );
+  }
+
+  async setNavDateAndView(date, view) {
     if (typeof date === 'string') date = parseDS(date);
     state.setNavDate(date);
     state.setView(view);
-    this.render();
+    await this._animateViewChange();
   }
 
   // ═══════════════════════════════════════════════════
@@ -150,6 +224,15 @@ class TodoApp {
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
     this.render();
+    // Animate checkbox bounce
+    setTimeout(() => {
+      const check = document.querySelector(`[data-id="${id}"] .todo-check`);
+      if (check) {
+        gsap.timeline()
+          .to(check, { scale: 1.35, duration: 0.12, ease: 'power2.out' })
+          .to(check, { scale: 1, duration: 0.2, ease: 'elastic.out(1.2, 0.5)' });
+      }
+    }, 0);
   }
 
   deleteTodo(id, dateStr) {
@@ -161,28 +244,49 @@ class TodoApp {
   }
 
   deleteOneOccurrence() {
-    const { id, date } = state.pendingDelete;
-    deleteOneOccurrence(id, date, state.todos);
-    closeDeleteModal();
-    saveTodos(state.todos);
-    this.render();
+    const { id } = state.pendingDelete;
+    this._animateDeleteAndRefresh(id, () => {
+      deleteOneOccurrence(id, state.pendingDelete.date, state.todos);
+      closeDeleteModal();
+      saveTodos(state.todos);
+    });
   }
 
   deleteFutureOccurrences() {
-    const { id, date } = state.pendingDelete;
-    const newTodos = deleteFutureOccurrences(id, date, state.todos);
-    state.setTodos(newTodos);
-    closeDeleteModal();
-    saveTodos(state.todos);
-    this.render();
+    const { id } = state.pendingDelete;
+    this._animateDeleteAndRefresh(id, () => {
+      const newTodos = deleteFutureOccurrences(id, state.pendingDelete.date, state.todos);
+      state.setTodos(newTodos);
+      closeDeleteModal();
+      saveTodos(state.todos);
+    });
   }
 
   deleteAllOccurrences() {
     if (!confirm(state.T.confirmDeleteAllOccurrences)) return;
-    state.setTodos(state.todos.filter(x => x.id !== state.pendingDelete.id));
-    closeDeleteModal();
-    saveTodos(state.todos);
-    this.render();
+    const { id } = state.pendingDelete;
+    this._animateDeleteAndRefresh(id, () => {
+      state.setTodos(state.todos.filter(x => x.id !== id));
+      closeDeleteModal();
+      saveTodos(state.todos);
+    });
+  }
+
+  _animateDeleteAndRefresh(id, callback) {
+    const item = document.querySelector(`[data-id="${id}"]`);
+    if (item) {
+      gsap.to(item, {
+        opacity: 0, x: 24, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0,
+        duration: 0.25, ease: 'power2.in',
+        onComplete: () => {
+          callback();
+          this.render();
+        }
+      });
+    } else {
+      callback();
+      this.render();
+    }
   }
 
   // ═══════════════════════════════════════════════════
@@ -423,6 +527,10 @@ class TodoApp {
 
   moveSuggestedTask(type, index, direction) {
     moveSuggestedTask(type, index, direction);
+  }
+
+  clearAllSuggestedTasks() {
+    clearAllSuggestedTasks();
   }
 
   adminScrollToSection(id) {

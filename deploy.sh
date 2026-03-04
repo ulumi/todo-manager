@@ -2,22 +2,22 @@
 
 # Deploy script for Vercel auto-push
 
-MESSAGE="${1:-Update todo app}"
+MESSAGE="${1:-Mise a jour de l'app}"
 
-echo "🚀 Deploying: $MESSAGE"
+echo "🚀 Deploiement: $MESSAGE"
 echo ""
 
-# Add all changes
-echo "📝 Staging changes..."
+# Ajouter tous les changements
+echo "📝 Preparation des changements..."
 git add .
 
 # Commit
-echo "💾 Committing..."
+echo "💾 Commit en cours..."
 git commit -m "$MESSAGE"
 
-# Push to GitHub (Vercel auto-deploys)
-echo "🌐 Pushing to GitHub..."
+# Push vers GitHub (Vercel se deploie automatiquement)
+echo "🌐 Envoi vers GitHub..."
 git push origin master
 
 echo ""
-echo "✅ Done! Vercel is deploying... Check: https://vercel.com/dashboard"
+echo "✅ Termine! Vercel se deploie... Verifier: https://vercel.com/dashboard"

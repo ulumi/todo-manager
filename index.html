@@ -6,6 +6,7 @@
   <title>Todo Manager</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
 </head>
 <body>
 
@@ -37,13 +38,13 @@
     </select>
     <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
     <button class="nav-btn" onclick="window.app.openAdminModal()" style="font-size:16px;border:none;" title="Admin">⚙</button>
-    <button class="add-btn" id="openModalBtn" data-i18n="addTask">＋ Add Task</button>
+    <button class="add-btn" id="openModalBtn" data-i18n="addTask" onclick="window.app.openModal();">＋ Add Task</button>
   </div>
 </header>
 
 <main id="mainContent"></main>
 
-<!-- Quick Add Float Button -->
+<!-- Quick Add Float Button (bottom right) -->
 <button id="quickAddBtn" class="quick-add-float-btn" onclick="window.app.openModal();" title="Add task"></button>
 
 <!-- Delete Recurrence Modal -->

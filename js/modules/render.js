@@ -42,7 +42,7 @@ export function renderDayView(todos) {
       <div class="day-header">
         <div class="day-name-large">${state.DAY_FULL[navDate.getDay()]}</div>
         <div class="day-date-line">
-          <span class="day-number" style="${isToday?'color:var(--today-border)':''}">${navDate.getDate()}</span>
+          <span class="day-number">${navDate.getDate()}</span>
           <span class="day-month-inline">${state.MONTHS[navDate.getMonth()]} ${navDate.getFullYear()}</span>
         </div>
       </div>
@@ -50,8 +50,8 @@ export function renderDayView(todos) {
     </div>
     ${(() => {
       if (items.length === 0) return `<div style="padding: 32px 24px; background: var(--surface); border-radius: 12px; border: 1.5px solid var(--border); backdrop-filter: blur(10px); margin-top: 20px; text-align: center;">
-        <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text);" data-i18n="emptyDay">No tasks for this day.</p>
-        <button onclick="window.app.openModal()" style="padding: 10px 20px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;" data-i18n="emptyDayAction">Add a task</button>
+        <p style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text);" data-i18n="emptyDay">${state.T.emptyDay}</p>
+        <button onclick="window.app.openModal()" style="padding: 10px 20px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;" data-i18n="emptyDayAction">${state.T.emptyDayAction}</button>
       </div>`;
       const groups = [
         { label: state.T.recDaily,     items: items.filter(t => t.recurrence==='daily') },
@@ -81,7 +81,7 @@ export function renderWeekView(todos) {
     const endStr = state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getDate();
 
     html += `<div class="week-container" style="--week-delay: ${weekOffset * 80}ms;">
-      <div class="week-title">Week ${weekNum} — ${startStr} to ${endStr}</div>
+      <div class="week-title">${state.T.week} ${weekNum} — ${startStr} to ${endStr}</div>
       <div class="week-grid">`;
 
     // 7 days of the week
@@ -106,7 +106,7 @@ export function renderWeekView(todos) {
               <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
             </div>`;
           }).join('')}
-          <button class="week-add-btn" onclick="window.app.openModal(window.app.parseDS('${ds}'))">${state.T.weekAdd}</button>
+          <button class="week-add-btn" onclick="window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
         </div>
       </div>`;
     }
@@ -273,4 +273,15 @@ export function renderQACloud(todos) {
   } else {
     el.classList.remove('visible');
   }
+}
+
+export function setupTodoItemHoverAnimations() {
+  document.querySelectorAll('.todo-item').forEach(item => {
+    item.addEventListener('mouseenter', () =>
+      gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
+    );
+    item.addEventListener('mouseleave', () =>
+      gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
+    );
+  });
 }
