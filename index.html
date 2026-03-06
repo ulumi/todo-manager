@@ -48,7 +48,10 @@
 </div>
 
 <!-- Quick Add Float Button (bottom right) -->
-<button id="quickAddBtn" class="quick-add-float-btn" onclick="window.app.openModal();" title="Add task"></button>
+<button id="quickAddBtn" class="quick-add-float-btn" onclick="window.app.openModal();" title="Add task">
+  <span class="qab-icon">＋</span>
+  <span class="qab-label" data-i18n="addTaskShort">ADD TASK</span>
+</button>
 
 <!-- Delete Recurrence Modal -->
 <div class="modal-overlay hidden" id="deleteModalOverlay">

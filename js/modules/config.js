@@ -5,7 +5,7 @@
 export const TRANSLATIONS = {
   en: {
     viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year',
-    today:'Today', thisPeriod:'Recurring', addTask:'＋ Add Task',
+    today:'Today', thisPeriod:'Recurring', addTask:'＋ Add Task', addTaskShort:'ADD TASK',
     groupOnce:'One-time', week:'Week',
     newTask:'New Task', editTask:'Edit Task', task:'Task', date:'Date', repeat:'Repeat',
     recNone:'No repeat', recDaily:'Daily', recWeekly:'Weekly', recMonthly:'Monthly', recYearly:'Yearly',
@@ -31,7 +31,7 @@ export const TRANSLATIONS = {
   },
   fr: {
     viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année',
-    today:"Aujourd'hui", thisPeriod:'Récurrent', addTask:'＋ Ajouter',
+    today:"Aujourd'hui", thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
     groupOnce:'Ponctuel', week:'Semaine',
     newTask:'Nouvelle tâche', editTask:'Modifier', task:'Tâche', date:'Date', repeat:'Répétitions',
     recNone:'Aucune', recDaily:'Quotidien', recWeekly:'Hebdomadaire', recMonthly:'Mensuel', recYearly:'Annuel',

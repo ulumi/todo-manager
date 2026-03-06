@@ -221,7 +221,10 @@ main {
   margin-bottom: 10px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: color .12s;
 }
+.cal-sid-month-title:hover { color: var(--primary); }
 
 .cal-sid-grid {
   display: grid;
@@ -309,8 +312,7 @@ main {
 .day-header-wrapper {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 24px;
+  justify-content: space-between;
   margin-bottom: 24px;
   background: var(--primary);
   padding: 24px 24px;
@@ -479,6 +481,60 @@ main {
   line-height: 1.2;
 }
 
+/* ── REORDER BUTTONS ── */
+.todo-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.todo-reorder-btn {
+  width: 16px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  padding: 0;
+  opacity: 0;
+  transition: opacity .15s, background .12s, color .12s;
+  line-height: 1;
+}
+
+.todo-item:hover .todo-reorder-btn { opacity: 0.5; }
+.todo-reorder-btn:hover { opacity: 1 !important; background: var(--surface2); color: var(--text); }
+.todo-reorder-btn:disabled { opacity: 0.15 !important; cursor: default; }
+
+/* ── DAY ADD BUTTON ── */
+.day-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 11px 18px;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  margin-top: 6px;
+}
+
+.day-add-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
 .todo-delete {
   width: 26px;
   height: 26px;
@@ -550,13 +606,15 @@ main {
   box-shadow: var(--shadow);
 }
 
+.week-day-col { cursor: pointer; }
+.week-day-col:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
 .week-day-col.is-today { border-color: var(--today-border); background: var(--today); }
+.week-day-col.is-today:hover { border-color: var(--today-border); }
 
 .week-day-header {
   padding: 10px;
   text-align: center;
   border-bottom: 1px solid var(--border);
-  cursor: pointer;
 }
 
 .week-day-col.is-today .week-day-header { background: rgba(245,158,11,.12); }
@@ -622,6 +680,43 @@ main {
 /* ── MONTH VIEW ── */
 .month-view {}
 
+.month-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.month-header-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.month-nav-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.month-nav-btn:hover {
+  background: var(--border);
+  transform: scale(1.08);
+}
+
+.month-nav-btn:active {
+  transform: scale(0.95);
+}
+
 .month-grid-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -664,7 +759,6 @@ main {
 .month-cell-num {
   font-size: 15px;
   font-weight: 800;
-  margin-bottom: 6px;
   color: var(--today-border);
 }
 
@@ -677,7 +771,6 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
   font-weight: 800;
 }
 
@@ -753,7 +846,7 @@ main {
 }
 
 .year-mini-day.other { color: var(--border); }
-.year-mini-day.is-today { background: var(--today-border); color: #fff; border-radius: 50%; font-weight: 800; }
+.year-mini-day.is-today { background: var(--today-border); color: #fff; border-radius: 50%; font-weight: 800; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; padding: 0; margin: auto; }
 .year-mini-day.has-todos { background: var(--primary-light); color: var(--primary); font-weight: 600; border-radius: 3px; }
 .year-mini-day.is-today.has-todos { background: var(--today-border); color: #fff; }
 
@@ -1061,41 +1154,67 @@ body:has(.bottom-panel:not(.hidden))::before {
   right: 24px;
   width: 56px;
   height: 56px;
-  border-radius: 50%;
+  border-radius: 28px;
   background: var(--today-border);
   color: #fff;
   border: none;
-  font-size: 0;
-  font-weight: 400;
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(245, 158, 11, .25);
   z-index: 49;
-  transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), box-shadow .2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0;
   overflow: hidden;
+  white-space: nowrap;
+  padding: 0;
 }
 
-.quick-add-float-btn::before {
-  content: '+';
-  position: absolute;
-  font-size: 32px;
+.qab-icon {
+  font-size: 24px;
   font-weight: 300;
   line-height: 1;
+  flex-shrink: 0;
+  width: 56px;
+  text-align: center;
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), opacity .15s ease, width .15s ease;
+}
+
+.qab-label {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Pill mode (day view centered): icon hidden by default, shown on hover */
+.quick-add-float-btn.pill .qab-icon {
+  width: 0;
+  opacity: 0;
+}
+
+.quick-add-float-btn.pill:hover .qab-icon {
+  width: 28px;
   opacity: 1;
-  transform: scale(1) rotate(0deg);
-  transition: all .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* Gap between icon and label only when both visible */
+.quick-add-float-btn.pill:hover .qab-label {
+  padding-left: 4px;
 }
 
 .quick-add-float-btn:hover {
-  transform: scale(1.15) translateY(-3px);
+  transform: scale(1.1) translateY(-2px);
   box-shadow: 0 12px 32px rgba(245, 158, 11, .4);
 }
 
-.quick-add-float-btn:hover::before {
-  opacity: 1;
-  transform: scale(1.3) rotate(90deg);
+.quick-add-float-btn:hover .qab-icon {
+  transform: rotate(90deg) scale(1.15);
 }
 
 .quick-add-float-btn:active {
@@ -1228,10 +1347,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 .qa-cloud.visible { display: flex; }
 
 /* ── MONTH CELL + BUTTON ── */
-.month-cell-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.month-cell-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
 .month-add-btn {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: none;
   background: var(--primary);
@@ -1243,18 +1362,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity .25s ease, transform .25s cubic-bezier(.34, 1.56, .64, 1);
+  transition: opacity .15s ease, transform .15s cubic-bezier(.34, 1.56, .64, 1);
   flex-shrink: 0;
   padding: 0;
-  position: absolute;
-  bottom: 8px;
-  right: 50%;
-  transform: translateX(50%) scale(1.2);
+  transform: scale(0.8);
 }
 
 .month-cell:hover .month-add-btn {
   opacity: 1;
-  transform: translateX(50%) scale(1);
+  transform: scale(1);
 }
 
 /* ── MONTH TODO HOVER DELETE ── */

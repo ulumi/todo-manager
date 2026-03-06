@@ -27,6 +27,7 @@ import {
   renderSidebar
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
+import { celebrate } from './modules/celebrate.js';
 import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData } from './modules/admin.js';
 
 // Initialize state
@@ -38,6 +39,8 @@ class TodoApp {
     this._sugg = [];
     this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
     if (isNaN(this.zoomIdx) || this.zoomIdx < 0 || this.zoomIdx > 2) this.zoomIdx = 1;
+    this.dayOrder = JSON.parse(localStorage.getItem('dayOrder') || '{}');
+    this._quickAddInDayMode = false;
     this.init();
   }
 
@@ -52,6 +55,9 @@ class TodoApp {
       state.setView(savedView);
     }
     this.render();
+    // Seed the history stack with the initial state
+    history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
+    window.addEventListener('popstate', (e) => this._popHistory(e));
     setupEventListeners(this);
     this._animateViewTabs();
     let _resizeTimer;
@@ -60,6 +66,7 @@ class TodoApp {
       _resizeTimer = setTimeout(() => {
         const sidebar = document.getElementById('calSidebar');
         if (sidebar && state.view === 'day') sidebar.innerHTML = renderSidebar(state.todos);
+        this._animateQuickAddBtn();
       }, 150);
     });
   }
@@ -138,27 +145,51 @@ class TodoApp {
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     state.setNavDate(d);
+    this._pushHistory();
     await this._animateViewChange(delta);
   }
 
   todayNav() {
     state.setNavDate(today());
+    this._pushHistory();
     this.render();
   }
 
   async setView(v) {
     state.setView(v);
     localStorage.setItem('view', v);
+    this._pushHistory();
+    await this._animateViewChange();
+  }
+
+  _pushHistory() {
+    const navStr = state.navDate.toISOString().slice(0, 10);
+    history.pushState({ view: state.view, nav: navStr }, '');
+  }
+
+  async _popHistory(e) {
+    if (!e.state) return;
+    const { view, nav } = e.state;
+    const [y, m, d] = nav.split('-').map(Number);
+    state.setNavDate(new Date(y, m - 1, d));
+    state.setView(view);
+    localStorage.setItem('view', view);
     await this._animateViewChange();
   }
 
   async _animateViewChange(delta = 0) {
     const main = document.getElementById('mainContent');
+    const isDay = state.view === 'day';
+    const isMonth = state.view === 'month';
+    const slideX = isDay && delta !== 0 ? (delta > 0 ? 60 : -60) : 0;
+    const slideY = isMonth && delta !== 0 ? (delta > 0 ? 40 : -40) : 0;
 
-    // 1. Fade out current view
+    // 1. Exit
     await gsap.to(main, {
       opacity: 0,
-      duration: 0.12,
+      x: slideX ? -slideX : 0,
+      y: slideY ? -slideY : 0,
+      duration: (isDay || isMonth) && delta ? 0.15 : 0.12,
       ease: 'power2.in'
     });
 
@@ -171,12 +202,15 @@ class TodoApp {
       gsap.set(blocks, { opacity: 0, y: 12 });
     }
 
-    // 3. Fade in container
+    // 3. Enter
+    gsap.set(main, { x: slideX, y: slideY });
     await gsap.to(main, {
       opacity: 1,
-      duration: 0.25,
-      delay: 0.05,
-      ease: 'power2.out'
+      x: 0,
+      y: 0,
+      duration: (isDay || isMonth) && delta ? 0.28 : 0.25,
+      delay: 0.02,
+      ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
     });
 
     // 4. Stagger blocks — total spread capped at 120ms regardless of count
@@ -223,6 +257,8 @@ class TodoApp {
     if (typeof date === 'string') date = parseDS(date);
     state.setNavDate(date);
     state.setView(view);
+    localStorage.setItem('view', view);
+    this._pushHistory();
     await this._animateViewChange();
   }
 
@@ -230,8 +266,10 @@ class TodoApp {
   // TODOS
   // ═══════════════════════════════════════════════════
   toggleTodo(id, d) {
+    const wasCompleted = isCompleted(state.todos.find(x => x.id === id), d);
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
+    if (!wasCompleted) celebrate(state.lang);
     this.render();
     // Animate checkbox bounce
     setTimeout(() => {
@@ -355,6 +393,23 @@ class TodoApp {
     this.renderQACloud();
   }
 
+  reorderTask(id, dateStr, direction) {
+    const date = parseDS(dateStr);
+    const otherItems = getTodosForDate(date, state.todos).filter(t => t.recurrence !== 'daily');
+    let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : otherItems.map(t => t.id);
+    // Sync: add missing, remove stale
+    otherItems.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+    order = order.filter(id => otherItems.some(t => t.id === id));
+    const idx = order.indexOf(id);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= order.length) return;
+    [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+    this.dayOrder[dateStr] = order;
+    localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    this.render();
+  }
+
   openModalWithTitle(title) {
     if (document.getElementById('modalOverlay').classList.contains('hidden')) {
       const d = state.quickAddTarget==='today' ? today() : state.navDate;
@@ -473,6 +528,58 @@ class TodoApp {
       }
     }
     this.renderQACloud();
+    this._animateQuickAddBtn();
+  }
+
+  _animateQuickAddBtn() {
+    const btn = document.getElementById('quickAddBtn');
+    if (!btn || typeof gsap === 'undefined') return;
+    const label = btn.querySelector('.qab-label');
+
+    if (state.view === 'day') {
+      const main = document.getElementById('mainContent');
+      if (!main) return;
+      const rect = main.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+
+      if (!this._quickAddInDayMode) {
+        this._quickAddInDayMode = true;
+        // Snap to right-side equivalent; border-radius stays 28px throughout
+        gsap.set(btn, { right: 'auto', left: window.innerWidth - 52, xPercent: -50 });
+      }
+
+      // Step 1: move to center
+      gsap.to(btn, { left: centerX, bottom: 32, duration: 0.32, ease: 'expo.out', overwrite: 'auto' });
+
+      // Step 2: expand width to pill (border-radius unchanged at 28px — no deformation)
+      gsap.to(btn, { width: 220, duration: 0.22, delay: 0.1, ease: 'expo.out', overwrite: false });
+
+      // Step 3: fade in label after pill is formed
+      if (label) gsap.to(label, { width: 160, opacity: 1, duration: 0.18, delay: 0.22, ease: 'power2.out', overwrite: 'auto' });
+      setTimeout(() => btn.classList.add('pill'), 320);
+
+    } else {
+      if (!this._quickAddInDayMode) return;
+      this._quickAddInDayMode = false;
+      btn.classList.remove('pill');
+
+      // Step 1: hide label
+      if (label) gsap.to(label, { width: 0, opacity: 0, duration: 0.12, ease: 'power2.in', overwrite: 'auto' });
+
+      // Step 2: shrink width back to 56 (circle again — border-radius 28px on 56px = perfect circle)
+      gsap.to(btn, { width: 56, duration: 0.15, delay: 0.08, ease: 'power2.in', overwrite: 'auto' });
+
+      // Step 3: move back to corner
+      gsap.to(btn, {
+        left: window.innerWidth - 52,
+        bottom: 24,
+        duration: 0.2,
+        delay: 0.1,
+        ease: 'expo.in',
+        overwrite: false,
+        onComplete: () => gsap.set(btn, { clearProps: 'left,bottom,xPercent,right,width' })
+      });
+    }
   }
 
   renderQACloud() {
