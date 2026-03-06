@@ -236,9 +236,61 @@ export function renderYearView(todos) {
   return html;
 }
 
+export function renderSidebar(todos) {
+  const MONTH_H = 185;
+  const headerH = document.querySelector('header')?.offsetHeight ?? 65;
+  const availH = window.innerHeight - headerH - 48;
+  const maxMonths = Math.max(1, Math.floor(availH / MONTH_H));
+
+  const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+  const navDate = state.navDate;
+
+  let html = '';
+  for (let i = 0; i < maxMonths; i++) {
+    const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() - 1 + i, 1);
+    html += renderSideMonth(monthDate, todayDate, navDate, todos);
+  }
+  return html;
+}
+
+function renderSideMonth(monthDate, todayDate, navDate, todos) {
+  const y = monthDate.getFullYear();
+  const m = monthDate.getMonth();
+  const days = daysInMonth(y, m);
+  const firstDay = firstDayOfMonth(y, m);
+  const todayDS = DS(todayDate);
+  const navDS = DS(navDate);
+
+  let html = `<div class="cal-sid-month">
+    <div class="cal-sid-month-title">${state.MONTHS[m]} ${y}</div>
+    <div class="cal-sid-grid">`;
+
+  html += state.DAYS.map(d => `<div class="cal-sid-dow">${d[0]}</div>`).join('');
+
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-sid-day other-month"></div>';
+  }
+
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(y, m, d);
+    const ds = DS(date);
+    const isToday = ds === todayDS;
+    const isNav = ds === navDS;
+    const hasTodos = getTodosForDate(date, todos).length > 0;
+    let cls = 'cal-sid-day';
+    if (isToday) cls += ' today';
+    if (isNav) cls += ' nav-date';
+    if (hasTodos) cls += ' has-todos';
+    html += `<div class="${cls}" data-date="${ds}" onclick="window.app.setNavDateAndView('${ds}','day')">${d}</div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
 export function getPeriodLabel() {
   const d = state.navDate;
-  if (state.view==='day')   return `${state.DAY_FULL[d.getDay()]}, ${state.MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  if (state.view==='day')   return '';
   if (state.view==='week') {
     return `${state.MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   }

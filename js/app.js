@@ -23,7 +23,8 @@ import {
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations
+  getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
+  renderSidebar
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData } from './modules/admin.js';
@@ -53,6 +54,14 @@ class TodoApp {
     this.render();
     setupEventListeners(this);
     this._animateViewTabs();
+    let _resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(_resizeTimer);
+      _resizeTimer = setTimeout(() => {
+        const sidebar = document.getElementById('calSidebar');
+        if (sidebar && state.view === 'day') sidebar.innerHTML = renderSidebar(state.todos);
+      }, 150);
+    });
   }
 
   // ═══════════════════════════════════════════════════
@@ -170,15 +179,15 @@ class TodoApp {
       ease: 'power2.out'
     });
 
-    // 4. Stagger blocks (simple, reliable approach)
+    // 4. Stagger blocks — total spread capped at 120ms regardless of count
     if (blocks.length > 0) {
       gsap.to(blocks, {
         opacity: 1,
         y: 0,
-        duration: 0.3,
-        stagger: 0.04, // Simple stagger: 40ms between each block
+        duration: 0.25,
+        stagger: { amount: 0.12 },
         ease: 'power3.out',
-        delay: 0.08,
+        delay: 0.05,
         overwrite: 'auto'
       });
     }
@@ -187,9 +196,9 @@ class TodoApp {
     setTimeout(() => {
       gsap.from('.todo-item', {
         opacity: 0,
-        y: 10,
-        duration: 0.3,
-        stagger: 0.05,
+        y: 8,
+        duration: 0.2,
+        stagger: { amount: 0.08 },
         ease: 'power3.out',
         overwrite: 'auto'
       });
@@ -347,8 +356,10 @@ class TodoApp {
   }
 
   openModalWithTitle(title) {
-    const d = state.quickAddTarget==='today' ? today() : state.navDate;
-    openModal(d, state.todos);
+    if (document.getElementById('modalOverlay').classList.contains('hidden')) {
+      const d = state.quickAddTarget==='today' ? today() : state.navDate;
+      openModal(d, state.todos);
+    }
     document.getElementById('taskTitle').value = title;
     document.getElementById('taskTitle').select();
   }
@@ -360,8 +371,10 @@ class TodoApp {
   openModalWithRecurring(id) {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
-    const d = state.quickAddTarget==='today' ? today() : state.navDate;
-    openModal(d, state.todos);
+    if (document.getElementById('modalOverlay').classList.contains('hidden')) {
+      const d = state.quickAddTarget==='today' ? today() : state.navDate;
+      openModal(d, state.todos);
+    }
     document.getElementById('taskTitle').value = t.title;
     selectRecurrence(t.recurrence || 'none');
     if (t.recurrence === 'weekly' && t.recDays) {
@@ -449,6 +462,16 @@ class TodoApp {
     if (state.view==='month') html = renderMonthView(state.todos);
     if (state.view==='year')  html = renderYearView(state.todos);
     document.getElementById('mainContent').innerHTML = html;
+    const sidebar = document.getElementById('calSidebar');
+    if (sidebar) {
+      if (state.view === 'day') {
+        sidebar.style.display = '';
+        sidebar.innerHTML = renderSidebar(state.todos);
+      } else {
+        sidebar.style.display = 'none';
+        sidebar.innerHTML = '';
+      }
+    }
     this.renderQACloud();
   }
 

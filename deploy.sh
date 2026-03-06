@@ -2,7 +2,7 @@
 
 # Deploy script for Vercel auto-push
 
-MESSAGE="${1:-Mise a jour de l'app}"
+MESSAGE="${1:-Mise a jour}"
 
 echo "🚀 Deploiement: $MESSAGE"
 echo ""

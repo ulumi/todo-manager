@@ -179,12 +179,129 @@ header.scrolled {
   transform: translateY(-2px);
 }
 
-/* ── MAIN ── */
-main {
-  padding: 24px;
-  max-width: 1200px;
+/* ── MAIN LAYOUT ── */
+#appWrapper {
+  display: flex;
+  align-items: flex-start;
+  max-width: 1440px;
   margin: 0 auto;
 }
+
+main {
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+}
+
+/* ── SIDEBAR MINI-CALENDAR ── */
+#calSidebar {
+  width: 218px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 65px;
+  padding: 20px 20px 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 65px);
+  overflow: hidden;
+}
+
+.cal-sid-month {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 12px 10px;
+  box-shadow: var(--shadow-md);
+}
+
+.cal-sid-month-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cal-sid-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-sid-dow {
+  font-size: 9px;
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding-bottom: 4px;
+}
+
+.cal-sid-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 500;
+  transition: background .12s, color .12s;
+  position: relative;
+}
+
+.cal-sid-day:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.cal-sid-day.other-month {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cal-sid-day.today {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.cal-sid-day.today:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.cal-sid-day.nav-date {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+}
+
+.cal-sid-day.nav-date:hover {
+  background: var(--primary-dark);
+  color: #fff;
+}
+
+.cal-sid-day.nav-date.today {
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.cal-sid-day.has-todos::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.6;
+}
+
+.cal-sid-day.nav-date::after { background: rgba(255,255,255,.7); opacity: 1; }
+.cal-sid-day.today::after { background: var(--primary); opacity: 0.8; }
 
 /* ── DAY VIEW ── */
 .day-view { max-width: 600px; margin: 0 auto; }
@@ -1171,17 +1288,61 @@ body:has(.bottom-panel:not(.hidden))::before {
 @media (max-width: 900px) {
   .year-view { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Hide sidebar on tablet and below */
+@media (max-width: 960px) {
+  #calSidebar { display: none; }
+}
+
+/* Tablet: hide zoom controls */
+@media (max-width: 768px) {
+  .zoom-group { display: none; }
+  header { padding: 0 16px; }
+  .header-top { gap: 10px; }
+  .period-label { min-width: 100px; }
+}
+
 @media (max-width: 700px) {
   .week-grid { grid-template-columns: repeat(4, 1fr); }
   .year-view { grid-template-columns: repeat(2, 1fr); }
-  .header-top { gap: 8px; }
-  .period-label { font-size: 13px; min-width: 120px; }
   main { padding: 12px; }
 }
-@media (max-width: 480px) {
+
+/* Mobile: wrap header to two rows, hide secondary controls */
+@media (max-width: 600px) {
+  .lang-select { display: none; }
+  header { padding: 0 12px; }
+  .header-top {
+    flex-wrap: wrap;
+    padding: 8px 0;
+    gap: 6px;
+  }
+  .header-sep { display: none; }
+  .nav-group {
+    order: 10;
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+  }
+  .period-label { min-width: 90px; font-size: 13px; }
+  .view-tab { padding: 5px 10px; font-size: 12px; }
+  .add-btn { padding: 7px 12px; font-size: 12px; }
+}
+
+/* Small mobile: hide title, compress further */
+@media (max-width: 420px) {
+  .app-title { display: none; }
+  .view-tab { padding: 5px 8px; }
+  .month-cell { min-height: 60px; padding: 6px; }
+  .month-cell-num { font-size: 12px; }
+  .month-todo-dot { font-size: 10px; padding: 2px 4px; }
   .week-grid { grid-template-columns: repeat(2, 1fr); }
   .year-view { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Prevent horizontal overflow globally */
+body { overflow-x: hidden; }
+main { overflow-x: hidden; }
 
 /* ── ADMIN MODAL (FULL PAGE) ── */
 #adminModalOverlay { z-index: 300; }
