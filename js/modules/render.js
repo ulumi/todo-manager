@@ -5,6 +5,7 @@
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
 import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
+import { getProjects } from './admin.js';
 
 export function todoItemHTML(todo, date, reorder = null, dayView = false) {
   const done = isCompleted(todo, date);
@@ -16,11 +17,18 @@ export function todoItemHTML(todo, date, reorder = null, dayView = false) {
       <button class="todo-reorder-btn" onclick="window.app.reorderTask('${todo.id}','${ds}',-1)" ${reorder.isFirst ? 'disabled' : ''}>↑</button>
       <button class="todo-reorder-btn" onclick="window.app.reorderTask('${todo.id}','${ds}',1)" ${reorder.isLast ? 'disabled' : ''}>↓</button>
     </div>` : '';
+  const projectBadge = (() => {
+    if (!todo.projectId) return '';
+    const proj = getProjects().find(p => p.id === todo.projectId);
+    if (!proj) return '';
+    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}40;">${esc(proj.name)}</span>`;
+  })();
   return `
     <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}">
       ${reorderHTML}
       <div class="todo-check${done?' checked':''}" onclick="window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <span class="todo-text editable" ondblclick="window.app.quickEditTitle(this, '${todo.id}', '${ds}')">${esc(todo.title)}</span>
+      ${projectBadge}
       ${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}
       <button class="todo-edit" onclick="window.app.openEditModal('${todo.id}','${ds}')">✎</button>
       <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
@@ -81,7 +89,9 @@ export function renderDayView(todos) {
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
   const monthlyItems = allItems.filter(t => t.recurrence === 'monthly');
   const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
-  const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
+  const punctualAll  = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
+  const projectItems = punctualAll.filter(t => t.projectId);
+  const punctualItems = punctualAll.filter(t => !t.projectId);
 
   // Sort punctual by stored dayOrder
   const order = window.app?.dayOrder?.[dateStr] || [];
@@ -97,7 +107,7 @@ export function renderDayView(todos) {
   if (weeklyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list">${weeklyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
   if (monthlyItems.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list">${monthlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
   if (yearlyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list">${yearlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
-  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyDay}</div>`;
+  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
   let rightItems = '';
   sortedPunctual.forEach((t, i) => {
@@ -105,9 +115,32 @@ export function renderDayView(todos) {
   });
   const rightCol = rightItems
     ? `<div class="day-group-label">${state.T.groupOnce}</div><div class="todo-list">${rightItems}</div>`
-    : `<div class="day-col-empty">${state.T.emptyDay}</div>`;
+    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
-  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${leftCol}</div><div class="day-col day-col--punctual">${rightCol}</div></div></div>`;
+  const recurringHeader = `<div class="day-col-title">↻ ${state.T.recurringTasks}</div>`;
+  const punctualHeader  = `<div class="day-col-title">${state.T.groupOnce}</div>`;
+
+  // Project column (last 33%) — only rendered when project tasks exist today
+  if (projectItems.length > 0) {
+    const projects = getProjects();
+    // Group by project
+    const byProject = {};
+    projectItems.forEach(t => {
+      if (!byProject[t.projectId]) byProject[t.projectId] = [];
+      byProject[t.projectId].push(t);
+    });
+    let projectColContent = '';
+    Object.entries(byProject).forEach(([pid, tasks]) => {
+      const proj = projects.find(p => p.id === pid);
+      const label = proj ? esc(proj.name) : 'Projet';
+      const color = proj?.color || 'var(--primary)';
+      projectColContent += `<div class="day-group-label" style="color:${color};border-color:${color};">${label}</div><div class="todo-list">${tasks.map(t => todoItemHTML(t, navDate)).join('')}</div>`;
+    });
+    const projectHeader = `<div class="day-col-title" style="color:var(--text-muted);border-color:var(--border);">Projets</div>`;
+    return `<div class="day-view">${header}<div class="day-columns day-columns--three"><div class="day-col day-col--recurring">${recurringHeader}${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--project">${projectHeader}${projectColContent}</div></div></div>`;
+  }
+
+  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${recurringHeader}${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div></div></div>`;
 }
 
 export function renderWeekView(todos) {

@@ -7,6 +7,56 @@ import { saveTodos } from './storage.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
+const PROJECTS_KEY = 'projects';
+
+const PROJECT_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+
+// ── Projects ─────────────────────────────────────────────
+export function getProjects() {
+  const stored = localStorage.getItem(PROJECTS_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function saveProjects(projects) {
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+}
+
+export function addProject() {
+  const input = document.getElementById('newProjectInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const projects = getProjects();
+  const color = PROJECT_COLORS[projects.length % PROJECT_COLORS.length];
+  projects.push({ id: Date.now().toString(), name, color });
+  saveProjects(projects);
+  input.value = '';
+  renderAdminProjects();
+}
+
+export function removeProject(id) {
+  saveProjects(getProjects().filter(p => p.id !== id));
+  renderAdminProjects();
+}
+
+export function renderAdminProjects() {
+  const container = document.getElementById('projectAdminList');
+  if (!container) return;
+  const projects = getProjects();
+  container.innerHTML = projects.map(p => `
+    <div class="admin-item">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${p.color};margin-right:8px;flex-shrink:0;"></span>
+      <span class="admin-item-text">${escapeHtml(p.name)}</span>
+      <div class="admin-item-controls">
+        <button class="admin-btn-small" onclick="window.app.removeProject('${p.id}')">×</button>
+      </div>
+    </div>
+  `).join('') + `
+    <div class="admin-input-row" style="margin-top:8px;">
+      <input type="text" id="newProjectInput" placeholder="Nom du projet"
+        onkeydown="if(event.key==='Enter') window.app.addProject()">
+      <button onclick="window.app.addProject()">Ajouter</button>
+    </div>`;
+}
 
 // ── Day Templates ────────────────────────────────────────
 export function getTemplates() {
@@ -149,6 +199,7 @@ export function openAdminModal() {
     <div class="admin-layout">
       <nav class="admin-sidenav">
         <button class="admin-sidenav-link active" onclick="window.app.showAdminSection('taches')">📋 Tâches</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('projets')">📁 Projets</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
       </nav>
@@ -185,6 +236,12 @@ export function openAdminModal() {
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
             <button class="btn btn-ghost" onclick="window.app.clearAllSuggestedTasks()" style="width:100%;">Vider tout</button>
           </div>
+        </section>
+
+        <section id="section-projets" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">Projets</h2>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Les tâches liées à un projet s'affichent dans la colonne de droite de la vue Jour.</p>
+          <div id="projectAdminList"></div>
         </section>
 
         <section id="section-modeles" class="admin-page-section" style="display:none">
@@ -229,6 +286,7 @@ export function openAdminModal() {
   document.getElementById('adminClouds').innerHTML = html;
   renderAdminLists(tasks);
   renderAdminTemplates();
+  renderAdminProjects();
   document.getElementById('adminModalOverlay').classList.remove('hidden');
 }
 

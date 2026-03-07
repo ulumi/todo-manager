@@ -31,7 +31,7 @@ import {
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
-import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addProject, removeProject, getProjects } from './modules/admin.js';
 
 // Initialize state
 state.initializeState();
@@ -288,10 +288,15 @@ class TodoApp {
   }
 
   deleteTodo(id, dateStr) {
-    const deleted = openDeleteModal(id, dateStr, state.todos);
-    if (deleted) {
-      saveTodos(state.todos);
-      this.render();
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    if (!t.recurrence || t.recurrence === 'none') {
+      this._animateDeleteAndRefresh(id, () => {
+        state.setTodos(state.todos.filter(x => x.id !== id));
+        saveTodos(state.todos);
+      });
+    } else {
+      openDeleteModal(id, dateStr, state.todos);
     }
   }
 
@@ -319,7 +324,6 @@ class TodoApp {
   }
 
   deleteAllOccurrences() {
-    if (!confirm(state.T.confirmDeleteAllOccurrences)) return;
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
       state.setTodos(state.todos.filter(x => x.id !== id));
@@ -749,6 +753,13 @@ class TodoApp {
   removeTemplate(id) { removeTemplate(id); }
   addTaskToTemplate(id) { addTaskToTemplate(id); }
   removeTaskFromTemplate(id, idx) { removeTaskFromTemplate(id, idx); }
+
+  // ═══════════════════════════════════════════════════
+  // PROJECTS
+  // ═══════════════════════════════════════════════════
+  addProject() { addProject(); }
+  removeProject(id) { removeProject(id); this.render(); }
+  getProjects() { return getProjects(); }
 
   // ═══════════════════════════════════════════════════
   // UTILITIES

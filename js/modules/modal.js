@@ -5,7 +5,19 @@
 import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
 import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
-import { getSuggestedTasks } from './admin.js';
+import { getSuggestedTasks, getProjects } from './admin.js';
+
+function populateProjectSelect(selectedId) {
+  const sel = document.getElementById('taskProject');
+  if (!sel) return;
+  const projects = getProjects();
+  sel.innerHTML = `<option value="">— Aucun projet —</option>` +
+    projects.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeProject(p.name)}</option>`).join('');
+}
+
+function escapeProject(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
 export function openModal(date, todos) {
   date = date || state.navDate;
@@ -24,6 +36,7 @@ export function openModal(date, todos) {
   document.getElementById('recDetail').innerHTML = '';
   document.getElementById('dateGroup').style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
+  populateProjectSelect('');
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
   document.querySelector('.modal-right').style.display = '';
@@ -56,6 +69,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('modalClouds').innerHTML = '';
+  populateProjectSelect(t.projectId || '');
 
   // Set recurrence UI
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence));
@@ -236,7 +250,8 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const data = { title, recurrence: state.selectedRecurrence };
+  const projectId = document.getElementById('taskProject')?.value || '';
+  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined };
 
   if (state.selectedRecurrence==='none') {
     data.date = document.getElementById('taskDate').value || DS(state.navDate);
@@ -267,6 +282,7 @@ export function saveTaskLogic(todos) {
       if (data.recMonth !== undefined) t.recMonth = data.recMonth;
       if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
+      t.projectId = data.projectId;
     }
   } else {
     addTask(data, todos);
@@ -332,11 +348,6 @@ export function closeDataModal() {
 export function openDeleteModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
-  if (!t.recurrence || t.recurrence === 'none') {
-    if (!confirm(state.T.confirmDeleteTask)) return false;
-    state.setTodos(state.todos.filter(x => x.id !== id));
-    return true;
-  }
   state.setPendingDelete({ id, date: parseDS(dateStr) });
   document.getElementById('deleteTaskName').textContent = t.title;
   document.getElementById('deleteModalOverlay').classList.remove('hidden');

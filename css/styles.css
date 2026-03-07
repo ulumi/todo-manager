@@ -330,9 +330,25 @@ main {
 /* ── DAY VIEW ── */
 .day-view { width: 100%; }
 .day-columns { display: grid; grid-template-columns: 1fr 2fr; gap: 28px; margin-top: 4px; }
+.day-columns--three { grid-template-columns: 1fr 1fr 1fr; }
 .day-col--punctual .todo-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.day-columns--three .day-col--punctual .todo-list { display: flex; flex-direction: column; gap: 10px; }
 .day-col { display: flex; flex-direction: column; gap: 10px; }
-.day-col-empty { padding: 32px 24px; background: var(--surface); border-radius: 12px; border: 1.5px solid var(--border); text-align: center; font-size: 16px; font-weight: 600; color: var(--text-muted); }
+.day-col--project { border-left: 1px solid var(--border); padding-left: 24px; }
+.day-col-empty { padding: 20px 0 8px; text-align: center; font-size: 13px; font-weight: 400; color: var(--text-muted); font-style: italic; opacity: .7; }
+.day-col-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: .1em; padding-bottom: 8px; border-bottom: 2px solid var(--primary); opacity: .7; }
+
+/* Project badge on todo items */
+.todo-project-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: .02em;
+}
 
 .day-header-wrapper {
   display: flex;
@@ -2102,9 +2118,10 @@ main { overflow-x: hidden; }
     gap: 10px;
   }
 
-  .day-columns {
+  .day-columns, .day-columns--three {
     grid-template-columns: 1fr;
   }
+  .day-col--project { border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 16px; }
 
   .bottom-panel {
     position: fixed;
