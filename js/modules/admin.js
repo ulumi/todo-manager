@@ -6,6 +6,116 @@ import * as state from './state.js';
 import { saveTodos } from './storage.js';
 
 const STORAGE_KEY = 'suggestedTasks';
+const TEMPLATES_KEY = 'dayTemplates';
+
+// ── Day Templates ────────────────────────────────────────
+export function getTemplates() {
+  const stored = localStorage.getItem(TEMPLATES_KEY);
+  if (stored) return JSON.parse(stored);
+  return [
+    { id: '1', name: 'Semaine', tasks: ['Douche', 'Dents', 'Diner'] },
+    { id: '2', name: 'Fin de semaine', tasks: ['Déjeuner', 'Sport'] }
+  ];
+}
+
+export function saveTemplates(templates) {
+  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+}
+
+export function addTemplate() {
+  const input = document.getElementById('newTemplateInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const templates = getTemplates();
+  templates.push({ id: Date.now().toString(), name, tasks: [] });
+  saveTemplates(templates);
+  input.value = '';
+  renderAdminTemplates();
+}
+
+export function removeTemplate(id) {
+  saveTemplates(getTemplates().filter(t => t.id !== id));
+  renderAdminTemplates();
+}
+
+export function addTaskToTemplate(id) {
+  const input = document.getElementById('tmplTaskInput_' + id);
+  const task = input?.value.trim();
+  if (!task) return;
+  const templates = getTemplates();
+  const tmpl = templates.find(t => t.id === id);
+  if (tmpl) { tmpl.tasks.push(task); saveTemplates(templates); renderAdminTemplates(); }
+}
+
+export function removeTaskFromTemplate(id, idx) {
+  const templates = getTemplates();
+  const tmpl = templates.find(t => t.id === id);
+  if (tmpl) { tmpl.tasks.splice(idx, 1); saveTemplates(templates); renderAdminTemplates(); }
+}
+
+export function renderAdminTemplates() {
+  const container = document.getElementById('templateAdminList');
+  if (!container) return;
+  const templates = getTemplates();
+  container.innerHTML = templates.map(tmpl => `
+    <div class="admin-template-card">
+      <div class="admin-template-header">
+        <span class="admin-template-name">${escapeHtml(tmpl.name)}</span>
+        <button class="admin-btn-small" onclick="window.app.removeTemplate('${tmpl.id}')">×</button>
+      </div>
+      <div class="admin-template-tasks">
+        ${tmpl.tasks.map((task, idx) => `
+          <span class="admin-template-chip">
+            ${escapeHtml(task)}
+            <button onclick="window.app.removeTaskFromTemplate('${tmpl.id}', ${idx})">×</button>
+          </span>`).join('')}
+        ${tmpl.tasks.length === 0 ? `<span style="font-size:12px;color:var(--text-muted);">Aucune tâche</span>` : ''}
+      </div>
+      <div class="admin-input-row">
+        <input type="text" id="tmplTaskInput_${tmpl.id}" placeholder="Ajouter une tâche"
+          onkeydown="if(event.key==='Enter') window.app.addTaskToTemplate('${tmpl.id}')">
+        <button onclick="window.app.addTaskToTemplate('${tmpl.id}')">+</button>
+      </div>
+    </div>`).join('') + `
+    <div class="admin-input-row" style="margin-top:8px;">
+      <input type="text" id="newTemplateInput" placeholder="Nom du nouveau modèle"
+        onkeydown="if(event.key==='Enter') window.app.addTemplate()">
+      <button onclick="window.app.addTemplate()">Ajouter un modèle</button>
+    </div>`;
+}
+
+export function openTemplateModal(dateStr) {
+  const templates = getTemplates();
+  const list = document.getElementById('templatePickerList');
+  if (!list) return;
+  list.innerHTML = templates.length === 0
+    ? `<p style="text-align:center;color:var(--text-muted);padding:24px 0;">Aucun modèle configuré.<br>Allez dans <b>Admin</b> pour en créer.</p>`
+    : templates.map(t => `
+      <div class="template-pick-item" onclick="window.app.applyTemplate('${t.id}','${dateStr}')">
+        <div class="template-pick-name">${escapeHtml(t.name)}</div>
+        ${t.tasks.length > 0 ? `<div class="template-pick-tasks">${t.tasks.map(escapeHtml).join(' · ')}</div>` : ''}
+      </div>`).join('');
+  const overlay = document.getElementById('templateModalOverlay');
+  overlay.classList.remove('hidden');
+  gsap.fromTo(overlay.querySelector('.modal'),
+    { scale: 0.92, y: 24, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+  );
+}
+
+export function closeTemplateModal() {
+  document.getElementById('templateModalOverlay').classList.add('hidden');
+}
+
+export function applyTemplate(templateId, dateStr, todos) {
+  const tmpl = getTemplates().find(t => t.id === templateId);
+  if (!tmpl) return;
+  const base = Date.now();
+  tmpl.tasks.forEach((title, i) => {
+    todos.push({ id: (base + i).toString(), title, date: dateStr, recurrence: 'none', completed: false, completedDates: [] });
+  });
+  closeTemplateModal();
+}
 
 export function getSuggestedTasks() {
   const stored = localStorage.getItem(STORAGE_KEY);
@@ -36,81 +146,98 @@ export function saveSuggestedTasks(tasks) {
 export function openAdminModal() {
   const tasks = getSuggestedTasks();
   const html = `
-    <div class="admin-modal-inner">
-      <!-- Section 1: Tâches suggérées -->
-      <section id="section-taches" class="admin-page-section">
-        <h2 class="admin-section-title">Tâches suggérées</h2>
-        <div class="admin-form">
-          <div class="admin-section">
-            <h3>Tâches quotidiennes</h3>
-            <div id="dailyList" class="admin-list"></div>
-            <div class="admin-input-row">
-              <input type="text" id="dailyInput" placeholder="Ajouter une tâche quotidienne">
-              <button onclick="window.app.addSuggestedTask('daily')">Ajouter</button>
+    <div class="admin-layout">
+      <nav class="admin-sidenav">
+        <button class="admin-sidenav-link active" onclick="window.app.showAdminSection('taches')">📋 Tâches</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
+      </nav>
+      <div class="admin-content">
+
+        <section id="section-taches" class="admin-page-section">
+          <h2 class="admin-section-title">Tâches suggérées</h2>
+          <div class="admin-form">
+            <div class="admin-section">
+              <h3>Quotidiennes</h3>
+              <div id="dailyList" class="admin-list"></div>
+              <div class="admin-input-row">
+                <input type="text" id="dailyInput" placeholder="Ajouter une tâche quotidienne">
+                <button onclick="window.app.addSuggestedTask('daily')">Ajouter</button>
+              </div>
+            </div>
+            <div class="admin-section">
+              <h3>Hebdomadaires</h3>
+              <div id="weeklyList" class="admin-list"></div>
+              <div class="admin-input-row">
+                <input type="text" id="weeklyInput" placeholder="Ajouter une tâche hebdomadaire">
+                <button onclick="window.app.addSuggestedTask('weekly')">Ajouter</button>
+              </div>
+            </div>
+            <div class="admin-section">
+              <h3>Mensuelles</h3>
+              <div id="monthlyList" class="admin-list"></div>
+              <div class="admin-input-row">
+                <input type="text" id="monthlyInput" placeholder="Ajouter une tâche mensuelle">
+                <button onclick="window.app.addSuggestedTask('monthly')">Ajouter</button>
+              </div>
             </div>
           </div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <button class="btn btn-ghost" onclick="window.app.clearAllSuggestedTasks()" style="width:100%;">Vider tout</button>
+          </div>
+        </section>
 
-          <div class="admin-section">
-            <h3>Tâches hebdomadaires</h3>
-            <div id="weeklyList" class="admin-list"></div>
-            <div class="admin-input-row">
-              <input type="text" id="weeklyInput" placeholder="Ajouter une tâche hebdomadaire">
-              <button onclick="window.app.addSuggestedTask('weekly')">Ajouter</button>
+        <section id="section-modeles" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">Modèles de journée</h2>
+          <div id="templateAdminList"></div>
+        </section>
+
+        <section id="section-donnees" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">Données</h2>
+          <div class="admin-data-sections">
+            <div class="admin-section">
+              <h3>Export</h3>
+              <div class="admin-data-grid">
+                <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;">Export complet</button>
+                <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendrier seulement</button>
+                <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Paramètres seulement</button>
+              </div>
+            </div>
+            <div class="admin-section">
+              <h3>iCal</h3>
+              <div class="admin-data-grid">
+                <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;">Télécharger .ics</button>
+                <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copier le lien</button>
+              </div>
+            </div>
+            <div class="admin-section">
+              <h3>Import</h3>
+              <input type="file" id="importFileInput" accept=".json" style="display:none;">
+              <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier</button>
+            </div>
+            <div class="admin-section">
+              <h3>Réinitialiser</h3>
+              <button class="btn btn-ghost" onclick="window.app.clearAllCalendarData()" style="width:100%;color:var(--danger);border-color:var(--danger);">${state.T.clearAllData}</button>
             </div>
           </div>
+        </section>
 
-          <div class="admin-section">
-            <h3>Tâches mensuelles</h3>
-            <div id="monthlyList" class="admin-list"></div>
-            <div class="admin-input-row">
-              <input type="text" id="monthlyInput" placeholder="Ajouter une tâche mensuelle">
-              <button onclick="window.app.addSuggestedTask('monthly')">Ajouter</button>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; gap: 8px;">
-          <button class="btn btn-ghost" onclick="window.app.clearAllSuggestedTasks()" style="flex: 1;">Vider tout</button>
-        </div>
-      </section>
-
-      <!-- Section 2: Données -->
-      <section id="section-donnees" class="admin-page-section">
-        <h2 class="admin-section-title">Données</h2>
-
-        <div class="admin-section">
-          <h3>Export</h3>
-          <div class="admin-data-grid">
-            <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;">Export complet</button>
-            <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendrier seulement</button>
-            <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Paramètres seulement</button>
-          </div>
-        </div>
-
-        <div class="admin-section">
-          <h3>iCal</h3>
-          <div class="admin-data-grid">
-            <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;">Télécharger .ics</button>
-            <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copier le lien</button>
-          </div>
-        </div>
-
-        <div class="admin-section">
-          <h3>Import</h3>
-          <input type="file" id="importFileInput" accept=".json" style="display:none;">
-          <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier</button>
-        </div>
-
-        <div class="admin-section">
-          <h3>Réinitialiser</h3>
-          <button class="btn btn-ghost" onclick="window.app.clearAllCalendarData()" style="width:100%;color:var(--danger);border-color:var(--danger);">${state.T.clearAllData}</button>
-        </div>
-      </section>
+      </div>
     </div>
   `;
 
   document.getElementById('adminClouds').innerHTML = html;
   renderAdminLists(tasks);
+  renderAdminTemplates();
   document.getElementById('adminModalOverlay').classList.remove('hidden');
+}
+
+export function showAdminSection(id) {
+  document.querySelectorAll('.admin-content .admin-page-section').forEach(s => s.style.display = 'none');
+  document.getElementById('section-' + id).style.display = '';
+  document.querySelectorAll('.admin-sidenav-link').forEach(l => {
+    l.classList.toggle('active', l.getAttribute('onclick').includes(`'${id}'`));
+  });
 }
 
 export function renderAdminLists(tasks) {

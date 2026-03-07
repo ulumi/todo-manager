@@ -19,16 +19,19 @@ import {
 } from './modules/calendar.js';
 import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
+  toggleMonthDay, toggleMonthLastDay,
+  selectYearMonth, selectYearDay,
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
-  renderSidebar
+  renderSidebar, renderWeekSidebar, renderYearSidebar
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
-import { openAdminModal, closeAdminModal, adminScrollToSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData } from './modules/admin.js';
+import { VERSION } from './modules/version.js';
+import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate } from './modules/admin.js';
 
 // Initialize state
 state.initializeState();
@@ -58,6 +61,8 @@ class TodoApp {
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
     window.addEventListener('popstate', (e) => this._popHistory(e));
+    const vl = document.getElementById('versionLabel');
+    if (vl) vl.textContent = 'v' + VERSION;
     setupEventListeners(this);
     this._animateViewTabs();
     let _resizeTimer;
@@ -283,7 +288,11 @@ class TodoApp {
   }
 
   deleteTodo(id, dateStr) {
-    openDeleteModal(id, dateStr, state.todos);
+    const deleted = openDeleteModal(id, dateStr, state.todos);
+    if (deleted) {
+      saveTodos(state.todos);
+      this.render();
+    }
   }
 
   closeDeleteModal() {
@@ -357,6 +366,22 @@ class TodoApp {
 
   toggleWeekDay(i) {
     toggleWeekDay(i);
+  }
+
+  toggleMonthDay(d) {
+    toggleMonthDay(d);
+  }
+
+  toggleMonthLastDay() {
+    toggleMonthLastDay();
+  }
+
+  selectYearMonth(m) {
+    selectYearMonth(m);
+  }
+
+  selectYearDay(d) {
+    selectYearDay(d);
   }
 
   saveTask() {
@@ -522,6 +547,12 @@ class TodoApp {
       if (state.view === 'day') {
         sidebar.style.display = '';
         sidebar.innerHTML = renderSidebar(state.todos);
+      } else if (state.view === 'week') {
+        sidebar.style.display = '';
+        sidebar.innerHTML = renderWeekSidebar(state.todos);
+      } else if (state.view === 'year') {
+        sidebar.style.display = '';
+        sidebar.innerHTML = renderYearSidebar();
       } else {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -531,45 +562,67 @@ class TodoApp {
     this._animateQuickAddBtn();
   }
 
+  clearDay() {
+    const dateStr = DS(state.navDate);
+    const dayTodos = state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.date === dateStr);
+    if (dayTodos.length === 0) return;
+    if (!confirm(`Supprimer les ${dayTodos.length} tâche(s) de cette journée ?`)) return;
+    state.setTodos(state.todos.filter(t => !(!t.recurrence || t.recurrence === 'none') || t.date !== dateStr));
+    saveTodos(state.todos);
+    this.render();
+  }
+
   _animateQuickAddBtn() {
     const btn = document.getElementById('quickAddBtn');
     if (!btn || typeof gsap === 'undefined') return;
     const label = btn.querySelector('.qab-label');
+    const tBtn = document.getElementById('templateDayBtn');
+    const cBtn = document.getElementById('clearDayBtn');
 
     if (state.view === 'day') {
       const main = document.getElementById('mainContent');
       if (!main) return;
       const rect = main.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
+
+      // Anchor the group to the left of the content area.
+      // Layout (left→right): [Add Task pill] gap [Modèle] gap [Vider]
+      const tBtnW = tBtn ? tBtn.offsetWidth : 0;
+      const cBtnW = cBtn ? cBtn.offsetWidth : 0;
+      const anchorX = rect.left + 32 + 110;
+      const tBtnLeft = anchorX + 110 + 12 + tBtnW / 2;
+      const cBtnLeft = anchorX + 110 + 12 + tBtnW + 12 + cBtnW / 2;
 
       if (!this._quickAddInDayMode) {
         this._quickAddInDayMode = true;
-        // Snap to right-side equivalent; border-radius stays 28px throughout
         gsap.set(btn, { right: 'auto', left: window.innerWidth - 52, xPercent: -50 });
+        if (tBtn) gsap.set(tBtn, { xPercent: -50, left: tBtnLeft, opacity: 0 });
+        if (cBtn) gsap.set(cBtn, { xPercent: -50, left: cBtnLeft, opacity: 0 });
       }
 
-      // Step 1: move to center
-      gsap.to(btn, { left: centerX, bottom: 32, duration: 0.32, ease: 'expo.out', overwrite: 'auto' });
-
-      // Step 2: expand width to pill (border-radius unchanged at 28px — no deformation)
+      // Add button: move to anchor (left-aligned group), expand to pill
+      gsap.to(btn, { left: anchorX, bottom: 32, duration: 0.32, ease: 'expo.out', overwrite: 'auto' });
       gsap.to(btn, { width: 220, duration: 0.22, delay: 0.1, ease: 'expo.out', overwrite: false });
-
-      // Step 3: fade in label after pill is formed
       if (label) gsap.to(label, { width: 160, opacity: 1, duration: 0.18, delay: 0.22, ease: 'power2.out', overwrite: 'auto' });
       setTimeout(() => btn.classList.add('pill'), 320);
+
+      // Template button: slide in to the right of add button
+      if (tBtn) {
+        gsap.to(tBtn, { left: tBtnLeft, bottom: 32, opacity: 1, duration: 0.28, delay: 0.2, ease: 'expo.out', overwrite: 'auto' });
+        setTimeout(() => { if (tBtn) tBtn.style.pointerEvents = 'auto'; }, 480);
+      }
+      // Clear day button: slide in to the left of add button
+      if (cBtn) {
+        gsap.to(cBtn, { left: cBtnLeft, bottom: 32, opacity: 1, duration: 0.28, delay: 0.2, ease: 'expo.out', overwrite: 'auto' });
+        setTimeout(() => { if (cBtn) cBtn.style.pointerEvents = 'auto'; }, 480);
+      }
 
     } else {
       if (!this._quickAddInDayMode) return;
       this._quickAddInDayMode = false;
       btn.classList.remove('pill');
 
-      // Step 1: hide label
       if (label) gsap.to(label, { width: 0, opacity: 0, duration: 0.12, ease: 'power2.in', overwrite: 'auto' });
-
-      // Step 2: shrink width back to 56 (circle again — border-radius 28px on 56px = perfect circle)
       gsap.to(btn, { width: 56, duration: 0.15, delay: 0.08, ease: 'power2.in', overwrite: 'auto' });
-
-      // Step 3: move back to corner
       gsap.to(btn, {
         left: window.innerWidth - 52,
         bottom: 24,
@@ -579,6 +632,16 @@ class TodoApp {
         overwrite: false,
         onComplete: () => gsap.set(btn, { clearProps: 'left,bottom,xPercent,right,width' })
       });
+
+      // Hide satellite buttons
+      if (tBtn) {
+        tBtn.style.pointerEvents = 'none';
+        gsap.to(tBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
+      }
+      if (cBtn) {
+        cBtn.style.pointerEvents = 'none';
+        gsap.to(cBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
+      }
     }
   }
 
@@ -668,9 +731,24 @@ class TodoApp {
     this.render();
   }
 
-  adminScrollToSection(id) {
-    adminScrollToSection(id);
+  showAdminSection(id) {
+    showAdminSection(id);
   }
+
+  // ═══════════════════════════════════════════════════
+  // TEMPLATES
+  // ═══════════════════════════════════════════════════
+  openTemplateModal(dateStr) { openTemplateModal(dateStr || DS(state.navDate)); }
+  closeTemplateModal() { closeTemplateModal(); }
+  applyTemplate(templateId, dateStr) {
+    applyTemplate(templateId, dateStr, state.todos);
+    saveTodos(state.todos);
+    this.render();
+  }
+  addTemplate() { addTemplate(); }
+  removeTemplate(id) { removeTemplate(id); }
+  addTaskToTemplate(id) { addTaskToTemplate(id); }
+  removeTaskFromTemplate(id, idx) { removeTaskFromTemplate(id, idx); }
 
   // ═══════════════════════════════════════════════════
   // UTILITIES

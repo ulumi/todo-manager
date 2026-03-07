@@ -17,7 +17,12 @@ export function getTodosForDate(d, todos) {
     switch(t.recurrence) {
       case 'daily':   return true;
       case 'weekly':  return (t.recDays||[]).includes(dow);
-      case 'monthly': return t.recDay === dom;
+      case 'monthly': {
+        const daysInM = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+        if (t.recLastDay && dom === daysInM) return true;
+        if (t.recDays && t.recDays.length > 0) return t.recDays.includes(dom);
+        return t.recDay === dom; // backward compat
+      }
       case 'yearly':  return t.recMonth === mon && t.recDay === dom;
     }
     return false;

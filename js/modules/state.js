@@ -16,6 +16,10 @@ export let navDate = (() => {
 })();
 export let selectedRecurrence = 'none';
 export let selectedWeekDays = [];
+export let selectedMonthDays = [];
+export let selectedMonthLastDay = false;
+export let selectedYearMonth = 0;
+export let selectedYearDay = 1;
 export let quickAddTarget = 'today'; // 'today' | 'nav'
 export let editingId = null;
 export let pendingDelete = null;
@@ -44,6 +48,22 @@ export function setSelectedRecurrence(rec) {
 
 export function setSelectedWeekDays(days) {
   selectedWeekDays = days;
+}
+
+export function setSelectedMonthDays(days) {
+  selectedMonthDays = days;
+}
+
+export function setSelectedMonthLastDay(val) {
+  selectedMonthLastDay = val;
+}
+
+export function setSelectedYearMonth(m) {
+  selectedYearMonth = m;
+}
+
+export function setSelectedYearDay(d) {
+  selectedYearDay = d;
 }
 
 export function setQuickAddTarget(target) {

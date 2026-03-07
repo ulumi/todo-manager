@@ -13,18 +13,18 @@
 <header>
   <div class="header-top">
     <span class="app-title">✓ Todos</span>
-    <div class="view-tabs">
-      <button class="view-tab active" data-view="day" data-i18n="viewDay">Day</button>
-      <button class="view-tab" data-view="week" data-i18n="viewWeek">Week</button>
-      <button class="view-tab" data-view="month" data-i18n="viewMonth">Month</button>
-      <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
-    </div>
-    <div class="header-sep"></div>
     <div class="nav-group">
       <button class="nav-btn" id="prevBtn">‹</button>
       <button class="today-btn" id="todayBtn" data-i18n="today">Today</button>
       <button class="nav-btn" id="nextBtn">›</button>
       <span class="period-label" id="periodLabel"></span>
+    </div>
+    <div class="header-sep"></div>
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="day" data-i18n="viewDay">Day</button>
+      <button class="view-tab" data-view="week" data-i18n="viewWeek">Week</button>
+      <button class="view-tab" data-view="month" data-i18n="viewMonth">Month</button>
+      <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
     </div>
     <div class="header-sep"></div>
     <div class="zoom-group" title="Text size">
@@ -37,7 +37,7 @@
       <option value="fr">FR</option>
     </select>
     <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
-    <button class="nav-btn" onclick="window.app.openAdminModal()" style="font-size:16px;border:none;" title="Admin">⚙</button>
+    <button class="admin-btn" onclick="window.app.openAdminModal()">⚙ Admin</button>
     <button class="add-btn" id="openModalBtn" data-i18n="addTask" onclick="window.app.openModal();">＋ Add Task</button>
   </div>
 </header>
@@ -46,6 +46,16 @@
   <main id="mainContent"></main>
   <aside id="calSidebar"></aside>
 </div>
+
+<!-- Clear Day Float Button (day view only) -->
+<button id="clearDayBtn" class="clear-day-float-btn" onclick="window.app.clearDay()">
+  <span class="cdb-icon">⊘</span><span class="cdb-label">Vider la journée</span>
+</button>
+
+<!-- Template Float Button (day view only) -->
+<button id="templateDayBtn" class="template-day-float-btn" onclick="window.app.openTemplateModal()">
+  <span class="tdb-icon">☰</span><span class="tdb-label">Insérer un modèle...</span>
+</button>
 
 <!-- Quick Add Float Button (bottom right) -->
 <button id="quickAddBtn" class="quick-add-float-btn" onclick="window.app.openModal();" title="Add task">
@@ -130,6 +140,19 @@
     <div id="adminClouds"></div>
   </div>
 </div>
+
+<!-- Template Picker Modal -->
+<div class="modal-overlay hidden" id="templateModalOverlay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-title">Modèle de journée</div>
+    <div id="templatePickerList" style="margin-top:16px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="window.app.closeTemplateModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div id="versionLabel" style="position:fixed;bottom:10px;left:14px;font-size:11px;color:var(--text-muted);opacity:0.5;pointer-events:none;z-index:10;"></div>
 
 <script type="module" src="js/app.js"></script>
 </body>

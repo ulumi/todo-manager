@@ -66,6 +66,16 @@ export function setupEventListeners(app) {
     document.getElementById('modalClouds').innerHTML = app.getCloudsHTML(d);
   });
 
+  // Scroll to navigate between periods
+  let wheelCooldown = false;
+  document.getElementById('appWrapper').addEventListener('wheel', e => {
+    if (wheelCooldown) return;
+    e.preventDefault();
+    wheelCooldown = true;
+    setTimeout(() => { wheelCooldown = false; }, 600);
+    app.navigate(e.deltaY > 0 ? 1 : -1);
+  }, { passive: false });
+
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA') return;

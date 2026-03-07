@@ -2,7 +2,7 @@
 //  MODAL MANAGEMENT
 // ════════════════════════════════════════════════════════
 
-import { DS, today, parseDS, esc } from './utils.js';
+import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
 import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks } from './admin.js';
@@ -12,6 +12,10 @@ export function openModal(date, todos) {
   state.setEditingId(null);
   state.setSelectedRecurrence('none');
   state.setSelectedWeekDays([]);
+  state.setSelectedMonthDays([]);
+  state.setSelectedMonthLastDay(false);
+  state.setSelectedYearMonth(state.navDate.getMonth());
+  state.setSelectedYearDay(state.navDate.getDate());
   document.getElementById('modalTitleEl').textContent = state.T.newTask;
   document.getElementById('saveTask').textContent = state.T.btnAdd;
   document.getElementById('taskTitle').value = '';
@@ -20,8 +24,11 @@ export function openModal(date, todos) {
   document.getElementById('recDetail').innerHTML = '';
   document.getElementById('dateGroup').style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
-  document.getElementById('modalOverlay').classList.remove('hidden');
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
+  modalBox.classList.add('modal-two-columns');
+  document.querySelector('.modal-right').style.display = '';
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
     { scale: 0.92, y: 24, opacity: 0 },
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
@@ -35,7 +42,7 @@ export function closeModal() {
   const overlay = document.getElementById('modalOverlay');
   gsap.to(modalBox, {
     scale: 0.92, y: 16, opacity: 0, duration: 0.2, ease: 'power2.in',
-    onComplete: () => overlay.classList.add('hidden')
+    onComplete: () => { overlay.classList.add('hidden'); document.body.style.overflow = ''; }
   });
 }
 
@@ -70,29 +77,26 @@ export function openEditModal(id, dateStr, todos) {
     </div>`;
   } else if (state.selectedRecurrence === 'monthly') {
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-      <span style="font-size:13px;color:var(--text-muted);">${state.T.dayOfMonth}</span>
-      <select id="monthDay" class="form-input" style="width:80px;padding:6px 8px;">
-        ${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-      </select>
-    </div>`;
-    document.getElementById('monthDay').value = t.recDay || 1;
+    const days = t.recDays ? [...t.recDays] : (t.recDay ? [t.recDay] : [1]);
+    state.setSelectedMonthDays(days);
+    state.setSelectedMonthLastDay(t.recLastDay || false);
+    detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (state.selectedRecurrence === 'yearly') {
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
-      <span style="font-size:13px;color:var(--text-muted);">${state.T.every}:</span>
-      <select id="yearMonth" class="form-input" style="width:130px;padding:6px 8px;">
-        ${state.MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}
-      </select>
-      <select id="yearDay" class="form-input" style="width:80px;padding:6px 8px;">
-        ${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-      </select>
-    </div>`;
-    if (t.recMonth !== undefined) document.getElementById('yearMonth').value = t.recMonth;
-    if (t.recDay !== undefined) document.getElementById('yearDay').value = t.recDay;
+    state.setSelectedYearMonth(t.recMonth !== undefined ? t.recMonth : state.navDate.getMonth());
+    state.setSelectedYearDay(t.recDay !== undefined ? t.recDay : state.navDate.getDate());
+    detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
   }
 
+  const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
+  modalBox.classList.remove('modal-two-columns');
+  document.querySelector('.modal-right').style.display = 'none';
   document.getElementById('modalOverlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  gsap.fromTo(modalBox,
+    { scale: 0.92, y: 24, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+  );
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
@@ -117,27 +121,100 @@ export function selectRecurrence(rec) {
     </div>`;
   } else if (rec==='monthly') {
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
-      <span style="font-size:13px;color:var(--text-muted);">${state.T.dayOfMonth}</span>
-      <select id="monthDay" class="form-input" style="width:80px;padding:6px 8px;">
-        ${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-      </select>
-    </div>`;
-    document.getElementById('monthDay').value = state.navDate.getDate();
+    state.setSelectedMonthDays([state.navDate.getDate()]);
+    state.setSelectedMonthLastDay(false);
+    detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (rec==='yearly') {
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
-      <span style="font-size:13px;color:var(--text-muted);">${state.T.every}:</span>
-      <select id="yearMonth" class="form-input" style="width:130px;padding:6px 8px;">
-        ${state.MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}
-      </select>
-      <select id="yearDay" class="form-input" style="width:80px;padding:6px 8px;">
-        ${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
-      </select>
-    </div>`;
-    document.getElementById('yearMonth').value = state.navDate.getMonth();
-    document.getElementById('yearDay').value = state.navDate.getDate();
+    state.setSelectedYearMonth(state.navDate.getMonth());
+    state.setSelectedYearDay(state.navDate.getDate());
+    detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
   }
+}
+
+function monthCalendarHTML(selectedDays, lastDay) {
+  const y = state.navDate.getFullYear();
+  const m = state.navDate.getMonth();
+  const total = daysInMonth(y, m);
+  const firstDay = firstDayOfMonth(y, m); // 0=Sun
+  const offset = (firstDay + 6) % 7; // Monday-first: Mon=0
+  // Header: Mon→Sun reordered from DAYS [Sun,Mon,...,Sat]
+  const headerLabels = [1,2,3,4,5,6,0].map(i => `<span>${state.DAYS[i][0]}</span>`).join('');
+  const cells = [];
+  for (let i = 0; i < offset; i++) cells.push('<div class="month-day-cell empty"></div>');
+  for (let d = 1; d <= total; d++) {
+    const sel = selectedDays.includes(d) ? ' selected' : '';
+    cells.push(`<div class="month-day-cell${sel}" data-day="${d}" onclick="window.app.toggleMonthDay(${d})">${d}</div>`);
+  }
+  const lastSel = lastDay ? ' selected' : '';
+  const lastAbbr = state.T.lastDayAbbr || 'fin';
+  cells.push(`<div class="month-day-cell month-day-last${lastSel}" id="monthLastDayBtn" onclick="window.app.toggleMonthLastDay()" title="${state.T.lastDayOfMonth || 'Last day'}">${lastAbbr}</div>`);
+  return `<div class="month-cal-wrap">
+    <div class="month-cal-header">${headerLabels}</div>
+    <div class="month-cal-grid" id="monthDayGrid">${cells.join('')}</div>
+  </div>`;
+}
+
+function yearDayCells(selMonth, selDay) {
+  const y = state.navDate.getFullYear();
+  const total = daysInMonth(y, selMonth);
+  const offset = (firstDayOfMonth(y, selMonth) + 6) % 7;
+  const cells = [];
+  for (let i = 0; i < offset; i++) cells.push('<div class="month-day-cell empty"></div>');
+  for (let d = 1; d <= total; d++) {
+    const sel = d === selDay ? ' selected' : '';
+    cells.push(`<div class="month-day-cell${sel}" data-day="${d}" onclick="window.app.selectYearDay(${d})">${d}</div>`);
+  }
+  return cells.join('');
+}
+
+function yearCalendarHTML(selMonth, selDay) {
+  const monthCells = state.MONTHS.map((name, i) => {
+    const sel = i === selMonth ? ' selected' : '';
+    return `<div class="month-picker-cell${sel}" data-month="${i}" onclick="window.app.selectYearMonth(${i})">${name.slice(0,3)}</div>`;
+  }).join('');
+  const headerLabels = [1,2,3,4,5,6,0].map(i => `<span>${state.DAYS[i][0]}</span>`).join('');
+  return `<div class="year-cal-wrap">
+    <div class="month-picker-grid" id="yearMonthGrid">${monthCells}</div>
+    <div class="month-cal-header" style="margin-top:10px;">${headerLabels}</div>
+    <div class="month-cal-grid" id="yearDayGrid">${yearDayCells(selMonth, selDay)}</div>
+  </div>`;
+}
+
+export function selectYearMonth(m) {
+  const y = state.navDate.getFullYear();
+  const maxDay = daysInMonth(y, m);
+  state.setSelectedYearMonth(m);
+  if (state.selectedYearDay > maxDay) state.setSelectedYearDay(maxDay);
+  document.querySelectorAll('#yearMonthGrid .month-picker-cell').forEach(el => {
+    el.classList.toggle('selected', +el.dataset.month === m);
+  });
+  const gridEl = document.getElementById('yearDayGrid');
+  if (gridEl) gridEl.innerHTML = yearDayCells(m, state.selectedYearDay);
+}
+
+export function selectYearDay(d) {
+  state.setSelectedYearDay(d);
+  document.querySelectorAll('#yearDayGrid .month-day-cell[data-day]').forEach(el => {
+    el.classList.toggle('selected', +el.dataset.day === d);
+  });
+}
+
+export function toggleMonthDay(d) {
+  if (state.selectedMonthDays.includes(d)) {
+    state.setSelectedMonthDays(state.selectedMonthDays.filter(x => x !== d));
+  } else {
+    state.setSelectedMonthDays([...state.selectedMonthDays, d]);
+  }
+  document.querySelectorAll('#monthDayGrid .month-day-cell[data-day]').forEach(el => {
+    el.classList.toggle('selected', state.selectedMonthDays.includes(+el.dataset.day));
+  });
+}
+
+export function toggleMonthLastDay() {
+  state.setSelectedMonthLastDay(!state.selectedMonthLastDay);
+  const btn = document.getElementById('monthLastDayBtn');
+  if (btn) btn.classList.toggle('selected', state.selectedMonthLastDay);
 }
 
 export function toggleWeekDay(i) {
@@ -167,10 +244,15 @@ export function saveTaskLogic(todos) {
     if (state.selectedWeekDays.length===0) { alert(state.T.selectWeekdayError); return true; }
     data.recDays = [...state.selectedWeekDays];
   } else if (state.selectedRecurrence==='monthly') {
-    data.recDay = parseInt(document.getElementById('monthDay').value);
+    if (!state.selectedMonthLastDay && state.selectedMonthDays.length === 0) {
+      alert(state.T.selectMonthDayError || 'Please select at least one day.');
+      return true;
+    }
+    data.recDays = [...state.selectedMonthDays];
+    if (state.selectedMonthLastDay) data.recLastDay = true;
   } else if (state.selectedRecurrence==='yearly') {
-    data.recMonth = parseInt(document.getElementById('yearMonth').value);
-    data.recDay   = parseInt(document.getElementById('yearDay').value);
+    data.recMonth = state.selectedYearMonth;
+    data.recDay   = state.selectedYearDay;
   }
 
   if (state.editingId) {
@@ -178,11 +260,12 @@ export function saveTaskLogic(todos) {
     if (t) {
       t.title = data.title;
       t.recurrence = data.recurrence;
-      delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth;
+      delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
       if (data.date !== undefined) t.date = data.date;
       if (data.recDays !== undefined) t.recDays = data.recDays;
       if (data.recDay !== undefined) t.recDay = data.recDay;
       if (data.recMonth !== undefined) t.recMonth = data.recMonth;
+      if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
     }
   } else {
@@ -235,13 +318,6 @@ export function cloudsHTML(date, todos) {
       ${suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join('')}
     </div>
   </div>`;
-  html += `<div class="clouds-section">
-    <span class="cloud-label">${state.T.templates || 'Templates'}</span>
-    <div class="cloud-chips">
-      <div class="chip" onclick="window.app.openModalWithTitle('Semaine')">Semaine</div>
-      <div class="chip" onclick="window.app.openModalWithTitle('Fin de Semaine')">Fin de Semaine</div>
-    </div>
-  </div>`;
   return html;
 }
 
@@ -257,9 +333,9 @@ export function openDeleteModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
   if (!t.recurrence || t.recurrence === 'none') {
-    if (!confirm(state.T.confirmDeleteTask)) return;
+    if (!confirm(state.T.confirmDeleteTask)) return false;
     state.setTodos(state.todos.filter(x => x.id !== id));
-    return;
+    return true;
   }
   state.setPendingDelete({ id, date: parseDS(dateStr) });
   document.getElementById('deleteTaskName').textContent = t.title;

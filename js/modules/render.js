@@ -6,9 +6,9 @@ import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './u
 import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
 
-export function todoItemHTML(todo, date, reorder = null) {
+export function todoItemHTML(todo, date, reorder = null, dayView = false) {
   const done = isCompleted(todo, date);
-  const rec = recLabel(todo);
+  const rec = recLabel(todo, dayView);
   const isRec = todo.recurrence && todo.recurrence !== 'none';
   const ds = DS(date);
   const reorderHTML = reorder ? `
@@ -27,15 +27,32 @@ export function todoItemHTML(todo, date, reorder = null) {
     </div>`;
 }
 
-function recLabel(t) {
+function recLabel(t, dayView = false) {
   if (!t.recurrence || t.recurrence==='none') return '';
-  if (t.recurrence==='daily') return `↻ ${state.T.recDaily}`;
+  if (t.recurrence==='daily') return dayView ? '' : `↻ ${state.T.recDaily}`;
   if (t.recurrence==='weekly') {
-    const names = (t.recDays||[]).map(i=>state.DAYS[i]).join(', ');
+    const dayNames = t.recDays || [];
+    const names = dayView
+      ? dayNames.map(i => state.DAY_FULL[i]).join(', ')
+      : dayNames.map(i => state.DAYS[i]).join(', ');
     return `↻ ${names}`;
   }
-  if (t.recurrence==='monthly') return `↻ ${state.T.recMonthly}`;
-  if (t.recurrence==='yearly')  return `↻ ${state.T.recYearly}`;
+  if (t.recurrence==='monthly') {
+    if (dayView) {
+      const parts = [];
+      if (t.recDays && t.recDays.length > 0) parts.push(...t.recDays);
+      else if (t.recDay) parts.push(t.recDay);
+      if (t.recLastDay) parts.push(state.T.lastDayAbbr || 'fin');
+      return parts.length ? `↻ ${parts.join(', ')}` : `↻ ${state.T.recMonthly}`;
+    }
+    return `↻ ${state.T.recMonthly}`;
+  }
+  if (t.recurrence==='yearly') {
+    if (dayView && t.recDay != null && t.recMonth != null) {
+      return `↻ ${t.recDay} ${state.MONTHS[t.recMonth]}`;
+    }
+    return `↻ ${state.T.recYearly}`;
+  }
   return '';
 }
 
@@ -60,45 +77,37 @@ export function renderDayView(todos) {
       <button class="day-nav-btn" onclick="window.app.navigate(1)" title="${state.DAY_FULL[nextDate.getDay()]}">→</button>
     </div>`;
 
-  const dailyItems = allItems.filter(t => t.recurrence === 'daily');
-  const otherItems = allItems.filter(t => t.recurrence !== 'daily');
+  const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
+  const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
+  const monthlyItems = allItems.filter(t => t.recurrence === 'monthly');
+  const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
+  const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
 
-  // Sort non-daily by stored dayOrder
+  // Sort punctual by stored dayOrder
   const order = window.app?.dayOrder?.[dateStr] || [];
-  const sortedOther = [...otherItems].sort((a, b) => {
+  const sortedPunctual = [...punctualItems].sort((a, b) => {
     const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
     if (ia < 0 && ib < 0) return 0;
     if (ia < 0) return 1; if (ib < 0) return -1;
     return ia - ib;
   });
 
-  if (allItems.length === 0) {
-    return `<div class="day-view">${header}
-      <div class="todo-list">
-        <div style="padding:32px 24px;background:var(--surface);border-radius:12px;border:1.5px solid var(--border);text-align:center;">
-          <p style="margin:0;font-size:16px;font-weight:600;color:var(--text);">${state.T.emptyDay}</p>
-        </div>
-      </div>
-    </div>`;
-  }
+  let leftCol = '';
+  if (dailyItems.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list">${dailyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
+  if (weeklyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list">${weeklyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
+  if (monthlyItems.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list">${monthlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
+  if (yearlyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list">${yearlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
+  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyDay}</div>`;
 
-  const hasBoth = dailyItems.length > 0 && otherItems.length > 0;
-  let list = `<div class="todo-list">`;
+  let rightItems = '';
+  sortedPunctual.forEach((t, i) => {
+    rightItems += todoItemHTML(t, navDate, { isFirst: i === 0, isLast: i === sortedPunctual.length - 1 });
+  });
+  const rightCol = rightItems
+    ? `<div class="day-group-label">${state.T.groupOnce}</div><div class="todo-list">${rightItems}</div>`
+    : `<div class="day-col-empty">${state.T.emptyDay}</div>`;
 
-  if (sortedOther.length > 0) {
-    if (hasBoth) list += `<div class="day-group-label">${state.T.groupOnce}</div>`;
-    sortedOther.forEach((t, i) => {
-      list += todoItemHTML(t, navDate, { isFirst: i === 0, isLast: i === sortedOther.length - 1 });
-    });
-  }
-
-  if (dailyItems.length > 0) {
-    list += `<div class="day-group-label" style="margin-top:20px;">${state.T.recDaily}</div>`;
-    list += dailyItems.map(t => todoItemHTML(t, navDate)).join('');
-  }
-
-  list += '</div>';
-  return `<div class="day-view">${header}${list}</div>`;
+  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${leftCol}</div><div class="day-col day-col--punctual">${rightCol}</div></div></div>`;
 }
 
 export function renderWeekView(todos) {
@@ -113,9 +122,10 @@ export function renderWeekView(todos) {
     const startStr = state.MONTHS[weekStart.getMonth()] + ' ' + weekStart.getDate();
     const endStr = state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getDate();
 
-    html += `<div class="week-container" style="--week-delay: ${weekOffset * 80}ms;">
+    const featured = weekOffset === 0;
+    html += `<div class="week-container${featured?' week-container--featured':''}" style="--week-delay: ${weekOffset * 80}ms;">
       <div class="week-title">${state.T.week} ${weekNum} — ${startStr} to ${endStr}</div>
-      <div class="week-grid">`;
+      <div class="week-grid${featured?' week-grid--featured':''}">`;
 
     // 7 days of the week
     for (let i = 0; i < 7; i++) {
@@ -123,7 +133,7 @@ export function renderWeekView(todos) {
       const isT = DS(d) === todayStr;
       const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
       const ds = DS(d);
-      html += `<div class="week-day-col${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+      html += `<div class="week-day-col${featured?' week-day-col--featured':''}${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
         <div class="week-day-header">
           <div class="week-day-name">${state.DAYS[d.getDay()]}</div>
           <div class="week-day-num">${d.getDate()}</div>
@@ -162,35 +172,64 @@ export function renderMonthView(todos) {
   const firstDay = firstDayOfMonth(y,m);
   const days = daysInMonth(y,m);
   const todayDS = DS(new Date());
-  let html = `<div class="month-view">
-    <div class="month-header-bar">
-      <button class="month-nav-btn" onclick="window.app.navigate(-1)">←</button>
-      <div class="month-header-title">${state.MONTHS[m]} ${y}</div>
-      <button class="month-nav-btn" onclick="window.app.navigate(1)">→</button>
-    </div>
-    <div class="month-grid-header">${state.DAYS.map(d=>`<div class="month-dow">${d}</div>`).join('')}</div>
+
+  let grid = `<div class="month-grid-header">${state.DAYS.map(d=>`<div class="month-dow">${d}</div>`).join('')}</div>
     <div class="month-grid">`;
 
   // Prev month filler
   const prevDays = daysInMonth(y, m-1);
   for (let i=0; i<firstDay; i++) {
     const d2 = new Date(y, m-1, prevDays-firstDay+i+1);
-    html += monthCell(d2, true, todayDS, todos);
+    grid += monthCell(d2, true, todayDS, todos);
   }
   // Current month
   for (let d=1; d<=days; d++) {
     const date = new Date(y, m, d);
-    html += monthCell(date, false, todayDS, todos);
+    grid += monthCell(date, false, todayDS, todos);
   }
   // Next month filler
   const total = firstDay + days;
   const nextCells = total%7 === 0 ? 0 : 7 - (total%7);
   for (let i=1; i<=nextCells; i++) {
     const d2 = new Date(y, m+1, i);
-    html += monthCell(d2, true, todayDS, todos);
+    grid += monthCell(d2, true, todayDS, todos);
   }
-  html += '</div></div>';
-  return html;
+  grid += '</div>';
+
+  return `<div class="month-view">
+    <div class="month-main">
+      <div class="month-header-bar">
+        <button class="month-nav-btn" onclick="window.app.navigate(-1)">←</button>
+        <div class="month-header-title">${state.MONTHS[m]} ${y}</div>
+        <button class="month-nav-btn" onclick="window.app.navigate(1)">→</button>
+      </div>
+      ${grid}
+    </div>
+    <div class="month-year-panel">
+      ${monthMiniCal(y, m - 1, todayDS)}
+      ${monthMiniCal(y, m, todayDS)}
+      ${monthMiniCal(y, m + 1, todayDS)}
+    </div>
+  </div>`;
+}
+
+function monthMiniCal(y, m, todayDS) {
+  // Handle month overflow (e.g. m = -1 or m = 12)
+  const d0 = new Date(y, m, 1);
+  const ry = d0.getFullYear(), rm = d0.getMonth();
+  const days = daysInMonth(ry, rm);
+  const firstDay = firstDayOfMonth(ry, rm);
+  let cells = state.DAYS.map(d => `<div class="mym-dow">${d[0]}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) cells += '<div class="mym-day other"></div>';
+  for (let d = 1; d <= days; d++) {
+    const ds = DS(new Date(ry, rm, d));
+    const isT = ds === todayDS;
+    cells += `<div class="mym-day${isT ? ' today' : ''}">${d}</div>`;
+  }
+  return `<div class="month-year-mini" onclick="window.app.setNavDateAndView(new Date(${ry},${rm},1),'month')">
+    <div class="mym-label">${state.MONTHS[rm]} ${ry}</div>
+    <div class="mym-grid">${cells}</div>
+  </div>`;
 }
 
 function monthCell(date, otherMonth, todayDS, todos) {
@@ -279,6 +318,71 @@ export function renderSidebar(todos) {
     const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() - 1 + i, 1);
     html += renderSideMonth(monthDate, todayDate, navDate, todos);
   }
+  return html;
+}
+
+export function renderWeekSidebar(todos) {
+  const MONTH_H = 185;
+  const headerH = document.querySelector('header')?.offsetHeight ?? 65;
+  const availH = window.innerHeight - headerH - 48;
+  const maxMonths = Math.max(1, Math.floor(availH / MONTH_H));
+
+  const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+  const navDate = state.navDate;
+  const weekStart = startOfWeek(navDate);
+  const weekEndDS = DS(addDays(weekStart, 6));
+  const weekStartDS = DS(weekStart);
+
+  let html = '';
+  for (let i = 0; i < maxMonths; i++) {
+    const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() - 1 + i, 1);
+    html += renderSideMonthWeek(monthDate, todayDate, weekStartDS, weekEndDS, todos);
+  }
+  return html;
+}
+
+function renderSideMonthWeek(monthDate, todayDate, weekStartDS, weekEndDS, todos) {
+  const y = monthDate.getFullYear();
+  const m = monthDate.getMonth();
+  const days = daysInMonth(y, m);
+  const firstDay = firstDayOfMonth(y, m);
+  const todayDS = DS(todayDate);
+
+  let html = `<div class="cal-sid-month">
+    <div class="cal-sid-month-title" onclick="window.app.setNavDateAndView(new Date(${y},${m},1),'month')">${state.MONTHS[m]} ${y}</div>
+    <div class="cal-sid-grid">`;
+
+  html += state.DAYS.map(d => `<div class="cal-sid-dow">${d[0]}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-sid-day other-month"></div>';
+
+  for (let d = 1; d <= days; d++) {
+    const date = new Date(y, m, d);
+    const ds = DS(date);
+    const isToday = ds === todayDS;
+    const inWeek = ds >= weekStartDS && ds <= weekEndDS;
+    const hasTodos = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily').length > 0;
+    let cls = 'cal-sid-day';
+    if (isToday) cls += ' today';
+    if (inWeek) cls += ' nav-date';
+    if (hasTodos) cls += ' has-todos';
+    html += `<div class="${cls}" onclick="window.app.setNavDateAndView('${ds}','day')">${d}</div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+export function renderYearSidebar() {
+  const y = state.navDate.getFullYear();
+  const todayY = new Date().getFullYear();
+  let html = '<div class="year-sid-list">';
+  for (let yr = y - 4; yr <= y + 4; yr++) {
+    const isNav = yr === y;
+    const isCurrent = yr === todayY;
+    html += `<div class="year-sid-item${isNav ? ' nav-year' : ''}${isCurrent ? ' today-year' : ''}"
+      onclick="window.app.setNavDateAndView(new Date(${yr},0,1),'year')">${yr}</div>`;
+  }
+  html += '</div>';
   return html;
 }
 

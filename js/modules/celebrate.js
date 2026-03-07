@@ -18,7 +18,7 @@ const QUOTES_FR = [
   "LÉGENDAIRE! 🏆", "TROP FACILE! 😎", "C'EST TOI LE BOSS! 👑",
   "EN PLEINE FORME! 🚀", "CHAMPION(NE)! 🐐", "RIEN NE T'ARRÊTE! ✨",
   "LA TÂCHE N'A RIEN VU VENIR!", "MODE BÊTE DE TRAVAIL ACTIVÉ! 🦁",
-  "PDG DE LA PRODUCTIVITÉ! 💼", "TOUCHE PAS À MES OBJECTIFS! 🎯",
+  "PDG DE LA PRODUCTIVITÉ! 💼", "T'ES CAPABLE, ON LÂCHE PAS! 💪",
   "CONSTRUIT(E) DIFFÉREMMENT! 💪", "LA ROUTINE? MAÎTRISÉE!",
   "TÂCHE? QUELLE TÂCHE? 😤", "L'EFFICACITÉ INCARNÉE! ⚙️",
 ];
@@ -137,9 +137,9 @@ function buildStats(lang) {
     `HR wants to study you as a productivity specimen.`,
   ];
   const absurd_fr = [
+    `Man, y'en font plus de comme toi.`,
     `Plus rapide que ta connexion wifi. 📶`,
     `Molière écrivait moins vite que ça.`,
-    `À ce rythme, Rome aurait été construite en un jour.`,
     `Ta liste de tâches te fait peur.`,
     `Les RH veulent t'étudier comme phénomène.`,
   ];
@@ -206,19 +206,26 @@ function buildScene(quote, stats, mascot) {
     rotation: 18, scale: 0.4,
   });
 
-  // Quote (center — starts transparent + enormous, dezoom in)
+  // Quote (center — words stagger in from small scale)
   const quoteEl = el('div', `
     position:absolute;top:64%;left:50%;
     font-size:clamp(28px,5.5vw,62px);font-weight:900;
     color:#fff;text-align:center;
     max-width:88vw;line-height:1.15;
-    z-index:9997;letter-spacing:0.04em;opacity:0;
+    z-index:9997;letter-spacing:0.04em;
     text-shadow:0 0 80px rgba(255,180,255,0.95),0 3px 28px rgba(0,0,0,0.9);
     font-family:system-ui,sans-serif;
   `);
-  quoteEl.textContent = quote;
+  const wordSpans = quote.split(' ').map((word, i, arr) => {
+    const s = document.createElement('span');
+    s.textContent = i < arr.length - 1 ? word + '\u00a0' : word;
+    s.style.cssText = 'display:inline-block;white-space:nowrap;';
+    quoteEl.appendChild(s);
+    return s;
+  });
   ov.appendChild(quoteEl);
   gsap.set(quoteEl, { xPercent: -50, yPercent: -50 });
+  gsap.set(wordSpans, { opacity: 0, scale: 0.55, y: 10 });
 
   // Stats (below quote)
   const statsEl = stats ? el('div', `
@@ -254,10 +261,9 @@ function buildScene(quote, stats, mascot) {
   // Particle burst
   tl.call(() => burstParticles(ov, '38%'), [], '-=0.4');
 
-  // ── Quote: enormous → normal (dezoom in) ──────────────
-  tl.fromTo(quoteEl,
-    { opacity: 0, scale: 7 },
-    { opacity: 1, scale: 1, duration: 0.75, ease: 'elastic.out(1.1, 0.55)' },
+  // ── Quote: words stagger in from small scale ──────────
+  tl.to(wordSpans,
+    { opacity: 1, scale: 1, y: 0, duration: 0.38, ease: 'back.out(2.2)', stagger: 0.06 },
     '-=0.2'
   );
 
@@ -273,6 +279,9 @@ function buildScene(quote, stats, mascot) {
   // Unicorn happy dance — longer, more bounces
   tl.to(unicornWrap, { y: -28, duration: 0.22, ease: 'power2.out', yoyo: true, repeat: 9 }, '-=0.6');
 
+  // Auto-dismiss after quote has been readable
+  tl.call(() => dismiss(), [], '+=1.2');
+
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;
   const dismiss = () => {
@@ -282,10 +291,12 @@ function buildScene(quote, stats, mascot) {
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('keydown',   onKeyDown);
 
-    gsap.to(quoteEl, { opacity: 0, scale: 5, duration: 0.28, ease: 'power3.in' });
-    if (statsEl) gsap.to(statsEl, { opacity: 0, y: -10, duration: 0.18, ease: 'power2.in' });
-    gsap.to(unicornWrap, { x: -window.innerWidth * 0.8, rotation: -20, scale: 0.3, opacity: 0, duration: 0.3, ease: 'power3.in' });
-    gsap.to(ov, { opacity: 0, duration: 0.32, delay: 0.12, ease: 'power2.in', onComplete: () => ov.remove() });
+    gsap.to(quoteEl, { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
+    if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
+    gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
+    // Fill to solid black first, then fade the overlay out — avoids page content bleeding through
+    gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
+    gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
   };
 
   // Dismiss on mousemove or keydown — but only after minimum 2s
