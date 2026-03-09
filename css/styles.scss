@@ -1177,7 +1177,7 @@ main {
 
 .month-todo-dot {
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 4px;
   background: var(--primary-light);
   color: var(--primary);
@@ -1188,7 +1188,7 @@ main {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 4px;
+  gap: 2px;
 
   &.done      { background: #f0fdf4; color: #16a34a; text-decoration: line-through; opacity: .7; }
   &.recurring { background: #f5f3ff; color: #7c3aed; }
@@ -1227,13 +1227,13 @@ main {
 }
 
 .month-todo-delete {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1248,13 +1248,13 @@ main {
 }
 
 .month-todo-edit {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
