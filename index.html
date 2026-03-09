@@ -12,7 +12,10 @@
 
 <header>
   <div class="header-top">
-    <span class="app-title">✓ Todos</span>
+    <span class="app-title">
+      <svg class="logo-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="26" height="26" rx="7" fill="var(--primary)"/><path d="M7 13.5L11 17.5L19 9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="logo-text">Todos</span>
+    </span>
     <div class="nav-group">
       <button class="nav-btn" id="prevBtn">‹</button>
       <button class="today-btn" id="todayBtn" data-i18n="today">Today</button>
@@ -25,6 +28,7 @@
       <button class="view-tab" data-view="week" data-i18n="viewWeek">Week</button>
       <button class="view-tab" data-view="month" data-i18n="viewMonth">Month</button>
       <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
+      <button class="view-tab" data-view="projects" data-i18n="viewProjects">Projects</button>
     </div>
     <div class="header-sep"></div>
     <div class="zoom-group" title="Text size">
@@ -37,7 +41,13 @@
       <option value="fr">FR</option>
     </select>
     <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
-    <button class="admin-btn" onclick="window.app.openAdminModal()">⚙ Admin</button>
+    <div class="hamburger-wrap">
+      <button class="hamburger-btn" id="hamburgerBtn" onclick="window.app.toggleHamburger()" aria-label="Menu">
+        <span class="hbg-bar"></span>
+        <span class="hbg-bar"></span>
+        <span class="hbg-bar"></span>
+      </button>
+    </div>
     <button class="add-btn" id="openModalBtn" data-i18n="addTask" onclick="window.app.openModal();">＋ Add Task</button>
   </div>
 </header>
@@ -101,6 +111,16 @@
         <input class="form-input" id="taskTitle" placeholder="What needs to be done?" maxlength="200">
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Priorité</label>
+        <div class="priority-options">
+          <div class="priority-option active" data-priority="">Aucune</div>
+          <div class="priority-option priority-low" data-priority="low">▾ Basse</div>
+          <div class="priority-option priority-medium" data-priority="medium">▸ Moy.</div>
+          <div class="priority-option priority-high" data-priority="high">▲ Haute</div>
+        </div>
+      </div>
+
       <div class="form-group" id="dateGroup">
         <label class="form-label" data-i18n="date">Date</label>
         <input class="form-input" type="date" id="taskDate">
@@ -131,8 +151,15 @@
       </div>
     </div>
 
-    <div class="modal-right">
-      <div id="modalClouds"></div>
+    <button class="modal-col-toggle" id="modalColToggle" onclick="window.app.toggleModalRight()" title="Suggestions">
+      <svg viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="2 2 8 8 2 14"/>
+      </svg>
+    </button>
+    <div class="modal-right" id="modalRight">
+      <div class="modal-right-inner" id="modalRightInner">
+        <div id="modalClouds"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -159,7 +186,43 @@
   </div>
 </div>
 
-<div id="versionLabel" style="position:fixed;bottom:10px;left:14px;font-size:11px;color:var(--text-muted);opacity:0.5;pointer-events:none;z-index:10;"></div>
+<!-- Project View Panel -->
+<div id="projectPanelOverlay" class="project-panel-overlay hidden" onclick="window.app.closeProjectView()"></div>
+<div id="projectPanel" class="project-panel hidden"></div>
+
+<!-- Hamburger Menu -->
+<div id="hamburgerOverlay" class="hamburger-overlay hidden" onclick="window.app.closeHamburger()"></div>
+<div id="hamburgerMenu" class="hamburger-menu">
+  <div class="hm-header">
+    <span class="hm-title">Menu</span>
+    <button class="hm-close-btn" onclick="window.app.closeHamburger()" aria-label="Fermer">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="hm-body">
+    <div class="hm-section-label">Navigation</div>
+    <button class="hm-item" onclick="window.app.hmGoToProjects()">
+      <span class="hm-icon">📁</span> Projets
+    </button>
+
+    <div class="hm-divider"></div>
+    <div class="hm-section-label">Administration</div>
+    <button class="hm-item" onclick="window.app.hmOpenAdmin('taches')">
+      <span class="hm-icon">📋</span> Tâches suggérées
+    </button>
+    <button class="hm-item" onclick="window.app.hmOpenAdmin('modeles')">
+      <span class="hm-icon">🗂</span> Modèles
+    </button>
+    <button class="hm-item" onclick="window.app.hmOpenAdmin('donnees')">
+      <span class="hm-icon">💾</span> Données
+    </button>
+  </div>
+</div>
+
+<div id="versionLabel" style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text-muted);opacity:0.5;pointer-events:none;z-index:10;padding:4px 0;"></div>
 
 <script type="module" src="js/app.js"></script>
 </body>

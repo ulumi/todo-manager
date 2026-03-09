@@ -21,6 +21,7 @@ export let selectedMonthLastDay = false;
 export let selectedYearMonth = 0;
 export let selectedYearDay = 1;
 export let quickAddTarget = 'today'; // 'today' | 'nav'
+export let selectedPriority = '';
 export let editingId = null;
 export let pendingDelete = null;
 export let _sugg = []; // safe ref for inline onclick
@@ -68,6 +69,10 @@ export function setSelectedYearDay(d) {
 
 export function setQuickAddTarget(target) {
   quickAddTarget = target;
+}
+
+export function setSelectedPriority(p) {
+  selectedPriority = p;
 }
 
 export function setEditingId(id) {

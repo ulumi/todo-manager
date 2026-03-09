@@ -21,17 +21,24 @@ import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
   toggleMonthDay, toggleMonthLastDay,
   selectYearMonth, selectYearDay,
-  saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal
+  saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
+  toggleCloudSection, toggleModalRight, selectPriority
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
+  renderProjectsView,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
-import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addProject, removeProject, getProjects } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addProject, removeProject, getProjects, saveProjects } from './modules/admin.js';
+import {
+  openProjectView, closeProjectView, renderProjectPanel,
+  getCurrentProjectId, getProjectTaskOrder, saveProjectTaskOrder
+} from './modules/projectView.js';
+import { snapshot, undo, canUndo } from './modules/undo.js';
 
 // Initialize state
 state.initializeState();
@@ -54,7 +61,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'projects'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -149,6 +156,14 @@ class TodoApp {
     if (state.view==='week')  d.setDate(d.getDate()+delta*7);
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
+    state.setNavDate(d);
+    this._pushHistory();
+    await this._animateViewChange(delta);
+  }
+
+  async navigateMonth(delta) {
+    const d = new Date(state.navDate);
+    d.setMonth(d.getMonth() + delta);
     state.setNavDate(d);
     this._pushHistory();
     await this._animateViewChange(delta);
@@ -270,12 +285,19 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // TODOS
   // ═══════════════════════════════════════════════════
+  _refreshProjectPanel() {
+    const projId = getCurrentProjectId();
+    if (projId) renderProjectPanel(projId);
+  }
+
   toggleTodo(id, d) {
     const wasCompleted = isCompleted(state.todos.find(x => x.id === id), d);
+    snapshot(state.todos);
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
     if (!wasCompleted) celebrate(state.lang);
     this.render();
+    this._refreshProjectPanel();
     // Animate checkbox bounce
     setTimeout(() => {
       const check = document.querySelector(`[data-id="${id}"] .todo-check`);
@@ -292,6 +314,7 @@ class TodoApp {
     if (!t) return;
     if (!t.recurrence || t.recurrence === 'none') {
       this._animateDeleteAndRefresh(id, () => {
+        snapshot(state.todos);
         state.setTodos(state.todos.filter(x => x.id !== id));
         saveTodos(state.todos);
       });
@@ -307,6 +330,7 @@ class TodoApp {
   deleteOneOccurrence() {
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
+      snapshot(state.todos);
       deleteOneOccurrence(id, state.pendingDelete.date, state.todos);
       closeDeleteModal();
       saveTodos(state.todos);
@@ -316,6 +340,7 @@ class TodoApp {
   deleteFutureOccurrences() {
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
+      snapshot(state.todos);
       const newTodos = deleteFutureOccurrences(id, state.pendingDelete.date, state.todos);
       state.setTodos(newTodos);
       closeDeleteModal();
@@ -326,6 +351,7 @@ class TodoApp {
   deleteAllOccurrences() {
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
+      snapshot(state.todos);
       state.setTodos(state.todos.filter(x => x.id !== id));
       closeDeleteModal();
       saveTodos(state.todos);
@@ -341,11 +367,13 @@ class TodoApp {
         onComplete: () => {
           callback();
           this.render();
+          this._refreshProjectPanel();
         }
       });
     } else {
       callback();
       this.render();
+      this._refreshProjectPanel();
     }
   }
 
@@ -388,12 +416,23 @@ class TodoApp {
     selectYearDay(d);
   }
 
+  toggleCloudSection(headerEl) {
+    toggleCloudSection(headerEl);
+  }
+
+  toggleModalRight() {
+    toggleModalRight();
+  }
+
   saveTask() {
+    const before = JSON.parse(JSON.stringify(state.todos));
     const hadError = saveTaskLogic(state.todos);
     if (!hadError) {
+      snapshot(before);
       saveTodos(state.todos);
       closeModal();
       this.render();
+      this._refreshProjectPanel();
     }
   }
 
@@ -508,11 +547,35 @@ class TodoApp {
     });
   }
 
+  undoAction() {
+    const prev = undo();
+    if (!prev) return;
+    state.setTodos(prev);
+    saveTodos(prev);
+    this.render();
+    this._showUndoToast();
+  }
+
+  _showUndoToast() {
+    let toast = document.getElementById('undoToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'undoToast';
+      toast.className = 'undo-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = '↩ Annulé';
+    toast.classList.remove('undo-toast--visible');
+    void toast.offsetWidth;
+    toast.classList.add('undo-toast--visible');
+  }
+
   async handleImportFile(e) {
     const file = e.target.files[0];
     if (!file) return;
     try {
       const data = await importData(file);
+      snapshot(state.todos);
       if (data.calendar) state.setTodos(data.calendar);
       if (data.config) {
         if (data.config.theme) localStorage.setItem('theme', data.config.theme);
@@ -537,23 +600,23 @@ class TodoApp {
   // RENDER
   // ═══════════════════════════════════════════════════
   render() {
-    document.getElementById('periodLabel').textContent = getPeriodLabel();
+    const isProjects = state.view === 'projects';
+    document.body.classList.toggle('view-projects', isProjects);
+    document.getElementById('periodLabel').textContent = isProjects ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
 
     let html = '';
-    if (state.view==='day')   html = renderDayView(state.todos);
-    if (state.view==='week')  html = renderWeekView(state.todos);
-    if (state.view==='month') html = renderMonthView(state.todos);
-    if (state.view==='year')  html = renderYearView(state.todos);
+    if (state.view==='day')      html = renderDayView(state.todos);
+    if (state.view==='week')     html = renderWeekView(state.todos);
+    if (state.view==='month')    html = renderMonthView(state.todos);
+    if (state.view==='year')     html = renderYearView(state.todos);
+    if (state.view==='projects') html = renderProjectsView(state.todos);
     document.getElementById('mainContent').innerHTML = html;
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
       if (state.view === 'day') {
         sidebar.style.display = '';
         sidebar.innerHTML = renderSidebar(state.todos);
-      } else if (state.view === 'week') {
-        sidebar.style.display = '';
-        sidebar.innerHTML = renderWeekSidebar(state.todos);
       } else if (state.view === 'year') {
         sidebar.style.display = '';
         sidebar.innerHTML = renderYearSidebar();
@@ -571,6 +634,7 @@ class TodoApp {
     const dayTodos = state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.date === dateStr);
     if (dayTodos.length === 0) return;
     if (!confirm(`Supprimer les ${dayTodos.length} tâche(s) de cette journée ?`)) return;
+    snapshot(state.todos);
     state.setTodos(state.todos.filter(t => !(!t.recurrence || t.recurrence === 'none') || t.date !== dateStr));
     saveTodos(state.todos);
     this.render();
@@ -583,16 +647,39 @@ class TodoApp {
     const tBtn = document.getElementById('templateDayBtn');
     const cBtn = document.getElementById('clearDayBtn');
 
+    const isMobile = window.innerWidth <= 600;
+
     if (state.view === 'day') {
+      if (isMobile) {
+        // Mobile: add on left, template+clear on right
+        if (!this._quickAddInDayMode) {
+          this._quickAddInDayMode = true;
+          gsap.set(btn, { right: 'auto', left: 16, bottom: -80, xPercent: 0 });
+          if (tBtn) gsap.set(tBtn, { left: 'auto', right: 16, bottom: -80, xPercent: 0, opacity: 0 });
+          if (cBtn) gsap.set(cBtn, { left: 'auto', right: 82, bottom: -80, xPercent: 0, opacity: 0 });
+        }
+        gsap.to(btn, { bottom: 16, duration: 0.28, ease: 'expo.out', overwrite: 'auto' });
+        if (tBtn) {
+          gsap.to(tBtn, { bottom: 16, opacity: 1, duration: 0.28, delay: 0.06, ease: 'expo.out', overwrite: 'auto' });
+          setTimeout(() => { if (tBtn) tBtn.style.pointerEvents = 'auto'; }, 340);
+        }
+        if (cBtn) {
+          gsap.to(cBtn, { bottom: 16, opacity: 1, duration: 0.28, delay: 0.12, ease: 'expo.out', overwrite: 'auto' });
+          setTimeout(() => { if (cBtn) cBtn.style.pointerEvents = 'auto'; }, 400);
+        }
+        return;
+      }
+
       const main = document.getElementById('mainContent');
       if (!main) return;
       const rect = main.getBoundingClientRect();
+      const gsapX = gsap.getProperty(main, 'x') || 0;
 
       // Anchor the group to the left of the content area.
       // Layout (left→right): [Add Task pill] gap [Modèle] gap [Vider]
       const tBtnW = tBtn ? tBtn.offsetWidth : 0;
       const cBtnW = cBtn ? cBtn.offsetWidth : 0;
-      const anchorX = rect.left + 32 + 110;
+      const anchorX = rect.left - gsapX + 32 + 110;
       const tBtnLeft = anchorX + 110 + 12 + tBtnW / 2;
       const cBtnLeft = anchorX + 110 + 12 + tBtnW + 12 + cBtnW / 2;
 
@@ -625,6 +712,25 @@ class TodoApp {
       this._quickAddInDayMode = false;
       btn.classList.remove('pill');
 
+      // Hide satellite buttons
+      if (tBtn) {
+        tBtn.style.pointerEvents = 'none';
+        gsap.to(tBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
+      }
+      if (cBtn) {
+        cBtn.style.pointerEvents = 'none';
+        gsap.to(cBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
+      }
+
+      if (isMobile) {
+        gsap.set(btn, { clearProps: 'left,bottom,xPercent,right,width' });
+        setTimeout(() => {
+          if (tBtn) gsap.set(tBtn, { clearProps: 'left,bottom,right,xPercent,width' });
+          if (cBtn) gsap.set(cBtn, { clearProps: 'left,bottom,right,xPercent,width' });
+        }, 200);
+        return;
+      }
+
       if (label) gsap.to(label, { width: 0, opacity: 0, duration: 0.12, ease: 'power2.in', overwrite: 'auto' });
       gsap.to(btn, { width: 56, duration: 0.15, delay: 0.08, ease: 'power2.in', overwrite: 'auto' });
       gsap.to(btn, {
@@ -636,16 +742,6 @@ class TodoApp {
         overwrite: false,
         onComplete: () => gsap.set(btn, { clearProps: 'left,bottom,xPercent,right,width' })
       });
-
-      // Hide satellite buttons
-      if (tBtn) {
-        tBtn.style.pointerEvents = 'none';
-        gsap.to(tBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
-      }
-      if (cBtn) {
-        cBtn.style.pointerEvents = 'none';
-        gsap.to(cBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
-      }
     }
   }
 
@@ -678,6 +774,7 @@ class TodoApp {
       if (newTitle && newTitle !== currentText) {
         const todo = state.todos.find(t => t.id === id);
         if (todo) {
+          snapshot(state.todos);
           todo.title = newTitle;
           saveTodos(state.todos);
         }
@@ -758,8 +855,130 @@ class TodoApp {
   // PROJECTS
   // ═══════════════════════════════════════════════════
   addProject() { addProject(); }
-  removeProject(id) { removeProject(id); this.render(); }
+
+  addProjectFromView() {
+    const name = prompt('Nom du projet :');
+    if (!name || !name.trim()) return;
+    const colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+    const projects = getProjects();
+    projects.push({ id: Date.now().toString(), name: name.trim(), color: colors[projects.length % colors.length] });
+    saveProjects(projects);
+    this.render();
+  }
+
+  removeProject(id) {
+    // Clear task links before removing
+    snapshot(state.todos);
+    state.todos.forEach(t => { if (t.projectId === id) delete t.projectId; });
+    saveTodos(state.todos);
+    removeProject(id);
+    this.render();
+  }
+
   getProjects() { return getProjects(); }
+
+  openProjectView(id) { openProjectView(id); }
+  closeProjectView()  { closeProjectView(); }
+
+  setProjectColor(projectId, color) {
+    const projects = getProjects();
+    const proj = projects.find(p => p.id === projectId);
+    if (proj) { proj.color = color; saveProjects(projects); }
+    renderProjectPanel(projectId);
+    this.render();
+  }
+
+  saveProjectName(projectId, name) {
+    if (!name.trim()) return;
+    const projects = getProjects();
+    const proj = projects.find(p => p.id === projectId);
+    if (proj && proj.name !== name.trim()) { proj.name = name.trim(); saveProjects(projects); }
+    renderProjectPanel(projectId);
+    this.render();
+  }
+
+  deleteProject(id) {
+    if (!confirm('Supprimer ce projet ? Les tâches seront dissociées mais conservées.')) return;
+    closeProjectView();
+    this.removeProject(id);
+  }
+
+  reorderProjectTask(id, projectId, direction) {
+    const tasks = state.todos.filter(t => t.projectId === projectId);
+    let order = getProjectTaskOrder(projectId);
+    tasks.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+    order = order.filter(oid => tasks.some(t => t.id === oid));
+    const idx = order.indexOf(id);
+    if (idx < 0) return;
+    const newIdx = idx + parseInt(direction);
+    if (newIdx < 0 || newIdx >= order.length) return;
+    [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+    saveProjectTaskOrder(projectId, order);
+    renderProjectPanel(projectId);
+  }
+
+  openModalForProject(projectId) {
+    openModal(state.navDate, state.todos);
+    setTimeout(() => {
+      const sel = document.getElementById('taskProject');
+      if (sel) sel.value = projectId;
+    }, 60);
+  }
+
+  unlinkFromProject(id) {
+    snapshot(state.todos);
+    const t = state.todos.find(x => x.id === id);
+    if (t) { delete t.projectId; saveTodos(state.todos); }
+    this._refreshProjectPanel();
+    this.render();
+  }
+
+  selectPriority(p) { selectPriority(p); }
+
+  // ═══════════════════════════════════════════════════
+  // HAMBURGER MENU
+  // ═══════════════════════════════════════════════════
+  _hamburgerOpen = false;
+
+  toggleHamburger() {
+    this._hamburgerOpen ? this.closeHamburger() : this.openHamburger();
+  }
+
+  openHamburger() {
+    this._hamburgerOpen = true;
+    const btn = document.getElementById('hamburgerBtn');
+    const menu = document.getElementById('hamburgerMenu');
+    const overlay = document.getElementById('hamburgerOverlay');
+    btn.classList.add('open');
+    overlay.classList.add('open');
+    gsap.to(menu, { x: 0, duration: 0.36, ease: 'expo.out' });
+    gsap.fromTo(menu.querySelectorAll('.hm-item'),
+      { x: 20, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.28, stagger: 0.06, ease: 'power3.out', delay: 0.1 }
+    );
+  }
+
+  closeHamburger() {
+    if (!this._hamburgerOpen) return;
+    this._hamburgerOpen = false;
+    const btn = document.getElementById('hamburgerBtn');
+    const menu = document.getElementById('hamburgerMenu');
+    const overlay = document.getElementById('hamburgerOverlay');
+    btn.classList.remove('open');
+    overlay.classList.remove('open');
+    gsap.to(menu, { x: '100%', duration: 0.28, ease: 'power3.in' });
+  }
+
+  hmGoToProjects() {
+    this.closeHamburger();
+    this.setView('projects');
+  }
+
+  hmOpenAdmin(section) {
+    this.closeHamburger();
+    openAdminModal();
+    setTimeout(() => showAdminSection(section), 50);
+  }
 
   // ═══════════════════════════════════════════════════
   // UTILITIES

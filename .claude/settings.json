@@ -4,5 +4,18 @@
       "Bash(git*)",
       "Bash(vercel*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/hugues/Projects/todo/todo-manager/.claude/bump-version.sh"
+          }
+        ]
+      }
+    ]
   }
 }

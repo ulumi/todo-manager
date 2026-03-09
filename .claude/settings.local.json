@@ -12,7 +12,8 @@
       "Bash(chmod +x /Users/hugues/Projects/Claude/test2/deploy.sh)",
       "Bash(git config --global alias.deploy '!bash /Users/hugues/Projects/Claude/test2/deploy.sh')",
       "Bash(git config --global --get alias.deploy)",
-      "Bash(curl -s http://localhost:8000/index.html)"
+      "Bash(curl -s http://localhost:8000/index.html)",
+      "Bash(npx sass css/styles.scss css/styles.css --style=expanded --no-source-map)"
     ]
   }
 }

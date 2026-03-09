@@ -4,7 +4,7 @@
 
 export const TRANSLATIONS = {
   en: {
-    viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year',
+    viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year', viewProjects:'Projects',
     today:'Today', thisPeriod:'Recurring', addTask:'＋ Add Task', addTaskShort:'ADD TASK',
     groupOnce:'One-time', week:'Week',
     newTask:'New Task', editTask:'Edit Task', task:'Task', date:'Date', repeat:'Repeat',
@@ -31,9 +31,9 @@ export const TRANSLATIONS = {
     dayFull:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
   },
   fr: {
-    viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année',
+    viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Projets',
     today:"Aujourd'hui", thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
-    groupOnce:'Ponctuel', week:'Semaine',
+    groupOnce:"Aujourd'hui", week:'Semaine',
     newTask:'Nouvelle tâche', editTask:'Modifier', task:'Tâche', date:'Date', repeat:'Répétitions',
     recNone:'Aucune', recDaily:'Quotidien', recWeekly:'Hebdomadaire', recMonthly:'Mensuel', recYearly:'Annuel',
     saveTask:'Enregistrer', cancel:'Annuler', btnAdd:'Ajouter', btnModify:'Modifier',

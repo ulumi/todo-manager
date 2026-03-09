@@ -35,6 +35,11 @@ export function setupEventListeners(app) {
     o.addEventListener('click', () => app.selectRecurrence(o.dataset.rec));
   });
 
+  // Priority options
+  document.querySelectorAll('.priority-option').forEach(o => {
+    o.addEventListener('click', () => app.selectPriority(o.dataset.priority));
+  });
+
   // Task title keyboard
   document.getElementById('taskTitle').addEventListener('keydown', e => {
     if (e.key==='Enter') app.saveTask();
@@ -78,6 +83,7 @@ export function setupEventListeners(app) {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); app.undoAction(); return; }
     if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA') return;
     if (e.key==='ArrowLeft')  app.navigate(-1);
     if (e.key==='ArrowRight') app.navigate(1);

@@ -19,6 +19,13 @@ function escapeProject(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+export function selectPriority(p) {
+  state.setSelectedPriority(p);
+  document.querySelectorAll('.priority-option').forEach(o =>
+    o.classList.toggle('active', o.dataset.priority === p)
+  );
+}
+
 export function openModal(date, todos) {
   date = date || state.navDate;
   state.setEditingId(null);
@@ -28,6 +35,7 @@ export function openModal(date, todos) {
   state.setSelectedMonthLastDay(false);
   state.setSelectedYearMonth(state.navDate.getMonth());
   state.setSelectedYearDay(state.navDate.getDate());
+  selectPriority('');
   document.getElementById('modalTitleEl').textContent = state.T.newTask;
   document.getElementById('saveTask').textContent = state.T.btnAdd;
   document.getElementById('taskTitle').value = '';
@@ -39,13 +47,20 @@ export function openModal(date, todos) {
   populateProjectSelect('');
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
-  document.querySelector('.modal-right').style.display = '';
+  // Reset right column state (open)
+  const right = document.getElementById('modalRight');
+  const inner = document.getElementById('modalRightInner');
+  const toggle = document.getElementById('modalColToggle');
+  if (right) { right.style.display = ''; right.classList.remove('collapsed'); gsap.set(right, { clearProps: 'width' }); }
+  if (inner) gsap.set(inner, { clearProps: 'x,opacity' });
+  if (toggle) { toggle.classList.remove('collapsed'); toggle.style.display = ''; }
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
     { scale: 0.92, y: 24, opacity: 0 },
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
   );
+  _initModalSwipe();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
@@ -70,6 +85,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('modalClouds').innerHTML = '';
   populateProjectSelect(t.projectId || '');
+  selectPriority(t.priority || '');
 
   // Set recurrence UI
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence));
@@ -104,7 +120,9 @@ export function openEditModal(id, dateStr, todos) {
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.remove('modal-two-columns');
-  document.querySelector('.modal-right').style.display = 'none';
+  document.getElementById('modalRight').style.display = 'none';
+  const tog = document.getElementById('modalColToggle');
+  if (tog) tog.style.display = 'none';
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
@@ -243,6 +261,92 @@ export function toggleWeekDay(i) {
   });
 }
 
+// ─── Collapsible cloud sections ───────────────────────────────────────────
+
+export function toggleCloudSection(headerEl) {
+  const section = headerEl.closest('.clouds-section');
+  if (!section) return;
+  const body = section.querySelector('.clouds-section-body');
+  if (!body) return;
+  const isOpen = section.classList.contains('open');
+  if (isOpen) {
+    section.classList.remove('open');
+    gsap.to(body, { height: 0, duration: 0.22, ease: 'power2.inOut', overwrite: 'auto' });
+  } else {
+    section.classList.add('open');
+    gsap.to(body, { height: 'auto', duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
+  }
+}
+
+// ─── Right column slide toggle ────────────────────────────────────────────
+
+let _rightNaturalWidth = 0;
+
+export function toggleModalRight() {
+  const right = document.getElementById('modalRight');
+  const inner = document.getElementById('modalRightInner');
+  const toggle = document.getElementById('modalColToggle');
+  if (!right || !toggle) return;
+
+  const isOpen = !right.classList.contains('collapsed');
+
+  if (isOpen) {
+    _rightNaturalWidth = right.offsetWidth || 360;
+    gsap.set(right, { width: _rightNaturalWidth });
+    if (inner) gsap.to(inner, { x: 30, opacity: 0, duration: 0.22, ease: 'power2.in', overwrite: 'auto' });
+    gsap.to(right, {
+      width: 0,
+      duration: 0.32,
+      ease: 'expo.inOut',
+      overwrite: 'auto',
+      onComplete: () => { right.classList.add('collapsed'); toggle.classList.add('collapsed'); }
+    });
+  } else {
+    right.classList.remove('collapsed');
+    toggle.classList.remove('collapsed');
+    gsap.set(right, { width: 0 });
+    if (inner) gsap.set(inner, { x: 30, opacity: 0 });
+    gsap.to(right, {
+      width: _rightNaturalWidth || 360,
+      duration: 0.35,
+      ease: 'expo.out',
+      overwrite: 'auto',
+      onComplete: () => gsap.set(right, { clearProps: 'width' })
+    });
+    if (inner) gsap.to(inner, { x: 0, opacity: 1, duration: 0.3, delay: 0.1, ease: 'expo.out', overwrite: 'auto' });
+  }
+}
+
+// ─── Swipe gesture ────────────────────────────────────────────────────────
+
+function _initModalSwipe() {
+  const modal = document.getElementById('modalOverlay').querySelector('.modal');
+  if (!modal || modal._swipeInit) return;
+  modal._swipeInit = true;
+
+  let sx = 0, active = false;
+  const THRESHOLD = 55;
+
+  modal.addEventListener('pointerdown', e => {
+    if (e.target.closest('input, select, button, .rec-option, .chip, .day-checkbox, .month-day-cell, .month-picker-cell')) return;
+    sx = e.clientX;
+    active = true;
+  }, { passive: true });
+
+  modal.addEventListener('pointerup', e => {
+    if (!active) return;
+    active = false;
+    if (window.innerWidth <= 600) return;
+    const dx = e.clientX - sx;
+    if (Math.abs(dx) < THRESHOLD) return;
+    const right = document.getElementById('modalRight');
+    if (!right) return;
+    const isOpen = !right.classList.contains('collapsed');
+    if (dx < 0 && isOpen) window.app.toggleModalRight();
+    else if (dx > 0 && !isOpen) window.app.toggleModalRight();
+  }, { passive: true });
+}
+
 export function saveTaskLogic(todos) {
   const title = document.getElementById('taskTitle').value.trim();
   if (!title) {
@@ -251,7 +355,8 @@ export function saveTaskLogic(todos) {
   }
 
   const projectId = document.getElementById('taskProject')?.value || '';
-  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined };
+  const priority  = state.selectedPriority || undefined;
+  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority };
 
   if (state.selectedRecurrence==='none') {
     data.date = document.getElementById('taskDate').value || DS(state.navDate);
@@ -283,11 +388,30 @@ export function saveTaskLogic(todos) {
       if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
       t.projectId = data.projectId;
+      t.priority  = data.priority;
     }
   } else {
     addTask(data, todos);
   }
   return false; // no error
+}
+
+const _chevronSVG = `<svg class="clouds-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+
+function _cloudSection(label, chipsHTML, withEdit = false) {
+  const editBtn = withEdit
+    ? `<button class="clouds-edit-btn" onclick="event.stopPropagation();window.app.openAdminModal()">éditer</button>`
+    : '';
+  return `<div class="clouds-section">
+    <div class="clouds-section-header" onclick="window.app.toggleCloudSection(this)">
+      <span class="cloud-label">${label}</span>
+      ${editBtn}
+      ${_chevronSVG}
+    </div>
+    <div class="clouds-section-body" style="height:0;overflow:hidden">
+      <div class="cloud-chips">${chipsHTML}</div>
+    </div>
+  </div>`;
 }
 
 export function cloudsHTML(date, todos) {
@@ -297,43 +421,14 @@ export function cloudsHTML(date, todos) {
   const suggestions = getSuggestions(todos).filter(s => !allSuggestedItems.includes(s));
   state.setSuggestions(suggestions);
 
-  // Always show the suggestions sections (they should always be visible, even if empty)
   let html = '';
   if (suggestions.length > 0) {
-    html += `<div class="clouds-section">
-      <span class="cloud-label">${state.T.frequentlyUsed}</span>
-      <div class="cloud-chips">${suggestions.map((t,i)=>`<div class="chip" onclick="window.app.openModalWithTitle(window.app._sugg[${i}])">${esc(t)}</div>`).join('')}</div>
-    </div>`;
+    const chips = suggestions.map((t,i) => `<div class="chip" onclick="window.app.openModalWithTitle(window.app._sugg[${i}])">${esc(t)}</div>`).join('');
+    html += _cloudSection(state.T.frequentlyUsed, chips, false);
   }
-  html += `<div class="clouds-section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span class="cloud-label" style="margin: 0;">${state.T.recurringDaily}</span>
-      <button onclick="window.app.openAdminModal()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0;">éditer</button>
-    </div>
-    <div class="cloud-chips">
-      ${suggestedTasksConfig.daily.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join('')}
-    </div>
-  </div>`;
-
-  html += `<div class="clouds-section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span class="cloud-label" style="margin: 0;">${state.T.recurringWeekly}</span>
-      <button onclick="window.app.openAdminModal()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0;">éditer</button>
-    </div>
-    <div class="cloud-chips">
-      ${suggestedTasksConfig.weekly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join('')}
-    </div>
-  </div>`;
-
-  html += `<div class="clouds-section">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span class="cloud-label" style="margin: 0;">${state.T.recurringMonthly}</span>
-      <button onclick="window.app.openAdminModal()" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0;">éditer</button>
-    </div>
-    <div class="cloud-chips">
-      ${suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join('')}
-    </div>
-  </div>`;
+  html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle('${t}')">${t}</div>`).join(''), true);
   return html;
 }
 

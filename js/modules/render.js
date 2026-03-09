@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
 import { getProjects } from './admin.js';
 
-export function todoItemHTML(todo, date, reorder = null, dayView = false) {
+export function todoItemHTML(todo, date, reorder = null, dayView = false, hideProjectBadge = false) {
   const done = isCompleted(todo, date);
   const rec = recLabel(todo, dayView);
   const isRec = todo.recurrence && todo.recurrence !== 'none';
@@ -18,20 +18,35 @@ export function todoItemHTML(todo, date, reorder = null, dayView = false) {
       <button class="todo-reorder-btn" onclick="window.app.reorderTask('${todo.id}','${ds}',1)" ${reorder.isLast ? 'disabled' : ''}>↓</button>
     </div>` : '';
   const projectBadge = (() => {
-    if (!todo.projectId) return '';
+    if (hideProjectBadge || !todo.projectId) return '';
     const proj = getProjects().find(p => p.id === todo.projectId);
     if (!proj) return '';
-    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}40;">${esc(proj.name)}</span>`;
+    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectView('${proj.id}')">${esc(proj.name.toUpperCase())}</span>`;
   })();
+  const priorityBadge = (() => {
+    if (!todo.priority) return '';
+    const cfg = {
+      high:   { label: '▲ Haute',  color: 'var(--danger)',  border: 'rgba(239,68,68,.35)',  bg: 'rgba(239,68,68,.08)'   },
+      medium: { label: '▸ Moy.',   color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)'  },
+      low:    { label: '▾ Basse',  color: '#3b82f6',        border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)'  },
+    };
+    const c = cfg[todo.priority];
+    if (!c) return '';
+    return `<span class="todo-priority-badge" style="color:${c.color};border-color:${c.border};background:${c.bg};">${c.label}</span>`;
+  })();
+  const hasMeta = projectBadge || rec || priorityBadge;
   return `
     <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}">
       ${reorderHTML}
       <div class="todo-check${done?' checked':''}" onclick="window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
-      <span class="todo-text editable" ondblclick="window.app.quickEditTitle(this, '${todo.id}', '${ds}')">${esc(todo.title)}</span>
-      ${projectBadge}
-      ${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}
-      <button class="todo-edit" onclick="window.app.openEditModal('${todo.id}','${ds}')">✎</button>
-      <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
+      <div class="todo-content">
+        <span class="todo-text editable" ondblclick="window.app.quickEditTitle(this, '${todo.id}', '${ds}')">${esc(todo.title)}</span>
+        ${hasMeta ? `<div class="todo-meta">${priorityBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+      </div>
+      <div class="todo-actions">
+        <button class="todo-edit" onclick="window.app.openEditModal('${todo.id}','${ds}')">✎</button>
+        <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
+      </div>
     </div>`;
 }
 
@@ -39,7 +54,12 @@ function recLabel(t, dayView = false) {
   if (!t.recurrence || t.recurrence==='none') return '';
   if (t.recurrence==='daily') return dayView ? '' : `↻ ${state.T.recDaily}`;
   if (t.recurrence==='weekly') {
-    const dayNames = t.recDays || [];
+    const dayNames = [...(t.recDays || [])].sort((a, b) => {
+      // Sort Mon-first: shift Sunday (0) to end
+      const order = a === 0 ? 7 : a;
+      const orderB = b === 0 ? 7 : b;
+      return order - orderB;
+    });
     const names = dayView
       ? dayNames.map(i => state.DAY_FULL[i]).join(', ')
       : dayNames.map(i => state.DAYS[i]).join(', ');
@@ -71,27 +91,33 @@ export function renderDayView(todos) {
 
   const prevDate = new Date(navDate); prevDate.setDate(prevDate.getDate() - 1);
   const nextDate = new Date(navDate); nextDate.setDate(nextDate.getDate() + 1);
+  const prevMonth = new Date(navDate); prevMonth.setMonth(prevMonth.getMonth() - 1);
+  const nextMonth = new Date(navDate); nextMonth.setMonth(nextMonth.getMonth() + 1);
 
   const header = `
     <div class="day-header-wrapper">
-      <button class="day-nav-btn" onclick="window.app.navigate(-1)" title="${state.DAY_FULL[prevDate.getDay()]}">←</button>
+      <button class="day-nav-btn day-nav-btn--prev-month" onclick="window.app.navigateMonth(-1)" title="${state.MONTHS[prevMonth.getMonth()]} ${prevMonth.getFullYear()}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>
+      </button>
+      <button class="day-nav-btn day-nav-btn--prev" onclick="window.app.navigate(-1)" title="${state.DAY_FULL[prevDate.getDay()]}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <div class="day-header">
-        <div class="day-name-large">${state.DAY_FULL[navDate.getDay()]}</div>
-        <div class="day-date-line">
-          <span class="day-number">${navDate.getDate()}</span>
-          <span class="day-month-inline">${state.MONTHS[navDate.getMonth()]} ${navDate.getFullYear()}</span>
-        </div>
+        <div class="day-title-line">${state.DAY_FULL[navDate.getDay()]} ${navDate.getDate()} ${state.MONTHS[navDate.getMonth()]} ${navDate.getFullYear()}</div>
       </div>
-      <button class="day-nav-btn" onclick="window.app.navigate(1)" title="${state.DAY_FULL[nextDate.getDay()]}">→</button>
+      <button class="day-nav-btn day-nav-btn--next" onclick="window.app.navigate(1)" title="${state.DAY_FULL[nextDate.getDay()]}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="day-nav-btn day-nav-btn--next-month" onclick="window.app.navigateMonth(1)" title="${state.MONTHS[nextMonth.getMonth()]} ${nextMonth.getFullYear()}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>
+      </button>
     </div>`;
 
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
   const monthlyItems = allItems.filter(t => t.recurrence === 'monthly');
   const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
-  const punctualAll  = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
-  const projectItems = punctualAll.filter(t => t.projectId);
-  const punctualItems = punctualAll.filter(t => !t.projectId);
+  const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
 
   // Sort punctual by stored dayOrder
   const order = window.app?.dayOrder?.[dateStr] || [];
@@ -114,83 +140,77 @@ export function renderDayView(todos) {
     rightItems += todoItemHTML(t, navDate, { isFirst: i === 0, isLast: i === sortedPunctual.length - 1 });
   });
   const rightCol = rightItems
-    ? `<div class="day-group-label">${state.T.groupOnce}</div><div class="todo-list">${rightItems}</div>`
+    ? `<div class="todo-list">${rightItems}</div>`
     : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
-  const recurringHeader = `<div class="day-col-title">↻ ${state.T.recurringTasks}</div>`;
-  const punctualHeader  = `<div class="day-col-title">${state.T.groupOnce}</div>`;
+  const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
 
-  // Project column (last 33%) — only rendered when project tasks exist today
-  if (projectItems.length > 0) {
-    const projects = getProjects();
-    // Group by project
-    const byProject = {};
-    projectItems.forEach(t => {
-      if (!byProject[t.projectId]) byProject[t.projectId] = [];
-      byProject[t.projectId].push(t);
-    });
-    let projectColContent = '';
-    Object.entries(byProject).forEach(([pid, tasks]) => {
-      const proj = projects.find(p => p.id === pid);
-      const label = proj ? esc(proj.name) : 'Projet';
-      const color = proj?.color || 'var(--primary)';
-      projectColContent += `<div class="day-group-label" style="color:${color};border-color:${color};">${label}</div><div class="todo-list">${tasks.map(t => todoItemHTML(t, navDate)).join('')}</div>`;
-    });
-    const projectHeader = `<div class="day-col-title" style="color:var(--text-muted);border-color:var(--border);">Projets</div>`;
-    return `<div class="day-view">${header}<div class="day-columns day-columns--three"><div class="day-col day-col--recurring">${recurringHeader}${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--project">${projectHeader}${projectColContent}</div></div></div>`;
-  }
+  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div></div></div>`;
+}
 
-  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${recurringHeader}${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div></div></div>`;
+function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
+  const svgPrev     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+  const svgNext     = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+  const svgPrevBig  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>`;
+  const svgNextBig  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>`;
+  const cols = prevBigAction ? '36px 52px 1fr 52px 36px' : '52px 1fr 52px';
+  return `<div class="day-header-wrapper" style="grid-template-columns:${cols}">
+    ${prevBigAction ? `<button class="day-nav-btn day-nav-btn--prev-month" onclick="${prevBigAction}">${svgPrevBig}</button>` : ''}
+    <button class="day-nav-btn day-nav-btn--prev" onclick="${prevAction}">${svgPrev}</button>
+    <div class="day-header"><div class="day-title-line">${title}</div></div>
+    <button class="day-nav-btn day-nav-btn--next" onclick="${nextAction}">${svgNext}</button>
+    ${nextBigAction ? `<button class="day-nav-btn day-nav-btn--next-month" onclick="${nextBigAction}">${svgNextBig}</button>` : ''}
+  </div>`;
 }
 
 export function renderWeekView(todos) {
   const todayStr = DS(new Date());
-  let html = '<div class="week-view">';
+  const weekStart = startOfWeek(state.navDate);
+  const weekEnd = addDays(weekStart, 6);
+  const weekNum = getWeekNumber(weekStart);
+  const startStr2 = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
+  const endStr2   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
+  const totalWeeks = getTotalWeeks(weekEnd.getFullYear());
+  const header = viewNavHeader(
+    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span>`,
+    `window.app.navigate(-1)`,
+    `window.app.navigate(1)`,
+    `window.app.navigateMonth(-1)`,
+    `window.app.navigateMonth(1)`
+  );
 
-  // Display 4 weeks
-  for (let weekOffset = 0; weekOffset < 4; weekOffset++) {
-    const weekStart = addDays(startOfWeek(state.navDate), weekOffset * 7);
-    const weekEnd = addDays(weekStart, 6);
-    const weekNum = getWeekNumber(weekStart);
-    const startStr = state.MONTHS[weekStart.getMonth()] + ' ' + weekStart.getDate();
-    const endStr = state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getDate();
+  let html = `<div class="week-view">
+    <div class="week-container">
+      ${header}
+      <div class="week-grid">`;
 
-    const featured = weekOffset === 0;
-    html += `<div class="week-container${featured?' week-container--featured':''}" style="--week-delay: ${weekOffset * 80}ms;">
-      <div class="week-title">${state.T.week} ${weekNum} — ${startStr} to ${endStr}</div>
-      <div class="week-grid${featured?' week-grid--featured':''}">`;
-
-    // 7 days of the week
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(weekStart, i);
-      const isT = DS(d) === todayStr;
-      const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
-      const ds = DS(d);
-      html += `<div class="week-day-col${featured?' week-day-col--featured':''}${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
-        <div class="week-day-header">
-          <div class="week-day-name">${state.DAYS[d.getDay()]}</div>
-          <div class="week-day-num">${d.getDate()}</div>
-        </div>
-        <div class="week-day-todos">
-          ${items.map(t => {
-            const done = isCompleted(t,d);
-            const isRec = t.recurrence && t.recurrence!=='none';
-            return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}" onclick="event.stopPropagation()">
-              <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
-              <span class="week-todo-text">${esc(t.title)}</span>
-              <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
-              <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
-            </div>`;
-          }).join('')}
-          <button class="week-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
-        </div>
-      </div>`;
-    }
-
-    html += '</div></div>';
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(weekStart, i);
+    const isT = DS(d) === todayStr;
+    const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
+    const ds = DS(d);
+    html += `<div class="week-day-col${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+      <div class="week-day-header">
+        <div class="week-day-name">${state.DAYS[d.getDay()]}</div>
+        <div class="week-day-num">${d.getDate()}</div>
+      </div>
+      <div class="week-day-todos">
+        ${items.map(t => {
+          const done = isCompleted(t,d);
+          const isRec = t.recurrence && t.recurrence!=='none';
+          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}" onclick="event.stopPropagation()">
+            <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+            <span class="week-todo-text">${esc(t.title)}</span>
+            <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
+            <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
+          </div>`;
+        }).join('')}
+        <button class="week-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
+      </div>
+    </div>`;
   }
 
-  html += '</div>';
+  html += '</div></div></div>';
   return html;
 }
 
@@ -198,6 +218,10 @@ function getWeekNumber(date) {
   const firstDay = new Date(date.getFullYear(), 0, 1);
   const pastDaysOfYear = (date - firstDay) / 86400000;
   return Math.ceil((pastDaysOfYear + firstDay.getDay() + 1) / 7);
+}
+
+function getTotalWeeks(year) {
+  return getWeekNumber(new Date(year, 11, 31));
 }
 
 export function renderMonthView(todos) {
@@ -231,11 +255,7 @@ export function renderMonthView(todos) {
 
   return `<div class="month-view">
     <div class="month-main">
-      <div class="month-header-bar">
-        <button class="month-nav-btn" onclick="window.app.navigate(-1)">←</button>
-        <div class="month-header-title">${state.MONTHS[m]} ${y}</div>
-        <button class="month-nav-btn" onclick="window.app.navigate(1)">→</button>
-      </div>
+      ${viewNavHeader(`${state.MONTHS[m]} ${y}`, `window.app.navigate(-1)`, `window.app.navigate(1)`, `window.app.navigate(-12)`, `window.app.navigate(12)`)}
       ${grid}
     </div>
     <div class="month-year-panel">
@@ -271,6 +291,9 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
+  const truncateTitle = (title, maxChars = 30) => {
+    return title.length > maxChars ? title.substring(0, maxChars) + '…' : title;
+  };
   return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
@@ -282,7 +305,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const isRec = t.recurrence && t.recurrence!=='none';
       return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}">
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
-        <span class="month-todo-dot-text">${esc(t.title)}</span>
+        <span class="month-todo-dot-text" title="${esc(t.title)}">${esc(truncateTitle(t.title))}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
         <button class="month-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
       </div>`;
@@ -295,7 +318,8 @@ export function renderYearView(todos) {
   const y = state.navDate.getFullYear();
   const todayDS = DS(new Date());
   const td = new Date();
-  let html = '<div class="year-view">';
+  const header = viewNavHeader(`${y}`, `window.app.navigate(-1)`, `window.app.navigate(1)`);
+  let html = `<div class="year-view-wrapper">${header}<div class="year-view">`;
   for (let m=0; m<12; m++) {
     const hasToday = td.getFullYear()===y && td.getMonth()===m;
     const days = daysInMonth(y,m);
@@ -333,7 +357,7 @@ export function renderYearView(todos) {
       </div>` : `<div class="year-month-stats" style="color:var(--border)">${state.T.noTasks}</div>`}
     </div>`;
   }
-  html += '</div>';
+  html += '</div></div>';
   return html;
 }
 
@@ -409,7 +433,7 @@ export function renderYearSidebar() {
   const y = state.navDate.getFullYear();
   const todayY = new Date().getFullYear();
   let html = '<div class="year-sid-list">';
-  for (let yr = y - 4; yr <= y + 4; yr++) {
+  for (let yr = y - 1; yr <= y + 4; yr++) {
     const isNav = yr === y;
     const isCurrent = yr === todayY;
     html += `<div class="year-sid-item${isNav ? ' nav-year' : ''}${isCurrent ? ' today-year' : ''}"
@@ -500,6 +524,55 @@ export function renderQACloud(todos) {
   } else {
     el.classList.remove('visible');
   }
+}
+
+export function renderProjectsView(todos) {
+  const projects = getProjects();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  const cards = projects.map(p => {
+    const tasks = todos.filter(t => t.projectId === p.id);
+    const total = tasks.length;
+    const punctual  = tasks.filter(t => !t.recurrence || t.recurrence === 'none');
+    const recurring = tasks.filter(t => t.recurrence && t.recurrence !== 'none');
+    const done = punctual.filter(t => t.completed).length + recurring.filter(t => isCompleted(t, today)).length;
+    const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    return `
+      <div class="project-card" onclick="window.app.openProjectView('${p.id}')" style="border-top:3px solid ${p.color};">
+        <div class="project-card-header">
+          <span class="project-card-dot" style="background:${p.color};"></span>
+          <span class="project-card-name">${esc(p.name)}</span>
+        </div>
+        <div class="project-card-stats">
+          <span class="project-card-stat">${total} tâche${total !== 1 ? 's' : ''}</span>
+          <span class="project-card-stat project-card-stat--done">${done} faite${done !== 1 ? 's' : ''}</span>
+          ${total > 0 ? `<span class="project-card-stat project-card-stat--pct">${pct}%</span>` : ''}
+        </div>
+        ${total > 0 ? `<div class="project-card-progress"><div class="project-card-progress-fill" style="width:${pct}%;background:${p.color};"></div></div>` : ''}
+      </div>`;
+  }).join('');
+
+  const emptyState = projects.length === 0 ? `
+    <div class="projects-empty">
+      <div class="projects-empty-icon">📁</div>
+      <p>Aucun projet pour l'instant.</p>
+      <button class="btn btn-primary" onclick="window.app.addProjectFromView()">＋ Créer un projet</button>
+    </div>` : '';
+
+  return `
+    <div class="projects-view">
+      <div class="projects-view-header">
+        <h1 class="projects-view-title">${state.T.viewProjects}</h1>
+      </div>
+      ${emptyState}
+      ${projects.length > 0 ? `<div class="projects-grid">
+        ${cards}
+        <div class="project-card project-card--add" onclick="window.app.addProjectFromView()">
+          <span class="project-card-add-icon">＋</span>
+          <span class="project-card-add-label">Nouveau projet</span>
+        </div>
+      </div>` : ''}
+    </div>`;
 }
 
 export function setupTodoItemHoverAnimations() {

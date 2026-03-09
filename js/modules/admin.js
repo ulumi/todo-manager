@@ -43,11 +43,11 @@ export function renderAdminProjects() {
   if (!container) return;
   const projects = getProjects();
   container.innerHTML = projects.map(p => `
-    <div class="admin-item">
+    <div class="admin-item" style="cursor:pointer;" onclick="window.app.openProjectView('${p.id}')">
       <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${p.color};margin-right:8px;flex-shrink:0;"></span>
       <span class="admin-item-text">${escapeHtml(p.name)}</span>
       <div class="admin-item-controls">
-        <button class="admin-btn-small" onclick="window.app.removeProject('${p.id}')">×</button>
+        <button class="admin-btn-small" onclick="event.stopPropagation();window.app.removeProject('${p.id}')">×</button>
       </div>
     </div>
   `).join('') + `
