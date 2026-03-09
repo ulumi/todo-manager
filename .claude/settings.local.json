@@ -13,7 +13,8 @@
       "Bash(git config --global alias.deploy '!bash /Users/hugues/Projects/Claude/test2/deploy.sh')",
       "Bash(git config --global --get alias.deploy)",
       "Bash(curl -s http://localhost:8000/index.html)",
-      "Bash(npx sass css/styles.scss css/styles.css --style=expanded --no-source-map)"
+      "Bash(npx sass css/styles.scss css/styles.css --style=expanded --no-source-map)",
+      "Bash(git commit -m \"fix: change month view title truncation to 15 characters:*)"
     ]
   }
 }
