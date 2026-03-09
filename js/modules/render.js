@@ -300,7 +300,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
     ${visible.map(t => {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
-      const isLongTitle = t.title.length > 20;
+      const isLongTitle = t.title.length > 28;
       return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}">
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
