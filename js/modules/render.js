@@ -291,9 +291,6 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
-  const truncateTitle = (title, maxChars = 28) => {
-    return title.length > maxChars ? title.substring(0, maxChars) + '…' : title;
-  };
   return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
@@ -305,7 +302,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const isRec = t.recurrence && t.recurrence!=='none';
       return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}">
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
-        <span class="month-todo-dot-text" title="${esc(t.title)}">${esc(truncateTitle(t.title))}</span>
+        <span class="month-todo-dot-text" title="${esc(t.title)}">${esc(t.title)}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
         <button class="month-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
       </div>`;
