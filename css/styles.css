@@ -1262,6 +1262,9 @@ main {
   word-break: break-word;
   min-width: 0;
 }
+.month-todo-dot-text.long-title {
+  font-size: 10px;
+}
 
 .month-todo-delete {
   width: 14px;

@@ -1222,6 +1222,8 @@ main {
   -webkit-box-orient: vertical;
   word-break: break-word;
   min-width: 0;
+
+  &.long-title { font-size: 10px; }
 }
 
 .month-todo-delete {
