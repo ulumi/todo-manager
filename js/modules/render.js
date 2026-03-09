@@ -291,7 +291,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
-  const truncateTitle = (title, maxChars = 15) => {
+  const truncateTitle = (title, maxChars = 28) => {
     return title.length > maxChars ? title.substring(0, maxChars) + '…' : title;
   };
   return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}"
