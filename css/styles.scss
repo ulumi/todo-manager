@@ -876,8 +876,8 @@ main {
 
 .week-todo-item {
   font-size: 14px;
-  padding: 8px 10px;
-  padding-right: 40px;
+  padding: 4px 6px;
+  padding-right: 32px;
   border-radius: 6px;
   background: var(--surface2);
   border-left: 3px solid var(--primary);
@@ -885,7 +885,7 @@ main {
   transition: background .1s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   font-weight: 500;
   position: relative;
 
@@ -906,8 +906,8 @@ main {
 }
 
 .week-todo-check {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border: 1.5px solid var(--border);
   border-radius: 50%;
   flex-shrink: 0;
@@ -925,7 +925,7 @@ main {
     box-shadow: 0 2px 6px rgba(16, 185, 129, .3);
 
     &:hover  { transform: scale(1.2); box-shadow: 0 3px 8px rgba(16, 185, 129, .4); }
-    &::after { content: '✓'; font-size: 8px; color: #fff; font-weight: 800; }
+    &::after { content: '✓'; font-size: 7px; color: #fff; font-weight: 800; }
   }
 }
 
@@ -942,16 +942,16 @@ main {
 
 .week-todo-delete {
   position: absolute;
-  right: 3px;
+  right: 2px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -966,16 +966,16 @@ main {
 
 .week-todo-edit {
   position: absolute;
-  right: 21px;
+  right: 16px;
   top: 50%;
   transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: none;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
