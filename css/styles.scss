@@ -120,6 +120,11 @@ header {
   flex-shrink: 0;
 }
 
+.header-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
 .app-title {
   display: flex;
   align-items: center;
