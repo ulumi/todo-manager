@@ -4,7 +4,7 @@
 
 export const TRANSLATIONS = {
   en: {
-    viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year', viewProjects:'Projects',
+    viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year', viewProjects:'Categories',
     today:'Today', thisPeriod:'Recurring', addTask:'＋ Add Task', addTaskShort:'ADD TASK',
     groupOnce:'One-time', week:'Week',
     newTask:'New Task', editTask:'Edit Task', task:'Task', date:'Date', repeat:'Repeat',
@@ -17,6 +17,7 @@ export const TRANSLATIONS = {
     dayOfMonth:'Day of month:', every:'Every', repeatsEveryDay:'Repeats every day.',
     addMore:'Add', weekAdd:'+', moreTasksCount:'+{more} more',
     taskPlaceholder:'What needs to be done?',
+    deleteRecurringTitle:'Delete recurring task', deleteRecurringPrompt:'How would you like to delete',
     deleteOneOccurrence:'This occurrence only', deleteOneDesc:'Remove just this date, keep future repeats',
     deleteFutureOccurrences:'This and all future occurrences', deleteFutureDesc:'Stop repeating from this date onward',
     deleteAllOccurrences:'All occurrences', deleteAllDesc:'Delete the task entirely',
@@ -27,11 +28,11 @@ export const TRANSLATIONS = {
     importSuccess:'Data imported successfully!', importError:'Failed to import data',
     clearAllData:'Clear all calendar data', confirmClearAllData:'Are you sure you want to clear ALL calendar data? This action is irreversible.',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
-    days:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
     dayFull:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
   },
   fr: {
-    viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Projets',
+    viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Catégories',
     today:"Aujourd'hui", thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
     groupOnce:"Aujourd'hui", week:'Semaine',
     newTask:'Nouvelle tâche', editTask:'Modifier', task:'Tâche', date:'Date', repeat:'Répétitions',
@@ -44,6 +45,7 @@ export const TRANSLATIONS = {
     dayOfMonth:'Jour du mois :', every:'Chaque', repeatsEveryDay:'Se répète chaque jour.',
     addMore:'Ajouter', weekAdd:'+', moreTasksCount:'+{more} de plus',
     taskPlaceholder:'Qu\'y a-t-il à faire ?',
+    deleteRecurringTitle:'Supprimer une tâche récurrente', deleteRecurringPrompt:'Comment souhaitez-vous supprimer',
     deleteOneOccurrence:'Cette occurrence seulement', deleteOneDesc:'Supprimer juste cette date, garder les répétitions futures',
     deleteFutureOccurrences:'Celle-ci et toutes les futures', deleteFutureDesc:'Arrêter la répétition à partir de cette date',
     deleteAllOccurrences:'Toutes les occurrences', deleteAllDesc:'Supprimer la tâche entièrement',
@@ -54,7 +56,7 @@ export const TRANSLATIONS = {
     importSuccess:'Données importées avec succès !', importError:'Échec de l\'importation',
     clearAllData:'Vider toutes les données du calendrier', confirmClearAllData:'Êtes-vous sûr de vouloir vider TOUTES les données du calendrier ? Cette action est irréversible.',
     months:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
-    days:['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'],
+    days:['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],
     dayFull:['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
   },
   es: {
@@ -71,7 +73,7 @@ export const TRANSLATIONS = {
     addMore:'Agregar',
     clearAllData:'Borrar todos los datos del calendario', confirmClearAllData:'¿Está seguro de que desea borrar TODOS los datos del calendario? Esta acción es irreversible.',
     months:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
-    days:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+    days:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'],
     dayFull:['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
   },
   de: {
@@ -88,7 +90,7 @@ export const TRANSLATIONS = {
     addMore:'Hinzufügen',
     clearAllData:'Alle Kalenderdaten löschen', confirmClearAllData:'Sind Sie sicher, dass Sie ALLE Kalenderdaten löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
     months:['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'],
-    days:['So','Mo','Di','Mi','Do','Fr','Sa'],
+    days:['Mo','Di','Mi','Do','Fr','Sa','So'],
     dayFull:['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag']
   }
 };

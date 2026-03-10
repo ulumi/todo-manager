@@ -26,17 +26,18 @@ import {
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  renderProjectsView,
+  renderCategoriesView,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
-import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addProject, removeProject, getProjects, saveProjects } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories } from './modules/admin.js';
 import {
-  openProjectView, closeProjectView, renderProjectPanel,
-  getCurrentProjectId, getProjectTaskOrder, saveProjectTaskOrder
+  openCategoryView, closeCategoryView, renderCategoryPanel,
+  getCurrentCategoryId, getCategoryTaskOrder, saveCategoryTaskOrder,
+  saveCategoryDescription, setCategoryIcon
 } from './modules/projectView.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
 
@@ -50,6 +51,8 @@ class TodoApp {
     this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
     if (isNaN(this.zoomIdx) || this.zoomIdx < 0 || this.zoomIdx > 2) this.zoomIdx = 1;
     this.dayOrder = JSON.parse(localStorage.getItem('dayOrder') || '{}');
+    this.recurringOrder = JSON.parse(localStorage.getItem('recurringOrder') || '{}');
+    this._clickTimer = null;
     this._quickAddInDayMode = false;
     this.init();
   }
@@ -61,7 +64,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'projects'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -285,9 +288,9 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // TODOS
   // ═══════════════════════════════════════════════════
-  _refreshProjectPanel() {
-    const projId = getCurrentProjectId();
-    if (projId) renderProjectPanel(projId);
+  _refreshCategoryPanel() {
+    const catId = getCurrentCategoryId();
+    if (catId) renderCategoryPanel(catId);
   }
 
   toggleTodo(id, d) {
@@ -297,7 +300,7 @@ class TodoApp {
     saveTodos(state.todos);
     if (!wasCompleted) celebrate(state.lang);
     this.render();
-    this._refreshProjectPanel();
+    this._refreshCategoryPanel();
     // Animate checkbox bounce
     setTimeout(() => {
       const check = document.querySelector(`[data-id="${id}"] .todo-check`);
@@ -367,13 +370,13 @@ class TodoApp {
         onComplete: () => {
           callback();
           this.render();
-          this._refreshProjectPanel();
+          this._refreshCategoryPanel();
         }
       });
     } else {
       callback();
       this.render();
-      this._refreshProjectPanel();
+      this._refreshCategoryPanel();
     }
   }
 
@@ -416,6 +419,10 @@ class TodoApp {
     selectYearDay(d);
   }
 
+  setTaskDateToday() {
+    document.getElementById('taskDate').value = DS(today());
+  }
+
   toggleCloudSection(headerEl) {
     toggleCloudSection(headerEl);
   }
@@ -432,7 +439,7 @@ class TodoApp {
       saveTodos(state.todos);
       closeModal();
       this.render();
-      this._refreshProjectPanel();
+      this._refreshCategoryPanel();
     }
   }
 
@@ -450,6 +457,111 @@ class TodoApp {
       document.getElementById('taskTitle').value = title;
       input.value = '';
     }
+  }
+
+  addTaskAfter(id, ds) {
+    const t = state.todos.find(x => x.id === id);
+    openModal(this.parseDS(ds), state.todos);
+    if (t?.projectId) {
+      setTimeout(() => {
+        const sel = document.getElementById('taskCategory');
+        if (sel) sel.value = t.projectId;
+      }, 60);
+    }
+  }
+
+  duplicateTodo(id, ds) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    const clone = { ...JSON.parse(JSON.stringify(t)), id: Date.now().toString(), completed: false, completedDates: [] };
+    state.todos.push(clone);
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  clickTodo(e, id, ds) {
+    if (e.target.closest('.todo-check, .todo-actions, .todo-drag-handle')) return;
+    if (e.target.closest('.todo-text')) {
+      // dblclick handled by ondblclick on the span — single click ignored on text
+      return;
+    }
+    clearTimeout(this._clickTimer);
+    this._clickTimer = setTimeout(() => {
+      this._clickTimer = null;
+      this.openEditModal(id, ds);
+    }, 220);
+  }
+
+  dropReorder(draggedId, group, targetId, before) {
+    if (draggedId === targetId) return;
+    const dateStr = DS(state.navDate);
+    if (group === 'punctual') {
+      const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
+      let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
+      items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+      order = order.filter(id => items.some(t => t.id === id));
+      const newOrder = order.filter(id => id !== draggedId);
+      const idx = newOrder.indexOf(targetId);
+      if (idx < 0) return;
+      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      this.dayOrder[dateStr] = newOrder;
+      localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    } else {
+      const items = state.todos.filter(t => t.recurrence === group);
+      let order = this.recurringOrder[group] ? [...this.recurringOrder[group]] : items.map(t => t.id);
+      items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+      order = order.filter(id => items.some(t => t.id === id));
+      const newOrder = order.filter(id => id !== draggedId);
+      const idx = newOrder.indexOf(targetId);
+      if (idx < 0) return;
+      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      this.recurringOrder[group] = newOrder;
+      localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
+    }
+    this.render();
+  }
+
+  initDayDragDrop() {
+    const container = document.querySelector('.day-columns');
+    if (!container) return;
+    let draggedEl = null, draggedGroup = null, dropTarget = null, dropBefore = false;
+    const indicator = document.createElement('div');
+    indicator.className = 'drop-indicator';
+
+    container.addEventListener('dragstart', e => {
+      const item = e.target.closest('.todo-item[draggable]');
+      if (!item) return;
+      draggedEl = item;
+      draggedGroup = item.dataset.group;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.dataset.id);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    container.addEventListener('dragend', () => {
+      if (draggedEl) draggedEl.classList.remove('dragging');
+      indicator.remove();
+      draggedEl = null; draggedGroup = null; dropTarget = null;
+    });
+
+    container.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedEl) return;
+      const target = e.target.closest('.todo-item[draggable]');
+      if (!target || target === draggedEl || target.dataset.group !== draggedGroup) return;
+      const rect = target.getBoundingClientRect();
+      dropBefore = e.clientY < rect.top + rect.height / 2;
+      dropTarget = target.dataset.id;
+      if (dropBefore) target.parentNode.insertBefore(indicator, target);
+      else target.parentNode.insertBefore(indicator, target.nextSibling);
+    });
+
+    container.addEventListener('drop', e => {
+      e.preventDefault();
+      indicator.remove();
+      if (draggedEl && dropTarget) this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
+    });
   }
 
   setQuickAddTarget(target) {
@@ -600,17 +712,17 @@ class TodoApp {
   // RENDER
   // ═══════════════════════════════════════════════════
   render() {
-    const isProjects = state.view === 'projects';
-    document.body.classList.toggle('view-projects', isProjects);
-    document.getElementById('periodLabel').textContent = isProjects ? '' : getPeriodLabel();
+    const isCategories = state.view === 'categories';
+    document.body.classList.toggle('view-projects', isCategories);
+    document.getElementById('periodLabel').textContent = isCategories ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
 
     let html = '';
-    if (state.view==='day')      html = renderDayView(state.todos);
-    if (state.view==='week')     html = renderWeekView(state.todos);
-    if (state.view==='month')    html = renderMonthView(state.todos);
-    if (state.view==='year')     html = renderYearView(state.todos);
-    if (state.view==='projects') html = renderProjectsView(state.todos);
+    if (state.view==='day')        html = renderDayView(state.todos);
+    if (state.view==='week')       html = renderWeekView(state.todos);
+    if (state.view==='month')      html = renderMonthView(state.todos);
+    if (state.view==='year')       html = renderYearView(state.todos);
+    if (state.view==='categories') html = renderCategoriesView(state.todos);
     document.getElementById('mainContent').innerHTML = html;
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
@@ -625,8 +737,19 @@ class TodoApp {
         sidebar.innerHTML = '';
       }
     }
+    if (state.view === 'day') this.initDayDragDrop();
     this.renderQACloud();
     this._animateQuickAddBtn();
+    this._applyMultilineClasses();
+  }
+
+  _applyMultilineClasses() {
+    document.querySelectorAll('.todo-item').forEach(item => {
+      const text = item.querySelector('.todo-text');
+      if (!text) return;
+      const lh = parseFloat(getComputedStyle(text).lineHeight) || 20;
+      item.classList.toggle('todo-item--multiline', text.scrollHeight > lh * 1.5);
+    });
   }
 
   clearDay() {
@@ -852,60 +975,80 @@ class TodoApp {
   removeTaskFromTemplate(id, idx) { removeTaskFromTemplate(id, idx); }
 
   // ═══════════════════════════════════════════════════
-  // PROJECTS
+  // CATEGORIES
   // ═══════════════════════════════════════════════════
-  addProject() { addProject(); }
+  addCategory() { addCategory(); }
 
-  addProjectFromView() {
-    const name = prompt('Nom du projet :');
+  addCategoryFromView() {
+    const name = prompt('Nom de la catégorie :');
     if (!name || !name.trim()) return;
     const colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
-    const projects = getProjects();
-    projects.push({ id: Date.now().toString(), name: name.trim(), color: colors[projects.length % colors.length] });
-    saveProjects(projects);
+    const categories = getCategories();
+    categories.push({ id: Date.now().toString(), name: name.trim(), color: colors[categories.length % colors.length] });
+    saveCategories(categories);
     this.render();
   }
 
-  removeProject(id) {
+  removeCategory(id) {
     // Clear task links before removing
     snapshot(state.todos);
     state.todos.forEach(t => { if (t.projectId === id) delete t.projectId; });
     saveTodos(state.todos);
-    removeProject(id);
+    removeCategory(id);
     this.render();
   }
 
-  getProjects() { return getProjects(); }
+  getCategories() { return getCategories(); }
 
-  openProjectView(id) { openProjectView(id); }
-  closeProjectView()  { closeProjectView(); }
+  openCategoryView(id) { openCategoryView(id); }
+  closeCategoryView()  { closeCategoryView(); }
 
-  setProjectColor(projectId, color) {
-    const projects = getProjects();
-    const proj = projects.find(p => p.id === projectId);
-    if (proj) { proj.color = color; saveProjects(projects); }
-    renderProjectPanel(projectId);
+  setCategoryColor(categoryId, color) {
+    const categories = getCategories();
+    const cat = categories.find(p => p.id === categoryId);
+    if (cat) { cat.color = color; saveCategories(categories); }
+    renderCategoryPanel(categoryId);
     this.render();
   }
 
-  saveProjectName(projectId, name) {
+  saveCategoryName(categoryId, name) {
     if (!name.trim()) return;
-    const projects = getProjects();
-    const proj = projects.find(p => p.id === projectId);
-    if (proj && proj.name !== name.trim()) { proj.name = name.trim(); saveProjects(projects); }
-    renderProjectPanel(projectId);
+    const categories = getCategories();
+    const cat = categories.find(p => p.id === categoryId);
+    if (cat && cat.name !== name.trim()) { cat.name = name.trim(); saveCategories(categories); }
+    renderCategoryPanel(categoryId);
     this.render();
   }
 
-  deleteProject(id) {
-    if (!confirm('Supprimer ce projet ? Les tâches seront dissociées mais conservées.')) return;
-    closeProjectView();
-    this.removeProject(id);
+  saveCategoryDescription(categoryId, description) {
+    saveCategoryDescription(categoryId, description);
+    this.render();
   }
 
-  reorderProjectTask(id, projectId, direction) {
-    const tasks = state.todos.filter(t => t.projectId === projectId);
-    let order = getProjectTaskOrder(projectId);
+  setCategoryIcon(categoryId, icon) {
+    setCategoryIcon(categoryId, icon);
+    this.render();
+  }
+
+  setCategoriesCols(n) {
+    localStorage.setItem('categoriesCols', n);
+    this.render();
+  }
+
+  setCategoriesSort(s) {
+    localStorage.setItem('categoriesSort', s);
+    this.render();
+  }
+
+  deleteCategory(id) {
+    if (!confirm('Supprimer cette catégorie ? Les tâches seront dissociées mais conservées.')) return;
+    closeCategoryView();
+    this.removeCategory(id);
+  }
+
+  reorderCategoryTask(id, categoryId, direction) {
+    const tasks = state.todos.filter(t => t.projectId === categoryId);
+    let order = getCategoryTaskOrder(categoryId);
     tasks.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
     order = order.filter(oid => tasks.some(t => t.id === oid));
     const idx = order.indexOf(id);
@@ -913,23 +1056,24 @@ class TodoApp {
     const newIdx = idx + parseInt(direction);
     if (newIdx < 0 || newIdx >= order.length) return;
     [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
-    saveProjectTaskOrder(projectId, order);
-    renderProjectPanel(projectId);
+    saveCategoryTaskOrder(categoryId, order);
+    renderCategoryPanel(categoryId);
   }
 
-  openModalForProject(projectId) {
+  openModalForCategory(categoryId) {
+    closeCategoryView({ immediate: true });
     openModal(state.navDate, state.todos);
     setTimeout(() => {
-      const sel = document.getElementById('taskProject');
-      if (sel) sel.value = projectId;
+      const sel = document.getElementById('taskCategory');
+      if (sel) sel.value = categoryId;
     }, 60);
   }
 
-  unlinkFromProject(id) {
+  unlinkFromCategory(id) {
     snapshot(state.todos);
     const t = state.todos.find(x => x.id === id);
     if (t) { delete t.projectId; saveTodos(state.todos); }
-    this._refreshProjectPanel();
+    this._refreshCategoryPanel();
     this.render();
   }
 
@@ -969,9 +1113,9 @@ class TodoApp {
     gsap.to(menu, { x: '100%', duration: 0.28, ease: 'power3.in' });
   }
 
-  hmGoToProjects() {
+  hmGoToCategories() {
     this.closeHamburger();
-    this.setView('projects');
+    this.setView('categories');
   }
 
   hmOpenAdmin(section) {

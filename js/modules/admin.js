@@ -9,52 +9,73 @@ const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
 const PROJECTS_KEY = 'projects';
 
-const PROJECT_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+const CATEGORY_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
 
-// ── Projects ─────────────────────────────────────────────
-export function getProjects() {
+export const CATEGORY_ICONS = {
+  folder:    '<path d="M2 4h4l2 2h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>',
+  star:      '<polygon points="8,1.5 10,6 15,6 11.5,9 13,13.5 8,11 3,13.5 4.5,9 1,6 6,6"/>',
+  rocket:    '<path d="M8 2c0 0 4 2 4 6 0 2-1.5 3.5-4 4.5C5.5 11.5 4 10 4 8c0-4 4-6 4-6z"/><line x1="5.5" y1="11.5" x2="3" y2="14"/><line x1="10.5" y1="11.5" x2="13" y2="14"/>',
+  briefcase: '<rect x="3" y="7" width="10" height="7" rx="1"/><path d="M6 7V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v2"/><line x1="3" y1="11" x2="13" y2="11"/>',
+  book:      '<path d="M4 2h7a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><line x1="7" y1="2" x2="7" y2="14"/>',
+  code:      '<polyline points="5,5 2,8 5,11"/><polyline points="11,5 14,8 11,11"/><line x1="9" y1="4" x2="7" y2="12"/>',
+  heart:     '<path d="M8 13C8 13 2 9.5 2 5.5a3.5 3.5 0 0 1 6-2.45A3.5 3.5 0 0 1 14 5.5C14 9.5 8 13 8 13z"/>',
+  bolt:      '<polyline points="10,2 6,9 9,9 6,14"/>',
+  target:    '<circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="1"/>',
+  trophy:    '<path d="M5 2h6v4.5a3 3 0 0 1-6 0V2z"/><path d="M2.5 2h2v1.5a1.5 1.5 0 0 1-2 0V2z"/><path d="M11.5 2h2v1.5a1.5 1.5 0 0 1-2 0V2z"/><line x1="8" y1="9.5" x2="8" y2="12.5"/><line x1="5" y1="12.5" x2="11" y2="12.5"/>',
+  home:      '<path d="M2 9L8 2l6 7v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9z"/><polyline points="6,15 6,10 10,10 10,15"/>',
+  chart:     '<rect x="2" y="10" width="3" height="4"/><rect x="6.5" y="6" width="3" height="8"/><rect x="11" y="2" width="3" height="12"/>',
+};
+
+export function categoryIconSVG(iconKey, size = 16, color = 'currentColor') {
+  const paths = CATEGORY_ICONS[iconKey];
+  if (!paths) return '';
+  return `<svg width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+}
+
+// ── Categories ─────────────────────────────────────────────
+export function getCategories() {
   const stored = localStorage.getItem(PROJECTS_KEY);
   return stored ? JSON.parse(stored) : [];
 }
 
-export function saveProjects(projects) {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+export function saveCategories(categories) {
+  localStorage.setItem(PROJECTS_KEY, JSON.stringify(categories));
 }
 
-export function addProject() {
-  const input = document.getElementById('newProjectInput');
+export function addCategory() {
+  const input = document.getElementById('newCategoryInput');
   const name = input?.value.trim();
   if (!name) return;
-  const projects = getProjects();
-  const color = PROJECT_COLORS[projects.length % PROJECT_COLORS.length];
-  projects.push({ id: Date.now().toString(), name, color });
-  saveProjects(projects);
+  const categories = getCategories();
+  const color = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
+  categories.push({ id: Date.now().toString(), name, color, icon: '', description: '' });
+  saveCategories(categories);
   input.value = '';
-  renderAdminProjects();
+  renderAdminCategories();
 }
 
-export function removeProject(id) {
-  saveProjects(getProjects().filter(p => p.id !== id));
-  renderAdminProjects();
+export function removeCategory(id) {
+  saveCategories(getCategories().filter(p => p.id !== id));
+  renderAdminCategories();
 }
 
-export function renderAdminProjects() {
-  const container = document.getElementById('projectAdminList');
+export function renderAdminCategories() {
+  const container = document.getElementById('categoryAdminList');
   if (!container) return;
-  const projects = getProjects();
-  container.innerHTML = projects.map(p => `
-    <div class="admin-item" style="cursor:pointer;" onclick="window.app.openProjectView('${p.id}')">
+  const categories = getCategories();
+  container.innerHTML = categories.map(p => `
+    <div class="admin-item" style="cursor:pointer;" onclick="window.app.openCategoryView('${p.id}')">
       <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${p.color};margin-right:8px;flex-shrink:0;"></span>
       <span class="admin-item-text">${escapeHtml(p.name)}</span>
       <div class="admin-item-controls">
-        <button class="admin-btn-small" onclick="event.stopPropagation();window.app.removeProject('${p.id}')">×</button>
+        <button class="admin-btn-small" onclick="event.stopPropagation();window.app.removeCategory('${p.id}')">×</button>
       </div>
     </div>
   `).join('') + `
     <div class="admin-input-row" style="margin-top:8px;">
-      <input type="text" id="newProjectInput" placeholder="Nom du projet"
-        onkeydown="if(event.key==='Enter') window.app.addProject()">
-      <button onclick="window.app.addProject()">Ajouter</button>
+      <input type="text" id="newCategoryInput" placeholder="Nom de la catégorie"
+        onkeydown="if(event.key==='Enter') window.app.addCategory()">
+      <button onclick="window.app.addCategory()">Ajouter</button>
     </div>`;
 }
 
@@ -199,7 +220,7 @@ export function openAdminModal() {
     <div class="admin-layout">
       <nav class="admin-sidenav">
         <button class="admin-sidenav-link active" onclick="window.app.showAdminSection('taches')">📋 Tâches</button>
-        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('projets')">📁 Projets</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('categories')">📁 Catégories</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
       </nav>
@@ -238,10 +259,10 @@ export function openAdminModal() {
           </div>
         </section>
 
-        <section id="section-projets" class="admin-page-section" style="display:none">
-          <h2 class="admin-section-title">Projets</h2>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Les tâches liées à un projet s'affichent dans la colonne de droite de la vue Jour.</p>
-          <div id="projectAdminList"></div>
+        <section id="section-categories" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">Catégories</h2>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Les tâches liées à une catégorie s'affichent dans la colonne de droite de la vue Jour.</p>
+          <div id="categoryAdminList"></div>
         </section>
 
         <section id="section-modeles" class="admin-page-section" style="display:none">
@@ -286,7 +307,7 @@ export function openAdminModal() {
   document.getElementById('adminClouds').innerHTML = html;
   renderAdminLists(tasks);
   renderAdminTemplates();
-  renderAdminProjects();
+  renderAdminCategories();
   document.getElementById('adminModalOverlay').classList.remove('hidden');
 }
 

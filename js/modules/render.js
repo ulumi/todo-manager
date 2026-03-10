@@ -5,23 +5,21 @@
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
 import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
-import { getProjects } from './admin.js';
+import { getCategories, categoryIconSVG } from './admin.js';
 
-export function todoItemHTML(todo, date, reorder = null, dayView = false, hideProjectBadge = false) {
+const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
+
+export function todoItemHTML(todo, date, group = null, dayView = false, hideCategoryBadge = false) {
   const done = isCompleted(todo, date);
   const rec = recLabel(todo, dayView);
   const isRec = todo.recurrence && todo.recurrence !== 'none';
   const ds = DS(date);
-  const reorderHTML = reorder ? `
-    <div class="todo-reorder">
-      <button class="todo-reorder-btn" onclick="window.app.reorderTask('${todo.id}','${ds}',-1)" ${reorder.isFirst ? 'disabled' : ''}>↑</button>
-      <button class="todo-reorder-btn" onclick="window.app.reorderTask('${todo.id}','${ds}',1)" ${reorder.isLast ? 'disabled' : ''}>↓</button>
-    </div>` : '';
-  const projectBadge = (() => {
-    if (hideProjectBadge || !todo.projectId) return '';
-    const proj = getProjects().find(p => p.id === todo.projectId);
-    if (!proj) return '';
-    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectView('${proj.id}')">${esc(proj.name.toUpperCase())}</span>`;
+  const dragHandleHTML = group ? `<div class="todo-drag-handle" title="Déplacer">${_dragHandleSVG}</div>` : '';
+  const categoryBadge = (() => {
+    if (hideCategoryBadge || !todo.projectId) return '';
+    const cat = getCategories().find(p => p.id === todo.projectId);
+    if (!cat) return '';
+    return `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
   })();
   const priorityBadge = (() => {
     if (!todo.priority) return '';
@@ -34,17 +32,20 @@ export function todoItemHTML(todo, date, reorder = null, dayView = false, hidePr
     if (!c) return '';
     return `<span class="todo-priority-badge" style="color:${c.color};border-color:${c.border};background:${c.bg};">${c.label}</span>`;
   })();
-  const hasMeta = projectBadge || rec || priorityBadge;
+  const hasMeta = categoryBadge || rec || priorityBadge;
+  const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
-    <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}">
-      ${reorderHTML}
-      <div class="todo-check${done?' checked':''}" onclick="window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
+    <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
+      ${dragHandleHTML}
+      <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <div class="todo-content">
-        <span class="todo-text editable" ondblclick="window.app.quickEditTitle(this, '${todo.id}', '${ds}')">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${priorityBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
+        ${hasMeta ? `<div class="todo-meta">${priorityBadge}${categoryBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
       <div class="todo-actions">
+        <button class="todo-add-after" onclick="window.app.addTaskAfter('${todo.id}','${ds}')" title="Ajouter après">＋</button>
         <button class="todo-edit" onclick="window.app.openEditModal('${todo.id}','${ds}')">✎</button>
+        <button class="todo-duplicate" onclick="window.app.duplicateTodo('${todo.id}','${ds}')" title="Dupliquer">⧉</button>
         <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
       </div>
     </div>`;
@@ -62,7 +63,7 @@ function recLabel(t, dayView = false) {
     });
     const names = dayView
       ? dayNames.map(i => state.DAY_FULL[i]).join(', ')
-      : dayNames.map(i => state.DAYS[i]).join(', ');
+      : dayNames.map(i => state.DAYS[(i+6)%7]).join(', ');
     return `↻ ${names}`;
   }
   if (t.recurrence==='monthly') {
@@ -119,28 +120,30 @@ export function renderDayView(todos) {
   const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
   const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
 
-  // Sort punctual by stored dayOrder
-  const order = window.app?.dayOrder?.[dateStr] || [];
-  const sortedPunctual = [...punctualItems].sort((a, b) => {
-    const ia = order.indexOf(a.id), ib = order.indexOf(b.id);
+  // Sort by stored order (recurring globally, punctual by date)
+  const recOrd = window.app?.recurringOrder || {};
+  const dayOrd = window.app?.dayOrder?.[dateStr] || [];
+  const sortByOrder = (items, ord) => [...items].sort((a, b) => {
+    const ia = ord.indexOf(a.id), ib = ord.indexOf(b.id);
     if (ia < 0 && ib < 0) return 0;
     if (ia < 0) return 1; if (ib < 0) return -1;
     return ia - ib;
   });
+  const sortedDaily   = sortByOrder(dailyItems,   recOrd.daily   || []);
+  const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
+  const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
+  const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
+  const sortedPunctual = sortByOrder(punctualItems, dayOrd);
 
   let leftCol = '';
-  if (dailyItems.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list">${dailyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
-  if (weeklyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list">${weeklyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
-  if (monthlyItems.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list">${monthlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
-  if (yearlyItems.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list">${yearlyItems.map(t => todoItemHTML(t, navDate, null, true)).join('')}</div>`;
+  if (sortedDaily.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${sortedDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+  if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
+  if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
+  if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
-  let rightItems = '';
-  sortedPunctual.forEach((t, i) => {
-    rightItems += todoItemHTML(t, navDate, { isFirst: i === 0, isLast: i === sortedPunctual.length - 1 });
-  });
-  const rightCol = rightItems
-    ? `<div class="todo-list">${rightItems}</div>`
+  const rightCol = sortedPunctual.length
+    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`
     : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
@@ -191,7 +194,7 @@ export function renderWeekView(todos) {
     const ds = DS(d);
     html += `<div class="week-day-col${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
-        <div class="week-day-name">${state.DAYS[d.getDay()]}</div>
+        <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
       <div class="week-day-todos">
@@ -215,9 +218,11 @@ export function renderWeekView(todos) {
 }
 
 function getWeekNumber(date) {
-  const firstDay = new Date(date.getFullYear(), 0, 1);
-  const pastDaysOfYear = (date - firstDay) / 86400000;
-  return Math.ceil((pastDaysOfYear + firstDay.getDay() + 1) / 7);
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
 function getTotalWeeks(year) {
@@ -540,50 +545,95 @@ export function renderQACloud(todos) {
   }
 }
 
-export function renderProjectsView(todos) {
-  const projects = getProjects();
+export function renderCategoriesView(todos) {
+  const categories = getCategories();
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
-  const cards = projects.map(p => {
+  // Prefs
+  const cols = parseInt(localStorage.getItem('categoriesCols') || '0');
+  const sort = localStorage.getItem('categoriesSort') || 'name';
+
+  // Compute stats for all categories
+  const data = categories.map(p => {
     const tasks = todos.filter(t => t.projectId === p.id);
     const total = tasks.length;
     const punctual  = tasks.filter(t => !t.recurrence || t.recurrence === 'none');
     const recurring = tasks.filter(t => t.recurrence && t.recurrence !== 'none');
     const done = punctual.filter(t => t.completed).length + recurring.filter(t => isCompleted(t, today)).length;
     const pct = total > 0 ? Math.round(done / total * 100) : 0;
+    return { p, total, done, pct };
+  });
+
+  // Sort
+  const sorted = [...data].sort((a, b) => {
+    if (sort === 'tasks')  return b.total - a.total;
+    if (sort === 'pct')    return b.pct - a.pct;
+    if (sort === 'done')   return b.done - a.done;
+    return a.p.name.localeCompare(b.p.name, undefined, { sensitivity: 'base' });
+  });
+
+  // Grid cols style
+  const gridStyle = cols > 0
+    ? `grid-template-columns: repeat(${cols}, 1fr);`
+    : `grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));`;
+
+  // Column buttons (1–4 + auto)
+  const colBtns = [1, 2, 3, 4, 0].map(c => {
+    const label = c === 0 ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="0" width="4" height="4" rx="1"/><rect x="5" y="0" width="4" height="4" rx="1"/><rect x="10" y="0" width="4" height="4" rx="1"/><rect x="0" y="5" width="4" height="4" rx="1"/><rect x="5" y="5" width="4" height="4" rx="1"/><rect x="10" y="5" width="4" height="4" rx="1"/></svg>` : c;
+    return `<button class="cat-col-btn${cols === c ? ' active' : ''}" onclick="window.app.setCategoriesCols(${c})" title="${c === 0 ? 'Auto' : `${c} colonne${c > 1 ? 's' : ''}`}">${label}</button>`;
+  }).join('');
+
+  // Sort options
+  const sortOptions = [
+    ['name',  'Nom A–Z'],
+    ['tasks', 'Tâches ↓'],
+    ['pct',   'Progression ↓'],
+    ['done',  'Faites ↓'],
+  ].map(([v, l]) => `<option value="${v}"${sort === v ? ' selected' : ''}>${l}</option>`).join('');
+
+  const cards = sorted.map(({ p, total, done, pct }) => {
+    const cardIcon = p.icon
+      ? `<span class="category-card-icon" style="color:${p.color};">${categoryIconSVG(p.icon, 16, p.color)}</span>`
+      : `<span class="category-card-dot" style="background:${p.color};"></span>`;
     return `
-      <div class="project-card" onclick="window.app.openProjectView('${p.id}')" style="border-top:3px solid ${p.color};">
-        <div class="project-card-header">
-          <span class="project-card-dot" style="background:${p.color};"></span>
-          <span class="project-card-name">${esc(p.name)}</span>
+      <div class="category-card" onclick="window.app.openCategoryView('${p.id}')" style="border-top:3px solid ${p.color};">
+        <div class="category-card-header">
+          ${cardIcon}
+          <span class="category-card-name">${esc(p.name)}</span>
         </div>
-        <div class="project-card-stats">
-          <span class="project-card-stat">${total} tâche${total !== 1 ? 's' : ''}</span>
-          <span class="project-card-stat project-card-stat--done">${done} faite${done !== 1 ? 's' : ''}</span>
-          ${total > 0 ? `<span class="project-card-stat project-card-stat--pct">${pct}%</span>` : ''}
+        ${p.description ? `<div class="category-card-description">${esc(p.description)}</div>` : ''}
+        <div class="category-card-stats">
+          <span class="category-card-stat">${total} tâche${total !== 1 ? 's' : ''}</span>
+          <span class="category-card-stat category-card-stat--done">${done} faite${done !== 1 ? 's' : ''}</span>
+          ${total > 0 ? `<span class="category-card-stat category-card-stat--pct">${pct}%</span>` : ''}
         </div>
-        ${total > 0 ? `<div class="project-card-progress"><div class="project-card-progress-fill" style="width:${pct}%;background:${p.color};"></div></div>` : ''}
+        ${total > 0 ? `<div class="category-card-progress"><div class="category-card-progress-fill" style="width:${pct}%;background:${p.color};"></div></div>` : ''}
       </div>`;
   }).join('');
 
-  const emptyState = projects.length === 0 ? `
-    <div class="projects-empty">
-      <div class="projects-empty-icon">📁</div>
-      <p>Aucun projet pour l'instant.</p>
-      <button class="btn btn-primary" onclick="window.app.addProjectFromView()">＋ Créer un projet</button>
+  const emptyState = categories.length === 0 ? `
+    <div class="categories-empty">
+      <div class="categories-empty-icon">📁</div>
+      <p>Aucune catégorie pour l'instant.</p>
+      <button class="btn btn-primary" onclick="window.app.addCategoryFromView()">＋ Créer une catégorie</button>
     </div>` : '';
 
   return `
-    <div class="projects-view">
-      <div class="projects-view-header">
-        <h1 class="projects-view-title">${state.T.viewProjects}</h1>
+    <div class="categories-view">
+      <div class="categories-view-header">
+        <h1 class="categories-view-title">${state.T.viewProjects}</h1>
+        ${categories.length > 0 ? `
+        <div class="categories-view-controls">
+          <select class="categories-sort-select" onchange="window.app.setCategoriesSort(this.value)">${sortOptions}</select>
+          <div class="categories-col-btns">${colBtns}</div>
+        </div>` : ''}
       </div>
       ${emptyState}
-      ${projects.length > 0 ? `<div class="projects-grid">
+      ${categories.length > 0 ? `<div class="categories-grid" style="${gridStyle}">
         ${cards}
-        <div class="project-card project-card--add" onclick="window.app.addProjectFromView()">
-          <span class="project-card-add-icon">＋</span>
-          <span class="project-card-add-label">Nouveau projet</span>
+        <div class="category-card category-card--add" onclick="window.app.addCategoryFromView()">
+          <span class="category-card-add-icon">＋</span>
+          <span class="category-card-add-label">Nouvelle catégorie</span>
         </div>
       </div>` : ''}
     </div>`;

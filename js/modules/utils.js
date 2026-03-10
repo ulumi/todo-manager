@@ -24,7 +24,7 @@ export function addDays(d,n) {
 
 export function startOfWeek(d) {
   const r=new Date(d);
-  r.setDate(r.getDate()-r.getDay());
+  r.setDate(r.getDate()-(r.getDay()+6)%7);
   return r;
 }
 
@@ -33,7 +33,7 @@ export function daysInMonth(y,m) {
 }
 
 export function firstDayOfMonth(y,m) {
-  return new Date(y,m,1).getDay();
+  return (new Date(y,m,1).getDay()+6)%7;
 }
 
 export function esc(s) {

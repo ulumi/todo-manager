@@ -5,17 +5,17 @@
 import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
 import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
-import { getSuggestedTasks, getProjects } from './admin.js';
+import { getSuggestedTasks, getCategories } from './admin.js';
 
-function populateProjectSelect(selectedId) {
-  const sel = document.getElementById('taskProject');
+function populateCategorySelect(selectedId) {
+  const sel = document.getElementById('taskCategory');
   if (!sel) return;
-  const projects = getProjects();
-  sel.innerHTML = `<option value="">— Aucun projet —</option>` +
-    projects.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeProject(p.name)}</option>`).join('');
+  const categories = getCategories();
+  sel.innerHTML = `<option value="">— Aucune catégorie —</option>` +
+    categories.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
 }
 
-function escapeProject(str) {
+function escapeCategory(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
@@ -44,7 +44,7 @@ export function openModal(date, todos) {
   document.getElementById('recDetail').innerHTML = '';
   document.getElementById('dateGroup').style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
-  populateProjectSelect('');
+  populateCategorySelect('');
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
   // Reset right column state (open)
@@ -84,7 +84,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('modalClouds').innerHTML = '';
-  populateProjectSelect(t.projectId || '');
+  populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
 
   // Set recurrence UI
@@ -168,10 +168,8 @@ function monthCalendarHTML(selectedDays, lastDay) {
   const y = state.navDate.getFullYear();
   const m = state.navDate.getMonth();
   const total = daysInMonth(y, m);
-  const firstDay = firstDayOfMonth(y, m); // 0=Sun
-  const offset = (firstDay + 6) % 7; // Monday-first: Mon=0
-  // Header: Mon→Sun reordered from DAYS [Sun,Mon,...,Sat]
-  const headerLabels = [1,2,3,4,5,6,0].map(i => `<span>${state.DAYS[i][0]}</span>`).join('');
+  const offset = firstDayOfMonth(y, m); // 0=Mon
+  const headerLabels = state.DAYS.map(d => `<span>${d[0]}</span>`).join('');
   const cells = [];
   for (let i = 0; i < offset; i++) cells.push('<div class="month-day-cell empty"></div>');
   for (let d = 1; d <= total; d++) {
@@ -190,7 +188,7 @@ function monthCalendarHTML(selectedDays, lastDay) {
 function yearDayCells(selMonth, selDay) {
   const y = state.navDate.getFullYear();
   const total = daysInMonth(y, selMonth);
-  const offset = (firstDayOfMonth(y, selMonth) + 6) % 7;
+  const offset = firstDayOfMonth(y, selMonth); // 0=Mon
   const cells = [];
   for (let i = 0; i < offset; i++) cells.push('<div class="month-day-cell empty"></div>');
   for (let d = 1; d <= total; d++) {
@@ -205,7 +203,7 @@ function yearCalendarHTML(selMonth, selDay) {
     const sel = i === selMonth ? ' selected' : '';
     return `<div class="month-picker-cell${sel}" data-month="${i}" onclick="window.app.selectYearMonth(${i})">${name.slice(0,3)}</div>`;
   }).join('');
-  const headerLabels = [1,2,3,4,5,6,0].map(i => `<span>${state.DAYS[i][0]}</span>`).join('');
+  const headerLabels = state.DAYS.map(d => `<span>${d[0]}</span>`).join('');
   return `<div class="year-cal-wrap">
     <div class="month-picker-grid" id="yearMonthGrid">${monthCells}</div>
     <div class="month-cal-header" style="margin-top:10px;">${headerLabels}</div>
@@ -296,6 +294,8 @@ export function toggleModalRight() {
     if (inner) gsap.to(inner, { x: 30, opacity: 0, duration: 0.22, ease: 'power2.in', overwrite: 'auto' });
     gsap.to(right, {
       width: 0,
+      borderLeftWidth: 0,
+      borderRightWidth: 0,
       duration: 0.32,
       ease: 'expo.inOut',
       overwrite: 'auto',
@@ -304,14 +304,16 @@ export function toggleModalRight() {
   } else {
     right.classList.remove('collapsed');
     toggle.classList.remove('collapsed');
-    gsap.set(right, { width: 0 });
+    gsap.set(right, { width: 0, borderLeftWidth: 0, borderRightWidth: 0 });
     if (inner) gsap.set(inner, { x: 30, opacity: 0 });
     gsap.to(right, {
       width: _rightNaturalWidth || 360,
+      borderLeftWidth: 1.5,
+      borderRightWidth: 1.5,
       duration: 0.35,
       ease: 'expo.out',
       overwrite: 'auto',
-      onComplete: () => gsap.set(right, { clearProps: 'width' })
+      onComplete: () => gsap.set(right, { clearProps: 'width,borderLeftWidth,borderRightWidth' })
     });
     if (inner) gsap.to(inner, { x: 0, opacity: 1, duration: 0.3, delay: 0.1, ease: 'expo.out', overwrite: 'auto' });
   }
@@ -354,7 +356,7 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const projectId = document.getElementById('taskProject')?.value || '';
+  const projectId = document.getElementById('taskCategory')?.value || '';
   const priority  = state.selectedPriority || undefined;
   const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority };
 
@@ -398,17 +400,19 @@ export function saveTaskLogic(todos) {
 
 const _chevronSVG = `<svg class="clouds-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-function _cloudSection(label, chipsHTML, withEdit = false) {
+function _cloudSection(label, chipsHTML, withEdit = false, openByDefault = false) {
   const editBtn = withEdit
     ? `<button class="clouds-edit-btn" onclick="event.stopPropagation();window.app.openAdminModal()">éditer</button>`
     : '';
-  return `<div class="clouds-section">
+  const openClass = openByDefault ? ' open' : '';
+  const bodyStyle = openByDefault ? 'height:auto' : 'height:0';
+  return `<div class="clouds-section${openClass}">
     <div class="clouds-section-header" onclick="window.app.toggleCloudSection(this)">
       <span class="cloud-label">${label}</span>
       ${editBtn}
       ${_chevronSVG}
     </div>
-    <div class="clouds-section-body" style="height:0;overflow:hidden">
+    <div class="clouds-section-body" style="${bodyStyle};overflow:hidden">
       <div class="cloud-chips">${chipsHTML}</div>
     </div>
   </div>`;
@@ -424,7 +428,7 @@ export function cloudsHTML(date, todos) {
   let html = '';
   if (suggestions.length > 0) {
     const chips = suggestions.map((t, i) => `<div class="chip" data-chip-type="suggestion" data-chip-index="${i}">${esc(t)}</div>`).join('');
-    html += _cloudSection(state.T.frequentlyUsed, chips, false);
+    html += _cloudSection(state.T.frequentlyUsed, chips, false, true);
   }
   html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" data-chip-type="daily" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
   html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" data-chip-type="weekly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
@@ -461,16 +465,42 @@ export function openDeleteModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
   state.setPendingDelete({ id, date: parseDS(dateStr) });
-  document.getElementById('deleteTaskName').textContent = t.title;
+  // Translate all texts
+  const T = state.T;
+  document.getElementById('deleteModalTitle').textContent   = T.deleteRecurringTitle;
+  document.getElementById('deleteModalPrompt').textContent  = T.deleteRecurringPrompt;
+  document.getElementById('deleteTaskName').textContent     = t.title;
+  document.getElementById('deleteOneTitle').textContent    = T.deleteOneOccurrence;
+  document.getElementById('deleteOneDesc').textContent     = T.deleteOneDesc;
+  document.getElementById('deleteFutureTitle').textContent = T.deleteFutureOccurrences;
+  document.getElementById('deleteFutureDesc').textContent  = T.deleteFutureDesc;
+  document.getElementById('deleteAllTitle').textContent    = T.deleteAllOccurrences;
+  document.getElementById('deleteAllDesc').textContent     = T.deleteAllDesc;
   document.getElementById('deleteModalOverlay').classList.remove('hidden');
   const deleteModalBox = document.getElementById('deleteModalOverlay').querySelector('.modal');
   gsap.fromTo(deleteModalBox,
     { scale: 0.92, y: 24, opacity: 0 },
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
   );
+  // Enter key → delete all occurrences
+  const onKey = e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('deleteAllBtn').click(); }
+    if (e.key === 'Escape') { e.preventDefault(); document.getElementById('cancelDeleteModal').click(); }
+  };
+  document.addEventListener('keydown', onKey);
+  deleteModalBox._deleteKeyHandler = onKey;
+}
+
+export function _removeDeleteKeyHandler() {
+  const deleteModalBox = document.getElementById('deleteModalOverlay')?.querySelector('.modal');
+  if (deleteModalBox?._deleteKeyHandler) {
+    document.removeEventListener('keydown', deleteModalBox._deleteKeyHandler);
+    deleteModalBox._deleteKeyHandler = null;
+  }
 }
 
 export function closeDeleteModal() {
+  _removeDeleteKeyHandler();
   const deleteModalBox = document.getElementById('deleteModalOverlay').querySelector('.modal');
   const overlay = document.getElementById('deleteModalOverlay');
   gsap.to(deleteModalBox, {
