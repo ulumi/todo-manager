@@ -423,12 +423,29 @@ export function cloudsHTML(date, todos) {
 
   let html = '';
   if (suggestions.length > 0) {
-    const chips = suggestions.map((t) => `<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join('');
+    const chips = suggestions.map((t, i) => `<div class="chip" data-chip-type="suggestion" data-chip-index="${i}">${esc(t)}</div>`).join('');
     html += _cloudSection(state.T.frequentlyUsed, chips, false);
   }
-  html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
-  html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
-  html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" data-chip-type="daily" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" data-chip-type="weekly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" data-chip-type="monthly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
+
+  // Setup event listeners after HTML is inserted
+  setTimeout(() => {
+    document.querySelectorAll('[data-chip-type]').forEach(chip => {
+      chip.style.cursor = 'pointer';
+      chip.addEventListener('click', () => {
+        let title = '';
+        if (chip.dataset.chipType === 'suggestion') {
+          title = suggestions[parseInt(chip.dataset.chipIndex)];
+        } else {
+          title = chip.dataset.chipTitle;
+        }
+        if (title) window.app.openModalWithTitle(title);
+      });
+    });
+  }, 0);
+
   return html;
 }
 

@@ -495,7 +495,7 @@ export function getCloudsHTML(date, todos) {
   if (suggestions.length > 0) {
     html += `<div class="clouds-section">
       <span class="cloud-label">${state.T.frequentlyUsed}</span>
-      <div class="cloud-chips">${suggestions.map((t)=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join('')}</div>
+      <div class="cloud-chips">${suggestions.map((t, i)=>`<div class="chip" data-chip-type="suggestion-render" data-chip-index="${i}">${esc(t)}</div>`).join('')}</div>
     </div>`;
   }
   if (recurring.length > 0) {
@@ -503,11 +503,27 @@ export function getCloudsHTML(date, todos) {
       <span class="cloud-label">${state.T.recurringTasks}</span>
       <div class="cloud-chips">${recurring.map(t=>{
         const done = isCompleted(t, date);
-        return `<div class="chip rec${done?' done':''}" title="${esc(recLabel(t))}"
-          onclick="window.app.openModalWithRecurring('${t.id}')">${esc(t.title)}</div>`;
+        return `<div class="chip rec${done?' done':''}" title="${esc(recLabel(t))}" data-chip-type="recurring" data-chip-id="${t.id}">${esc(t.title)}</div>`;
       }).join('')}</div>
     </div>`;
   }
+
+  // Setup event listeners after HTML is inserted
+  setTimeout(() => {
+    document.querySelectorAll('[data-chip-type="suggestion-render"]').forEach(chip => {
+      chip.style.cursor = 'pointer';
+      chip.addEventListener('click', () => {
+        const title = suggestions[parseInt(chip.dataset.chipIndex)];
+        if (title) window.app.openModalWithTitle(title);
+      });
+    });
+    document.querySelectorAll('[data-chip-type="recurring"]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        window.app.openModalWithRecurring(chip.dataset.chipId);
+      });
+    });
+  }, 0);
+
   return html;
 }
 
