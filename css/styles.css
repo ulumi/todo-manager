@@ -212,14 +212,14 @@ header.scrolled {
   align-items: flex-start;
   max-width: 1440px;
   margin: 0 auto;
+  height: calc(100vh - 65px);
 }
 
 main {
   flex: 1;
   min-width: 0;
   padding: 24px;
-  overflow: hidden;
-  height: calc(100vh - 65px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
