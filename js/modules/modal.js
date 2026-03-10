@@ -423,12 +423,12 @@ export function cloudsHTML(date, todos) {
 
   let html = '';
   if (suggestions.length > 0) {
-    const chips = suggestions.map((t) => `<div class="chip" onclick="window.app.openModalWithTitle(${JSON.stringify(t)})">${esc(t)}</div>`).join('');
+    const chips = suggestions.map((t) => `<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join('');
     html += _cloudSection(state.T.frequentlyUsed, chips, false);
   }
-  html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle(${JSON.stringify(t)})">${esc(t)}</div>`).join(''), true);
-  html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle(${JSON.stringify(t)})">${esc(t)}</div>`).join(''), true);
-  html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick="window.app.openModalWithTitle(${JSON.stringify(t)})">${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
+  html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" onclick='window.app.openModalWithTitle(${JSON.stringify(t)})'>${esc(t)}</div>`).join(''), true);
   return html;
 }
 
