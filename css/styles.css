@@ -432,6 +432,9 @@ main {
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
   overflow: hidden;
+  position: sticky;
+  top: 65px;
+  z-index: 50;
 }
 
 .day-nav-btn {
