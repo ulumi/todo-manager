@@ -495,7 +495,7 @@ export function getCloudsHTML(date, todos) {
   if (suggestions.length > 0) {
     html += `<div class="clouds-section">
       <span class="cloud-label">${state.T.frequentlyUsed}</span>
-      <div class="cloud-chips">${suggestions.map((t,i)=>`<div class="chip" onclick="window.app.openModalWithTitle(window.app.getSuggestion(${i}))">${esc(t)}</div>`).join('')}</div>
+      <div class="cloud-chips">${suggestions.map((t)=>`<div class="chip" onclick="window.app.openModalWithTitle(${JSON.stringify(t)})">${esc(t)}</div>`).join('')}</div>
     </div>`;
   }
   if (recurring.length > 0) {
