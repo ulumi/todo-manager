@@ -175,9 +175,9 @@ export function getSuggestedTasks() {
     tasks = JSON.parse(stored);
   } else {
     tasks = {
-      daily: ['Lavage', 'Douche', 'Dents'],
-      weekly: ['Déjeuner', 'Diner'],
-      monthly: ['Souper', 'Planchers']
+      daily: [],
+      weekly: [],
+      monthly: []
     };
   }
 
