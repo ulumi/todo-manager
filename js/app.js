@@ -435,6 +435,15 @@ class TodoApp {
     const before = JSON.parse(JSON.stringify(state.todos));
     const hadError = saveTaskLogic(state.todos);
     if (!hadError) {
+      if (state.insertAfterId && !state.editingId) {
+        const newTask = state.todos[state.todos.length - 1];
+        const refIdx = state.todos.findIndex(x => x.id === state.insertAfterId);
+        if (refIdx !== -1) {
+          state.todos.splice(state.todos.length - 1, 1);
+          state.todos.splice(refIdx + 1, 0, newTask);
+        }
+        state.setInsertAfterId(null);
+      }
       snapshot(before);
       saveTodos(state.todos);
       closeModal();
@@ -461,6 +470,7 @@ class TodoApp {
 
   addTaskAfter(id, ds) {
     const t = state.todos.find(x => x.id === id);
+    state.setInsertAfterId(id);
     openModal(this.parseDS(ds), state.todos);
     if (t?.projectId) {
       setTimeout(() => {
@@ -475,7 +485,8 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     const clone = { ...JSON.parse(JSON.stringify(t)), id: Date.now().toString(), completed: false, completedDates: [] };
-    state.todos.push(clone);
+    const idx = state.todos.findIndex(x => x.id === id);
+    state.todos.splice(idx + 1, 0, clone);
     saveTodos(state.todos);
     this.render();
   }
@@ -494,6 +505,7 @@ class TodoApp {
   }
 
   dropReorder(draggedId, group, targetId, before) {
+    console.log('[dropReorder]', { draggedId, group, targetId, before, typeOfDraggedId: typeof draggedId, typeOfTargetId: typeof targetId });
     if (draggedId === targetId) return;
     const dateStr = DS(state.navDate);
     if (group === 'punctual') {
@@ -508,15 +520,29 @@ class TodoApp {
       this.dayOrder[dateStr] = newOrder;
       localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
     } else {
-      const items = state.todos.filter(t => t.recurrence === group);
-      let order = this.recurringOrder[group] ? [...this.recurringOrder[group]] : items.map(t => t.id);
+      const items = getTodosForDate(state.navDate, state.todos).filter(t => t.recurrence === group);
+      if (!this.recurringOrder[dateStr]) this.recurringOrder[dateStr] = {};
+      let order = this.recurringOrder[dateStr][group] ? [...this.recurringOrder[dateStr][group]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => items.some(t => t.id === id));
       const newOrder = order.filter(id => id !== draggedId);
       const idx = newOrder.indexOf(targetId);
       if (idx < 0) return;
       newOrder.splice(before ? idx : idx + 1, 0, draggedId);
-      this.recurringOrder[group] = newOrder;
+      this.recurringOrder[dateStr][group] = newOrder;
+      console.log('[dropReorder recurring] saved:', dateStr, group, JSON.stringify(newOrder));
+      // Propagate new relative order to future dates that already have a stored order for this group.
+      // For each future date, items that appear in newOrder are re-sorted to match its relative order;
+      // items unique to that date (not in newOrder) keep their existing relative positions.
+      Object.keys(this.recurringOrder)
+        .filter(d => d > dateStr && this.recurringOrder[d][group])
+        .forEach(d => {
+          const existing = this.recurringOrder[d][group];
+          const sorted = existing.filter(id => newOrder.includes(id));
+          sorted.sort((a, b) => newOrder.indexOf(a) - newOrder.indexOf(b));
+          let si = 0;
+          this.recurringOrder[d][group] = existing.map(id => newOrder.includes(id) ? sorted[si++] : id);
+        });
       localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
     }
     this.render();

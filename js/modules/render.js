@@ -120,8 +120,9 @@ export function renderDayView(todos) {
   const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
   const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
 
-  // Sort by stored order (recurring globally, punctual by date)
-  const recOrd = window.app?.recurringOrder || {};
+  // Sort by stored order (recurring per-day, punctual per-day)
+  const recOrd = window.app?.recurringOrder?.[dateStr] || {};
+  console.log('[renderDayView]', dateStr, 'daily order:', JSON.stringify(recOrd.daily));
   const dayOrd = window.app?.dayOrder?.[dateStr] || [];
   const sortByOrder = (items, ord) => [...items].sort((a, b) => {
     const ia = ord.indexOf(a.id), ib = ord.indexOf(b.id);
@@ -148,7 +149,7 @@ export function renderDayView(todos) {
 
   const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
 
-  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--recurring">${leftCol}</div><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div></div></div>`;
+  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div></div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

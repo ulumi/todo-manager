@@ -66,6 +66,7 @@ export function openModal(date, todos) {
 
 export function closeModal() {
   state.setEditingId(null);
+  state.setInsertAfterId(null);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   const overlay = document.getElementById('modalOverlay');
   gsap.to(modalBox, {

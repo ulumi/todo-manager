@@ -272,13 +272,20 @@ function buildScene(quote, stats, mascot) {
     rotation: 18, scale: 0.4,
   });
 
-  // Quote (center — words stagger in from small scale)
+  // Text block — quote + stats stacked in flex column to prevent overlap
+  const textBlock = el('div', `
+    position:absolute;top:66%;left:50%;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    width:90vw;max-width:90vw;z-index:9997;
+  `);
+  ov.appendChild(textBlock);
+  gsap.set(textBlock, { xPercent: -50, yPercent: -50 });
+
+  // Quote (words stagger in from small scale)
   const quoteEl = el('div', `
-    position:absolute;top:64%;left:50%;
     font-size:clamp(28px,5.5vw,62px);font-weight:900;
     color:#fff;text-align:center;
-    max-width:88vw;line-height:1.15;
-    z-index:9997;letter-spacing:0.04em;
+    line-height:1.15;letter-spacing:0.04em;
     text-shadow:0 0 80px rgba(255,180,255,0.95),0 3px 28px rgba(0,0,0,0.9);
     font-family:system-ui,sans-serif;
   `);
@@ -289,21 +296,18 @@ function buildScene(quote, stats, mascot) {
     quoteEl.appendChild(s);
     return s;
   });
-  ov.appendChild(quoteEl);
-  gsap.set(quoteEl, { xPercent: -50, yPercent: -50 });
+  textBlock.appendChild(quoteEl);
   gsap.set(wordSpans, { opacity: 0, scale: 0.55, y: 10 });
 
-  // Stats (below quote)
+  // Stats (below quote, in same flex container)
   const statsEl = stats ? el('div', `
-    position:absolute;top:78%;left:50%;
     font-size:clamp(14px,2.2vw,24px);font-weight:700;
     color:rgba(255,220,100,0.92);text-align:center;
-    max-width:80vw;z-index:9997;letter-spacing:0.03em;opacity:0;
+    letter-spacing:0.03em;opacity:0;
     text-shadow:0 2px 16px rgba(0,0,0,0.8);
     font-family:system-ui,sans-serif;
   `) : null;
-  if (statsEl) { statsEl.textContent = stats; ov.appendChild(statsEl); }
-  if (statsEl) gsap.set(statsEl, { xPercent: -50, yPercent: -50 });
+  if (statsEl) { statsEl.textContent = stats; textBlock.appendChild(statsEl); }
 
   // ── Timeline ──────────────────────────────────────────
   const tl = gsap.timeline();

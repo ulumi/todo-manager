@@ -23,6 +23,7 @@ export let selectedYearDay = 1;
 export let quickAddTarget = 'today'; // 'today' | 'nav'
 export let selectedPriority = '';
 export let editingId = null;
+export let insertAfterId = null;
 export let pendingDelete = null;
 export let _sugg = []; // safe ref for inline onclick
 
@@ -77,6 +78,10 @@ export function setSelectedPriority(p) {
 
 export function setEditingId(id) {
   editingId = id;
+}
+
+export function setInsertAfterId(id) {
+  insertAfterId = id;
 }
 
 export function setPendingDelete(del) {
