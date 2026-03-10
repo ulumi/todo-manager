@@ -218,7 +218,9 @@ main {
   flex: 1;
   min-width: 0;
   padding: 24px;
-  overflow-x: hidden;
+  overflow: hidden;
+  height: calc(100vh - 65px);
+  overflow-y: auto;
 }
 
 #calSidebar {
@@ -433,7 +435,7 @@ main {
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
   overflow: hidden;
   position: sticky;
-  top: 65px;
+  top: 0;
   z-index: 50;
 }
 
