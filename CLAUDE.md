@@ -10,5 +10,7 @@
 - Always recompile before committing
 
 ## Shorthand commands
-- `dpl`: stage all changes and create a git commit (do NOT deploy to Vercel)
+- `cmt`: stage all changes and create a git commit (do NOT deploy to Vercel)
+  - Version is auto-bumped by the PostToolUse hook on every file edit — no manual bump needed
+- `dpl`: stage all changes, create a git commit, and deploy to Vercel
   - Version is auto-bumped by the PostToolUse hook on every file edit — no manual bump needed
