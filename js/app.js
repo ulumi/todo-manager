@@ -724,9 +724,9 @@ class TodoApp {
         this.applyZoom();
       }
       saveTodos(state.todos);
+      closeAdminModal();
       this.render();
-      closeDataModal();
-      alert(state.T.importSuccess || 'Data imported successfully!');
+      alert(state.T.importSuccess || 'Données importées avec succès !');
     } catch (err) {
       alert(state.T.importError || 'Failed to import data');
     }
