@@ -2021,7 +2021,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   gap: 10px;
   margin-top: 60px;
-  padding-bottom: 8px;
+  padding: 12px 0 16px;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg);
 }
 
 .day-action-btn {
