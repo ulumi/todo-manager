@@ -3050,24 +3050,26 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   .header-sep { display: none; }
 
-  // Row 1: logo + hamburger + theme
-  .app-title    { order: 1; margin-right: auto; }
-  #themeBtn     { order: 1; }
-  .hamburger-wrap { order: 1; }
-  .add-btn      { display: none; }
-  .zoom-group { display: none; }
+  // Row 1: icon+title — space — theme — lang — hamburger — account
+  .app-title      { order: 1; margin-right: auto; }
+  #themeBtn       { order: 2; }
+  .lang-select    { display: block; order: 3; }
+  .hamburger-wrap { order: 4; }
+  .user-btn       { order: 5; }
+  .add-btn        { display: none; }
+  .zoom-group     { display: none; }
 
   // Flex break after row 1 (forces row 2 onto its own line)
-  .header-top::after { content: ''; order: 1; width: 100%; height: 0; }
+  .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
 
   // Row 2: view tabs + categories + today
-  .view-tabs      { order: 2; flex: 1; justify-content: center; }
+  .view-tabs      { order: 10; flex: 1; justify-content: center; }
   .view-tab       { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
-  .categories-tab { order: 2; margin-left: 0; span { display: none; } }
-  .today-btn      { order: 2; margin-right: 0; }
+  .categories-tab { order: 10; margin-left: 0; span { display: none; } }
+  .today-btn      { order: 10; margin-right: 0; }
 
   // Row 3: nav group (period label)
-  .nav-group    { order: 3; width: 100%; justify-content: center; margin-left: 0; }
+  .nav-group    { order: 20; width: 100%; justify-content: center; margin-left: 0; }
   .period-label { min-width: 90px; font-size: 13px; }
 
   // Day columns: stack

@@ -3309,10 +3309,17 @@ body:has(.bottom-panel:not(.hidden))::before {
     margin-right: auto;
   }
   #themeBtn {
-    order: 1;
+    order: 2;
+  }
+  .lang-select {
+    display: block;
+    order: 3;
   }
   .hamburger-wrap {
-    order: 1;
+    order: 4;
+  }
+  .user-btn {
+    order: 5;
   }
   .add-btn {
     display: none;
@@ -3322,12 +3329,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
   .header-top::after {
     content: "";
-    order: 1;
+    order: 9;
     width: 100%;
     height: 0;
   }
   .view-tabs {
-    order: 2;
+    order: 10;
     flex: 1;
     justify-content: center;
   }
@@ -3338,18 +3345,18 @@ body:has(.bottom-panel:not(.hidden))::before {
     font-size: 12px;
   }
   .categories-tab {
-    order: 2;
+    order: 10;
     margin-left: 0;
   }
   .categories-tab span {
     display: none;
   }
   .today-btn {
-    order: 2;
+    order: 10;
     margin-right: 0;
   }
   .nav-group {
-    order: 3;
+    order: 20;
     width: 100%;
     justify-content: center;
     margin-left: 0;
