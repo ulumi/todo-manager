@@ -1229,7 +1229,18 @@ class TodoApp {
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
-    this._applyBackup(backup, { silent: false });
+
+    // If local data was written more recently than Firestore, local wins.
+    // Covers: task created offline, or push not yet confirmed before refresh.
+    const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
+    const firestoreTime  = backup._firestoreUpdatedAt || 0;
+    if (localWriteTime > firestoreTime) {
+      await pushToFirestore(getFullBackup(state.todos));
+      return;
+    }
+
+    const { _firestoreUpdatedAt, ...cleanBackup } = backup;
+    this._applyBackup(cleanBackup, { silent: false });
   }
 
   // Merge a backup object into the app state (from Firestore or server)

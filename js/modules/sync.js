@@ -17,13 +17,13 @@ function userDocRef() {
 }
 
 // ── One-time read from Firestore ──────────────────────────
-// Returns the stored backup object, or null if none exists.
+// Returns the stored backup object (with _firestoreUpdatedAt in ms), or null.
 export async function loadFromFirestore() {
   try {
     const snap = await getDoc(userDocRef());
     if (!snap.exists()) return null;
     const { updatedAt, ...data } = snap.data();
-    return data;
+    return { ...data, _firestoreUpdatedAt: updatedAt?.toMillis() ?? 0 };
   } catch (err) {
     console.warn('[sync] loadFromFirestore failed:', err.message);
     return null;
@@ -52,7 +52,9 @@ export function subscribeToFirestore(onData) {
     return () => {}; // no user yet
   }
 
-  return onSnapshot(ref, snap => {
+  return onSnapshot(ref, { includeMetadataChanges: true }, snap => {
+    // Skip cache-only snapshots — could be stale and would overwrite newer local data
+    if (snap.metadata.fromCache) return;
     if (!snap.exists()) return;
     const { updatedAt, ...data } = snap.data();
     onData(data);
@@ -62,26 +64,13 @@ export function subscribeToFirestore(onData) {
 }
 
 // ── Offline / online indicator ────────────────────────────
-let _unsubOffline = null;
-
 export function setupOfflineIndicator() {
   const badge = document.getElementById('offlineBadge');
   if (!badge) return;
 
-  function update() {
-    badge.hidden = navigator.onLine;
-  }
-
-  update();
-  window.addEventListener('online',  update);
-  window.addEventListener('offline', update);
-
-  _unsubOffline = () => {
-    window.removeEventListener('online',  update);
-    window.removeEventListener('offline', update);
-  };
-}
-
-export function teardownOfflineIndicator() {
-  if (_unsubOffline) { _unsubOffline(); _unsubOffline = null; }
+  // Don't check navigator.onLine on init — it's unreliable in some environments.
+  // The badge starts hidden (via HTML attribute); show it only when an actual
+  // offline event fires.
+  window.addEventListener('online',  () => { badge.hidden = true; });
+  window.addEventListener('offline', () => { badge.hidden = false; });
 }

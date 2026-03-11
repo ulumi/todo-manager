@@ -52,6 +52,7 @@ export async function saveBackupToServer(backup) {
 
 export function saveTodos(todos) {
   localStorage.setItem('todos', JSON.stringify(todos));
+  localStorage.setItem('_localWriteTime', Date.now().toString());
   serverPost('/todos', todos);
   pushToFirestore(getFullBackup(todos)); // fire-and-forget
 }
