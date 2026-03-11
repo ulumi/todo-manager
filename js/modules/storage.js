@@ -5,9 +5,11 @@
 import { DS, today } from './utils.js';
 
 const API = 'http://localhost:3333';
+const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 // Fire-and-forget POST — never throws, 1.5s timeout
 async function serverPost(endpoint, data) {
+  if (!IS_LOCAL) return;
   try {
     await fetch(`${API}${endpoint}`, {
       method: 'POST',
@@ -20,6 +22,7 @@ async function serverPost(endpoint, data) {
 
 // Returns full backup from server, or null if unavailable
 export async function loadFromServer() {
+  if (!IS_LOCAL) return null;
   try {
     const res = await fetch(`${API}/backup`, { signal: AbortSignal.timeout(1500) });
     if (!res.ok) return null;
