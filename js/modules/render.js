@@ -122,7 +122,6 @@ export function renderDayView(todos) {
 
   // Sort by stored order (recurring per-day, punctual per-day)
   const recOrd = window.app?.recurringOrder?.[dateStr] || {};
-  console.log('[renderDayView]', dateStr, 'daily order:', JSON.stringify(recOrd.daily));
   const dayOrd = window.app?.dayOrder?.[dateStr] || [];
   const sortByOrder = (items, ord) => [...items].sort((a, b) => {
     const ia = ord.indexOf(a.id), ib = ord.indexOf(b.id);

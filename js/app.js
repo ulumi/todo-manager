@@ -47,6 +47,7 @@ state.initializeState();
 // Application class
 class TodoApp {
   constructor() {
+    window.app = this; // assign early so renderDayView can read recurringOrder/dayOrder on first render
     this._sugg = [];
     this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
     if (isNaN(this.zoomIdx) || this.zoomIdx < 0 || this.zoomIdx > 2) this.zoomIdx = 1;
@@ -505,7 +506,6 @@ class TodoApp {
   }
 
   dropReorder(draggedId, group, targetId, before) {
-    console.log('[dropReorder]', { draggedId, group, targetId, before, typeOfDraggedId: typeof draggedId, typeOfTargetId: typeof targetId });
     if (draggedId === targetId) return;
     const dateStr = DS(state.navDate);
     if (group === 'punctual') {
@@ -530,7 +530,6 @@ class TodoApp {
       if (idx < 0) return;
       newOrder.splice(before ? idx : idx + 1, 0, draggedId);
       this.recurringOrder[dateStr][group] = newOrder;
-      console.log('[dropReorder recurring] saved:', dateStr, group, JSON.stringify(newOrder));
       // Propagate new relative order to future dates that already have a stored order for this group.
       // For each future date, items that appear in newOrder are re-sorted to match its relative order;
       // items unique to that date (not in newOrder) keep their existing relative positions.
