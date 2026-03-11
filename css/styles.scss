@@ -3060,7 +3060,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Row 2: view tabs
   .view-tabs { order: 2; width: 100%; justify-content: center; }
   .view-tab  { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
-  .categories-tab { display: none; }
+  .categories-tab { margin-left: 0; span { display: none; } }
 
   // Row 3: nav group + today
   .nav-group    { order: 3; width: 100%; justify-content: center; margin-left: 0; }

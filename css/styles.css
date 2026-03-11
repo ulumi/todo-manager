@@ -3332,6 +3332,9 @@ body:has(.bottom-panel:not(.hidden))::before {
     font-size: 12px;
   }
   .categories-tab {
+    margin-left: 0;
+  }
+  .categories-tab span {
     display: none;
   }
   .nav-group {
