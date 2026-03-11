@@ -1,13 +1,8 @@
 // ════════════════════════════════════════════════════════
 //  SERVICE WORKER — Full offline support
-//  Strategy:
-//   - Same-origin assets  → cache-first (precached on install)
-//   - Known CDN assets    → cache-first with network fallback
-//   - Everything else     → pass through (Firestore handles its own offline)
-//   - Navigate            → serve cached index.html
 // ════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'todo-v1';
+const CACHE_NAME = 'todo-v2';
 
 const LOCAL_ASSETS = [
   '/',
@@ -33,24 +28,42 @@ const LOCAL_ASSETS = [
   '/js/modules/version.js',
 ];
 
-// Only these CDN prefixes are handled by the SW.
-// All other external origins (googleapis.com, etc.) are left untouched
-// so Firestore's own offline persistence (IndexedDB) can operate normally.
+const CDN_ASSETS = [
+  'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js',
+  'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js',
+  'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js',
+];
+
+// Only these CDN prefixes are intercepted by the SW.
+// Everything else (googleapis.com etc.) passes through untouched so
+// Firestore's IndexedDB offline persistence works unimpeded.
 const CDN_PREFIXES = [
   'https://www.gstatic.com/firebasejs/',
   'https://cdn.jsdelivr.net/npm/gsap',
 ];
 
-// ── Install: precache all local assets ───────────────────
+// ── Helpers ───────────────────────────────────────────────
+async function precacheCDN(cache) {
+  // Fetch each CDN asset explicitly with cors mode and cache it.
+  // Failures are caught individually so one bad URL can't block the rest.
+  await Promise.allSettled(CDN_ASSETS.map(async url => {
+    const res = await fetch(url, { mode: 'cors' });
+    if (res.ok) await cache.put(url, res);
+  }));
+}
+
+// ── Install ───────────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(LOCAL_ASSETS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(LOCAL_ASSETS); // must all succeed
+      await precacheCDN(cache);         // best-effort
+    }).then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: remove old caches ──────────────────────────
+// ── Activate ──────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -66,21 +79,16 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle GET
   if (request.method !== 'GET') return;
-
-  // Skip API calls (localhost:3333)
-  if (url.port === '3333') return;
+  if (url.port === '3333') return; // local API — skip
 
   const isSameOrigin = url.origin === self.location.origin;
   const isCDN = CDN_PREFIXES.some(p => request.url.startsWith(p));
 
-  // Pass through anything that isn't same-origin or a known CDN.
-  // This lets Firestore, Firebase Auth, and Google APIs manage
-  // their own network/offline logic without SW interference.
+  // Pass through anything outside our known set (Firestore API, Auth endpoints…)
   if (!isSameOrigin && !isCDN) return;
 
-  // Navigate → always serve index.html from cache (SPA)
+  // Navigate → SPA: always serve cached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
       caches.match('/index.html').then(r => r || fetch(request))
@@ -88,25 +96,23 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // CDN assets → cache-first; cache on miss, fallback to cache if offline
+  // CDN → cache-first; fetch + cache on miss, cache fallback if offline
   if (isCDN) {
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;
-        return fetch(request).then(response => {
-          // Only cache valid non-opaque responses
-          if (response && response.status === 200 && response.type !== 'opaque') {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+        return fetch(request, { mode: 'cors' }).then(res => {
+          if (res && res.ok) {
+            caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
           }
-          return response;
-        }).catch(() => caches.match(request)); // offline fallback
+          return res;
+        }).catch(() => caches.match(request));
       })
     );
     return;
   }
 
-  // Same-origin assets → cache-first (already precached on install)
+  // Same-origin → cache-first (precached on install)
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );
