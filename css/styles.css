@@ -135,11 +135,28 @@ header.scrolled {
 
 .categories-tab {
   margin-left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.categories-tab .cat-icon {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+  opacity: 0.7;
+}
+.categories-tab:hover {
+  color: var(--primary);
+}
+.categories-tab:hover .cat-icon {
+  transform: scale(1.25) rotate(-8deg);
+  opacity: 1;
 }
 .categories-tab.active {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: var(--primary);
   box-shadow: none;
+}
+.categories-tab.active .cat-icon {
+  opacity: 1;
 }
 
 .nav-group {
@@ -182,6 +199,7 @@ header.scrolled {
   transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   backdrop-filter: blur(8px);
   color: var(--text-muted);
+  margin-right: 6px;
 }
 .today-btn:hover {
   border-color: var(--primary);
@@ -3320,6 +3338,10 @@ body:has(.bottom-panel:not(.hidden))::before {
     width: 100%;
     justify-content: center;
     margin-left: 0;
+  }
+  .today-btn {
+    order: 3;
+    margin-right: 0;
   }
   .period-label {
     min-width: 90px;

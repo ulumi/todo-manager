@@ -11,8 +11,6 @@ export function setupEventListeners(app) {
   });
 
   // Navigation
-  document.getElementById('prevBtn').addEventListener('click', () => app.navigate(-1));
-  document.getElementById('nextBtn').addEventListener('click', () => app.navigate(1));
   document.getElementById('todayBtn').addEventListener('click', () => app.todayNav());
   document.getElementById('openModalBtn').addEventListener('click', () => app.openModal());
 
