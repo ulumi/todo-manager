@@ -271,7 +271,10 @@ class TodoApp {
       gsap.set(blocks, { opacity: 0, y: 12 });
     }
 
-    // 3. Enter
+    // 3. Scroll to top before entering new view
+    window.scrollTo(0, 0);
+
+    // 4. Enter
     gsap.set(main, { x: slideX, y: slideY });
     await gsap.to(main, {
       opacity: 1,
@@ -282,7 +285,7 @@ class TodoApp {
       ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
     });
 
-    // 4. Stagger blocks — total spread capped at 120ms regardless of count
+    // 5. Stagger blocks — total spread capped at 120ms regardless of count
     if (blocks.length > 0) {
       gsap.to(blocks, {
         opacity: 1,
@@ -295,7 +298,7 @@ class TodoApp {
       });
     }
 
-    // 5. Stagger todo items
+    // 6. Stagger todo items
     setTimeout(() => {
       gsap.from('.todo-item', {
         opacity: 0,
