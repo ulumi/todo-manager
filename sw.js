@@ -88,15 +88,7 @@ self.addEventListener('fetch', event => {
   // Pass through anything outside our known set (Firestore API, Auth endpoints…)
   if (!isSameOrigin && !isCDN) return;
 
-  // Navigate → SPA: always serve cached index.html
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      caches.match('/index.html').then(r => r || fetch(request))
-    );
-    return;
-  }
-
-  // CDN → cache-first; fetch + cache on miss, cache fallback if offline
+  // CDN → cache-first (immutable versioned assets)
   if (isCDN) {
     event.respondWith(
       caches.match(request).then(cached => {
@@ -112,8 +104,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Same-origin → cache-first (precached on install)
+  // Same-origin (including navigate) → network-first, cache fallback if offline
   event.respondWith(
-    caches.match(request).then(cached => cached || fetch(request))
+    fetch(request).then(res => {
+      if (res && res.ok) {
+        caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
+      }
+      return res;
+    }).catch(() => caches.match(request))
   );
 });
