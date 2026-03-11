@@ -151,7 +151,7 @@ export function renderDayView(todos) {
   const hasPunctual = sortedPunctual.length > 0;
   const actionBar = `
     <div class="day-action-bar">
-      <button class="day-action-btn" onclick="window.app.openModal()">＋ Ajouter</button>
+      <button class="day-action-btn day-action-btn--add" onclick="window.app.openModal()">＋ Ajouter</button>
       <button class="day-action-btn" onclick="window.app.openTemplateModal()">☰ Insérer</button>
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;

@@ -608,22 +608,6 @@ main {
   margin-top: 12px;
 }
 
-.day-action-btn {
-  flex: 1;
-  padding: 10px 14px;
-  border: 1.5px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  transition: all .15s;
-  text-align: center;
-
-  &:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
-}
-
 
 // ─── 7. Todo Items ───────────────────────────────────────────────────────
 
@@ -1938,24 +1922,45 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .day-action-bar {
   display: flex;
-  gap: 8px;
-  padding: 12px 0 4px;
+  gap: 10px;
+  margin-top: 20px;
+  padding-bottom: 8px;
 }
 
 .day-action-btn {
   flex: 1;
-  padding: 10px 8px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface2);
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 600;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
   cursor: pointer;
-  transition: all .18s;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, box-shadow .15s;
 
-  &:hover { border-color: var(--primary); color: var(--primary); }
-  &--danger:hover { border-color: var(--danger); color: var(--danger); }
+  &:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 6px 24px rgba(0,0,0,.16);
+  }
+
+  &--add {
+    background: var(--today-border);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 20px rgba(245,158,11,.25);
+    &:hover { color: #fff; border-color: transparent; box-shadow: 0 6px 24px rgba(245,158,11,.4); }
+  }
+
+  &--danger:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    box-shadow: 0 6px 24px rgba(0,0,0,.16);
+  }
 }
 
 
