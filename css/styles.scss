@@ -1934,6 +1934,31 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 
+// ─── 15b. Day Action Bar (mobile inline) ─────────────────────────────────
+
+.day-action-bar {
+  display: none; // desktop: hidden (float buttons handle it)
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+
+.day-action-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .18s;
+
+  &:hover { border-color: var(--primary); color: var(--primary); }
+  &--danger:hover { border-color: var(--danger); color: var(--danger); }
+}
+
+
 // ─── 16. Float Buttons ───────────────────────────────────────────────────
 
 .template-day-float-btn,
@@ -3115,10 +3140,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Week
   .week-grid { flex-wrap: wrap; .week-day-col { flex-basis: calc(50% - 6px); } }
 
-  // Float buttons
-  .quick-add-float-btn          { bottom: 16px; left: 16px; right: auto; }
+  // Float buttons: hidden on mobile (replaced by inline day-action-bar)
+  .quick-add-float-btn,
   .clear-day-float-btn,
-  .template-day-float-btn       { bottom: 16px; }
+  .template-day-float-btn       { display: none !important; }
+
+  // Inline action bar: visible on mobile
+  .day-action-bar { display: flex; }
 
   // Todo items: larger tap targets
   .todo-check { width: 28px; height: 28px; }

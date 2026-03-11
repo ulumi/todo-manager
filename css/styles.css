@@ -2036,6 +2036,33 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: none;
 }
 
+.day-action-bar {
+  display: none;
+  gap: 8px;
+  padding: 12px 0 4px;
+}
+
+.day-action-btn {
+  flex: 1;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.day-action-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.day-action-btn--danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 .template-day-float-btn,
 .clear-day-float-btn {
   position: fixed;
@@ -3434,14 +3461,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   .week-grid .week-day-col {
     flex-basis: calc(50% - 6px);
   }
-  .quick-add-float-btn {
-    bottom: 16px;
-    left: 16px;
-    right: auto;
-  }
+  .quick-add-float-btn,
   .clear-day-float-btn,
   .template-day-float-btn {
-    bottom: 16px;
+    display: none !important;
+  }
+  .day-action-bar {
+    display: flex;
   }
   .todo-check {
     width: 28px;
