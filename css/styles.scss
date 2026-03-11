@@ -1934,10 +1934,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 
-// ─── 15b. Day Action Bar (mobile inline) ─────────────────────────────────
+// ─── 15b. Day Action Bar ─────────────────────────────────────────────────
 
 .day-action-bar {
-  display: none; // desktop: hidden (float buttons handle it)
+  display: flex;
   gap: 8px;
   padding: 12px 0 4px;
 }
@@ -1959,7 +1959,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 
-// ─── 16. Float Buttons ───────────────────────────────────────────────────
+// ─── 16. Float Buttons (hidden — replaced by inline day-action-bar) ──────
+
+.template-day-float-btn,
+.clear-day-float-btn,
+.quick-add-float-btn { display: none !important; }
 
 .template-day-float-btn,
 .clear-day-float-btn {

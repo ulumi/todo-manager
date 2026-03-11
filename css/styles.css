@@ -2037,7 +2037,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .day-action-bar {
-  display: none;
+  display: flex;
   gap: 8px;
   padding: 12px 0 4px;
 }
@@ -2061,6 +2061,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 .day-action-btn--danger:hover {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+.template-day-float-btn,
+.clear-day-float-btn,
+.quick-add-float-btn {
+  display: none !important;
 }
 
 .template-day-float-btn,
