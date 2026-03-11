@@ -3327,6 +3327,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .zoom-group {
     display: none;
   }
+  .header-spacer {
+    display: none;
+  }
   .header-top::after {
     content: "";
     order: 9;
