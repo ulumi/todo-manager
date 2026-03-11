@@ -3350,6 +3350,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .categories-tab {
     order: 10;
     margin-left: 0;
+    flex: none;
   }
   .categories-tab span {
     display: none;

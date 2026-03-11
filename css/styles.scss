@@ -3066,7 +3066,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Row 2: view tabs + categories + today
   .view-tabs      { order: 10; flex: 1; justify-content: center; }
   .view-tab       { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
-  .categories-tab { order: 10; margin-left: 0; span { display: none; } }
+  .categories-tab { order: 10; margin-left: 0; flex: none; span { display: none; } }
   .today-btn      { order: 10; margin-right: 0; }
 
   // Row 3: nav group (period label)
