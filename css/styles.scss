@@ -3057,14 +3057,17 @@ body:has(.bottom-panel:not(.hidden))::before {
   .add-btn      { display: none; }
   .zoom-group { display: none; }
 
-  // Row 2: view tabs
-  .view-tabs { order: 2; width: 100%; justify-content: center; }
-  .view-tab  { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
-  .categories-tab { margin-left: 0; span { display: none; } }
+  // Flex break after row 1 (forces row 2 onto its own line)
+  .header-top::after { content: ''; order: 1; width: 100%; height: 0; }
 
-  // Row 3: nav group + today
+  // Row 2: view tabs + categories + today
+  .view-tabs      { order: 2; flex: 1; justify-content: center; }
+  .view-tab       { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
+  .categories-tab { order: 2; margin-left: 0; span { display: none; } }
+  .today-btn      { order: 2; margin-right: 0; }
+
+  // Row 3: nav group (period label)
   .nav-group    { order: 3; width: 100%; justify-content: center; margin-left: 0; }
-  .today-btn    { order: 3; margin-right: 0; }
   .period-label { min-width: 90px; font-size: 13px; }
 
   // Day columns: stack
