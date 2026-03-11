@@ -96,18 +96,25 @@ class TodoApp {
     const backup = await loadFromServer();
     if (!backup) return; // server not running
 
-    if (!backup.calendar || backup.calendar.length === 0) {
-      // Server has no data yet — initialise from localStorage
+    const localHasData = state.todos.length > 0;
+
+    if (localHasData) {
+      // localStorage is the source of truth — push it to server
       await saveBackupToServer(getFullBackup(state.todos));
       return;
     }
 
-    // Server has data — use as source of truth
+    if (!backup.calendar || backup.calendar.length === 0) {
+      // Both empty — nothing to do
+      return;
+    }
+
+    // localStorage is empty, server has data — pull from server
     state.setTodos(backup.calendar);
-    if (backup.categories)    localStorage.setItem('projects',       JSON.stringify(backup.categories));
-    if (backup.templates)     localStorage.setItem('dayTemplates',   JSON.stringify(backup.templates));
-    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks', JSON.stringify(backup.suggestedTasks));
-    if (backup.taskOrder)     localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
+    if (backup.categories)     localStorage.setItem('projects',         JSON.stringify(backup.categories));
+    if (backup.templates)      localStorage.setItem('dayTemplates',     JSON.stringify(backup.templates));
+    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',   JSON.stringify(backup.suggestedTasks));
+    if (backup.taskOrder)      localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
     if (backup.config) {
       if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
       if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
