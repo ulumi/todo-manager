@@ -50,6 +50,13 @@
       </button>
     </div>
     <button class="add-btn" id="openModalBtn" data-i18n="addTask" onclick="window.app.openModal();">＋ Add Task</button>
+    <div id="offlineBadge" class="offline-badge" hidden>Hors ligne</div>
+    <button class="user-btn" id="userBtn" onclick="window.app.openAuthModal()" title="Compte">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -300,6 +307,74 @@
 </div>
 
 <div id="versionLabel"></div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay hidden" id="authModalOverlay" onclick="if(event.target===this)window.app.closeAuthModal()">
+  <div class="modal auth-modal">
+
+    <!-- Logged-in panel -->
+    <div id="authPanelUser" class="auth-panel hidden">
+      <div class="modal-title">Mon compte</div>
+      <div class="auth-user-info">
+        <div class="auth-avatar" id="authAvatar">👤</div>
+        <div>
+          <div class="auth-user-name" id="authUserName">Invité</div>
+          <div class="auth-user-sub" id="authUserSub">Session temporaire</div>
+        </div>
+      </div>
+      <div id="authUpgradeSection" class="auth-upgrade-section hidden">
+        <p class="auth-upgrade-msg">Créez un compte pour accéder à vos tâches sur tous vos appareils.</p>
+        <button class="btn btn-primary" style="width:100%" onclick="window.app.showAuthRegister()">Créer un compte</button>
+      </div>
+      <div class="auth-footer-actions">
+        <button class="btn btn-ghost" style="width:100%;color:var(--danger)" onclick="window.app.authSignOut()">Se déconnecter</button>
+      </div>
+      <button class="auth-close-btn" onclick="window.app.closeAuthModal()">✕</button>
+    </div>
+
+    <!-- Login / Register panel -->
+    <div id="authPanelForm" class="auth-panel">
+      <div class="modal-title" id="authFormTitle">Se connecter</div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="authEmail" placeholder="vous@exemple.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="auth-error hidden" id="authError"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" id="authSubmitBtn" onclick="window.app.authSubmit()">Se connecter</button>
+      <div class="auth-switch">
+        <span id="authSwitchText">Pas encore de compte ?</span>
+        <button class="btn-link" id="authSwitchBtn" onclick="window.app.authToggleMode()">Créer un compte</button>
+      </div>
+      <div class="auth-divider"><span>ou</span></div>
+      <button class="btn btn-ghost" style="width:100%" onclick="window.app.authContinueAsGuest()">Continuer sans compte</button>
+      <button class="auth-close-btn" onclick="window.app.closeAuthModal()">✕</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Upgrade prompt (shown to guests at end of session) -->
+<div class="modal-overlay hidden" id="upgradePromptOverlay">
+  <div class="modal auth-modal">
+    <div class="modal-title">Sauvegarder vos tâches ?</div>
+    <p class="auth-upgrade-msg">Créez un compte gratuit pour accéder à vos tâches depuis n'importe quel appareil.</p>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="upgradeEmail" placeholder="vous@exemple.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mot de passe</label>
+      <input class="form-input" type="password" id="upgradePassword" placeholder="••••••••">
+    </div>
+    <div class="auth-error hidden" id="upgradeError"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window.app.upgradeSubmit()">Créer mon compte</button>
+    <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="window.app.upgradeDismiss()">Non merci, continuer sans compte</button>
+  </div>
+</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

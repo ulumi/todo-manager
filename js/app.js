@@ -41,6 +41,12 @@ import {
   saveCategoryDescription, setCategoryIcon
 } from './modules/projectView.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
+import {
+  initAuth, onUserChange, isGuest, getCurrentUser,
+  signInGuest, signInWithEmail, registerWithEmail,
+  upgradeGuestToEmail, signOut,
+} from './modules/auth.js';
+import { loadFromFirestore, subscribeToFirestore, setupOfflineIndicator } from './modules/sync.js';
 
 // Initialize state
 state.initializeState();
@@ -87,6 +93,8 @@ class TodoApp {
         this._animateQuickAddBtn();
       }, 150);
     });
+    setupOfflineIndicator();
+    this._initFirebase(); // async — does not block render
   }
 
   // ═══════════════════════════════════════════════════
@@ -1188,6 +1196,232 @@ class TodoApp {
     this.closeHamburger();
     openAdminModal();
     setTimeout(() => showAdminSection(section), 50);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // FIREBASE — auth & sync
+  // ═══════════════════════════════════════════════════
+  async _initFirebase() {
+    // 1. Wait for Firebase to restore the previous session (or get null)
+    const user = await initAuth();
+
+    // 2. No session → sign in as guest automatically
+    if (!user) await signInGuest();
+
+    // 3. Merge Firestore data into the app (first load)
+    await this._syncFirebase();
+
+    // 4. Listen for realtime updates from other devices
+    this._firestoreUnsub = subscribeToFirestore(backup => {
+      this._applyBackup(backup, { silent: true });
+    });
+
+    // 5. Update user button on every auth state change
+    onUserChange(() => this._updateUserBtn());
+    this._updateUserBtn();
+  }
+
+  async _syncFirebase() {
+    const backup = await loadFromFirestore();
+    if (!backup) {
+      // Nothing in Firestore yet → push current localStorage data up
+      const { getFullBackup } = await import('./modules/storage.js');
+      const { pushToFirestore } = await import('./modules/sync.js');
+      await pushToFirestore(getFullBackup(state.todos));
+      return;
+    }
+    this._applyBackup(backup, { silent: false });
+  }
+
+  // Merge a backup object into the app state (from Firestore or server)
+  _applyBackup(backup, { silent }) {
+    let changed = false;
+
+    if (backup.calendar) {
+      const localJSON = JSON.stringify(state.todos);
+      const remoteJSON = JSON.stringify(backup.calendar);
+      if (localJSON !== remoteJSON) {
+        state.setTodos(backup.calendar);
+        localStorage.setItem('todos', remoteJSON);
+        changed = true;
+      }
+    }
+    if (backup.categories)     localStorage.setItem('projects',          JSON.stringify(backup.categories));
+    if (backup.templates)      localStorage.setItem('dayTemplates',      JSON.stringify(backup.templates));
+    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
+    if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
+    if (backup.config) {
+      if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
+      if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
+      if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+    }
+
+    if (changed && !silent) this.render();
+  }
+
+  _updateUserBtn() {
+    const user = getCurrentUser();
+    const btn  = document.getElementById('userBtn');
+    if (!btn) return;
+    btn.classList.toggle('authenticated', !!user && !user.isAnonymous);
+    btn.title = user?.isAnonymous ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
+  }
+
+  // ── Auth modal ────────────────────────────────────────
+  _authMode = 'login'; // 'login' | 'register'
+
+  openAuthModal() {
+    const user = getCurrentUser();
+    const panelUser = document.getElementById('authPanelUser');
+    const panelForm = document.getElementById('authPanelForm');
+
+    if (user && !user.isAnonymous) {
+      // Logged in → show account panel
+      panelUser.classList.remove('hidden');
+      panelForm.classList.add('hidden');
+      document.getElementById('authUserName').textContent = user.email || 'Utilisateur';
+      document.getElementById('authUserSub').textContent  = 'Compte connecté';
+      document.getElementById('authAvatar').textContent   = '✓';
+      document.getElementById('authUpgradeSection').classList.add('hidden');
+    } else {
+      // Guest or logged out → show form
+      panelUser.classList.add('hidden');
+      panelForm.classList.remove('hidden');
+      if (user?.isAnonymous) {
+        // Show account info as guest
+        panelUser.classList.remove('hidden');
+        panelForm.classList.add('hidden');
+        document.getElementById('authUserName').textContent = 'Invité';
+        document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
+        document.getElementById('authAvatar').textContent   = '👤';
+        document.getElementById('authUpgradeSection').classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('authModalOverlay').classList.remove('hidden');
+    document.getElementById('authError').classList.add('hidden');
+    document.getElementById('authEmail').value    = '';
+    document.getElementById('authPassword').value = '';
+  }
+
+  showAuthRegister() {
+    const panelUser = document.getElementById('authPanelUser');
+    const panelForm = document.getElementById('authPanelForm');
+    panelUser.classList.add('hidden');
+    panelForm.classList.remove('hidden');
+    this._authMode = 'register';
+    this._updateAuthFormLabels();
+  }
+
+  closeAuthModal() {
+    document.getElementById('authModalOverlay').classList.add('hidden');
+  }
+
+  authToggleMode() {
+    this._authMode = this._authMode === 'login' ? 'register' : 'login';
+    this._updateAuthFormLabels();
+  }
+
+  _updateAuthFormLabels() {
+    const isRegister = this._authMode === 'register';
+    document.getElementById('authFormTitle').textContent   = isRegister ? 'Créer un compte' : 'Se connecter';
+    document.getElementById('authSubmitBtn').textContent   = isRegister ? 'Créer mon compte' : 'Se connecter';
+    document.getElementById('authSwitchText').textContent  = isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?';
+    document.getElementById('authSwitchBtn').textContent   = isRegister ? 'Se connecter' : 'Créer un compte';
+    document.getElementById('authError').classList.add('hidden');
+  }
+
+  async authSubmit() {
+    const email    = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errEl    = document.getElementById('authError');
+    errEl.classList.add('hidden');
+
+    if (!email || !password) {
+      errEl.textContent = 'Veuillez remplir tous les champs.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      if (this._authMode === 'register') {
+        const user = getCurrentUser();
+        if (user?.isAnonymous) {
+          // Upgrade the guest account → same uid, data preserved
+          await upgradeGuestToEmail(email, password);
+        } else {
+          await registerWithEmail(email, password);
+        }
+      } else {
+        await signInWithEmail(email, password);
+        // Pull the newly logged-in user's data from Firestore
+        await this._syncFirebase();
+      }
+      this.closeAuthModal();
+      this._updateUserBtn();
+      this.render();
+    } catch (err) {
+      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  authContinueAsGuest() {
+    this.closeAuthModal();
+  }
+
+  async authSignOut() {
+    await signOut(); // re-signs in as guest automatically
+    this.closeAuthModal();
+    this._updateUserBtn();
+  }
+
+  // ── Upgrade prompt (shown to guests proactively) ──────
+  showUpgradePrompt() {
+    document.getElementById('upgradePromptOverlay').classList.remove('hidden');
+    document.getElementById('upgradeError').classList.add('hidden');
+    document.getElementById('upgradeEmail').value    = '';
+    document.getElementById('upgradePassword').value = '';
+  }
+
+  async upgradeSubmit() {
+    const email    = document.getElementById('upgradeEmail').value.trim();
+    const password = document.getElementById('upgradePassword').value;
+    const errEl    = document.getElementById('upgradeError');
+    errEl.classList.add('hidden');
+
+    if (!email || !password) {
+      errEl.textContent = 'Veuillez remplir tous les champs.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      await upgradeGuestToEmail(email, password);
+      document.getElementById('upgradePromptOverlay').classList.add('hidden');
+      this._updateUserBtn();
+    } catch (err) {
+      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  upgradeDismiss() {
+    document.getElementById('upgradePromptOverlay').classList.add('hidden');
+  }
+
+  _firebaseErrorMessage(code) {
+    const messages = {
+      'auth/email-already-in-use':    'Cet email est déjà utilisé.',
+      'auth/invalid-email':           'Email invalide.',
+      'auth/weak-password':           'Mot de passe trop faible (minimum 6 caractères).',
+      'auth/wrong-password':          'Mot de passe incorrect.',
+      'auth/user-not-found':          'Aucun compte associé à cet email.',
+      'auth/too-many-requests':       'Trop de tentatives. Réessayez plus tard.',
+      'auth/credential-already-in-use': 'Cet email est déjà associé à un autre compte.',
+      'auth/network-request-failed':  'Erreur réseau. Vérifiez votre connexion.',
+    };
+    return messages[code] || 'Une erreur est survenue. Veuillez réessayer.';
   }
 
   // ═══════════════════════════════════════════════════
