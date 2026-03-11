@@ -1,10 +1,10 @@
 // ════════════════════════════════════════════════════════
 //  SERVICE WORKER — Full offline support
 //  Strategy:
-//   - Local assets  → cache-first (precached on install)
-//   - CDN assets    → cache-first with network fallback
-//   - API calls     → network-only (skip /todos, /backup)
-//   - Navigate      → serve cached index.html
+//   - Same-origin assets  → cache-first (precached on install)
+//   - Known CDN assets    → cache-first with network fallback
+//   - Everything else     → pass through (Firestore handles its own offline)
+//   - Navigate            → serve cached index.html
 // ════════════════════════════════════════════════════════
 
 const CACHE_NAME = 'todo-v1';
@@ -33,6 +33,9 @@ const LOCAL_ASSETS = [
   '/js/modules/version.js',
 ];
 
+// Only these CDN prefixes are handled by the SW.
+// All other external origins (googleapis.com, etc.) are left untouched
+// so Firestore's own offline persistence (IndexedDB) can operate normally.
 const CDN_PREFIXES = [
   'https://www.gstatic.com/firebasejs/',
   'https://cdn.jsdelivr.net/npm/gsap',
@@ -63,33 +66,47 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and API calls (localhost:3333)
+  // Only handle GET
   if (request.method !== 'GET') return;
+
+  // Skip API calls (localhost:3333)
   if (url.port === '3333') return;
 
-  // Navigate → always serve index.html from cache
+  const isSameOrigin = url.origin === self.location.origin;
+  const isCDN = CDN_PREFIXES.some(p => request.url.startsWith(p));
+
+  // Pass through anything that isn't same-origin or a known CDN.
+  // This lets Firestore, Firebase Auth, and Google APIs manage
+  // their own network/offline logic without SW interference.
+  if (!isSameOrigin && !isCDN) return;
+
+  // Navigate → always serve index.html from cache (SPA)
   if (request.mode === 'navigate') {
-    event.respondWith(caches.match('/index.html'));
+    event.respondWith(
+      caches.match('/index.html').then(r => r || fetch(request))
+    );
     return;
   }
 
-  // CDN assets → cache-first, cache on miss
-  const isCDN = CDN_PREFIXES.some(p => request.url.startsWith(p));
+  // CDN assets → cache-first; cache on miss, fallback to cache if offline
   if (isCDN) {
     event.respondWith(
       caches.match(request).then(cached => {
         if (cached) return cached;
         return fetch(request).then(response => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          // Only cache valid non-opaque responses
+          if (response && response.status === 200 && response.type !== 'opaque') {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          }
           return response;
-        });
+        }).catch(() => caches.match(request)); // offline fallback
       })
     );
     return;
   }
 
-  // Local assets → cache-first
+  // Same-origin assets → cache-first (already precached on install)
   event.respondWith(
     caches.match(request).then(cached => cached || fetch(request))
   );
