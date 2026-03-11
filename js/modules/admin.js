@@ -290,8 +290,8 @@ export function openAdminModal() {
             </div>
             <div class="admin-section">
               <h3>Import</h3>
-              <input type="file" id="importFileInput" accept=".json" style="display:none;">
-              <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier</button>
+              <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="window.app.handleImportFile(event)">
+              <button class="btn btn-primary" onclick="document.getElementById('importFileInput').click()" style="width:100%;">Importer un fichier JSON</button>
             </div>
             <div class="admin-section">
               <h3>Réinitialiser</h3>
