@@ -723,6 +723,10 @@ class TodoApp {
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
         this.applyZoom();
       }
+      if (data.categories) localStorage.setItem('projects', JSON.stringify(data.categories));
+      if (data.templates) localStorage.setItem('dayTemplates', JSON.stringify(data.templates));
+      if (data.suggestedTasks) localStorage.setItem('suggestedTasks', JSON.stringify(data.suggestedTasks));
+      if (data.taskOrder) localStorage.setItem('projectTaskOrder', JSON.stringify(data.taskOrder));
       saveTodos(state.todos);
       closeAdminModal();
       this.render();

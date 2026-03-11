@@ -20,6 +20,19 @@ export function getAppConfig() {
   };
 }
 
+export function getFullBackup(todos) {
+  const raw = key => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; };
+  return {
+    calendar: todos,
+    config: getAppConfig(),
+    categories: raw('projects'),
+    templates: raw('dayTemplates'),
+    suggestedTasks: raw('suggestedTasks'),
+    taskOrder: raw('projectTaskOrder'),
+    exportDate: new Date().toISOString()
+  };
+}
+
 export function downloadJSON(obj, filename) {
   const json = JSON.stringify(obj, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -34,8 +47,7 @@ export function downloadJSON(obj, filename) {
 }
 
 export function exportAllData(todos) {
-  const data = { calendar: todos, config: getAppConfig(), exportDate: new Date().toISOString() };
-  downloadJSON(data, `todo-backup-${DS(today())}.json`);
+  downloadJSON(getFullBackup(todos), `todo-backup-${DS(today())}.json`);
 }
 
 export function exportCalendarOnly(todos) {
