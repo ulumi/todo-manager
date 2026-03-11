@@ -84,7 +84,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('modalTitleEl').textContent = state.T.editTask;
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
-  document.getElementById('modalClouds').innerHTML = '';
+  document.getElementById('modalClouds').innerHTML = cloudsHTML(parseDS(dateStr), todos);
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
 
@@ -120,16 +120,20 @@ export function openEditModal(id, dateStr, todos) {
   }
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  modalBox.classList.remove('modal-two-columns');
-  document.getElementById('modalRight').style.display = 'none';
-  const tog = document.getElementById('modalColToggle');
-  if (tog) tog.style.display = 'none';
+  modalBox.classList.add('modal-two-columns');
+  const right = document.getElementById('modalRight');
+  const inner = document.getElementById('modalRightInner');
+  const toggle = document.getElementById('modalColToggle');
+  if (right) { right.style.display = ''; right.classList.remove('collapsed'); gsap.set(right, { clearProps: 'width' }); }
+  if (inner) gsap.set(inner, { clearProps: 'x,opacity' });
+  if (toggle) { toggle.classList.remove('collapsed'); toggle.style.display = ''; }
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
     { scale: 0.92, y: 24, opacity: 0 },
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
   );
+  _initModalSwipe();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
