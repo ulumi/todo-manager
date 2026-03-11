@@ -4,6 +4,7 @@
 
 import { DS, today } from './utils.js';
 import { getIdToken } from './auth.js';
+import { pushToFirestore } from './sync.js';
 
 const API = 'http://localhost:3333';
 const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
@@ -52,10 +53,7 @@ export async function saveBackupToServer(backup) {
 export function saveTodos(todos) {
   localStorage.setItem('todos', JSON.stringify(todos));
   serverPost('/todos', todos);
-  // Fire-and-forget push to Firestore (dynamic import avoids circular deps)
-  import('./sync.js').then(({ pushToFirestore }) => {
-    pushToFirestore(getFullBackup(todos));
-  });
+  pushToFirestore(getFullBackup(todos)); // fire-and-forget
 }
 
 export function loadTodos() {

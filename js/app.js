@@ -46,7 +46,7 @@ import {
   signInGuest, signInWithEmail, registerWithEmail,
   upgradeGuestToEmail, signOut,
 } from './modules/auth.js';
-import { loadFromFirestore, subscribeToFirestore, setupOfflineIndicator } from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator } from './modules/sync.js';
 
 // Initialize state
 state.initializeState();
@@ -1211,7 +1211,8 @@ class TodoApp {
     // 3. Merge Firestore data into the app (first load)
     await this._syncFirebase();
 
-    // 4. Listen for realtime updates from other devices
+    // 4. Listen for realtime updates from other devices (guard against re-init)
+    if (this._firestoreUnsub) this._firestoreUnsub();
     this._firestoreUnsub = subscribeToFirestore(backup => {
       this._applyBackup(backup, { silent: true });
     });
@@ -1225,8 +1226,6 @@ class TodoApp {
     const backup = await loadFromFirestore();
     if (!backup) {
       // Nothing in Firestore yet → push current localStorage data up
-      const { getFullBackup } = await import('./modules/storage.js');
-      const { pushToFirestore } = await import('./modules/sync.js');
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
@@ -1275,27 +1274,23 @@ class TodoApp {
     const panelUser = document.getElementById('authPanelUser');
     const panelForm = document.getElementById('authPanelForm');
 
-    if (user && !user.isAnonymous) {
-      // Logged in → show account panel
-      panelUser.classList.remove('hidden');
-      panelForm.classList.add('hidden');
+    const showUserPanel = user && !user.isAnonymous;
+    const showGuestPanel = user?.isAnonymous;
+    // showForm = no user at all (shouldn't normally happen since we always sign in as guest)
+
+    panelUser.classList.toggle('hidden', !showUserPanel && !showGuestPanel);
+    panelForm.classList.toggle('hidden',  showUserPanel || showGuestPanel);
+
+    if (showUserPanel) {
       document.getElementById('authUserName').textContent = user.email || 'Utilisateur';
       document.getElementById('authUserSub').textContent  = 'Compte connecté';
       document.getElementById('authAvatar').textContent   = '✓';
       document.getElementById('authUpgradeSection').classList.add('hidden');
-    } else {
-      // Guest or logged out → show form
-      panelUser.classList.add('hidden');
-      panelForm.classList.remove('hidden');
-      if (user?.isAnonymous) {
-        // Show account info as guest
-        panelUser.classList.remove('hidden');
-        panelForm.classList.add('hidden');
-        document.getElementById('authUserName').textContent = 'Invité';
-        document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
-        document.getElementById('authAvatar').textContent   = '👤';
-        document.getElementById('authUpgradeSection').classList.remove('hidden');
-      }
+    } else if (showGuestPanel) {
+      document.getElementById('authUserName').textContent = 'Invité';
+      document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
+      document.getElementById('authAvatar').textContent   = '👤';
+      document.getElementById('authUpgradeSection').classList.remove('hidden');
     }
 
     document.getElementById('authModalOverlay').classList.remove('hidden');
