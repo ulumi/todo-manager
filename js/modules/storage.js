@@ -1,11 +1,42 @@
 // ════════════════════════════════════════════════════════
-//  STORAGE (localStorage)
+//  STORAGE (localStorage + optional local API server)
 // ════════════════════════════════════════════════════════
 
 import { DS, today } from './utils.js';
 
+const API = 'http://localhost:3333';
+
+// Fire-and-forget POST — never throws, 1.5s timeout
+async function serverPost(endpoint, data) {
+  try {
+    await fetch(`${API}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(1500),
+    });
+  } catch (_) {}
+}
+
+// Returns full backup from server, or null if unavailable
+export async function loadFromServer() {
+  try {
+    const res = await fetch(`${API}/backup`, { signal: AbortSignal.timeout(1500) });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+// Push full backup to server (used to initialise server from localStorage)
+export async function saveBackupToServer(backup) {
+  await serverPost('/backup', backup);
+}
+
 export function saveTodos(todos) {
   localStorage.setItem('todos', JSON.stringify(todos));
+  serverPost('/todos', todos);
 }
 
 export function loadTodos() {

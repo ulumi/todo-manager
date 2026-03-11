@@ -10,7 +10,8 @@ import {
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
-  downloadICalFile, getICalBlobURL, generateICalURL
+  downloadICalFile, getICalBlobURL, generateICalURL,
+  loadFromServer, saveBackupToServer, getFullBackup
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -69,6 +70,7 @@ class TodoApp {
       state.setView(savedView);
     }
     this.render();
+    this._syncServer();
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
     window.addEventListener('popstate', (e) => this._popHistory(e));
@@ -85,6 +87,34 @@ class TodoApp {
         this._animateQuickAddBtn();
       }, 150);
     });
+  }
+
+  // ═══════════════════════════════════════════════════
+  // SERVER SYNC
+  // ═══════════════════════════════════════════════════
+  async _syncServer() {
+    const backup = await loadFromServer();
+    if (!backup) return; // server not running
+
+    if (!backup.calendar || backup.calendar.length === 0) {
+      // Server has no data yet — initialise from localStorage
+      await saveBackupToServer(getFullBackup(state.todos));
+      return;
+    }
+
+    // Server has data — use as source of truth
+    state.setTodos(backup.calendar);
+    if (backup.categories)    localStorage.setItem('projects',       JSON.stringify(backup.categories));
+    if (backup.templates)     localStorage.setItem('dayTemplates',   JSON.stringify(backup.templates));
+    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks', JSON.stringify(backup.suggestedTasks));
+    if (backup.taskOrder)     localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
+    if (backup.config) {
+      if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
+      if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
+      if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+    }
+    localStorage.setItem('todos', JSON.stringify(backup.calendar));
+    this.render();
   }
 
   // ═══════════════════════════════════════════════════
