@@ -28,7 +28,6 @@ let _cropZoom  = 1.4;    // starts at 140% to allow cropping
 let _cropX     = 0.5;    // normalized center 0–1
 let _cropY     = 0.5;
 let _drag      = null;   // { lastX, lastY }
-let _debugRings = true;  // DEBUG: toggle ring colors
 
 
 // ── Public ────────────────────────────────────────────
@@ -164,10 +163,6 @@ export function cropDragStart(e) {
   document.addEventListener('touchend',   onEnd);
 }
 
-export function toggleDebugRings() {
-  _debugRings = !_debugRings;
-  _renderEditor();
-}
 
 export function setCropZoom(val) {
   _cropZoom  = Math.max(1, Math.min(3, parseFloat(val)));
@@ -186,16 +181,7 @@ function _renderEditor() {
   if (!content) return;
 
   content.innerHTML = `
-    <div class="avatar-editor-preview ${_debugRings ? 'debug-rings' : ''}" id="avatarEditorPreview">${_getPreviewHTML()}</div>
-    <div class="avatar-debug-legend ${_debugRings ? '' : 'hidden'}">
-      <span style="background:#3b82f6"></span>A – fill central (::before z-0)<br>
-      <span style="background:#22c55e"></span>B – anneau intermédiaire (::before z-0)<br>
-      <span style="background:#f97316"></span>C – anneau extérieur (::before z-0, fond)<br>
-      <span style="background:#ef4444"></span>C – anneau extérieur (::after z-2, PAR-DESSUS emoji)<br>
-    </div>
-    <button class="avatar-debug-toggle" onclick="window.app.toggleDebugRings()">
-      ${_debugRings ? '→ Vraies couleurs' : '→ Mode debug'}
-    </button>
+    <div class="avatar-editor-preview" id="avatarEditorPreview">${_getPreviewHTML()}</div>
 
     <div class="avatar-crop-controls ${!_photo || _mode !== 'photo' ? 'hidden' : ''}" id="cropControls">
       <span class="crop-zoom-icon">−</span>

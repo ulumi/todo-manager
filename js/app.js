@@ -52,7 +52,7 @@ import {
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
   previewAvatarEmoji, restoreAvatarPreview,
   avatarSwitchTab, saveAvatar, FILTERS,
-  cropDragStart, setCropZoom, toggleDebugRings,
+  cropDragStart, setCropZoom,
 } from './modules/avatarEditor.js';
 
 // Initialize state
@@ -927,7 +927,6 @@ class TodoApp {
   async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
   cropDragStart(e)             { cropDragStart(e); }
   setCropZoom(val)             { setCropZoom(val); }
-  toggleDebugRings()           { toggleDebugRings(); }
 
   openAdminSection(section) {
     openAdminModal();
