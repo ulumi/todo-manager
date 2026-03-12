@@ -50,7 +50,7 @@ import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineI
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
-  avatarSwitchTab, saveAvatar,
+  avatarSwitchTab, saveAvatar, FILTERS,
 } from './modules/avatarEditor.js';
 
 // Initialize state
@@ -920,7 +920,7 @@ class TodoApp {
   selectAvatarFilter(id)       { selectAvatarFilter(id); }
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
-  saveAvatar()                 { saveAvatar(); }
+  async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
 
   openAdminSection(section) {
     openAdminModal();
@@ -1398,6 +1398,23 @@ class TodoApp {
     const guest = !!user?.isAnonymous;
     btn.classList.toggle('authenticated', !!user && !guest);
     btn.title = guest ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
+
+    // Show avatar in header button if one is saved
+    let avatarData = null;
+    try { avatarData = JSON.parse(localStorage.getItem('profileAvatar')); } catch {}
+    if (avatarData?.type === 'emoji' && avatarData.value) {
+      btn.classList.add('user-btn--has-avatar');
+      btn.innerHTML = `<span class="user-btn-emoji">${avatarData.value}</span>`;
+    } else if (avatarData?.type === 'photo' && avatarData.data) {
+      const f = FILTERS.find(f => f.id === avatarData.filter);
+      const styleAttr = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
+      btn.classList.add('user-btn--has-avatar');
+      btn.innerHTML = `<img src="${avatarData.data}" class="user-btn-photo"${styleAttr}>`;
+    } else {
+      btn.classList.remove('user-btn--has-avatar');
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+    }
+
     if (label) {
       if (!user) { label.classList.add('hidden'); return; }
       label.classList.remove('hidden');
