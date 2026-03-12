@@ -3072,7 +3072,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 15px;
   margin-bottom: 20px;
   cursor: pointer;
   position: relative;
@@ -3110,6 +3109,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position: relative;
   z-index: 1;
   pointer-events: none;
+  translate: 0 15px;
   animation: avatar-burst 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   clip-path: circle(53px at center);
 }
@@ -3226,6 +3226,10 @@ body:has(.bottom-panel:not(.hidden))::before {
     transform: scale(0.95) rotate(-3deg);
     clip-path: circle(200px at center);
     z-index: 3;
+  }
+  80% {
+    clip-path: circle(200px at center);
+    z-index: 1;
   }
   100% {
     transform: scale(1) rotate(0deg);
