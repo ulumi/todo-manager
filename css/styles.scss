@@ -3752,9 +3752,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ── Version label ──────────────────────────────────────
 #versionLabel {
   display: block;
-  text-align: center;
-  margin-top: 40px;
-  padding: 4px 10px 24px;
+  width: fit-content;
+  margin: 40px auto 0;
+  padding: 4px 10px 6px;
   font-size: 11px;
   color: var(--text-muted);
   opacity: 0.4;
