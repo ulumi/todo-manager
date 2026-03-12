@@ -107,6 +107,7 @@ export function avatarSwitchTab(tab) {
   document.getElementById('avatarPanelEmoji')?.classList.toggle('hidden', tab !== 'emoji');
   document.getElementById('avatarPanelPhoto')?.classList.toggle('hidden', tab !== 'photo');
   document.getElementById('cropControls')?.classList.toggle('hidden', tab !== 'photo' || !_photo);
+  document.getElementById('emojiZoomControls')?.classList.toggle('hidden', tab !== 'emoji');
   document.querySelectorAll('.avatar-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab));
   _updatePreview();
@@ -179,9 +180,25 @@ export function setCropZoom(val) {
   _drawCropCanvas();
   const display = document.getElementById('cropZoomDisplay');
   if (display) display.textContent = `${Math.round(_cropZoom * 100)}%`;
+  const slider = document.getElementById('cropZoomSlider');
+  if (slider) slider.value = _cropZoom;
+}
+
+export function setEmojiZoom(val) {
+  _emojiScale = Math.max(0.5, Math.min(3, parseFloat(val)));
+  _updateEmojiTransform();
+  const display = document.getElementById('emojiZoomDisplay');
+  if (display) display.textContent = `${Math.round(_emojiScale * 100)}%`;
 }
 
 // ── Private: emoji drag & zoom ────────────────────────
+
+function _syncEmojiSlider() {
+  const slider = document.getElementById('emojiZoomSlider');
+  if (slider) slider.value = _emojiScale;
+  const display = document.getElementById('emojiZoomDisplay');
+  if (display) display.textContent = `${Math.round(_emojiScale * 100)}%`;
+}
 
 function _updateEmojiTransform() {
   const el = document.querySelector('#avatarEditorPreview .profile-avatar-emoji');
@@ -189,12 +206,6 @@ function _updateEmojiTransform() {
   el.style.setProperty('--ed-x', `${_emojiX}px`);
   el.style.setProperty('--ed-y', `${_emojiY}px`);
   el.style.setProperty('--ed-s', _emojiScale);
-}
-
-function _onEmojiWheel(e) {
-  e.preventDefault();
-  _emojiScale = Math.max(0.5, Math.min(3, _emojiScale * (e.deltaY < 0 ? 1.1 : 0.9)));
-  _updateEmojiTransform();
 }
 
 function _onEmojiDragStart(e) {
@@ -215,6 +226,7 @@ function _onEmojiDragStart(e) {
       _emojiScale = Math.max(0.5, Math.min(3, _emojiScale * (dist / lastDist)));
       lastDist = dist;
       _updateEmojiTransform();
+      _syncEmojiSlider();
     };
     const onEnd = () => {
       document.removeEventListener('touchmove', onPinch);
@@ -258,6 +270,15 @@ function _renderEditor() {
   content.innerHTML = `
     <div class="avatar-editor-preview" id="avatarEditorPreview">${_getPreviewHTML()}</div>
 
+    <div class="avatar-crop-controls ${_mode !== 'emoji' ? 'hidden' : ''}" id="emojiZoomControls">
+      <span class="crop-zoom-icon">−</span>
+      <input type="range" id="emojiZoomSlider" class="crop-zoom-slider"
+        min="0.5" max="3" step="0.05" value="${_emojiScale}"
+        oninput="window.app.setEmojiZoom(this.value)">
+      <span class="crop-zoom-icon">+</span>
+      <span id="emojiZoomDisplay" class="crop-zoom-display">${Math.round(_emojiScale * 100)}%</span>
+    </div>
+
     <div class="avatar-crop-controls ${!_photo || _mode !== 'photo' ? 'hidden' : ''}" id="cropControls">
       <span class="crop-zoom-icon">−</span>
       <input type="range" id="cropZoomSlider" class="crop-zoom-slider"
@@ -299,13 +320,24 @@ function _renderEditor() {
 
   if (_mode === 'photo' && _photo) _drawCropCanvas();
 
-  if (_mode === 'emoji') {
-    const preview = document.getElementById('avatarEditorPreview');
-    if (preview) {
-      preview.addEventListener('wheel', _onEmojiWheel, { passive: false });
-      preview.addEventListener('mousedown', _onEmojiDragStart);
-      preview.addEventListener('touchstart', _onEmojiDragStart, { passive: false });
-    }
+  const preview = document.getElementById('avatarEditorPreview');
+  if (preview) {
+    preview.addEventListener('wheel', e => {
+      e.preventDefault();
+      if (_mode === 'emoji') {
+        _emojiScale = Math.max(0.5, Math.min(3, _emojiScale * (e.deltaY < 0 ? 1.1 : 0.9)));
+        _updateEmojiTransform();
+        _syncEmojiSlider();
+      } else if (_mode === 'photo' && _photo) {
+        setCropZoom(_cropZoom * (e.deltaY < 0 ? 1.1 : 0.9));
+      }
+    }, { passive: false });
+    preview.addEventListener('mousedown', e => {
+      if (_mode === 'emoji') _onEmojiDragStart(e);
+    });
+    preview.addEventListener('touchstart', e => {
+      if (_mode === 'emoji') _onEmojiDragStart(e);
+    }, { passive: false });
   }
 }
 

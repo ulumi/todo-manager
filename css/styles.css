@@ -3327,6 +3327,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   height: 83%;
   border-radius: 50%;
   display: block;
+  position: relative;
+  z-index: 1;
   cursor: grab;
   user-select: none;
   touch-action: none;
