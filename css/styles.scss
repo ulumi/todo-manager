@@ -2860,23 +2860,31 @@ body:has(.bottom-panel:not(.hidden))::before {
   width:           110px;
   height:          110px;
   border-radius:   50%;
-  background:      radial-gradient(circle,
-    color-mix(in srgb, var(--primary) 12%, #000) 0%  28%,
-    var(--primary)                               28%  38%,
-    color-mix(in srgb, var(--primary) 38%, #000) 38%  48%,
-    var(--primary)                               48%  57%,
-    color-mix(in srgb, var(--primary) 38%, #000) 57%  67%,
-    var(--primary)                               67%  76%,
-    color-mix(in srgb, var(--primary) 28%, #000) 76% 100%
-  );
+  background:      transparent;
   display:         flex;
   align-items:     center;
   justify-content: center;
-  margin-bottom:   12px;
+  margin-bottom:   20px;
   cursor:          pointer;
   position:        relative;
-  overflow:        hidden;
+  overflow:        visible; // emoji bursts out
   transition:      transform .15s, box-shadow .15s;
+
+  // Concentric rings in ::before so they stay clipped while emoji overflows
+  &::before {
+    content:       '';
+    position:      absolute;
+    inset:         0;
+    border-radius: 50%;
+    z-index:       0;
+    background:    radial-gradient(circle,
+      color-mix(in srgb, var(--primary) 10%, #000) 0%  26%,
+      var(--primary)                               26%  44%,
+      color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
+      var(--primary)                               62%  80%,
+      color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
+    );
+  }
 
   &:hover {
     transform:  scale(1.06);
@@ -2891,6 +2899,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:       relative;
   z-index:        1;
   pointer-events: none;
+  animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
 }
 
 .profile-avatar-hint {
@@ -2917,28 +2926,36 @@ body:has(.bottom-panel:not(.hidden))::before {
   width:           130px;
   height:          130px;
   border-radius:   50%;
-  background:      radial-gradient(circle,
-    color-mix(in srgb, var(--primary) 12%, #000) 0%  28%,
-    var(--primary)                               28%  38%,
-    color-mix(in srgb, var(--primary) 38%, #000) 38%  48%,
-    var(--primary)                               48%  57%,
-    color-mix(in srgb, var(--primary) 38%, #000) 57%  67%,
-    var(--primary)                               67%  76%,
-    color-mix(in srgb, var(--primary) 28%, #000) 76% 100%
-  );
+  background:      transparent;
   display:         flex;
   align-items:     center;
   justify-content: center;
-  margin:          0 auto 12px;
-  overflow:        hidden;
+  margin:          0 auto 16px;
+  overflow:        visible; // emoji bursts out
   position:        relative;
 
+  &::before {
+    content:       '';
+    position:      absolute;
+    inset:         0;
+    border-radius: 50%;
+    z-index:       0;
+    background:    radial-gradient(circle,
+      color-mix(in srgb, var(--primary) 10%, #000) 0%  26%,
+      var(--primary)                               26%  44%,
+      color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
+      var(--primary)                               62%  80%,
+      color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
+    );
+  }
+
   .profile-avatar-emoji {
-    font-size:      90px;
+    font-size:      100px;
     line-height:    1;
     position:       relative;
     z-index:        1;
     pointer-events: none;
+    animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
   }
 }
 
@@ -2972,6 +2989,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .avatar-panel {
   &.hidden { display: none; }
+}
+
+@keyframes avatar-burst {
+  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; }
+  55%  { transform: scale(1.18) rotate(6deg);   opacity: 1; }
+  75%  { transform: scale(0.93) rotate(-3deg); }
+  100% { transform: scale(1)    rotate(0deg);  }
 }
 
 @keyframes emoji-bounce {
