@@ -2913,9 +2913,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:       relative;
   z-index:        1;
   pointer-events: none;
-  translate:      0 15px; // portrait offset — emoji shifted down like a head in a portrait frame
+  translate:      0 8px; // portrait offset — emoji shifted down like a head in a portrait frame
   animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
-  clip-path:      circle(53px at center);
+  clip-path:      circle(45px at center); // idle: clips at 45+8=53px from container center = inner edge of last ring
 }
 
 .profile-avatar-hint {
@@ -3025,11 +3025,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Emoji bursts from center — spring scale animation
 @keyframes avatar-burst {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); z-index: 3; }
+  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); z-index: 3; } // ring already behind from frame 0
   55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; clip-path: circle(200px at center); z-index: 3; } // peak: fully above rings
   75%  { transform: scale(0.95) rotate(-3deg);              clip-path: circle(200px at center); z-index: 3; } // bouncing back, still above
-  80%  {                                                     clip-path: circle(200px at center); z-index: 1; } // halfway to idle: rings return on top
-  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(53px  at center); z-index: 1; }
+  99%  {                                                     clip-path: circle(200px at center); z-index: 3; } // above rings until very last moment
+  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(45px  at center); z-index: 1; } // idle: rings return, clip to inner ring edge
 }
 
 @keyframes avatar-burst-preview {
