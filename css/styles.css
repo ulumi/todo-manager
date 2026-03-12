@@ -3086,6 +3086,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   z-index: 0;
   background: radial-gradient(circle, color-mix(in srgb, var(--primary) 10%, #000) 0% 26%, var(--primary) 26% 44%, color-mix(in srgb, var(--primary) 35%, #000) 44% 62%, var(--primary) 62% 80%, color-mix(in srgb, var(--primary) 22%, #000) 80% 100%);
 }
+.profile-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 0% 56%, color-mix(in srgb, var(--primary) 35%, #000) 56% 68%, var(--primary) 68% 82%, color-mix(in srgb, var(--primary) 22%, #000) 82% 100%);
+}
 .profile-avatar:hover {
   transform: scale(1.06);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 50%, transparent);
@@ -3100,7 +3109,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position: relative;
   z-index: 1;
   pointer-events: none;
-  animation: avatar-burst-sm 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: avatar-burst 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .profile-avatar-hint {
@@ -3145,13 +3154,22 @@ body:has(.bottom-panel:not(.hidden))::before {
   z-index: 0;
   background: radial-gradient(circle, color-mix(in srgb, var(--primary) 10%, #000) 0% 26%, var(--primary) 26% 44%, color-mix(in srgb, var(--primary) 35%, #000) 44% 62%, var(--primary) 62% 80%, color-mix(in srgb, var(--primary) 22%, #000) 80% 100%);
 }
+.avatar-editor-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 0% 56%, color-mix(in srgb, var(--primary) 35%, #000) 56% 68%, var(--primary) 68% 82%, color-mix(in srgb, var(--primary) 22%, #000) 82% 100%);
+}
 .avatar-editor-preview .profile-avatar-emoji {
   font-size: 100px;
   line-height: 1;
   position: relative;
   z-index: 1;
   pointer-events: none;
-  animation: avatar-burst-lg 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: avatar-burst 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .avatar-preview-placeholder {
@@ -3188,36 +3206,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: none;
 }
 
-@keyframes avatar-burst-sm {
+@keyframes avatar-burst {
   0% {
-    transform: translateY(55px) scale(0.15) rotate(-10deg);
+    transform: scale(0.05) rotate(-12deg);
     opacity: 0;
   }
   55% {
-    transform: translateY(-20px) scale(1.12) rotate(5deg);
+    transform: scale(1.18) rotate(6deg);
     opacity: 1;
   }
   75% {
-    transform: translateY(-13px) scale(0.95) rotate(-2deg);
+    transform: scale(0.93) rotate(-3deg);
   }
   100% {
-    transform: translateY(-15px) scale(1) rotate(0deg);
-  }
-}
-@keyframes avatar-burst-lg {
-  0% {
-    transform: translateY(65px) scale(0.15) rotate(-10deg);
-    opacity: 0;
-  }
-  55% {
-    transform: translateY(-26px) scale(1.12) rotate(5deg);
-    opacity: 1;
-  }
-  75% {
-    transform: translateY(-18px) scale(0.95) rotate(-2deg);
-  }
-  100% {
-    transform: translateY(-20px) scale(1) rotate(0deg);
+    transform: scale(1) rotate(0deg);
   }
 }
 @keyframes emoji-bounce {
