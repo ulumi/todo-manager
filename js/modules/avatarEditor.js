@@ -85,6 +85,16 @@ export function selectAvatarEmoji(emoji) {
     b.classList.toggle('active', b.dataset.emoji === (emoji || '')));
 }
 
+export function previewAvatarEmoji(emoji) {
+  const el = document.getElementById('avatarEditorPreview');
+  if (!el) return;
+  el.innerHTML = `<span class="profile-avatar-emoji">${esc(emoji)}</span>`;
+}
+
+export function restoreAvatarPreview() {
+  _updatePreview();
+}
+
 export function avatarSwitchTab(tab) {
   _mode = tab;
   document.getElementById('avatarPanelEmoji')?.classList.toggle('hidden', tab !== 'emoji');
@@ -191,7 +201,9 @@ function _renderEditor() {
     <div id="avatarPanelEmoji" class="avatar-panel ${_mode!=='emoji'?'hidden':''}">
       <div class="avatar-emoji-grid">
         ${EMOJIS.map(e => `<span class="avatar-emoji-opt ${_emoji===e?'active':''}" data-emoji="${e}"
-          onclick="window.app.selectAvatarEmoji('${e}')">${e}</span>`).join('')}
+          onclick="window.app.selectAvatarEmoji('${e}')"
+          onmouseenter="window.app.previewAvatarEmoji('${e}')"
+          onmouseleave="window.app.restoreAvatarPreview()">${e}</span>`).join('')}
         <span class="avatar-emoji-opt avatar-emoji-reset" data-emoji=""
           onclick="window.app.selectAvatarEmoji(null)">↩</span>
       </div>

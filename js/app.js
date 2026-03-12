@@ -50,6 +50,7 @@ import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineI
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
+  previewAvatarEmoji, restoreAvatarPreview,
   avatarSwitchTab, saveAvatar, FILTERS,
   cropDragStart, setCropZoom,
 } from './modules/avatarEditor.js';
@@ -920,6 +921,8 @@ class TodoApp {
   handleAvatarFile(input)      { handleAvatarFile(input); }
   selectAvatarFilter(id)       { selectAvatarFilter(id); }
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
+  previewAvatarEmoji(emoji)    { previewAvatarEmoji(emoji); }
+  restoreAvatarPreview()       { restoreAvatarPreview(); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
   async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
   cropDragStart(e)             { cropDragStart(e); }
