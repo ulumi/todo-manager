@@ -46,7 +46,7 @@ import {
   signInGuest, signInWithEmail, registerWithEmail,
   upgradeGuestToEmail, signOut,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator } from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
 
 // Initialize state
 state.initializeState();
@@ -1223,6 +1223,9 @@ class TodoApp {
     // 5. Update user button on every auth state change
     onUserChange(() => this._updateUserBtn());
     this._updateUserBtn();
+
+    // 6. Leave prompt for guests
+    this._setupLeavePrompt();
   }
 
   async _syncFirebase() {
@@ -1273,11 +1276,56 @@ class TodoApp {
   }
 
   _updateUserBtn() {
-    const user = getCurrentUser();
-    const btn  = document.getElementById('userBtn');
+    const user  = getCurrentUser();
+    const btn   = document.getElementById('userBtn');
+    const label = document.getElementById('guestLabel');
     if (!btn) return;
-    btn.classList.toggle('authenticated', !!user && !user.isAnonymous);
-    btn.title = user?.isAnonymous ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
+    const guest = !!user?.isAnonymous;
+    btn.classList.toggle('authenticated', !!user && !guest);
+    btn.title = guest ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
+    if (label) label.classList.toggle('hidden', !guest);
+  }
+
+  _leavingAttempted = null;
+
+  _setupLeavePrompt() {
+    window.addEventListener('beforeunload', e => {
+      if (!isGuest()) return;
+      this._leavingAttempted = Date.now();
+      e.preventDefault();
+      e.returnValue = '';
+    });
+    window.addEventListener('focus', () => {
+      if (this._leavingAttempted && Date.now() - this._leavingAttempted < 10000 && isGuest()) {
+        this._leavingAttempted = null;
+        this.showLeavePrompt();
+      }
+    });
+  }
+
+  showLeavePrompt() {
+    document.getElementById('leavePromptOverlay').classList.remove('hidden');
+  }
+
+  closeLeavePrompt() {
+    document.getElementById('leavePromptOverlay').classList.add('hidden');
+  }
+
+  leaveKeepData() {
+    this.closeLeavePrompt();
+  }
+
+  async leaveDeleteData() {
+    // Delete Firestore doc
+    await deleteUserFirestoreDoc();
+    // Clear all app localStorage keys
+    Object.keys(localStorage)
+      .filter(k => !k.startsWith('firebase:'))
+      .forEach(k => localStorage.removeItem(k));
+    // Get fresh anonymous session
+    await signOut();
+    this.closeLeavePrompt();
+    this.render();
   }
 
   // ── Auth modal ────────────────────────────────────────

@@ -3093,6 +3093,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .lang-select    { display: block; order: 3; }
   .hamburger-wrap { order: 4; }
   .user-btn       { order: 5; }
+  .guest-label    { display: none; }
   .add-btn        { display: none; }
   .zoom-group     { display: none; }
   .header-spacer  { display: none; }
@@ -3797,6 +3798,24 @@ body:has(.bottom-panel:not(.hidden))::before {
   &::before {
     content: '⚡';
     font-size: 10px;
+  }
+}
+
+// Guest label (header)
+.guest-label {
+  font-size:   11px;
+  font-weight: 600;
+  color:       var(--text-muted);
+  padding:     3px 8px;
+  border:      1px solid var(--border);
+  border-radius: 10px;
+  cursor:      pointer;
+  white-space: nowrap;
+  transition:  color .15s, border-color .15s;
+
+  &:hover {
+    color:        var(--primary);
+    border-color: var(--primary);
   }
 }
 

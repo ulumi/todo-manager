@@ -51,6 +51,7 @@
       </button>
     </div>
     <div id="offlineBadge" class="offline-badge" hidden>Hors ligne</div>
+    <span class="guest-label hidden" id="guestLabel" onclick="window.app.openAuthModal()">Invité</span>
     <button class="user-btn" id="userBtn" onclick="window.app.openAuthModal()" title="Compte">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="8" r="4"/>
@@ -373,6 +374,17 @@
     <div class="auth-error hidden" id="upgradeError"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window.app.upgradeSubmit()">Créer mon compte</button>
     <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="window.app.upgradeDismiss()">Non merci, continuer sans compte</button>
+  </div>
+</div>
+
+<!-- Leave prompt (shown when guest tries to close tab) -->
+<div class="modal-overlay hidden" id="leavePromptOverlay">
+  <div class="modal auth-modal">
+    <div class="modal-title">Avant de partir…</div>
+    <p class="auth-upgrade-msg">Tes tâches sont sauvegardées pour ta prochaine visite sur cet appareil. Crée un compte pour y accéder partout.</p>
+    <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="window.app.showAuthRegister(); window.app.closeLeavePrompt();">Créer un compte</button>
+    <button class="btn btn-ghost" style="width:100%;margin-bottom:8px" onclick="window.app.leaveKeepData()">Garder pour la prochaine visite</button>
+    <button class="btn btn-ghost" style="width:100%;color:var(--danger)" onclick="window.app.leaveDeleteData()">Effacer mes données</button>
   </div>
 </div>
 

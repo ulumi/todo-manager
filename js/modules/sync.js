@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import {
-  doc, getDoc, setDoc, onSnapshot, serverTimestamp,
+  doc, getDoc, setDoc, deleteDoc, onSnapshot, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
 import { db }             from './firebase.js';
@@ -61,6 +61,15 @@ export function subscribeToFirestore(onData) {
   }, err => {
     console.warn('[sync] onSnapshot error:', err.message);
   });
+}
+
+// ── Delete user Firestore doc ─────────────────────────────
+export async function deleteUserFirestoreDoc() {
+  try {
+    await deleteDoc(userDocRef());
+  } catch (err) {
+    console.warn('[sync] deleteUserFirestoreDoc failed:', err.message);
+  }
 }
 
 // ── Offline / online indicator ────────────────────────────
