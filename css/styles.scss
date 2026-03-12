@@ -2870,7 +2870,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow:        visible; // emoji bursts out
   transition:      transform .15s, box-shadow .15s;
 
-  // Concentric rings in ::before so they stay clipped while emoji overflows
+  // Concentric rings behind the emoji — emoji overflows freely, rings visible around it
   &::before {
     content:       '';
     position:      absolute;
@@ -2878,27 +2878,10 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-radius: 50%;
     z-index:       0;
     background:    radial-gradient(circle,
-      color-mix(in srgb, var(--primary) 10%, #000) 0%  26%,
-      var(--primary)                               26%  44%,
+      var(--primary)                               0%   44%,
       color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
       var(--primary)                               62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
-    );
-  }
-
-  // Outer rings overlay — masks emoji edges/base so it looks like it emerges from a portal
-  &::after {
-    content:        '';
-    position:       absolute;
-    inset:          0;
-    border-radius:  50%;
-    z-index:        2;
-    pointer-events: none;
-    background: radial-gradient(circle,
-      transparent                                    0%   56%,
-      color-mix(in srgb, var(--primary) 35%, #000)  56%  68%,
-      var(--primary)                                 68%  82%,
-      color-mix(in srgb, var(--primary) 22%, #000)  82% 100%
     );
   }
 
@@ -2950,6 +2933,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow:        visible; // emoji bursts out
   position:        relative;
 
+  // Concentric rings behind the emoji — emoji overflows freely, rings visible around it
   &::before {
     content:       '';
     position:      absolute;
@@ -2957,27 +2941,10 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-radius: 50%;
     z-index:       0;
     background:    radial-gradient(circle,
-      color-mix(in srgb, var(--primary) 10%, #000) 0%  26%,
-      var(--primary)                               26%  44%,
+      var(--primary)                               0%   44%,
       color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
       var(--primary)                               62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
-    );
-  }
-
-  // Outer rings overlay — masks emoji edges/base so it looks like it emerges from a portal
-  &::after {
-    content:        '';
-    position:       absolute;
-    inset:          0;
-    border-radius:  50%;
-    z-index:        2;
-    pointer-events: none;
-    background: radial-gradient(circle,
-      transparent                                    0%   56%,
-      color-mix(in srgb, var(--primary) 35%, #000)  56%  68%,
-      var(--primary)                                 68%  82%,
-      color-mix(in srgb, var(--primary) 22%, #000)  82% 100%
     );
   }
 
