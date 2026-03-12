@@ -28,15 +28,18 @@ let _cropZoom  = 1.4;    // starts at 140% to allow cropping
 let _cropX     = 0.5;    // normalized center 0–1
 let _cropY     = 0.5;
 let _drag      = null;   // { lastX, lastY }
+let _emojiScale = 1;
+let _emojiX     = 0;
+let _emojiY     = 0;
 
 
 // ── Public ────────────────────────────────────────────
 
 export function openAvatarEditor() {
   const saved = _loadAvatar();
-  if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; }
+  if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; _emojiScale = saved.scale ?? 1; _emojiX = saved.x ?? 0; _emojiY = saved.y ?? 0; }
   else if (saved?.type === 'photo') { _photo = saved.data; _filter = saved.filter || 'natural'; _mode = 'photo'; _emoji = null; }
-  else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; }
+  else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; _emojiScale = 1; _emojiX = 0; _emojiY = 0; }
   _cropZoom = 1.4; _cropX = 0.5; _cropY = 0.5;
 
   _renderEditor();
@@ -51,7 +54,11 @@ export function closeAvatarEditor() {
 export function getAvatarHTML(initials) {
   const saved = _loadAvatar();
   if (!saved) return esc(initials);
-  if (saved.type === 'emoji') return `<span class="profile-avatar-emoji">${esc(saved.value)}</span>`;
+  if (saved.type === 'emoji') {
+    const s = saved.scale ?? 1, x = saved.x ?? 0, y = saved.y ?? 0;
+    const style = (s !== 1 || x !== 0 || y !== 0) ? ` style="--ed-x:${x}px;--ed-y:${y}px;--ed-s:${s}"` : '';
+    return `<span class="profile-avatar-emoji"${style}>${esc(saved.value)}</span>`;
+  }
   if (saved.type === 'photo') {
     const f = FILTERS.find(f => f.id === saved.filter);
     const style = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
@@ -88,7 +95,7 @@ export function selectAvatarEmoji(emoji) {
 export function previewAvatarEmoji(emoji) {
   const el = document.getElementById('avatarEditorPreview');
   if (!el) return;
-  el.innerHTML = `<span class="profile-avatar-emoji">${esc(emoji)}</span>`;
+  el.innerHTML = `<span class="profile-avatar-emoji" style="--ed-x:${_emojiX}px;--ed-y:${_emojiY}px;--ed-s:${_emojiScale}">${esc(emoji)}</span>`;
 }
 
 export function restoreAvatarPreview() {
@@ -107,7 +114,7 @@ export function avatarSwitchTab(tab) {
 
 export async function saveAvatar() {
   if (_mode === 'emoji') {
-    if (_emoji) _saveAvatar({ type: 'emoji', value: _emoji });
+    if (_emoji) _saveAvatar({ type: 'emoji', value: _emoji, scale: _emojiScale, x: _emojiX, y: _emojiY });
     else        localStorage.removeItem(AVATAR_KEY);
   } else if (_mode === 'photo' && _photo) {
     const f = FILTERS.find(f => f.id === _filter);
@@ -174,6 +181,74 @@ export function setCropZoom(val) {
   if (display) display.textContent = `${Math.round(_cropZoom * 100)}%`;
 }
 
+// ── Private: emoji drag & zoom ────────────────────────
+
+function _updateEmojiTransform() {
+  const el = document.querySelector('#avatarEditorPreview .profile-avatar-emoji');
+  if (!el) return;
+  el.style.setProperty('--ed-x', `${_emojiX}px`);
+  el.style.setProperty('--ed-y', `${_emojiY}px`);
+  el.style.setProperty('--ed-s', _emojiScale);
+}
+
+function _onEmojiWheel(e) {
+  e.preventDefault();
+  _emojiScale = Math.max(0.5, Math.min(3, _emojiScale * (e.deltaY < 0 ? 1.1 : 0.9)));
+  _updateEmojiTransform();
+}
+
+function _onEmojiDragStart(e) {
+  e.preventDefault();
+  // Pinch-to-zoom (2 fingers)
+  if (e.touches && e.touches.length === 2) {
+    let lastDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const onPinch = ev => {
+      if (ev.touches.length < 2) return;
+      ev.preventDefault();
+      const dist = Math.hypot(
+        ev.touches[0].clientX - ev.touches[1].clientX,
+        ev.touches[0].clientY - ev.touches[1].clientY
+      );
+      _emojiScale = Math.max(0.5, Math.min(3, _emojiScale * (dist / lastDist)));
+      lastDist = dist;
+      _updateEmojiTransform();
+    };
+    const onEnd = () => {
+      document.removeEventListener('touchmove', onPinch);
+      document.removeEventListener('touchend',  onEnd);
+    };
+    document.addEventListener('touchmove', onPinch, { passive: false });
+    document.addEventListener('touchend',  onEnd);
+    return;
+  }
+  // Single-finger drag / mouse drag
+  const pt = e.touches ? e.touches[0] : e;
+  _drag = { lastX: pt.clientX, lastY: pt.clientY };
+  const onMove = ev => {
+    if (!_drag) return;
+    ev.preventDefault();
+    const p = ev.touches ? ev.touches[0] : ev;
+    _emojiX = Math.max(-40, Math.min(40, _emojiX + p.clientX - _drag.lastX));
+    _emojiY = Math.max(-40, Math.min(40, _emojiY + p.clientY - _drag.lastY));
+    _drag.lastX = p.clientX; _drag.lastY = p.clientY;
+    _updateEmojiTransform();
+  };
+  const onEnd = () => {
+    _drag = null;
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('mouseup',   onEnd);
+    document.removeEventListener('touchend',  onEnd);
+  };
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup',   onEnd);
+  document.addEventListener('touchend',  onEnd);
+}
+
 // ── Private: render editor ────────────────────────────
 
 function _renderEditor() {
@@ -223,10 +298,19 @@ function _renderEditor() {
   `;
 
   if (_mode === 'photo' && _photo) _drawCropCanvas();
+
+  if (_mode === 'emoji') {
+    const preview = document.getElementById('avatarEditorPreview');
+    if (preview) {
+      preview.addEventListener('wheel', _onEmojiWheel, { passive: false });
+      preview.addEventListener('mousedown', _onEmojiDragStart);
+      preview.addEventListener('touchstart', _onEmojiDragStart, { passive: false });
+    }
+  }
 }
 
 function _getPreviewHTML() {
-  if (_mode === 'emoji' && _emoji) return `<span class="profile-avatar-emoji">${esc(_emoji)}</span>`;
+  if (_mode === 'emoji' && _emoji) return `<span class="profile-avatar-emoji" style="--ed-x:${_emojiX}px;--ed-y:${_emojiY}px;--ed-s:${_emojiScale}">${esc(_emoji)}</span>`;
   if (_mode === 'photo' && _photo) {
     const f = FILTERS.find(f => f.id === _filter);
     const style = (f?.css && !f.canvas) ? `style="filter:${f.css}"` : '';

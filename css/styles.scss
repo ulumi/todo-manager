@@ -2913,7 +2913,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:       relative;
   z-index:        3; // always above ::after (z-index:2) regardless of animation state
   pointer-events: none;
-  translate:      0 8px;
+  translate:      var(--ed-x, 0px) calc(8px + var(--ed-y, 0px)); // portrait offset + user drag
+  scale:          var(--ed-s, 1);
   animation:      avatar-burst .42s cubic-bezier(.34, 1.56, .64, 1) both;
   clip-path:      circle(50px at center);
 }
@@ -2947,8 +2948,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   align-items:     center;
   justify-content: center;
   margin:          0 auto 16px;
-  overflow:        visible; // emoji bursts out
+  overflow:        visible; // emoji bursts out during animation
   position:        relative;
+  clip-path:       circle(65px at center); // clip dragged/zoomed emoji to container boundary
+  cursor:          grab;
+  user-select:     none;
 
   &::before {
     content:       '';
@@ -2984,6 +2988,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     position:       relative;
     z-index:        1;
     pointer-events: none;
+    translate:      var(--ed-x, 0px) var(--ed-y, 0px); // override portrait offset — editor has no portrait shift
+    scale:          var(--ed-s, 1);
     animation:      avatar-burst-preview .42s cubic-bezier(.34, 1.56, .64, 1) both;
     clip-path:      circle(55px at center);
   }
