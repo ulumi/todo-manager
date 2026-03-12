@@ -2870,7 +2870,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow:        visible; // emoji bursts out
   transition:      transform .15s, box-shadow .15s;
 
-  // Concentric rings behind the emoji — emoji overflows freely, rings visible around it
+  // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
   &::before {
     content:       '';
     position:      absolute;
@@ -2878,10 +2878,26 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-radius: 50%;
     z-index:       0;
     background:    radial-gradient(circle,
-      var(--primary)                               0%   44%,
-      color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
+      var(--primary)                               0%   32%,
+      color-mix(in srgb, var(--primary) 35%, #000) 32%  62%,
       var(--primary)                               62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
+    );
+  }
+
+  // Bottom-half ring overlay — masks emoji base/sides, top can freely overflow
+  &::after {
+    content:        '';
+    position:       absolute;
+    inset:          0;
+    z-index:        2;
+    pointer-events: none;
+    clip-path:      polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+    background:     radial-gradient(circle,
+      transparent                                    0%   32%,
+      color-mix(in srgb, var(--primary) 35%, #000)  32%  62%,
+      var(--primary)                                 62%  80%,
+      color-mix(in srgb, var(--primary) 22%, #000)  80% 100%
     );
   }
 
@@ -2933,7 +2949,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow:        visible; // emoji bursts out
   position:        relative;
 
-  // Concentric rings behind the emoji — emoji overflows freely, rings visible around it
+  // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
   &::before {
     content:       '';
     position:      absolute;
@@ -2941,10 +2957,26 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-radius: 50%;
     z-index:       0;
     background:    radial-gradient(circle,
-      var(--primary)                               0%   44%,
-      color-mix(in srgb, var(--primary) 35%, #000) 44%  62%,
+      var(--primary)                               0%   32%,
+      color-mix(in srgb, var(--primary) 35%, #000) 32%  62%,
       var(--primary)                               62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000) 80% 100%
+    );
+  }
+
+  // Bottom-half ring overlay — masks emoji base/sides, top can freely overflow
+  &::after {
+    content:        '';
+    position:       absolute;
+    inset:          0;
+    z-index:        2;
+    pointer-events: none;
+    clip-path:      polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+    background:     radial-gradient(circle,
+      transparent                                    0%   32%,
+      color-mix(in srgb, var(--primary) 35%, #000)  32%  62%,
+      var(--primary)                                 62%  80%,
+      color-mix(in srgb, var(--primary) 22%, #000)  80% 100%
     );
   }
 
@@ -4315,8 +4347,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   &.authenticated {
-    border-color: var(--success);
-    color:        var(--success);
+    border-color: var(--primary);
+    color:        var(--primary);
   }
 
   &--has-avatar {
