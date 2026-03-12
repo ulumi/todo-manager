@@ -2965,8 +2965,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin:          0 auto 16px;
   overflow:        visible; // emoji bursts out during animation
   position:        relative;
-  clip-path:       circle(65px at center); // clip dragged/zoomed emoji to container boundary
-  cursor:          grab;
+  clip-path:       circle(65px at center);
   user-select:     none;
 
   &::before {

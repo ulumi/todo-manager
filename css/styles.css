@@ -3176,7 +3176,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: visible;
   position: relative;
   clip-path: circle(65px at center);
-  cursor: grab;
   user-select: none;
 }
 .avatar-editor-preview::before {
