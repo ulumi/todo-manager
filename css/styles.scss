@@ -2894,8 +2894,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     z-index:        2;
     pointer-events: none;
     background:     radial-gradient(circle,
-      transparent                                    0%   44%,
-      color-mix(in srgb, var(--primary) 35%, #000)  44%  62%,
+      transparent                                    0%   62%,
       var(--primary)                                 62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000)  80% 100%
     );
@@ -2973,8 +2972,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     z-index:        2;
     pointer-events: none;
     background:     radial-gradient(circle,
-      transparent                                    0%   44%,
-      color-mix(in srgb, var(--primary) 35%, #000)  44%  62%,
+      transparent                                    0%   62%,
       var(--primary)                                 62%  80%,
       color-mix(in srgb, var(--primary) 22%, #000)  80% 100%
     );
@@ -3039,10 +3037,15 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 
 .avatar-emoji-grid {
-  display:         grid;
+  display:               grid;
   grid-template-columns: repeat(6, 1fr);
-  gap:             6px;
-  padding:         4px 0 8px;
+  gap:                   6px;
+  padding:               4px 0 8px;
+  max-height:            134px; // ~3 rows visible
+  overflow-y:            auto;
+  overscroll-behavior:   contain;
+  scrollbar-width:       thin;
+  scrollbar-color:       var(--border) transparent;
 }
 
 .avatar-emoji-opt {
@@ -3582,11 +3585,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   .hamburger-wrap { order: 4; }
   .user-btn       { order: 5; }
   .user-label     { display: none; }
-  // Restore standalone circle when label is hidden by media query
-  .user-label:not(.hidden) + .user-btn {
-    border-left:    1.5px solid var(--border);
-    border-radius:  50%;
-  }
   .add-btn        { display: none; }
   .zoom-group     { display: none; }
   .header-spacer  { display: none; }
@@ -4295,7 +4293,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // User label (header — guest or logged-in)
-// Forms the LEFT side of the header pill when paired with .user-btn
 .user-label {
   display:       inline-flex;
   align-items:   center;
@@ -4303,10 +4300,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size:     12px;
   font-weight:   600;
   color:         var(--text-muted);
-  padding:       0 10px 0 14px;
+  padding:       0 12px;
   border:        1.5px solid var(--border);
-  border-right:  none;
-  border-radius: 20px 0 0 20px;
+  border-radius: 20px;
   cursor:        pointer;
   white-space:   nowrap;
   transition:    color .15s, border-color .15s;
@@ -4369,19 +4365,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
-// When label is visible → btn becomes RIGHT side of the pill capsule
-.user-label:not(.hidden) + .user-btn {
-  border-left:               none;
-  border-top-left-radius:    0;
-  border-bottom-left-radius: 0;
-  border-top-right-radius:   16px;
-  border-bottom-right-radius: 16px;
-
-  &--has-avatar {
-    border-top-left-radius:    0;
-    border-bottom-left-radius: 0;
-  }
-}
 
 // Auth modal
 .auth-modal {
