@@ -2914,6 +2914,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   z-index:        1;
   pointer-events: none;
   animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
+  clip-path:      circle(48px at center); // clip to stay inside the last ring (filled by ::after at 48–55px)
 }
 
 .profile-avatar-hint {
@@ -2984,7 +2985,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     position:       relative;
     z-index:        1;
     pointer-events: none;
-    animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
+    animation:      avatar-burst-preview .55s cubic-bezier(.34, 1.56, .64, 1) both;
+    clip-path:      circle(57px at center);
   }
 }
 
@@ -3022,10 +3024,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Emoji bursts from center — spring scale animation
 @keyframes avatar-burst {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; }
-  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; }
-  75%  { transform: scale(0.95) rotate(-3deg); }
-  100% { transform: scale(1)    rotate(0deg);  }
+  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); }
+  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; clip-path: circle(200px at center); }
+  75%  { transform: scale(0.95) rotate(-3deg);              clip-path: circle(200px at center); }
+  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(48px  at center); }
+}
+
+@keyframes avatar-burst-preview {
+  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); }
+  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; clip-path: circle(200px at center); }
+  75%  { transform: scale(0.95) rotate(-3deg);              clip-path: circle(200px at center); }
+  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(57px  at center); }
 }
 
 @keyframes emoji-bounce {
