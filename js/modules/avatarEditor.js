@@ -24,7 +24,7 @@ let _photo     = null; // base64 of uploaded photo
 let _filter    = 'natural';
 let _emoji     = null;
 let _mode      = 'emoji'; // 'emoji' | 'photo'
-let _cropZoom  = 1.0;    // 1–3×
+let _cropZoom  = 1.4;    // starts at 140% to allow cropping
 let _cropX     = 0.5;    // normalized center 0–1
 let _cropY     = 0.5;
 let _drag      = null;   // { lastX, lastY }
@@ -37,7 +37,7 @@ export function openAvatarEditor() {
   if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; }
   else if (saved?.type === 'photo') { _photo = saved.data; _filter = saved.filter || 'natural'; _mode = 'photo'; _emoji = null; }
   else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; }
-  _cropZoom = 1; _cropX = 0.5; _cropY = 0.5;
+  _cropZoom = 1.4; _cropX = 0.5; _cropY = 0.5;
 
   _renderEditor();
   document.getElementById('avatarEditorOverlay').classList.remove('hidden');
@@ -66,7 +66,7 @@ export async function handleAvatarFile(input) {
   _photo    = await _compressImage(file, SIZE);
   _mode     = 'photo';
   _filter   = 'natural';
-  _cropZoom = 1; _cropX = 0.5; _cropY = 0.5;
+  _cropZoom = 1.4; _cropX = 0.5; _cropY = 0.5;
   _renderEditor();
   avatarSwitchTab('photo');
 }
@@ -101,7 +101,7 @@ export async function saveAvatar() {
     else        localStorage.removeItem(AVATAR_KEY);
   } else if (_mode === 'photo' && _photo) {
     const f = FILTERS.find(f => f.id === _filter);
-    const cropped = (_cropZoom !== 1 || _cropX !== 0.5 || _cropY !== 0.5)
+    const cropped = (_cropZoom !== 1.0 || _cropX !== 0.5 || _cropY !== 0.5)
       ? await _applyCrop(_photo)
       : _photo;
     if (f?.canvas) {
@@ -169,21 +169,6 @@ function _renderEditor() {
   const content = document.getElementById('avatarEditorContent');
   if (!content) return;
 
-  const filterGrid = _photo ? `
-    <div class="avatar-filter-grid">
-      ${FILTERS.map(f => `
-        <button class="filter-option ${_filter === f.id ? 'active' : ''}" data-filter="${f.id}"
-          onclick="window.app.selectAvatarFilter('${f.id}')">
-          <div class="filter-thumb-wrap">
-            <img src="${_photo}" class="filter-thumb" ${f.css ? `style="filter:${f.css}"` : ''}>
-            ${f.canvas ? '<span class="filter-canvas-badge">✦</span>' : ''}
-          </div>
-          <span>${esc(f.label)}</span>
-        </button>
-      `).join('')}
-    </div>
-  ` : '';
-
   content.innerHTML = `
     <div class="avatar-editor-preview" id="avatarEditorPreview">${_getPreviewHTML()}</div>
 
@@ -219,7 +204,6 @@ function _renderEditor() {
         onclick="document.getElementById('avatarFileInput').click()">
         📸 ${_photo ? 'Changer la photo' : 'Choisir une photo'}
       </button>
-      ${filterGrid}
     </div>
 
     <button class="btn btn-primary avatar-save-btn" onclick="window.app.saveAvatar()">Appliquer</button>
