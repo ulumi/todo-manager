@@ -479,6 +479,12 @@ class TodoApp {
     document.getElementById('taskDate').value = DS(today());
   }
 
+  setTaskDateTomorrow() {
+    const d = today();
+    d.setDate(d.getDate() + 1);
+    document.getElementById('taskDate').value = DS(d);
+  }
+
   toggleCloudSection(headerEl) {
     toggleCloudSection(headerEl);
   }
@@ -600,6 +606,98 @@ class TodoApp {
       localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
     }
     this.render();
+  }
+
+  moveTodoToDate(todoId, newDateStr) {
+    const todo = state.todos.find(t => t.id === todoId);
+    if (!todo || (todo.recurrence && todo.recurrence !== 'none')) return;
+    if (todo.date === newDateStr) return;
+    snapshot(state.todos);
+    todo.date = newDateStr;
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  initWeekDragDrop() {
+    const grid = document.querySelector('.week-grid');
+    if (!grid) return;
+    let draggedId = null, draggedDate = null;
+
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.week-todo-item[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.week-todo-item');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const col = e.target.closest('.week-day-todos');
+      if (!col) return;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (col.dataset.date !== draggedDate) col.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const col = e.target.closest('.week-day-todos');
+      if (!col || !draggedId) return;
+      const newDate = col.dataset.date;
+      col.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
+  }
+
+  initMonthDragDrop() {
+    const grid = document.querySelector('.month-grid');
+    if (!grid) return;
+    let draggedId = null, draggedDate = null;
+
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.month-todo-dot[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.month-todo-dot');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell) return;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (cell.dataset.date !== draggedDate) cell.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell || !draggedId) return;
+      const newDate = cell.dataset.date;
+      cell.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
   }
 
   initDayDragDrop() {
@@ -825,6 +923,8 @@ class TodoApp {
       }
     }
     if (state.view === 'day') this.initDayDragDrop();
+    if (state.view === 'week') this.initWeekDragDrop();
+    if (state.view === 'month') this.initMonthDragDrop();
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();

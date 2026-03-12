@@ -133,8 +133,9 @@
       <div class="form-group" id="dateGroup">
         <label class="form-label" data-i18n="date">Date</label>
         <div class="date-row">
-          <input class="form-input" type="date" id="taskDate">
+          <input class="form-input" type="date" id="taskDate" onclick="this.showPicker()">
           <button type="button" class="today-btn" data-i18n="today" onclick="window.app.setTaskDateToday()">Aujourd'hui</button>
+          <button type="button" class="today-btn" data-i18n="tomorrow" onclick="window.app.setTaskDateTomorrow()">Demain</button>
         </div>
       </div>
 

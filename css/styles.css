@@ -975,6 +975,20 @@ main {
   min-height: 200px;
 }
 
+.week-todo-item[draggable] {
+  cursor: grab;
+}
+
+.week-todo-item.dragging {
+  opacity: 0.35;
+}
+
+.week-day-todos.drag-over {
+  background: rgba(99, 102, 241, 0.08);
+  outline: 2px dashed var(--primary);
+  border-radius: 8px;
+}
+
 .week-todo-item {
   font-size: 14px;
   padding: 4px 6px;
@@ -1223,6 +1237,19 @@ main {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+}
+
+.month-todo-dot[draggable] {
+  cursor: grab;
+}
+
+.month-todo-dot.dragging {
+  opacity: 0.35;
+}
+
+.month-cell.drag-over {
+  background: rgba(99, 102, 241, 0.08) !important;
+  outline: 2px dashed var(--primary);
 }
 
 .month-cell {

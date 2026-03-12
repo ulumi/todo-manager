@@ -5,7 +5,7 @@
 export const TRANSLATIONS = {
   en: {
     viewDay:'Day', viewWeek:'Week', viewMonth:'Month', viewYear:'Year', viewProjects:'Categories',
-    today:'Today', thisPeriod:'Recurring', addTask:'＋ Add Task', addTaskShort:'ADD TASK',
+    today:'Today', tomorrow:'Tomorrow', thisPeriod:'Recurring', addTask:'＋ Add Task', addTaskShort:'ADD TASK',
     groupOnce:'One-time', week:'Week',
     newTask:'New Task', editTask:'Edit Task', task:'Task', date:'Date', repeat:'Repeat',
     recNone:'No repeat', recDaily:'Daily', recWeekly:'Weekly', recMonthly:'Monthly', recYearly:'Yearly',
@@ -33,7 +33,7 @@ export const TRANSLATIONS = {
   },
   fr: {
     viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Catégories',
-    today:"Aujourd'hui", thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
+    today:"Aujourd'hui", tomorrow:'Demain', thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
     groupOnce:"Aujourd'hui", week:'Semaine',
     newTask:'Nouvelle tâche', editTask:'Modifier', task:'Tâche', date:'Date', repeat:'Répétitions',
     recNone:'Aucune', recDaily:'Quotidien', recWeekly:'Hebdomadaire', recMonthly:'Mensuel', recYearly:'Annuel',
@@ -61,7 +61,7 @@ export const TRANSLATIONS = {
   },
   es: {
     viewDay:'Día', viewWeek:'Semana', viewMonth:'Mes', viewYear:'Año',
-    today:'Hoy', thisPeriod:'Este período', addTask:'＋ Agregar',
+    today:'Hoy', tomorrow:'Mañana', thisPeriod:'Este período', addTask:'＋ Agregar',
     groupOnce:'Único', week:'Semana',
     newTask:'Nueva tarea', task:'Tarea', date:'Fecha', repeat:'Repetir',
     recNone:'Sin repetición', recDaily:'Diario', recWeekly:'Semanal', recMonthly:'Mensual', recYearly:'Anual',
@@ -78,7 +78,7 @@ export const TRANSLATIONS = {
   },
   de: {
     viewDay:'Tag', viewWeek:'Woche', viewMonth:'Monat', viewYear:'Jahr',
-    today:'Heute', thisPeriod:'Dieser Zeitraum', addTask:'＋ Hinzufügen',
+    today:'Heute', tomorrow:'Morgen', thisPeriod:'Dieser Zeitraum', addTask:'＋ Hinzufügen',
     groupOnce:'Einmalig', week:'Woche',
     newTask:'Neue Aufgabe', task:'Aufgabe', date:'Datum', repeat:'Wiederholen',
     recNone:'Keine Wiederholung', recDaily:'Täglich', recWeekly:'Wöchentlich', recMonthly:'Monatlich', recYearly:'Jährlich',

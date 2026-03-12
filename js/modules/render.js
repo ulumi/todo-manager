@@ -205,11 +205,11 @@ export function renderWeekView(todos) {
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
-      <div class="week-day-todos">
+      <div class="week-day-todos" data-date="${ds}">
         ${items.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
-          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}" onclick="event.stopPropagation()">
+          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
             <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
             <span class="week-todo-text">${esc(t.title)}</span>
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
@@ -304,7 +304,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
-  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}"
+  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}" data-date="${ds}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>
@@ -314,7 +314,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
-      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}">
+      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}>
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
