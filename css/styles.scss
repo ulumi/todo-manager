@@ -2908,7 +2908,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-avatar-emoji {
-  font-size:      94px;
+  font-size:      80px;
   line-height:    1;
   position:       relative;
   z-index:        1;
@@ -2979,7 +2979,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   .profile-avatar-emoji {
-    font-size:      112px;
+    font-size:      95px;
     line-height:    1;
     position:       relative;
     z-index:        1;
@@ -3023,8 +3023,8 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Emoji bursts from center — spring scale animation
 @keyframes avatar-burst {
   0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; }
-  55%  { transform: scale(1.18) rotate(6deg);   opacity: 1; }
-  75%  { transform: scale(0.93) rotate(-3deg); }
+  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; }
+  75%  { transform: scale(0.95) rotate(-3deg); }
   100% { transform: scale(1)    rotate(0deg);  }
 }
 
@@ -3041,11 +3041,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   grid-template-columns: repeat(6, 1fr);
   gap:                   6px;
   padding:               4px 0 8px;
-  max-height:            134px; // ~3 rows visible
-  overflow-y:            auto;
-  overscroll-behavior:   contain;
-  scrollbar-width:       thin;
-  scrollbar-color:       var(--border) transparent;
 }
 
 .avatar-emoji-opt {
