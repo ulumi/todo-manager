@@ -2899,7 +2899,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:       relative;
   z-index:        1;
   pointer-events: none;
-  animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
+  animation:      avatar-burst-sm .55s cubic-bezier(.34, 1.56, .64, 1) both;
 }
 
 .profile-avatar-hint {
@@ -2955,7 +2955,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     position:       relative;
     z-index:        1;
     pointer-events: none;
-    animation:      avatar-burst .55s cubic-bezier(.34, 1.56, .64, 1) both;
+    animation:      avatar-burst-lg .55s cubic-bezier(.34, 1.56, .64, 1) both;
   }
 }
 
@@ -2991,11 +2991,18 @@ body:has(.bottom-panel:not(.hidden))::before {
   &.hidden { display: none; }
 }
 
-@keyframes avatar-burst {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; }
-  55%  { transform: scale(1.18) rotate(6deg);   opacity: 1; }
-  75%  { transform: scale(0.93) rotate(-3deg); }
-  100% { transform: scale(1)    rotate(0deg);  }
+// Emoji springs UP — bottom cut is intentional "jaillissement" from the rings
+@keyframes avatar-burst-sm {
+  0%   { transform: translateY(55px)  scale(0.15) rotate(-10deg); opacity: 0; }
+  55%  { transform: translateY(-20px) scale(1.12) rotate(5deg);   opacity: 1; }
+  75%  { transform: translateY(-13px) scale(0.95) rotate(-2deg); }
+  100% { transform: translateY(-15px) scale(1)    rotate(0deg);  }
+}
+@keyframes avatar-burst-lg {
+  0%   { transform: translateY(65px)  scale(0.15) rotate(-10deg); opacity: 0; }
+  55%  { transform: translateY(-26px) scale(1.12) rotate(5deg);   opacity: 1; }
+  75%  { transform: translateY(-18px) scale(0.95) rotate(-2deg); }
+  100% { transform: translateY(-20px) scale(1)    rotate(0deg);  }
 }
 
 @keyframes emoji-bounce {
