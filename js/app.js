@@ -44,7 +44,7 @@ import { snapshot, undo, canUndo } from './modules/undo.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
-  upgradeGuestToEmail, signOut,
+  upgradeGuestToEmail, signOut, updateUserProfile,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
 
@@ -790,8 +790,10 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   render() {
     const isCategories = state.view === 'categories';
+    const isProfile    = state.view === 'profile';
     document.body.classList.toggle('view-projects', isCategories);
-    document.getElementById('periodLabel').textContent = isCategories ? '' : getPeriodLabel();
+    document.body.classList.toggle('view-profile',  isProfile);
+    document.getElementById('periodLabel').textContent = (isCategories || isProfile) ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
 
     let html = '';
@@ -800,6 +802,7 @@ class TodoApp {
     if (state.view==='month')      html = renderMonthView(state.todos);
     if (state.view==='year')       html = renderYearView(state.todos);
     if (state.view==='categories') html = renderCategoriesView(state.todos);
+    if (state.view==='profile')    html = this._renderProfileView();
     document.getElementById('mainContent').innerHTML = html;
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
@@ -818,6 +821,65 @@ class TodoApp {
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
+  }
+
+  _renderProfileView() {
+    const user     = getCurrentUser();
+    const name     = user?.displayName || user?.email?.split('@')[0] || '';
+    const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
+    const cats     = getCategories().length;
+    const total    = state.todos.length;
+    const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
+    const done     = state.todos.filter(t => t.completed).length;
+
+    return `
+      <div class="profile-view">
+        <div class="profile-hero">
+          <div class="profile-avatar">${esc(initials)}</div>
+          <h1 class="profile-hero-name">${esc(name)}</h1>
+          <p class="profile-hero-email">${esc(user?.email || '')}</p>
+        </div>
+
+        <div class="profile-body">
+          <div class="profile-section">
+            <h3 class="profile-section-title">Nom d'affichage</h3>
+            <div class="profile-name-row">
+              <input class="form-input" type="text" id="profileDisplayName"
+                value="${esc(user?.displayName || '')}" placeholder="Ton prénom">
+              <button class="btn btn-primary" onclick="window.app.saveDisplayName()">Sauvegarder</button>
+            </div>
+            <p class="profile-save-msg hidden" id="profileSaveMsg">✓ Sauvegardé</p>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Statistiques</h3>
+            <div class="profile-stats">
+              <div class="profile-stat"><span class="profile-stat-num">${total}</span><span class="profile-stat-label">tâches</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${done}</span><span class="profile-stat-label">complétées</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${recur}</span><span class="profile-stat-label">récurrentes</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${cats}</span><span class="profile-stat-label">catégories</span></div>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <button class="btn btn-ghost profile-signout-btn" onclick="window.app.authSignOut()">Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async saveDisplayName() {
+    const input = document.getElementById('profileDisplayName');
+    const name  = input?.value?.trim();
+    if (!name) return;
+    await updateUserProfile(name);
+    this._updateUserBtn();
+    const msg = document.getElementById('profileSaveMsg');
+    if (msg) {
+      msg.classList.remove('hidden');
+      setTimeout(() => msg.classList.add('hidden'), 2000);
+    }
   }
 
   _applyMultilineClasses() {
@@ -1278,12 +1340,27 @@ class TodoApp {
   _updateUserBtn() {
     const user  = getCurrentUser();
     const btn   = document.getElementById('userBtn');
-    const label = document.getElementById('guestLabel');
+    const label = document.getElementById('userLabel');
     if (!btn) return;
     const guest = !!user?.isAnonymous;
     btn.classList.toggle('authenticated', !!user && !guest);
     btn.title = guest ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
-    if (label) label.classList.toggle('hidden', !guest);
+    if (label) {
+      if (!user) { label.classList.add('hidden'); return; }
+      label.classList.remove('hidden');
+      if (guest) {
+        label.textContent = 'Invité';
+        label.classList.remove('user-label--auth');
+      } else {
+        label.textContent = user.displayName || user.email?.split('@')[0] || 'Compte';
+        label.classList.add('user-label--auth');
+      }
+    }
+  }
+
+  openUserArea() {
+    if (isGuest()) this.openAuthModal();
+    else           this.setView('profile');
   }
 
   _leavingAttempted = null;

@@ -10,6 +10,7 @@ import {
   EmailAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  updateProfile,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 
 import { auth } from './firebase.js';
@@ -75,6 +76,12 @@ export async function upgradeGuestToEmail(email, password) {
   const credential = EmailAuthProvider.credential(email, password);
   const { user } = await linkWithCredential(_currentUser, credential);
   return user;
+}
+
+// ── Update profile ────────────────────────────────────────
+export async function updateUserProfile(displayName) {
+  if (!_currentUser) return;
+  await updateProfile(_currentUser, { displayName });
 }
 
 // ── Sign out ──────────────────────────────────────────────
