@@ -3065,11 +3065,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-avatar {
-  width: 90px;
-  height: 90px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--primary) 22%, var(--surface));
-  color: #fff;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, #000) 0% 28%, var(--primary) 28% 38%, color-mix(in srgb, var(--primary) 38%, #000) 38% 48%, var(--primary) 48% 57%, color-mix(in srgb, var(--primary) 38%, #000) 57% 67%, var(--primary) 67% 76%, color-mix(in srgb, var(--primary) 28%, #000) 76% 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3079,31 +3078,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: hidden;
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.profile-avatar::before {
-  content: "";
-  position: absolute;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: var(--primary);
-  z-index: 0;
-}
-.profile-avatar:has(.profile-avatar-img), .profile-avatar:has(.avatar-crop-canvas) {
-  background: var(--primary);
-}
-.profile-avatar:has(.profile-avatar-img)::before, .profile-avatar:has(.avatar-crop-canvas)::before {
-  display: none;
-}
 .profile-avatar:hover {
   transform: scale(1.06);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 50%, transparent);
 }
 .profile-avatar:hover .profile-avatar-hint {
   opacity: 1;
 }
 
 .profile-avatar-emoji {
-  font-size: 72px;
+  font-size: 80px;
   line-height: 1;
   position: relative;
   z-index: 1;
@@ -3133,10 +3117,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .avatar-editor-preview {
-  width: 110px;
-  height: 110px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--primary) 22%, var(--surface));
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, #000) 0% 28%, var(--primary) 28% 38%, color-mix(in srgb, var(--primary) 38%, #000) 38% 48%, var(--primary) 48% 57%, color-mix(in srgb, var(--primary) 38%, #000) 57% 67%, var(--primary) 67% 76%, color-mix(in srgb, var(--primary) 28%, #000) 76% 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3144,27 +3128,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: hidden;
   position: relative;
 }
-.avatar-editor-preview::before {
-  content: "";
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: var(--primary);
-  z-index: 0;
-}
 .avatar-editor-preview .profile-avatar-emoji {
   font-size: 90px;
   line-height: 1;
   position: relative;
   z-index: 1;
   pointer-events: none;
-}
-.avatar-editor-preview:has(.avatar-crop-canvas) {
-  background: var(--primary);
-}
-.avatar-editor-preview:has(.avatar-crop-canvas)::before {
-  display: none;
 }
 
 .avatar-preview-placeholder {
