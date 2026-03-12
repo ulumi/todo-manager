@@ -388,6 +388,15 @@
   </div>
 </div>
 
+<!-- Avatar editor modal -->
+<div class="modal-overlay hidden" id="avatarEditorOverlay" onclick="if(event.target===this)window.app.closeAvatarEditor()">
+  <div class="modal avatar-editor-modal">
+    <button class="auth-close-btn" onclick="window.app.closeAvatarEditor()">✕</button>
+    <div class="modal-title">Modifier l'avatar</div>
+    <div id="avatarEditorContent"></div>
+  </div>
+</div>
+
 <script type="module" src="js/app.js"></script>
 <script>
   if ('serviceWorker' in navigator) {

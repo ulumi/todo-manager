@@ -47,6 +47,11 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
+import {
+  openAvatarEditor, closeAvatarEditor, getAvatarHTML,
+  handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
+  avatarSwitchTab, saveAvatar,
+} from './modules/avatarEditor.js';
 
 // Initialize state
 state.initializeState();
@@ -827,23 +832,17 @@ class TodoApp {
     const user     = getCurrentUser();
     const name     = user?.displayName || user?.email?.split('@')[0] || '';
     const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
-    const avatar   = localStorage.getItem('profileAvatar') || '';
     const cats     = getCategories().length;
     const total    = state.todos.length;
     const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
     const done     = state.todos.filter(t => t.completed).length;
-    const AVATARS  = ['🦊','🐨','🐸','🦁','🐯','🐻','🐼','🐧','🦉','🦋','🌟','⚡','🎯','🚀','🌈','🍀','🔥','💎','🎮','🎵','🏔️','🌊','🦄','🎨'];
 
     return `
       <div class="profile-view">
         <div class="profile-hero">
-          <div class="profile-avatar" onclick="window.app.toggleAvatarPicker()" title="Changer l'avatar">
-            ${avatar ? `<span class="profile-avatar-emoji">${avatar}</span>` : esc(initials)}
+          <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Changer l'avatar">
+            ${getAvatarHTML(initials)}
             <span class="profile-avatar-hint">✏️</span>
-          </div>
-          <div class="profile-avatar-picker hidden" id="profileAvatarPicker">
-            ${AVATARS.map(e => `<span class="avatar-option" onclick="window.app.selectAvatar('${e}')">${e}</span>`).join('')}
-            <span class="avatar-option avatar-option--reset" onclick="window.app.selectAvatar('')">↩</span>
           </div>
           <h1 class="profile-hero-name">${esc(name)}</h1>
           <p class="profile-hero-email">${esc(user?.email || '')}</p>
@@ -915,15 +914,13 @@ class TodoApp {
     }
   }
 
-  toggleAvatarPicker() {
-    document.getElementById('profileAvatarPicker')?.classList.toggle('hidden');
-  }
-
-  selectAvatar(emoji) {
-    if (emoji) localStorage.setItem('profileAvatar', emoji);
-    else       localStorage.removeItem('profileAvatar');
-    this.render();
-  }
+  openAvatarEditor()           { openAvatarEditor(); }
+  closeAvatarEditor()          { closeAvatarEditor(); }
+  handleAvatarFile(input)      { handleAvatarFile(input); }
+  selectAvatarFilter(id)       { selectAvatarFilter(id); }
+  selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
+  avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
+  saveAvatar()                 { saveAvatar(); }
 
   openAdminSection(section) {
     openAdminModal();
