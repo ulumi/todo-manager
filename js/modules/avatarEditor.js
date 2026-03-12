@@ -29,32 +29,6 @@ let _cropX     = 0.5;    // normalized center 0–1
 let _cropY     = 0.5;
 let _drag      = null;   // { lastX, lastY }
 
-// ── Zoom overlay ──────────────────────────────────────
-function _showZoom(html) {
-  if (!html || html.includes('avatar-preview-placeholder')) return;
-  const overlay = document.createElement('div');
-  overlay.className = 'avatar-zoom-overlay';
-  overlay.innerHTML = `<div class="avatar-zoom-content">${html}</div>`;
-  overlay.addEventListener('click', () => {
-    overlay.classList.remove('visible');
-    setTimeout(() => overlay.remove(), 280);
-  });
-  document.body.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add('visible'));
-}
-
-export function zoomPreview() {
-  if (_mode === 'photo' && _photo) {
-    const canvas = document.getElementById('avatarCropCanvas');
-    const src    = canvas ? canvas.toDataURL('image/jpeg', 0.9) : _photo;
-    const f      = FILTERS.find(f => f.id === _filter);
-    const style  = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
-    _showZoom(`<img src="${src}" class="profile-avatar-img"${style}>`);
-  } else {
-    _showZoom(_getPreviewHTML());
-  }
-}
-export function zoomSavedAvatar(initials) { _showZoom(getAvatarHTML(initials)); }
 
 // ── Public ────────────────────────────────────────────
 
@@ -115,6 +89,7 @@ export function avatarSwitchTab(tab) {
   _mode = tab;
   document.getElementById('avatarPanelEmoji')?.classList.toggle('hidden', tab !== 'emoji');
   document.getElementById('avatarPanelPhoto')?.classList.toggle('hidden', tab !== 'photo');
+  document.getElementById('cropControls')?.classList.toggle('hidden', tab !== 'photo' || !_photo);
   document.querySelectorAll('.avatar-tab').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab));
   _updatePreview();
@@ -209,8 +184,10 @@ function _renderEditor() {
     </div>
   ` : '';
 
-  const zoomControls = _photo ? `
-    <div class="avatar-crop-controls">
+  content.innerHTML = `
+    <div class="avatar-editor-preview" id="avatarEditorPreview">${_getPreviewHTML()}</div>
+
+    <div class="avatar-crop-controls ${!_photo || _mode !== 'photo' ? 'hidden' : ''}" id="cropControls">
       <span class="crop-zoom-icon">−</span>
       <input type="range" id="cropZoomSlider" class="crop-zoom-slider"
         min="1" max="3" step="0.05" value="${_cropZoom}"
@@ -218,11 +195,6 @@ function _renderEditor() {
       <span class="crop-zoom-icon">+</span>
       <span id="cropZoomDisplay" class="crop-zoom-display">${Math.round(_cropZoom * 100)}%</span>
     </div>
-  ` : '';
-
-  content.innerHTML = `
-    <div class="avatar-editor-preview" id="avatarEditorPreview"
-      onclick="window.app.zoomPreview()">${_getPreviewHTML()}</div>
 
     <div class="avatar-editor-tabs">
       <button class="avatar-tab ${_mode==='emoji'?'active':''}" data-tab="emoji"
@@ -247,7 +219,6 @@ function _renderEditor() {
         onclick="document.getElementById('avatarFileInput').click()">
         📸 ${_photo ? 'Changer la photo' : 'Choisir une photo'}
       </button>
-      ${zoomControls}
       ${filterGrid}
     </div>
 

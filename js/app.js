@@ -51,7 +51,7 @@ import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
   avatarSwitchTab, saveAvatar, FILTERS,
-  zoomPreview, zoomSavedAvatar, cropDragStart, setCropZoom,
+  cropDragStart, setCropZoom,
 } from './modules/avatarEditor.js';
 
 // Initialize state
@@ -841,9 +841,9 @@ class TodoApp {
     return `
       <div class="profile-view">
         <div class="profile-hero">
-          <div class="profile-avatar" onclick="window.app.zoomSavedAvatar('${initials}')" title="Voir l'avatar">
+          <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
             ${getAvatarHTML(initials)}
-            <span class="profile-avatar-hint" onclick="event.stopPropagation();window.app.openAvatarEditor()" title="Changer l'avatar">✏️</span>
+            <span class="profile-avatar-hint">✏️</span>
           </div>
           <h1 class="profile-hero-name">${esc(name)}</h1>
           <p class="profile-hero-email">${esc(user?.email || '')}</p>
@@ -922,8 +922,6 @@ class TodoApp {
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
   async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
-  zoomPreview()                { zoomPreview(); }
-  zoomSavedAvatar(initials)    { zoomSavedAvatar(initials); }
   cropDragStart(e)             { cropDragStart(e); }
   setCropZoom(val)             { setCropZoom(val); }
 
