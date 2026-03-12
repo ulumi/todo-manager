@@ -2882,11 +2882,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-avatar-emoji {
-  font-size:      52px;
+  font-size:      96px;
   line-height:    1;
-  transform:      translateY(-6px);
+  transform:      translateY(-18px);
   pointer-events: none;
-  filter:         drop-shadow(0 3px 6px rgba(0,0,0,.15));
+  filter:
+    drop-shadow(0 -3px 0 rgba(0,0,0,.06))
+    drop-shadow(0  6px 14px rgba(0,0,0,.22));
 }
 
 .profile-avatar-hint {
@@ -2907,7 +2909,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Avatar editor modal ────────────────────────────────
-.avatar-editor-modal { max-width: 380px; position: relative; }
+.avatar-editor-modal {
+  max-width:    380px;
+  position:     relative;
+  overflow:     visible; // emoji bursts out of the card
+  padding-top:  80px;   // room for the big emoji above
+}
 
 .avatar-editor-preview {
   width:           96px;
@@ -2920,17 +2927,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   display:         flex;
   align-items:     center;
   justify-content: center;
-  margin:          0 auto 28px;
+  margin:          0 auto 32px;
   overflow:        visible;
   position:        relative;
+  cursor:          zoom-in;
 
-  // Big emoji pops out like Looney Tunes
+  // HUGE emoji — literally bursts out of the card like Looney Tunes
   .profile-avatar-emoji {
-    font-size:      80px;
+    font-size:      130px;
     line-height:    1;
-    transform:      translateY(-12px);
+    transform:      translateY(-22px);
     pointer-events: none;
-    filter:         drop-shadow(0 4px 8px rgba(0,0,0,.18));
+    filter:
+      drop-shadow(0 -4px 0 rgba(0,0,0,.08))
+      drop-shadow(0  8px 18px rgba(0,0,0,.28));
   }
 }
 
@@ -2971,6 +2981,63 @@ body:has(.bottom-panel:not(.hidden))::before {
   40%  { transform: scale(1.35) rotate(-12deg); }
   70%  { transform: scale(1.25) rotate(10deg);  }
   100% { transform: scale(1.2)  rotate(0deg);   }
+}
+
+@keyframes looney-pop {
+  0%   { transform: translateY(20px)  scale(0.2)  rotate(-8deg); opacity: 0; }
+  55%  { transform: translateY(-26px) scale(1.18) rotate(4deg);  opacity: 1; }
+  75%  { transform: translateY(-20px) scale(0.94) rotate(-2deg); }
+  100% { transform: translateY(-22px) scale(1)    rotate(0deg);  }
+}
+
+// ── Avatar zoom overlay ─────────────────────────────────────────────────────
+.avatar-zoom-overlay {
+  position:        fixed;
+  inset:           0;
+  background:      rgba(0,0,0,0);
+  z-index:         900;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          zoom-out;
+  transition:      background .25s, backdrop-filter .25s;
+
+  &.visible {
+    background:     rgba(0,0,0,.72);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+}
+
+.avatar-zoom-content {
+  width:           240px;
+  height:          240px;
+  border-radius:   50%;
+  background:      var(--primary);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  overflow:        visible;
+  transform:       scale(0);
+  transition:      transform .35s cubic-bezier(.34, 1.56, .64, 1);
+
+  .visible > & { transform: scale(1); }
+
+  .profile-avatar-emoji {
+    font-size:      320px;
+    line-height:    1;
+    transform:      translateY(-54px);
+    pointer-events: none;
+    filter:         drop-shadow(0 16px 40px rgba(0,0,0,.45));
+    animation:      looney-pop .55s cubic-bezier(.34, 1.56, .64, 1) forwards;
+  }
+
+  .profile-avatar-img {
+    width:         100%;
+    height:        100%;
+    object-fit:    cover;
+    border-radius: 50%;
+  }
 }
 
 .avatar-emoji-grid {

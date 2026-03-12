@@ -25,6 +25,23 @@ let _filter = 'natural';
 let _emoji  = null;
 let _mode   = 'emoji'; // 'emoji' | 'photo'
 
+// ── Zoom overlay ──────────────────────────────────────
+function _showZoom(html) {
+  if (!html || html.includes('avatar-preview-placeholder')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'avatar-zoom-overlay';
+  overlay.innerHTML = `<div class="avatar-zoom-content">${html}</div>`;
+  overlay.addEventListener('click', () => {
+    overlay.classList.remove('visible');
+    setTimeout(() => overlay.remove(), 280);
+  });
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('visible'));
+}
+
+export function zoomPreview() { _showZoom(_getPreviewHTML()); }
+export function zoomSavedAvatar(initials) { _showZoom(getAvatarHTML(initials)); }
+
 // ── Public ────────────────────────────────────────────
 
 export function openAvatarEditor() {
@@ -126,7 +143,8 @@ function _renderEditor() {
   ` : '';
 
   content.innerHTML = `
-    <div class="avatar-editor-preview" id="avatarEditorPreview">${_getPreviewHTML()}</div>
+    <div class="avatar-editor-preview" id="avatarEditorPreview"
+      onclick="window.app.zoomPreview()">${_getPreviewHTML()}</div>
 
     <div class="avatar-editor-tabs">
       <button class="avatar-tab ${_mode==='emoji'?'active':''}" data-tab="emoji"
