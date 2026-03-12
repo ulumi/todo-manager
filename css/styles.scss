@@ -2991,7 +2991,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     translate:      var(--ed-x, 0px) var(--ed-y, 0px); // override portrait offset — editor has no portrait shift
     scale:          var(--ed-s, 1);
     animation:      avatar-burst-preview .42s cubic-bezier(.34, 1.56, .64, 1) both;
-    clip-path:      circle(55px at center);
+    // no clip-path here — container circle(65px) clips the boundary, ::after ring masks the edges
   }
 }
 
@@ -3036,10 +3036,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 @keyframes avatar-burst-preview {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); z-index: 3; }
-  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; clip-path: circle(200px at center); z-index: 3; } // peak: above ring
-  60%  {                                                     clip-path: circle(200px at center); z-index: 1; } // snap under ring before rebound
-  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(55px  at center); z-index: 1; }
+  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; z-index: 3; }
+  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; z-index: 3; } // peak: above ring
+  60%  {                                                     z-index: 1; } // snap under ring before rebound
+  100% { transform: scale(1)    rotate(0deg);               z-index: 1; }
 }
 
 @keyframes emoji-bounce {
