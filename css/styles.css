@@ -98,6 +98,37 @@ header.scrolled {
   gap: 8px;
   margin-right: 8px;
   text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.logo-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.logo-avatar--has-avatar {
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+}
+.logo-avatar .logo-avatar-emoji {
+  font-size: 20px;
+  line-height: 1;
+}
+.logo-avatar .logo-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.app-title:hover .logo-avatar {
+  transform: scale(1.08);
+  box-shadow: 0 0 0 3px var(--primary-light);
 }
 
 .logo-text {
@@ -4848,6 +4879,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-color: var(--primary);
 }
 
+@media (min-width: 421px) {
+  .user-btn {
+    display: none !important;
+  }
+}
 .user-btn {
   display: flex;
   align-items: center;
