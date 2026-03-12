@@ -3088,6 +3088,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: var(--primary);
   z-index: 0;
 }
+.profile-avatar:has(.profile-avatar-img), .profile-avatar:has(.avatar-crop-canvas) {
+  background: var(--primary);
+}
+.profile-avatar:has(.profile-avatar-img)::before, .profile-avatar:has(.avatar-crop-canvas)::before {
+  display: none;
+}
 .profile-avatar:hover {
   transform: scale(1.06);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
@@ -3153,6 +3159,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   position: relative;
   z-index: 1;
   pointer-events: none;
+}
+.avatar-editor-preview:has(.avatar-crop-canvas) {
+  background: var(--primary);
+}
+.avatar-editor-preview:has(.avatar-crop-canvas)::before {
+  display: none;
 }
 
 .avatar-preview-placeholder {
@@ -3248,8 +3260,8 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .avatar-crop-canvas {
-  width: 100%;
-  height: 100%;
+  width: 83%;
+  height: 83%;
   border-radius: 50%;
   display: block;
   cursor: grab;
@@ -3382,8 +3394,8 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-avatar-img {
-  width: 100%;
-  height: 100%;
+  width: 83%;
+  height: 83%;
   object-fit: cover;
   border-radius: 50%;
   display: block;
