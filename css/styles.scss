@@ -3028,8 +3028,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; clip-path: circle(200px at center); z-index: 3; } // ring already behind from frame 0
   55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; clip-path: circle(200px at center); z-index: 3; } // peak: fully above rings
   75%  { transform: scale(0.95) rotate(-3deg);              clip-path: circle(200px at center); z-index: 3; } // bouncing back, still above
-  99%  {                                                     clip-path: circle(200px at center); z-index: 3; } // above rings until very last moment
-  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(45px  at center); z-index: 1; } // idle: rings return, clip to inner ring edge
+  100% { transform: scale(1)    rotate(0deg);               clip-path: circle(45px  at center); z-index: 3; } // idle: emoji always above rings, clip prevents overflow past ring
 }
 
 @keyframes avatar-burst-preview {
