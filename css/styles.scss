@@ -2867,8 +2867,70 @@ body:has(.bottom-panel:not(.hidden))::before {
   display:         flex;
   align-items:     center;
   justify-content: center;
-  margin-bottom:   14px;
+  margin-bottom:   10px;
   letter-spacing:  -.5px;
+  cursor:          pointer;
+  position:        relative;
+  transition:      transform .15s, box-shadow .15s;
+
+  &:hover {
+    transform:  scale(1.06);
+    box-shadow: 0 0 0 3px var(--primary-light);
+    .profile-avatar-hint { opacity: 1; }
+  }
+}
+
+.profile-avatar-emoji { font-size: 36px; line-height: 1; }
+
+.profile-avatar-hint {
+  position:   absolute;
+  bottom:     -2px;
+  right:      -2px;
+  font-size:  14px;
+  background: var(--surface);
+  border:     1px solid var(--border);
+  border-radius: 50%;
+  width:      22px;
+  height:     22px;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  opacity:    0;
+  transition: opacity .15s;
+}
+
+.profile-avatar-picker {
+  display:       flex;
+  flex-wrap:     wrap;
+  gap:           6px;
+  background:    var(--surface);
+  border:        1px solid var(--border);
+  border-radius: 12px;
+  padding:       12px;
+  margin-bottom: 14px;
+  max-width:     280px;
+  justify-content: center;
+}
+
+.avatar-option {
+  font-size:     24px;
+  cursor:        pointer;
+  border-radius: 8px;
+  padding:       4px;
+  transition:    transform .1s, background .1s;
+  line-height:   1;
+
+  &:hover { transform: scale(1.2); background: var(--surface2); }
+
+  &--reset {
+    font-size:   16px;
+    color:       var(--text-muted);
+    display:     flex;
+    align-items: center;
+    justify-content: center;
+    width:       32px;
+    height:      32px;
+  }
 }
 
 .profile-hero-name {
@@ -2943,6 +3005,42 @@ body:has(.bottom-panel:not(.hidden))::before {
 .profile-stat-label {
   font-size: 11px;
   color:     var(--text-muted);
+}
+
+.profile-rows {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  margin:         -4px;
+}
+
+.profile-row {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  width:           100%;
+  padding:         10px 4px;
+  background:      transparent;
+  border:          none;
+  border-radius:   8px;
+  font-size:       14px;
+  color:           var(--text);
+  cursor:          pointer;
+  text-align:      left;
+  transition:      background .12s, color .12s;
+
+  &:hover { background: var(--surface2); }
+
+  &--danger {
+    color: var(--danger);
+    .profile-row-arrow { color: var(--danger); }
+  }
+}
+
+.profile-row-arrow {
+  font-size:  18px;
+  color:      var(--text-muted);
+  flex-shrink: 0;
 }
 
 .profile-signout-btn {

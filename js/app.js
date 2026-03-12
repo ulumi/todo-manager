@@ -827,15 +827,24 @@ class TodoApp {
     const user     = getCurrentUser();
     const name     = user?.displayName || user?.email?.split('@')[0] || '';
     const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
+    const avatar   = localStorage.getItem('profileAvatar') || '';
     const cats     = getCategories().length;
     const total    = state.todos.length;
     const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
     const done     = state.todos.filter(t => t.completed).length;
+    const AVATARS  = ['🦊','🐨','🐸','🦁','🐯','🐻','🐼','🐧','🦉','🦋','🌟','⚡','🎯','🚀','🌈','🍀','🔥','💎','🎮','🎵','🏔️','🌊','🦄','🎨'];
 
     return `
       <div class="profile-view">
         <div class="profile-hero">
-          <div class="profile-avatar">${esc(initials)}</div>
+          <div class="profile-avatar" onclick="window.app.toggleAvatarPicker()" title="Changer l'avatar">
+            ${avatar ? `<span class="profile-avatar-emoji">${avatar}</span>` : esc(initials)}
+            <span class="profile-avatar-hint">✏️</span>
+          </div>
+          <div class="profile-avatar-picker hidden" id="profileAvatarPicker">
+            ${AVATARS.map(e => `<span class="avatar-option" onclick="window.app.selectAvatar('${e}')">${e}</span>`).join('')}
+            <span class="avatar-option avatar-option--reset" onclick="window.app.selectAvatar('')">↩</span>
+          </div>
           <h1 class="profile-hero-name">${esc(name)}</h1>
           <p class="profile-hero-email">${esc(user?.email || '')}</p>
         </div>
@@ -862,6 +871,30 @@ class TodoApp {
           </div>
 
           <div class="profile-section">
+            <h3 class="profile-section-title">Réglages</h3>
+            <div class="profile-rows">
+              <button class="profile-row" onclick="window.app.openAdminSection('taches')">
+                <span>📋 Tâches suggérées</span><span class="profile-row-arrow">›</span>
+              </button>
+              <button class="profile-row" onclick="window.app.openAdminSection('modeles')">
+                <span>🗂 Modèles de journée</span><span class="profile-row-arrow">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Données</h3>
+            <div class="profile-rows">
+              <button class="profile-row" onclick="window.app.exportAllData()">
+                <span>📤 Exporter mes données</span><span class="profile-row-arrow">›</span>
+              </button>
+              <button class="profile-row profile-row--danger" onclick="window.app.profileDeleteData()">
+                <span>🗑 Effacer mes données</span><span class="profile-row-arrow">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-section">
             <button class="btn btn-ghost profile-signout-btn" onclick="window.app.authSignOut()">Se déconnecter</button>
           </div>
         </div>
@@ -880,6 +913,29 @@ class TodoApp {
       msg.classList.remove('hidden');
       setTimeout(() => msg.classList.add('hidden'), 2000);
     }
+  }
+
+  toggleAvatarPicker() {
+    document.getElementById('profileAvatarPicker')?.classList.toggle('hidden');
+  }
+
+  selectAvatar(emoji) {
+    if (emoji) localStorage.setItem('profileAvatar', emoji);
+    else       localStorage.removeItem('profileAvatar');
+    this.render();
+  }
+
+  openAdminSection(section) {
+    openAdminModal();
+    setTimeout(() => showAdminSection(section), 50);
+  }
+
+  async profileDeleteData() {
+    if (!confirm('Effacer toutes tes données ? Cette action est irréversible.')) return;
+    await deleteUserFirestoreDoc();
+    Object.keys(localStorage).filter(k => !k.startsWith('firebase:')).forEach(k => localStorage.removeItem(k));
+    await signOut();
+    location.reload();
   }
 
   _applyMultilineClasses() {
