@@ -3516,6 +3516,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   object-fit: cover;
   border-radius: 50%;
   display: block;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-hero-name {
