@@ -51,7 +51,7 @@ import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
   avatarSwitchTab, saveAvatar, FILTERS,
-  zoomPreview, zoomSavedAvatar,
+  zoomPreview, zoomSavedAvatar, cropDragStart, setCropZoom,
 } from './modules/avatarEditor.js';
 
 // Initialize state
@@ -924,6 +924,8 @@ class TodoApp {
   async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
   zoomPreview()                { zoomPreview(); }
   zoomSavedAvatar(initials)    { zoomSavedAvatar(initials); }
+  cropDragStart(e)             { cropDragStart(e); }
+  setCropZoom(val)             { setCropZoom(val); }
 
   openAdminSection(section) {
     openAdminModal();

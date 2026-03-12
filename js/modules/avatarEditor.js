@@ -20,10 +20,14 @@ export const FILTERS = [
 const EMOJIS = ['🦊','🐨','🐸','🦁','🐯','🐻','🐼','🐧','🦉','🦋','🌟','⚡','🎯','🚀','🌈','🍀','🔥','💎','🎮','🎵','🏔️','🌊','🦄','🎨'];
 
 // ── Module state ──────────────────────────────────────
-let _photo  = null; // base64 of uploaded photo
-let _filter = 'natural';
-let _emoji  = null;
-let _mode   = 'emoji'; // 'emoji' | 'photo'
+let _photo     = null; // base64 of uploaded photo
+let _filter    = 'natural';
+let _emoji     = null;
+let _mode      = 'emoji'; // 'emoji' | 'photo'
+let _cropZoom  = 1.0;    // 1–3×
+let _cropX     = 0.5;    // normalized center 0–1
+let _cropY     = 0.5;
+let _drag      = null;   // { lastX, lastY }
 
 // ── Zoom overlay ──────────────────────────────────────
 function _showZoom(html) {
@@ -39,7 +43,17 @@ function _showZoom(html) {
   requestAnimationFrame(() => overlay.classList.add('visible'));
 }
 
-export function zoomPreview() { _showZoom(_getPreviewHTML()); }
+export function zoomPreview() {
+  if (_mode === 'photo' && _photo) {
+    const canvas = document.getElementById('avatarCropCanvas');
+    const src    = canvas ? canvas.toDataURL('image/jpeg', 0.9) : _photo;
+    const f      = FILTERS.find(f => f.id === _filter);
+    const style  = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
+    _showZoom(`<img src="${src}" class="profile-avatar-img"${style}>`);
+  } else {
+    _showZoom(_getPreviewHTML());
+  }
+}
 export function zoomSavedAvatar(initials) { _showZoom(getAvatarHTML(initials)); }
 
 // ── Public ────────────────────────────────────────────
@@ -49,6 +63,7 @@ export function openAvatarEditor() {
   if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; }
   else if (saved?.type === 'photo') { _photo = saved.data; _filter = saved.filter || 'natural'; _mode = 'photo'; _emoji = null; }
   else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; }
+  _cropZoom = 1; _cropX = 0.5; _cropY = 0.5;
 
   _renderEditor();
   document.getElementById('avatarEditorOverlay').classList.remove('hidden');
@@ -74,9 +89,10 @@ export function getAvatarHTML(initials) {
 export async function handleAvatarFile(input) {
   const file = input.files[0];
   if (!file) return;
-  _photo  = await _compressImage(file, SIZE);
-  _mode   = 'photo';
-  _filter = 'natural';
+  _photo    = await _compressImage(file, SIZE);
+  _mode     = 'photo';
+  _filter   = 'natural';
+  _cropZoom = 1; _cropX = 0.5; _cropY = 0.5;
   _renderEditor();
   avatarSwitchTab('photo');
 }
@@ -110,15 +126,66 @@ export async function saveAvatar() {
     else        localStorage.removeItem(AVATAR_KEY);
   } else if (_mode === 'photo' && _photo) {
     const f = FILTERS.find(f => f.id === _filter);
+    const cropped = (_cropZoom !== 1 || _cropX !== 0.5 || _cropY !== 0.5)
+      ? await _applyCrop(_photo)
+      : _photo;
     if (f?.canvas) {
-      const processed = await _applyCartoonToBase64(_photo);
+      const processed = await _applyCartoonToBase64(cropped);
       _saveAvatar({ type: 'photo', data: processed, filter: 'natural' });
     } else {
-      _saveAvatar({ type: 'photo', data: _photo, filter: _filter });
+      _saveAvatar({ type: 'photo', data: cropped, filter: _filter });
     }
   }
   closeAvatarEditor();
   window.app.render();
+}
+
+// ── Crop controls (exported) ──────────────────────────
+
+export function cropDragStart(e) {
+  e.preventDefault();
+  const pt = e.touches ? e.touches[0] : e;
+  _drag = { lastX: pt.clientX, lastY: pt.clientY };
+
+  const onMove = ev => {
+    if (!_drag) return;
+    ev.preventDefault();
+    const p    = ev.touches ? ev.touches[0] : ev;
+    const dx   = p.clientX - _drag.lastX;
+    const dy   = p.clientY - _drag.lastY;
+    _drag.lastX = p.clientX; _drag.lastY = p.clientY;
+
+    const canvas = document.getElementById('avatarCropCanvas');
+    if (!canvas) return;
+    // translate display-pixel delta → normalized image fraction
+    _cropX -= dx / (canvas.clientWidth  * _cropZoom);
+    _cropY -= dy / (canvas.clientHeight * _cropZoom);
+    const half = 0.5 / _cropZoom;
+    _cropX = Math.max(half, Math.min(1 - half, _cropX));
+    _cropY = Math.max(half, Math.min(1 - half, _cropY));
+    _drawCropCanvas();
+  };
+  const onEnd = () => {
+    _drag = null;
+    document.removeEventListener('mousemove',  onMove);
+    document.removeEventListener('touchmove',  onMove);
+    document.removeEventListener('mouseup',    onEnd);
+    document.removeEventListener('touchend',   onEnd);
+  };
+  document.addEventListener('mousemove',  onMove);
+  document.addEventListener('touchmove',  onMove, { passive: false });
+  document.addEventListener('mouseup',    onEnd);
+  document.addEventListener('touchend',   onEnd);
+}
+
+export function setCropZoom(val) {
+  _cropZoom  = Math.max(1, Math.min(3, parseFloat(val)));
+  const half = 0.5 / _cropZoom;
+  _cropX = Math.max(half, Math.min(1 - half, _cropX));
+  _cropY = Math.max(half, Math.min(1 - half, _cropY));
+  _drawCropCanvas();
+  const display = document.getElementById('cropZoomDisplay');
+  if (display) display.textContent = `${Math.round(_cropZoom * 100)}%`;
 }
 
 // ── Private: render editor ────────────────────────────
@@ -139,6 +206,17 @@ function _renderEditor() {
           <span>${esc(f.label)}</span>
         </button>
       `).join('')}
+    </div>
+  ` : '';
+
+  const zoomControls = _photo ? `
+    <div class="avatar-crop-controls">
+      <span class="crop-zoom-icon">−</span>
+      <input type="range" id="cropZoomSlider" class="crop-zoom-slider"
+        min="1" max="3" step="0.05" value="${_cropZoom}"
+        oninput="window.app.setCropZoom(this.value)">
+      <span class="crop-zoom-icon">+</span>
+      <span id="cropZoomDisplay" class="crop-zoom-display">${Math.round(_cropZoom * 100)}%</span>
     </div>
   ` : '';
 
@@ -169,29 +247,78 @@ function _renderEditor() {
         onclick="document.getElementById('avatarFileInput').click()">
         📸 ${_photo ? 'Changer la photo' : 'Choisir une photo'}
       </button>
+      ${zoomControls}
       ${filterGrid}
     </div>
 
     <button class="btn btn-primary avatar-save-btn" onclick="window.app.saveAvatar()">Appliquer</button>
   `;
+
+  if (_mode === 'photo' && _photo) _drawCropCanvas();
 }
 
 function _getPreviewHTML() {
   if (_mode === 'emoji' && _emoji) return `<span class="profile-avatar-emoji">${esc(_emoji)}</span>`;
   if (_mode === 'photo' && _photo) {
     const f = FILTERS.find(f => f.id === _filter);
-    const style = f?.css ? `filter:${f.css}` : '';
-    return `<img src="${_photo}" class="profile-avatar-img" ${style ? `style="${style}"` : ''}>`;
+    const style = (f?.css && !f.canvas) ? `style="filter:${f.css}"` : '';
+    return `<canvas id="avatarCropCanvas" width="${SIZE}" height="${SIZE}"
+      class="avatar-crop-canvas" ${style}
+      onmousedown="window.app.cropDragStart(event)"
+      ontouchstart="window.app.cropDragStart(event)"></canvas>`;
   }
   return `<span class="avatar-preview-placeholder">?</span>`;
 }
 
 function _updatePreview() {
   const el = document.getElementById('avatarEditorPreview');
-  if (el) el.innerHTML = _getPreviewHTML();
+  if (!el) return;
+  el.innerHTML = _getPreviewHTML();
+  if (_mode === 'photo' && _photo) _drawCropCanvas();
 }
 
 // ── Private: canvas utils ─────────────────────────────
+
+function _drawCropCanvas() {
+  const canvas = document.getElementById('avatarCropCanvas');
+  if (!canvas || !_photo) return;
+  const ctx = canvas.getContext('2d');
+  const s   = canvas.width;
+  const img = new Image();
+  img.onload = () => {
+    const imgW    = img.naturalWidth;
+    const imgH    = img.naturalHeight;
+    const srcSize = imgW / _cropZoom;
+    const cx      = _cropX * imgW;
+    const cy      = _cropY * imgH;
+    const srcX    = Math.max(0, Math.min(imgW - srcSize, cx - srcSize / 2));
+    const srcY    = Math.max(0, Math.min(imgH - srcSize, cy - srcSize / 2));
+    ctx.clearRect(0, 0, s, s);
+    ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, s, s);
+  };
+  img.src = _photo;
+}
+
+function _applyCrop(base64) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas  = document.createElement('canvas');
+      canvas.width  = canvas.height = SIZE;
+      const ctx     = canvas.getContext('2d');
+      const imgW    = img.naturalWidth;
+      const imgH    = img.naturalHeight;
+      const srcSize = imgW / _cropZoom;
+      const cx      = _cropX * imgW;
+      const cy      = _cropY * imgH;
+      const srcX    = Math.max(0, Math.min(imgW - srcSize, cx - srcSize / 2));
+      const srcY    = Math.max(0, Math.min(imgH - srcSize, cy - srcSize / 2));
+      ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = base64;
+  });
+}
 
 function _compressImage(file, size) {
   return new Promise(resolve => {
