@@ -12,7 +12,6 @@ export function setupEventListeners(app) {
 
   // Navigation
   document.getElementById('todayBtn').addEventListener('click', () => app.todayNav());
-  document.getElementById('openModalBtn').addEventListener('click', () => app.openModal());
 
   // Modal interactions
   document.getElementById('cancelModal').addEventListener('click', () => app.closeModal());

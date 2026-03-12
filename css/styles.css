@@ -219,7 +219,6 @@ header.scrolled {
 }
 
 .add-btn {
-  display: none;
   padding: 7px 16px;
   background: var(--today-border);
   color: #fff;
