@@ -183,9 +183,22 @@ header {
   100% { opacity: 1; transform: none; }
 }
 
+@keyframes username-in {
+  0%   { opacity: 0; transform: scale(1.22); letter-spacing: .1em; filter: blur(3px); }
+  38%  { opacity: 1; transform: scale(1);    letter-spacing: normal; filter: blur(0); }
+  58%  { opacity: .45; transform: scale(.99); }
+  100% { opacity: 1; transform: none; }
+}
+
 .ninja-char {
   display:         inline-block;
   animation:       ninja-in .15s cubic-bezier(.12, 1.6, .25, 1) both;
+  animation-delay: var(--delay, 0ms);
+}
+
+.ninja-username {
+  display:         inline-block;
+  animation:       username-in .55s cubic-bezier(.2, 1, .3, 1) both;
   animation-delay: var(--delay, 0ms);
 }
 

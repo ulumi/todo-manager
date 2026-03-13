@@ -1546,34 +1546,33 @@ class TodoApp {
     if (!el || el.dataset.text === text) return;
     el.dataset.text = text;
 
-    // Compute per-char delays based on katana groups:
-    // "2FŨKOI, username" → username first (fast stagger), then 2 / FŨ / KOI
-    const delays = new Array(text.length).fill(0);
+    // Brand: 2 / FŨ / KOI — katana slashes
+    // Username: fade-in zoom-out fade-in, all caps, after brand
     const commaIdx = text.indexOf(', ');
 
     if (commaIdx > 0) {
-      const usernameLen = text.length - commaIdx - 2;
-      // username: stagger 22ms each, start at 0
-      for (let i = 0; i < usernameLen; i++) delays[commaIdx + 2 + i] = i * 22;
-      // comma
-      delays[commaIdx]     = usernameLen * 22 + 15;
-      // space
-      delays[commaIdx + 1] = usernameLen * 22 + 25;
-      // 2 — one slash, after gap
-      const b = usernameLen * 22 + 85;
-      delays[0] = b;
-      // FŨ — big gap (---), one stroke
-      delays[1] = b + 105; delays[2] = b + 118;
-      // KOI — medium gap (--), one stroke
-      delays[3] = b + 175; delays[4] = b + 188; delays[5] = b + 201;
+      const brand    = text.slice(0, commaIdx);           // "2FŨKOI"
+      const username = text.slice(commaIdx + 2).toUpperCase(); // "HUGUES"
+      // katana delays: 2=0 / FŨ=100,113 / KOI=163,176,189 / ,=230 / space=240
+      const brandDelays = [0, 100, 113, 163, 176, 189];
+      let html = '';
+      [...brand].forEach((ch, i) =>
+        html += `<span class="ninja-char" style="--delay:${brandDelays[i]}ms">${esc(ch)}</span>`
+      );
+      html += `<span class="ninja-char" style="--delay:230ms">,</span>`;
+      html += `<span class="ninja-char" style="--delay:240ms">\u00A0</span>`;
+      // username — all chars same delay, different animation
+      [...username].forEach(ch =>
+        html += `<span class="ninja-username" style="--delay:290ms">${esc(ch)}</span>`
+      );
+      el.innerHTML = html;
     } else {
-      // No username: just 2FŨKOI
-      [0, 105, 118, 178, 191, 204].forEach((d, i) => { delays[i] = d; });
+      // No username: just "2FŨKOI"
+      const delays = [0, 100, 113, 163, 176, 189];
+      el.innerHTML = [...text].map((ch, i) =>
+        `<span class="ninja-char" style="--delay:${delays[i] ?? i * 30}ms">${esc(ch)}</span>`
+      ).join('');
     }
-
-    el.innerHTML = [...text].map((ch, i) =>
-      `<span class="ninja-char" style="--delay:${delays[i]}ms">${ch === ' ' ? '\u00A0' : esc(ch)}</span>`
-    ).join('');
   }
 
   openUserArea() {
