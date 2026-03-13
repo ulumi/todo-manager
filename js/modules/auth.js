@@ -12,6 +12,7 @@ import {
   FacebookAuthProvider,
   signInWithPopup,
   linkWithPopup,
+  browserPopupRedirectResolver,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
@@ -88,20 +89,20 @@ export async function upgradeGuestToEmail(email, password) {
 export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   if (_currentUser?.isAnonymous) {
-    const { user } = await linkWithPopup(_currentUser, provider);
+    const { user } = await linkWithPopup(_currentUser, provider, browserPopupRedirectResolver);
     return user;
   }
-  const { user } = await signInWithPopup(auth, provider);
+  const { user } = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
   return user;
 }
 
 export async function signInWithFacebook() {
   const provider = new FacebookAuthProvider();
   if (_currentUser?.isAnonymous) {
-    const { user } = await linkWithPopup(_currentUser, provider);
+    const { user } = await linkWithPopup(_currentUser, provider, browserPopupRedirectResolver);
     return user;
   }
-  const { user } = await signInWithPopup(auth, provider);
+  const { user } = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
   return user;
 }
 
