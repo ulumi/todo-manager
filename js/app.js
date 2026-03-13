@@ -1506,7 +1506,9 @@ class TodoApp {
     const guest = !!user?.isAnonymous;
 
     const uname = !guest && user ? (user.displayName || user.email?.split('@')[0] || '') : '';
-    document.title = uname ? `2FŨKOI, ${uname}` : '2FŨKOI';
+    const fullTitle = uname ? `2FŨKOI, ${uname}` : '2FŨKOI';
+    document.title = fullTitle;
+    this._animateLogoText(fullTitle);
 
     if (btn) {
       btn.classList.toggle('authenticated', !!user && !guest);
@@ -1537,6 +1539,15 @@ class TodoApp {
       if (logoAvatar) { logoAvatar.classList.remove('logo-avatar--has-avatar'); logoAvatar.innerHTML = defaultLogoSVG; }
       if (btn) { btn.classList.remove('user-btn--has-avatar'); btn.innerHTML = defaultBtnSVG; }
     }
+  }
+
+  _animateLogoText(text) {
+    const el = document.getElementById('logoText');
+    if (!el || el.dataset.text === text) return;
+    el.dataset.text = text;
+    el.innerHTML = [...text].map((ch, i) =>
+      `<span class="ninja-char" style="--i:${i}">${ch === ' ' ? '\u00A0' : esc(ch)}</span>`
+    ).join('');
   }
 
   openUserArea() {
