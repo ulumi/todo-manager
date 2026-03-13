@@ -1505,6 +1505,9 @@ class TodoApp {
     if (!btn && !logoAvatar) return;
     const guest = !!user?.isAnonymous;
 
+    const uname = !guest && user ? (user.displayName || user.email?.split('@')[0] || '') : '';
+    document.title = uname ? `2FŨKOI, ${uname}` : '2FŨKOI';
+
     if (btn) {
       btn.classList.toggle('authenticated', !!user && !guest);
       btn.title = guest ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
