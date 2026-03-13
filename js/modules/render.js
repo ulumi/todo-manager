@@ -336,11 +336,13 @@ export function renderYearView(todos) {
     const days = daysInMonth(y,m);
     const firstDay = firstDayOfMonth(y,m);
 
-    // Count todos for the month
+    const isYearRelevant = t => t.recurrence !== 'daily' && t.recurrence !== 'weekly';
+
+    // Count todos for the month (exclude daily/weekly recurring tasks)
     let total=0, done=0;
     for (let d=1; d<=days; d++) {
       const date = new Date(y,m,d);
-      const items = getTodosForDate(date, todos);
+      const items = getTodosForDate(date, todos).filter(isYearRelevant);
       total += items.length;
       done += items.filter(t=>isCompleted(t,date)).length;
     }
@@ -353,7 +355,7 @@ export function renderYearView(todos) {
       const date = new Date(y,m,d);
       const ds = DS(date);
       const isT = ds===todayDS;
-      const hasTodos = getTodosForDate(date, todos).length > 0;
+      const hasTodos = getTodosForDate(date, todos).filter(isYearRelevant).length > 0;
       miniHTML += `<div class="year-mini-day${isT?' is-today':''}${hasTodos&&!isT?' has-todos':''}">${d}</div>`;
     }
     miniHTML += '</div>';
