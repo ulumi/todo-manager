@@ -16,6 +16,9 @@ const DATA_DIR  = path.join(os.homedir(), '.todo-hugues');
 const APP_DIR   = __dirname;
 const SA_PATH   = path.join(APP_DIR, 'firebase-service-account.json');
 
+// UIDs that have super-admin access (comma-separated env var)
+const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
+
 // ── Firebase Admin init ──────────────────────────────────
 let adminReady = false;
 if (fs.existsSync(SA_PATH)) {
@@ -74,6 +77,24 @@ async function verifyToken(req) {
   }
 }
 
+// ── Admin auth middleware ────────────────────────────────
+// Returns uid if the request comes from a super-admin, null otherwise.
+async function verifyAdmin(req) {
+  if (!adminReady) return 'dev-admin';
+
+  const header = req.headers['authorization'] || '';
+  const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return null;
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    if (ADMIN_UIDS.includes(decoded.uid) || decoded.admin === true) return decoded.uid;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // ── CORS headers ────────────────────────────────────────
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -92,6 +113,67 @@ http.createServer(async (req, res) => {
     if (!uid) {
       res.writeHead(401);
       res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    // ── Super-admin routes (/admin/*) ────────────────────
+    if (req.url.startsWith('/admin/')) {
+      const adminUid = await verifyAdmin(req);
+      if (!adminUid) {
+        res.writeHead(403);
+        res.end(JSON.stringify({ error: 'Forbidden — not an admin' }));
+        return;
+      }
+
+      // GET /admin/users — list all Firebase Auth accounts
+      if (req.method === 'GET' && req.url === '/admin/users') {
+        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        const result = await admin.auth().listUsers(1000);
+        const users  = result.users.map(u => ({
+          uid:          u.uid,
+          email:        u.email        || null,
+          displayName:  u.displayName  || null,
+          isAnonymous:  u.providerData.length === 0,
+          creationTime: u.metadata.creationTime,
+          lastSignIn:   u.metadata.lastSignInTime,
+          disabled:     u.disabled,
+        }));
+        res.writeHead(200);
+        res.end(JSON.stringify(users));
+
+      // GET /admin/presence — list currently online users (from Firestore)
+      } else if (req.method === 'GET' && req.url === '/admin/presence') {
+        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        const snap   = await admin.firestore().collection('presence').where('online', '==', true).get();
+        const online = [];
+        snap.forEach(d => online.push({ uid: d.id, ...d.data(), lastSeen: d.data().lastSeen?.toMillis?.() ?? null }));
+        res.writeHead(200);
+        res.end(JSON.stringify(online));
+
+      // POST /admin/message — send a message to a specific user
+      } else if (req.method === 'POST' && req.url === '/admin/message') {
+        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        const { targetUid, message } = await readBody(req);
+        if (!targetUid || !message) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Missing targetUid or message' }));
+          return;
+        }
+        await admin.firestore()
+          .collection('admin_messages').doc(targetUid)
+          .collection('inbox').add({
+            message,
+            from:   'admin',
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+            read:   false,
+          });
+        res.writeHead(200);
+        res.end(JSON.stringify({ ok: true }));
+
+      } else {
+        res.writeHead(404);
+        res.end(JSON.stringify({ error: 'Unknown admin route' }));
+      }
       return;
     }
 

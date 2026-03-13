@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Super Admin — Todo Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f1117;
+      --surface:    #1a1d27;
+      --surface2:   #222636;
+      --primary:    #f59e0b;
+      --success:    #4ade80;
+      --danger:     #f87171;
+      --text:       #f1f5f9;
+      --muted:      #8b96a8;
+      --border:     #2d3147;
+      --radius:     10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Login screen ───────────────────────────────── */
+    #loginScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .login-card h1 { font-size: 18px; font-weight: 600; }
+    .login-card p  { color: var(--muted); font-size: 13px; }
+    .login-card input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .login-card input:focus { border-color: var(--primary); }
+    .login-card input::placeholder { color: var(--muted); }
+    #loginError { color: var(--danger); font-size: 13px; display: none; }
+
+    /* ── Shared button ──────────────────────────────── */
+    .btn {
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: #0f1117;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 18px;
+      transition: opacity .15s;
+    }
+    .btn:hover    { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-danger { background: var(--danger); }
+
+    /* ── Dashboard shell ────────────────────────────── */
+    #dashboard { display: none; }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 24px;
+    }
+    header h1 { font-size: 16px; font-weight: 600; flex: 1; }
+    #adminEmail { color: var(--muted); font-size: 13px; }
+
+    nav {
+      display: flex;
+      gap: 4px;
+      padding: 16px 24px 0;
+    }
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      transition: color .15s, border-color .15s;
+    }
+    .tab.active { color: var(--primary); border-color: var(--primary); }
+
+    main { padding: 24px; max-width: 960px; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Cards / tables ─────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-header h2 { font-size: 14px; font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .05em;
+      padding: 10px 16px;
+      text-align: left;
+      text-transform: uppercase;
+    }
+    tbody tr { border-top: 1px solid var(--border); transition: background .1s; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 10px 16px; vertical-align: middle; }
+
+    .badge {
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+    }
+    .badge-green  { background: rgba(74,222,128,.15); color: var(--success); }
+    .badge-yellow { background: rgba(245,158,11,.15); color: var(--primary); }
+    .badge-muted  { background: var(--surface2); color: var(--muted); }
+
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .dot-green  { background: var(--success); }
+    .dot-muted  { background: var(--muted); }
+
+    .empty { color: var(--muted); padding: 32px; text-align: center; }
+
+    /* ── Send message panel ─────────────────────────── */
+    .message-form {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 540px;
+    }
+    .message-form label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .message-form select,
+    .message-form textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color .15s;
+      width: 100%;
+    }
+    .message-form select:focus,
+    .message-form textarea:focus { border-color: var(--primary); }
+    .message-form textarea { resize: vertical; min-height: 100px; font-family: inherit; }
+    #sendStatus { font-size: 13px; display: none; }
+    #sendStatus.ok  { color: var(--success); }
+    #sendStatus.err { color: var(--danger); }
+
+    /* ── Refresh btn spinner ────────────────────────── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { animation: spin .6s linear infinite; display: inline-block; }
+
+    .toolbar { display: flex; align-items: center; gap: 8px; }
+    .count-badge {
+      background: var(--surface2);
+      border-radius: 99px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 8px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>🔒 Super Admin</h1>
+    <p>Sign in with your admin account.</p>
+    <input type="email"    id="loginEmail"    placeholder="Email"    autocomplete="email" />
+    <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+    <p id="loginError"></p>
+    <button class="btn" id="loginBtn">Sign in</button>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="dashboard">
+  <header>
+    <h1>Super Admin</h1>
+    <span id="adminEmail"></span>
+    <button class="btn btn-ghost btn-sm" id="logoutBtn">Sign out</button>
+  </header>
+
+  <nav>
+    <button class="tab active" data-panel="usersPanel">Users</button>
+    <button class="tab"        data-panel="onlinePanel">Online now</button>
+    <button class="tab"        data-panel="messagePanel">Send message</button>
+  </nav>
+
+  <main>
+    <!-- Users panel -->
+    <div id="usersPanel" class="panel active">
+      <div class="card">
+        <div class="card-header">
+          <h2>All accounts <span id="usersCount" class="count-badge">—</span></h2>
+          <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="refreshUsers">↻ Refresh</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Email / UID</th>
+              <th>Type</th>
+              <th>Registered</th>
+              <th>Last sign-in</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody">
+            <tr><td colspan="5" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Online panel -->
+    <div id="onlinePanel" class="panel">
+      <div class="card">
+        <div class="card-header">
+          <h2>Online now <span id="onlineCount" class="count-badge">—</span></h2>
+          <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="refreshOnline">↻ Refresh</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>UID</th>
+              <th>Last seen</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody id="onlineBody">
+            <tr><td colspan="4" class="empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Message panel -->
+    <div id="messagePanel" class="panel">
+      <div class="message-form">
+        <h2 style="font-size:14px; font-weight:600;">Send a message to a user</h2>
+        <div>
+          <label for="msgTarget">Recipient</label>
+          <select id="msgTarget">
+            <option value="">— select a user —</option>
+          </select>
+        </div>
+        <div>
+          <label for="msgText">Message</label>
+          <textarea id="msgText" placeholder="Write your message…"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button class="btn" id="sendBtn">Send</button>
+          <span id="sendStatus"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ FIREBASE + SCRIPT ══════════ -->
+<script type="module">
+  import { initializeApp }               from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+
+  const firebaseConfig = {
+    apiKey:            'AIzaSyCp3bbr6hMjP7oo7bfUmRNfIA4O6IKbtkQ',
+    authDomain:        'huge-todo.firebaseapp.com',
+    projectId:         'huge-todo',
+    storageBucket:     'huge-todo.firebasestorage.app',
+    messagingSenderId: '708112988153',
+    appId:             '1:708112988153:web:af75de9f76959816dc2f28',
+  };
+
+  const API = 'http://localhost:3333';
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // ── UI refs ──────────────────────────────────────────
+  const loginScreen  = document.getElementById('loginScreen');
+  const dashboard    = document.getElementById('dashboard');
+  const loginEmail   = document.getElementById('loginEmail');
+  const loginPassword= document.getElementById('loginPassword');
+  const loginBtn     = document.getElementById('loginBtn');
+  const loginError   = document.getElementById('loginError');
+  const adminEmail   = document.getElementById('adminEmail');
+  const logoutBtn    = document.getElementById('logoutBtn');
+
+  const usersBody    = document.getElementById('usersBody');
+  const usersCount   = document.getElementById('usersCount');
+  const onlineBody   = document.getElementById('onlineBody');
+  const onlineCount  = document.getElementById('onlineCount');
+  const msgTarget    = document.getElementById('msgTarget');
+  const msgText      = document.getElementById('msgText');
+  const sendBtn      = document.getElementById('sendBtn');
+  const sendStatus   = document.getElementById('sendStatus');
+
+  let _token = null;
+
+  // ── Helpers ──────────────────────────────────────────
+  async function api(path) {
+    const res = await fetch(API + path, {
+      headers: { Authorization: `Bearer ${_token}` },
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  async function apiPost(path, body) {
+    const res = await fetch(API + path, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
+    return res.json();
+  }
+
+  function fmtDate(str) {
+    if (!str) return '—';
+    return new Date(str).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+  function fmtMs(ms) {
+    if (!ms) return '—';
+    return fmtDate(new Date(ms).toISOString());
+  }
+
+  function setRefreshSpin(btn, on) {
+    const icon = btn.textContent.replace('↻', '').trim();
+    btn.innerHTML = on ? `<span class="spinning">↻</span> ${icon}` : `↻ ${icon}`;
+    btn.disabled = on;
+  }
+
+  // ── Login ────────────────────────────────────────────
+  loginBtn.addEventListener('click', async () => {
+    loginError.style.display = 'none';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Signing in…';
+    try {
+      await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
+    } catch (e) {
+      loginError.textContent = e.message;
+      loginError.style.display = 'block';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Sign in';
+    }
+  });
+  loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
+
+  logoutBtn.addEventListener('click', () => signOut(auth));
+
+  // ── Auth state ───────────────────────────────────────
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      _token = await user.getIdToken();
+      // Verify admin access
+      try {
+        await api('/admin/users');
+      } catch (e) {
+        loginError.textContent = 'Access denied — not an admin account.';
+        loginError.style.display = 'block';
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign in';
+        await signOut(auth);
+        return;
+      }
+      adminEmail.textContent = user.email;
+      loginScreen.style.display = 'none';
+      dashboard.style.display = 'block';
+      loadUsers();
+    } else {
+      _token = null;
+      loginScreen.style.display = 'flex';
+      dashboard.style.display = 'none';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Sign in';
+    }
+  });
+
+  // ── Tabs ─────────────────────────────────────────────
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.panel).classList.add('active');
+      if (tab.dataset.panel === 'onlinePanel')  loadOnline();
+      if (tab.dataset.panel === 'messagePanel') populateTargetList();
+    });
+  });
+
+  // ── Users ────────────────────────────────────────────
+  let _users = [];
+
+  async function loadUsers() {
+    const btn = document.getElementById('refreshUsers');
+    setRefreshSpin(btn, true);
+    try {
+      _users = await api('/admin/users');
+      renderUsers(_users);
+    } catch (e) {
+      usersBody.innerHTML = `<tr><td colspan="5" class="empty" style="color:var(--danger)">${e.message}</td></tr>`;
+    } finally {
+      setRefreshSpin(btn, false);
+    }
+  }
+
+  function renderUsers(users) {
+    usersCount.textContent = users.length;
+    if (!users.length) {
+      usersBody.innerHTML = '<tr><td colspan="5" class="empty">No users found.</td></tr>';
+      return;
+    }
+    users.sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
+    usersBody.innerHTML = users.map(u => `
+      <tr>
+        <td>
+          <div style="font-weight:500">${u.email || '<span style="color:var(--muted)">—</span>'}</div>
+          <div style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</div>
+        </td>
+        <td>${u.isAnonymous
+          ? '<span class="badge badge-muted">Guest</span>'
+          : '<span class="badge badge-green">Account</span>'}</td>
+        <td style="color:var(--muted)">${fmtDate(u.creationTime)}</td>
+        <td style="color:var(--muted)">${fmtDate(u.lastSignIn)}</td>
+        <td>${u.disabled
+          ? '<span class="badge badge-muted">Disabled</span>'
+          : '<span class="badge badge-green">Active</span>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+
+  // ── Online ───────────────────────────────────────────
+  async function loadOnline() {
+    const btn = document.getElementById('refreshOnline');
+    setRefreshSpin(btn, true);
+    try {
+      const online = await api('/admin/presence');
+      onlineCount.textContent = online.length;
+      if (!online.length) {
+        onlineBody.innerHTML = '<tr><td colspan="4" class="empty">No one online right now.</td></tr>';
+        return;
+      }
+      online.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+      onlineBody.innerHTML = online.map(u => `
+        <tr>
+          <td>
+            <span class="dot dot-green"></span>
+            ${u.email || '<span style="color:var(--muted)">Guest</span>'}
+          </td>
+          <td style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</td>
+          <td style="color:var(--muted)">${fmtMs(u.lastSeen)}</td>
+          <td>${u.isAnonymous
+            ? '<span class="badge badge-muted">Guest</span>'
+            : '<span class="badge badge-green">Account</span>'}</td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      onlineBody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--danger)">${e.message}</td></tr>`;
+    } finally {
+      setRefreshSpin(btn, false);
+    }
+  }
+
+  document.getElementById('refreshOnline').addEventListener('click', loadOnline);
+
+  // ── Send message ─────────────────────────────────────
+  function populateTargetList() {
+    msgTarget.innerHTML = '<option value="">— select a user —</option>';
+    const registered = _users.filter(u => !u.isAnonymous && u.email);
+    registered.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
+    registered.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value       = u.uid;
+      opt.textContent = u.email;
+      msgTarget.appendChild(opt);
+    });
+    // Also allow targeting by raw UID (guests)
+    const guests = _users.filter(u => u.isAnonymous);
+    if (guests.length) {
+      const grp = document.createElement('optgroup');
+      grp.label = 'Guests';
+      guests.forEach(u => {
+        const opt = document.createElement('option');
+        opt.value       = u.uid;
+        opt.textContent = u.uid.slice(0, 20) + '…';
+        grp.appendChild(opt);
+      });
+      msgTarget.appendChild(grp);
+    }
+  }
+
+  sendBtn.addEventListener('click', async () => {
+    const targetUid = msgTarget.value;
+    const message   = msgText.value.trim();
+    if (!targetUid || !message) {
+      showStatus('Please select a recipient and write a message.', false);
+      return;
+    }
+    sendBtn.disabled = true;
+    sendStatus.style.display = 'none';
+    try {
+      await apiPost('/admin/message', { targetUid, message });
+      msgText.value = '';
+      showStatus('Message sent ✓', true);
+    } catch (e) {
+      showStatus(e.message, false);
+    } finally {
+      sendBtn.disabled = false;
+    }
+  });
+
+  function showStatus(msg, ok) {
+    sendStatus.textContent = msg;
+    sendStatus.className   = ok ? 'ok' : 'err';
+    sendStatus.style.display = 'inline';
+    setTimeout(() => { sendStatus.style.display = 'none'; }, 4000);
+  }
+</script>
+</body>
+</html>
