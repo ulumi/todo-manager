@@ -938,13 +938,10 @@ class TodoApp {
     const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
     const done     = state.todos.filter(t => t.completed).length;
 
-    let _avatarType = '';
-    try { _avatarType = JSON.parse(localStorage.getItem('profileAvatar'))?.type || ''; } catch {}
-
     return `
       <div class="profile-view">
         <div class="profile-hero">
-          <div class="profile-avatar${_avatarType === 'photo' ? ' profile-avatar--photo' : ''}" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
+          <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
             ${getAvatarHTML(initials)}
             <span class="profile-avatar-hint">✏️</span>
           </div>
