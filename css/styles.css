@@ -111,7 +111,7 @@ header.scrolled {
   flex-shrink: 0;
   border-radius: 14px;
   overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), filter 0.4s ease, box-shadow 0.3s ease;
 }
 .logo-avatar--has-avatar {
   border-radius: 50%;
@@ -127,10 +127,30 @@ header.scrolled {
   object-fit: cover;
 }
 .app-title:hover .logo-avatar {
-  transform: scale(1.08);
-  box-shadow: 0 0 0 3px var(--primary-light);
+  animation: logo-warp 0.52s cubic-bezier(0.2, 1, 0.25, 1) forwards;
+  box-shadow: 0 0 0 3px #f59e0b, 0 0 22px color-mix(in srgb, #f59e0b 45%, transparent);
 }
 
+@keyframes logo-warp {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: blur(0);
+  }
+  20% {
+    transform: scale(1.32) rotate(24deg);
+    filter: blur(5px);
+  }
+  52% {
+    transform: scale(1.1) rotate(-8deg);
+    filter: blur(0);
+  }
+  76% {
+    transform: scale(1.18) rotate(4deg);
+  }
+  100% {
+    transform: scale(1.14) rotate(0deg);
+  }
+}
 .logo-text {
   font-size: 15px;
   font-weight: 800;

@@ -145,7 +145,7 @@ header {
   flex-shrink: 0;
   border-radius: 14px;
   overflow: hidden;
-  transition: transform .15s, box-shadow .15s;
+  transition: transform .4s cubic-bezier(.2, 1, .3, 1), filter .4s ease, box-shadow .3s ease;
 
   &--has-avatar {
     border-radius: 50%;
@@ -164,9 +164,17 @@ header {
   }
 
   .app-title:hover & {
-    transform: scale(1.08);
-    box-shadow: 0 0 0 3px var(--primary-light);
+    animation:  logo-warp .52s cubic-bezier(.2, 1, .25, 1) forwards;
+    box-shadow: 0 0 0 3px #f59e0b, 0 0 22px color-mix(in srgb, #f59e0b 45%, transparent);
   }
+}
+
+@keyframes logo-warp {
+  0%   { transform: scale(1)    rotate(0deg);   filter: blur(0);   }
+  20%  { transform: scale(1.32) rotate(24deg);  filter: blur(5px); }
+  52%  { transform: scale(1.1)  rotate(-8deg);  filter: blur(0);   }
+  76%  { transform: scale(1.18) rotate(4deg);   }
+  100% { transform: scale(1.14) rotate(0deg);   }
 }
 
 .logo-text {
