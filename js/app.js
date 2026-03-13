@@ -1545,32 +1545,34 @@ class TodoApp {
     const el = document.getElementById('logoText');
     if (!el || el.dataset.text === text) return;
     el.dataset.text = text;
+    el.style.opacity = '1'; // reveal container (was opacity:0 in CSS to prevent flash)
 
-    // Brand: 2 / FŨ / KOI — katana slashes
-    // Username: fade-in zoom-out fade-in, all caps, after brand
     const commaIdx = text.indexOf(', ');
 
+    // Brand char delays: 2 / FŨ / KOI — left to right, slight pauses between groups
+    const brandDelays = [80, 128, 143, 188, 203, 218]; // 2, F, Ũ, K, O, I
+
     if (commaIdx > 0) {
-      const brand    = text.slice(0, commaIdx);           // "2FŨKOI"
+      const brand    = text.slice(0, commaIdx);              // "2FŨKOI"
       const username = text.slice(commaIdx + 2).toUpperCase(); // "HUGUES"
-      // katana delays: 2=0 / FŨ=100,113 / KOI=163,176,189 / ,=230 / space=240
-      const brandDelays = [0, 100, 113, 163, 176, 189];
+      // Random username animation variant per refresh
+      const variant  = ['r', 'b', 's'][Math.random() * 3 | 0];
+      const nameDelay = 295;
+
       let html = '';
       [...brand].forEach((ch, i) =>
         html += `<span class="ninja-char" style="--delay:${brandDelays[i]}ms">${esc(ch)}</span>`
       );
-      html += `<span class="ninja-char" style="--delay:230ms">,</span>`;
-      html += `<span class="ninja-char" style="--delay:240ms">\u00A0</span>`;
-      // username — all chars same delay, different animation
+      html += `<span class="ninja-char" style="--delay:248ms">,</span>`;
+      html += `<span class="ninja-char" style="--delay:250ms">\u00A0</span>`;
       [...username].forEach(ch =>
-        html += `<span class="ninja-username" style="--delay:290ms">${esc(ch)}</span>`
+        html += `<span class="ninja-username-${variant}" style="--delay:${nameDelay}ms">${esc(ch)}</span>`
       );
       el.innerHTML = html;
     } else {
-      // No username: just "2FŨKOI"
-      const delays = [0, 100, 113, 163, 176, 189];
+      // Guest / no username: just "2FŨKOI"
       el.innerHTML = [...text].map((ch, i) =>
-        `<span class="ninja-char" style="--delay:${delays[i] ?? i * 30}ms">${esc(ch)}</span>`
+        `<span class="ninja-char" style="--delay:${brandDelays[i] ?? i * 30}ms">${esc(ch)}</span>`
       ).join('');
     }
   }
