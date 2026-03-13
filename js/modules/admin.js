@@ -9,7 +9,7 @@ const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
 const PROJECTS_KEY = 'projects';
 
-const CATEGORY_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+export const CATEGORY_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
 
 export const CATEGORY_ICONS = {
   folder:    '<path d="M2 4h4l2 2h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>',

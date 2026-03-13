@@ -147,9 +147,16 @@
 
       <div class="form-group" id="categoryGroup">
         <label class="form-label">Catégorie</label>
-        <select class="form-input" id="taskCategory">
-          <option value="">— Aucune catégorie —</option>
-        </select>
+        <div class="category-select-row">
+          <select class="form-input" id="taskCategory">
+            <option value="">— Aucune catégorie —</option>
+          </select>
+          <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
+        </div>
+        <div id="newCatRow" style="display:none">
+          <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
+            onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
+        </div>
       </div>
 
       <div class="form-group">

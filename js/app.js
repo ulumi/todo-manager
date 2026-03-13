@@ -23,7 +23,8 @@ import {
   toggleMonthDay, toggleMonthLastDay,
   selectYearMonth, selectYearDay,
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
-  toggleCloudSection, toggleModalRight, selectPriority
+  toggleCloudSection, toggleModalRight, selectPriority,
+  toggleNewCatRow, addCategoryInline
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -1278,6 +1279,8 @@ class TodoApp {
   // CATEGORIES
   // ═══════════════════════════════════════════════════
   addCategory() { addCategory(); }
+  toggleNewCatRow() { toggleNewCatRow(); }
+  addCategoryInline() { addCategoryInline(); }
 
   addCategoryFromView() {
     const name = prompt('Nom de la catégorie :');

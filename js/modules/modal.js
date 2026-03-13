@@ -5,7 +5,7 @@
 import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
 import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
-import { getSuggestedTasks, getCategories } from './admin.js';
+import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 
 function populateCategorySelect(selectedId) {
   const sel = document.getElementById('taskCategory');
@@ -17,6 +17,28 @@ function populateCategorySelect(selectedId) {
 
 function escapeCategory(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+export function toggleNewCatRow() {
+  const row = document.getElementById('newCatRow');
+  if (!row) return;
+  const visible = row.style.display !== 'none';
+  row.style.display = visible ? 'none' : 'block';
+  if (!visible) setTimeout(() => document.getElementById('newCatInput')?.focus(), 50);
+}
+
+export function addCategoryInline() {
+  const input = document.getElementById('newCatInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const categories = getCategories();
+  const color = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
+  const id = Date.now().toString();
+  categories.push({ id, name, color, icon: '', description: '' });
+  saveCategories(categories);
+  input.value = '';
+  document.getElementById('newCatRow').style.display = 'none';
+  populateCategorySelect(id);
 }
 
 export function selectPriority(p) {
