@@ -39,6 +39,7 @@ export function openModal(date, todos) {
   document.getElementById('modalTitleEl').textContent = state.T.newTask;
   document.getElementById('saveTask').textContent = state.T.btnAdd;
   document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDescription').value = '';
   document.getElementById('taskDate').value = DS(date);
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec==='none'));
   document.getElementById('recDetail').innerHTML = '';
@@ -84,6 +85,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('modalTitleEl').textContent = state.T.editTask;
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
+  document.getElementById('taskDescription').value = t.description || '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(parseDS(dateStr), todos);
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
@@ -361,9 +363,10 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const projectId = document.getElementById('taskCategory')?.value || '';
-  const priority  = state.selectedPriority || undefined;
-  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority };
+  const projectId   = document.getElementById('taskCategory')?.value || '';
+  const priority    = state.selectedPriority || undefined;
+  const description = document.getElementById('taskDescription').value.trim() || undefined;
+  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority, description };
 
   if (state.selectedRecurrence==='none') {
     data.date = document.getElementById('taskDate').value || DS(state.navDate);
@@ -394,8 +397,9 @@ export function saveTaskLogic(todos) {
       if (data.recMonth !== undefined) t.recMonth = data.recMonth;
       if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
-      t.projectId = data.projectId;
-      t.priority  = data.priority;
+      t.projectId   = data.projectId;
+      t.priority    = data.priority;
+      t.description = data.description;
     }
   } else {
     addTask(data, todos);

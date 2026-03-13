@@ -197,10 +197,11 @@ export function renderWeekView(todos) {
 
   for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
-    const isT = DS(d) === todayStr;
-    const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
     const ds = DS(d);
-    html += `<div class="week-day-col${isT?' is-today':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+    const isT = ds === todayStr;
+    const isPast = ds < todayStr;
+    const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
+    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
@@ -290,7 +291,8 @@ function monthMiniCal(y, m, todayDS) {
   for (let d = 1; d <= days; d++) {
     const ds = DS(new Date(ry, rm, d));
     const isT = ds === todayDS;
-    cells += `<div class="mym-day${isT ? ' today' : ''}">${d}</div>`;
+    const isPast = ds < todayDS;
+    cells += `<div class="mym-day${isT ? ' today' : isPast ? ' past' : ''}">${d}</div>`;
   }
   return `<div class="month-year-mini" onclick="window.app.setNavDateAndView(new Date(${ry},${rm},1),'month')">
     <div class="mym-label">${state.MONTHS[rm]} ${ry}</div>
@@ -301,10 +303,11 @@ function monthMiniCal(y, m, todayDS) {
 function monthCell(date, otherMonth, todayDS, todos) {
   const ds = DS(date);
   const isT = ds===todayDS;
+  const isPast = ds < todayDS;
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
-  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':''}" data-date="${ds}"
+  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>
@@ -355,8 +358,9 @@ export function renderYearView(todos) {
       const date = new Date(y,m,d);
       const ds = DS(date);
       const isT = ds===todayDS;
+      const isPast = ds < todayDS;
       const hasTodos = getTodosForDate(date, todos).filter(isYearRelevant).length > 0;
-      miniHTML += `<div class="year-mini-day${isT?' is-today':''}${hasTodos&&!isT?' has-todos':''}" onclick="event.stopPropagation();window.app.setNavDateAndView('${ds}','day')">${d}</div>`;
+      miniHTML += `<div class="year-mini-day${isT?' is-today':isPast?' past':''}${hasTodos&&!isT&&!isPast?' has-todos':''}" onclick="event.stopPropagation();window.app.setNavDateAndView('${ds}','day')">${d}</div>`;
     }
     miniHTML += '</div>';
 
@@ -429,9 +433,11 @@ function renderSideMonthWeek(monthDate, todayDate, weekStartDS, weekEndDS, todos
     const date = new Date(y, m, d);
     const ds = DS(date);
     const isToday = ds === todayDS;
+    const isPast = ds < todayDS;
     const inWeek = ds >= weekStartDS && ds <= weekEndDS;
     const hasTodos = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily').length > 0;
     let cls = 'cal-sid-day';
+    if (isPast && !isToday) cls += ' past';
     if (isToday) cls += ' today';
     if (inWeek) cls += ' nav-date';
     if (hasTodos) cls += ' has-todos';
@@ -478,9 +484,11 @@ function renderSideMonth(monthDate, todayDate, navDate, todos) {
     const date = new Date(y, m, d);
     const ds = DS(date);
     const isToday = ds === todayDS;
+    const isPast = ds < todayDS;
     const isNav = ds === navDS;
     const hasTodos = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily').length > 0;
     let cls = 'cal-sid-day';
+    if (isPast && !isToday) cls += ' past';
     if (isToday) cls += ' today';
     if (isNav) cls += ' nav-date';
     if (hasTodos) cls += ' has-todos';

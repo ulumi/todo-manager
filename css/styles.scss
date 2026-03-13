@@ -476,6 +476,10 @@ main {
     pointer-events: none;
   }
 
+  &.past {
+    opacity: .45;
+  }
+
   &.today {
     background: var(--primary-light);
     color: var(--primary);
@@ -1028,6 +1032,8 @@ main {
     .week-day-num    { color: var(--today-border); }
   }
 
+  &.past { opacity: .55; }
+
 }
 
 .week-day-header {
@@ -1272,6 +1278,7 @@ main {
   border-radius: 3px;
 
   &.other { visibility: hidden; }
+  &.past  { opacity: .5; }
 
   &.today {
     background: var(--primary);
@@ -1331,6 +1338,7 @@ main {
   }
 
   &.other-month { opacity: .4; }
+  &.past        { opacity: .5; }
   &.is-today    { border-color: var(--today-border); background: var(--today); }
 }
 
@@ -1554,6 +1562,7 @@ main {
   cursor: pointer;
 
   &.other    { color: var(--border); }
+  &.past     { opacity: .4; }
   &.has-todos { background: var(--primary-light); color: var(--primary); font-weight: 600; border-radius: 3px; }
 
   &.is-today {

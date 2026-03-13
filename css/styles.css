@@ -480,6 +480,9 @@ main {
   opacity: 0;
   pointer-events: none;
 }
+.cal-sid-day.past {
+  opacity: 0.45;
+}
 .cal-sid-day.today {
   background: var(--primary-light);
   color: var(--primary);
@@ -1105,6 +1108,9 @@ main {
 .week-day-col.is-today .week-day-num {
   color: var(--today-border);
 }
+.week-day-col.past {
+  opacity: 0.55;
+}
 
 .week-day-header {
   padding: 14px 12px 10px;
@@ -1375,6 +1381,9 @@ main {
 .mym-day.other {
   visibility: hidden;
 }
+.mym-day.past {
+  opacity: 0.5;
+}
 .mym-day.today {
   background: var(--primary);
   color: #fff;
@@ -1439,6 +1448,9 @@ main {
 }
 .month-cell.other-month {
   opacity: 0.4;
+}
+.month-cell.past {
+  opacity: 0.5;
 }
 .month-cell.is-today {
   border-color: var(--today-border);
@@ -1683,6 +1695,9 @@ main {
 }
 .year-mini-day.other {
   color: var(--border);
+}
+.year-mini-day.past {
+  opacity: 0.4;
 }
 .year-mini-day.has-todos {
   background: var(--primary-light);
