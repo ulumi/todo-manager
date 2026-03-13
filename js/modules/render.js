@@ -211,7 +211,7 @@ export function renderWeekView(todos) {
           const isRec = t.recurrence && t.recurrence!=='none';
           return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
             <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
-            <span class="week-todo-text">${esc(t.title)}</span>
+            <span class="week-todo-text" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">${esc(t.title)}</span>
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
           </div>`;
@@ -356,7 +356,7 @@ export function renderYearView(todos) {
       const ds = DS(date);
       const isT = ds===todayDS;
       const hasTodos = getTodosForDate(date, todos).filter(isYearRelevant).length > 0;
-      miniHTML += `<div class="year-mini-day${isT?' is-today':''}${hasTodos&&!isT?' has-todos':''}">${d}</div>`;
+      miniHTML += `<div class="year-mini-day${isT?' is-today':''}${hasTodos&&!isT?' has-todos':''}" onclick="event.stopPropagation();window.app.setNavDateAndView('${ds}','day')">${d}</div>`;
     }
     miniHTML += '</div>';
 

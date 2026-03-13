@@ -1650,6 +1650,7 @@ main {
   color: var(--today-border);
   line-height: 1.6;
   font-weight: 700;
+  cursor: pointer;
 }
 .year-mini-day.other {
   color: var(--border);
