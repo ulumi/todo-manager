@@ -11,10 +11,7 @@ export function setupEventListeners(app) {
   });
 
   // Navigation
-  document.getElementById('prevBtn').addEventListener('click', () => app.navigate(-1));
-  document.getElementById('nextBtn').addEventListener('click', () => app.navigate(1));
   document.getElementById('todayBtn').addEventListener('click', () => app.todayNav());
-  document.getElementById('openModalBtn').addEventListener('click', () => app.openModal());
 
   // Modal interactions
   document.getElementById('cancelModal').addEventListener('click', () => app.closeModal());
@@ -74,16 +71,22 @@ export function setupEventListeners(app) {
   // Scroll to navigate between periods
   let wheelCooldown = false;
   document.getElementById('appWrapper').addEventListener('wheel', e => {
+    const goingDown = e.deltaY > 0;
+    const goingUp   = e.deltaY < 0;
+
+    // Year view: scroll inside .year-view first, navigate at limits
     const yearView = document.querySelector('.year-view');
     if (yearView) {
       const atTop    = yearView.scrollTop <= 0;
       const atBottom = yearView.scrollTop + yearView.clientHeight >= yearView.scrollHeight - 1;
-      const goingDown = e.deltaY > 0;
-      const goingUp   = e.deltaY < 0;
-      // Let year-view scroll naturally if not at its limit
       if ((goingDown && !atBottom) || (goingUp && !atTop)) return;
-      // At limit: fall through to navigate prev/next year
+    } else {
+      // All other views: let page scroll first, only navigate at scroll limits
+      const atTop    = window.scrollY <= 0;
+      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
+      if ((goingDown && !atBottom) || (goingUp && !atTop)) return;
     }
+
     if (wheelCooldown) return;
     e.preventDefault();
     wheelCooldown = true;

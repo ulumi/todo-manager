@@ -1,0 +1,13 @@
+{
+  "name": "todo-manager-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local API server for todo-manager (dev only)",
+  "main": "server.js",
+  "scripts": {
+    "server": "node server.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

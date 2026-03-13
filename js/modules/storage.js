@@ -3,9 +3,19 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, today } from './utils.js';
+import { getIdToken } from './auth.js';
+import { pushToFirestore } from './sync.js';
 
 const API = 'http://localhost:3333';
 const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+// Build auth headers — includes Firebase ID token when available
+async function authHeaders() {
+  const token = await getIdToken();
+  return token
+    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+    : { 'Content-Type': 'application/json' };
+}
 
 // Fire-and-forget POST — never throws, 1.5s timeout
 async function serverPost(endpoint, data) {
@@ -13,7 +23,7 @@ async function serverPost(endpoint, data) {
   try {
     await fetch(`${API}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders(),
       body: JSON.stringify(data),
       signal: AbortSignal.timeout(1500),
     });
@@ -24,7 +34,10 @@ async function serverPost(endpoint, data) {
 export async function loadFromServer() {
   if (!IS_LOCAL) return null;
   try {
-    const res = await fetch(`${API}/backup`, { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${API}/backup`, {
+      headers: await authHeaders(),
+      signal: AbortSignal.timeout(1500),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch (_) {
@@ -39,7 +52,9 @@ export async function saveBackupToServer(backup) {
 
 export function saveTodos(todos) {
   localStorage.setItem('todos', JSON.stringify(todos));
+  localStorage.setItem('_localWriteTime', Date.now().toString());
   serverPost('/todos', todos);
+  pushToFirestore(getFullBackup(todos)); // fire-and-forget
 }
 
 export function loadTodos() {

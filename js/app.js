@@ -41,6 +41,18 @@ import {
   saveCategoryDescription, setCategoryIcon
 } from './modules/projectView.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
+import {
+  initAuth, onUserChange, isGuest, getCurrentUser,
+  signInGuest, signInWithEmail, registerWithEmail,
+  upgradeGuestToEmail, signOut, updateUserProfile,
+} from './modules/auth.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
+import {
+  openAvatarEditor, closeAvatarEditor, getAvatarHTML,
+  handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
+  avatarSwitchTab, saveAvatar, FILTERS,
+  cropDragStart, setCropZoom, setEmojiZoom,
+} from './modules/avatarEditor.js';
 
 // Initialize state
 state.initializeState();
@@ -87,6 +99,8 @@ class TodoApp {
         this._animateQuickAddBtn();
       }, 150);
     });
+    setupOfflineIndicator();
+    this._initFirebase(); // async — does not block render
   }
 
   // ═══════════════════════════════════════════════════
@@ -263,7 +277,10 @@ class TodoApp {
       gsap.set(blocks, { opacity: 0, y: 12 });
     }
 
-    // 3. Enter
+    // 3. Scroll to top before entering new view
+    window.scrollTo(0, 0);
+
+    // 4. Enter
     gsap.set(main, { x: slideX, y: slideY });
     await gsap.to(main, {
       opacity: 1,
@@ -274,7 +291,7 @@ class TodoApp {
       ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
     });
 
-    // 4. Stagger blocks — total spread capped at 120ms regardless of count
+    // 5. Stagger blocks — total spread capped at 120ms regardless of count
     if (blocks.length > 0) {
       gsap.to(blocks, {
         opacity: 1,
@@ -287,7 +304,7 @@ class TodoApp {
       });
     }
 
-    // 5. Stagger todo items
+    // 6. Stagger todo items
     setTimeout(() => {
       gsap.from('.todo-item', {
         opacity: 0,
@@ -461,6 +478,12 @@ class TodoApp {
     document.getElementById('taskDate').value = DS(today());
   }
 
+  setTaskDateTomorrow() {
+    const d = today();
+    d.setDate(d.getDate() + 1);
+    document.getElementById('taskDate').value = DS(d);
+  }
+
   toggleCloudSection(headerEl) {
     toggleCloudSection(headerEl);
   }
@@ -582,6 +605,98 @@ class TodoApp {
       localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
     }
     this.render();
+  }
+
+  moveTodoToDate(todoId, newDateStr) {
+    const todo = state.todos.find(t => t.id === todoId);
+    if (!todo || (todo.recurrence && todo.recurrence !== 'none')) return;
+    if (todo.date === newDateStr) return;
+    snapshot(state.todos);
+    todo.date = newDateStr;
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  initWeekDragDrop() {
+    const grid = document.querySelector('.week-grid');
+    if (!grid) return;
+    let draggedId = null, draggedDate = null;
+
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.week-todo-item[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.week-todo-item');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const col = e.target.closest('.week-day-todos');
+      if (!col) return;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (col.dataset.date !== draggedDate) col.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const col = e.target.closest('.week-day-todos');
+      if (!col || !draggedId) return;
+      const newDate = col.dataset.date;
+      col.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
+  }
+
+  initMonthDragDrop() {
+    const grid = document.querySelector('.month-grid');
+    if (!grid) return;
+    let draggedId = null, draggedDate = null;
+
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.month-todo-dot[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.month-todo-dot');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell) return;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (cell.dataset.date !== draggedDate) cell.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell || !draggedId) return;
+      const newDate = cell.dataset.date;
+      cell.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
   }
 
   initDayDragDrop() {
@@ -779,8 +894,10 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   render() {
     const isCategories = state.view === 'categories';
+    const isProfile    = state.view === 'profile';
     document.body.classList.toggle('view-projects', isCategories);
-    document.getElementById('periodLabel').textContent = isCategories ? '' : getPeriodLabel();
+    document.body.classList.toggle('view-profile',  isProfile);
+    document.getElementById('periodLabel').textContent = (isCategories || isProfile) ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
 
     let html = '';
@@ -789,6 +906,7 @@ class TodoApp {
     if (state.view==='month')      html = renderMonthView(state.todos);
     if (state.view==='year')       html = renderYearView(state.todos);
     if (state.view==='categories') html = renderCategoriesView(state.todos);
+    if (state.view==='profile')    html = this._renderProfileView();
     document.getElementById('mainContent').innerHTML = html;
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
@@ -804,9 +922,121 @@ class TodoApp {
       }
     }
     if (state.view === 'day') this.initDayDragDrop();
+    if (state.view === 'week') this.initWeekDragDrop();
+    if (state.view === 'month') this.initMonthDragDrop();
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
+  }
+
+  _renderProfileView() {
+    const user     = getCurrentUser();
+    const name     = user?.displayName || user?.email?.split('@')[0] || '';
+    const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
+    const cats     = getCategories().length;
+    const total    = state.todos.length;
+    const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
+    const done     = state.todos.filter(t => t.completed).length;
+
+    return `
+      <div class="profile-view">
+        <div class="profile-hero">
+          <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
+            ${getAvatarHTML(initials)}
+            <span class="profile-avatar-hint">✏️</span>
+          </div>
+          <h1 class="profile-hero-name">${esc(name)}</h1>
+          <p class="profile-hero-email">${esc(user?.email || '')}</p>
+        </div>
+
+        <div class="profile-body">
+          <div class="profile-section">
+            <h3 class="profile-section-title">Nom d'affichage</h3>
+            <div class="profile-name-row">
+              <input class="form-input" type="text" id="profileDisplayName"
+                value="${esc(user?.displayName || '')}" placeholder="Ton prénom">
+              <button class="btn btn-primary" onclick="window.app.saveDisplayName()">Sauvegarder</button>
+            </div>
+            <p class="profile-save-msg hidden" id="profileSaveMsg">✓ Sauvegardé</p>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Statistiques</h3>
+            <div class="profile-stats">
+              <div class="profile-stat"><span class="profile-stat-num">${total}</span><span class="profile-stat-label">tâches</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${done}</span><span class="profile-stat-label">complétées</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${recur}</span><span class="profile-stat-label">récurrentes</span></div>
+              <div class="profile-stat"><span class="profile-stat-num">${cats}</span><span class="profile-stat-label">catégories</span></div>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Réglages</h3>
+            <div class="profile-rows">
+              <button class="profile-row" onclick="window.app.openAdminSection('taches')">
+                <span>📋 Tâches suggérées</span><span class="profile-row-arrow">›</span>
+              </button>
+              <button class="profile-row" onclick="window.app.openAdminSection('modeles')">
+                <span>🗂 Modèles de journée</span><span class="profile-row-arrow">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Données</h3>
+            <div class="profile-rows">
+              <button class="profile-row" onclick="window.app.exportAllData()">
+                <span>📤 Exporter mes données</span><span class="profile-row-arrow">›</span>
+              </button>
+              <button class="profile-row profile-row--danger" onclick="window.app.profileDeleteData()">
+                <span>🗑 Effacer mes données</span><span class="profile-row-arrow">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <button class="btn btn-ghost profile-signout-btn" onclick="window.app.authSignOut()">Se déconnecter</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  async saveDisplayName() {
+    const input = document.getElementById('profileDisplayName');
+    const name  = input?.value?.trim();
+    if (!name) return;
+    await updateUserProfile(name);
+    this._updateUserBtn();
+    const msg = document.getElementById('profileSaveMsg');
+    if (msg) {
+      msg.classList.remove('hidden');
+      setTimeout(() => msg.classList.add('hidden'), 2000);
+    }
+  }
+
+  openAvatarEditor()           { openAvatarEditor(); }
+  closeAvatarEditor()          { closeAvatarEditor(); }
+  handleAvatarFile(input)      { handleAvatarFile(input); }
+  selectAvatarFilter(id)       { selectAvatarFilter(id); }
+  selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
+  avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
+  async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
+  cropDragStart(e)             { cropDragStart(e); }
+  setCropZoom(val)             { setCropZoom(val); }
+  setEmojiZoom(val)            { setEmojiZoom(val); }
+
+  openAdminSection(section) {
+    openAdminModal();
+    setTimeout(() => showAdminSection(section), 50);
+  }
+
+  async profileDeleteData() {
+    if (!confirm('Effacer toutes tes données ? Cette action est irréversible.')) return;
+    await deleteUserFirestoreDoc();
+    Object.keys(localStorage).filter(k => !k.startsWith('firebase:')).forEach(k => localStorage.removeItem(k));
+    await signOut();
+    location.reload();
   }
 
   _applyMultilineClasses() {
@@ -1188,6 +1418,318 @@ class TodoApp {
     this.closeHamburger();
     openAdminModal();
     setTimeout(() => showAdminSection(section), 50);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // FIREBASE — auth & sync
+  // ═══════════════════════════════════════════════════
+  async _initFirebase() {
+    // 1. Wait for Firebase to restore the previous session (or get null)
+    const user = await initAuth();
+
+    // 2. No session → sign in as guest automatically
+    if (!user) await signInGuest();
+
+    // 3. Merge Firestore data into the app (first load)
+    await this._syncFirebase();
+
+    // 4. Listen for realtime updates from other devices (guard against re-init)
+    if (this._firestoreUnsub) this._firestoreUnsub();
+    this._firestoreUnsub = subscribeToFirestore(backup => {
+      this._applyBackup(backup, { silent: true });
+    });
+
+    // 5. Update user button on every auth state change
+    onUserChange(() => this._updateUserBtn());
+    this._updateUserBtn();
+
+    // 6. Leave prompt for guests
+    this._setupLeavePrompt();
+  }
+
+  async _syncFirebase() {
+    const backup = await loadFromFirestore();
+    if (!backup) {
+      // Nothing in Firestore yet → push current localStorage data up
+      await pushToFirestore(getFullBackup(state.todos));
+      return;
+    }
+
+    // If local data was written more recently than Firestore, local wins.
+    // Covers: task created offline, or push not yet confirmed before refresh.
+    const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
+    const firestoreTime  = backup._firestoreUpdatedAt || 0;
+    if (localWriteTime > firestoreTime) {
+      await pushToFirestore(getFullBackup(state.todos));
+      return;
+    }
+
+    const { _firestoreUpdatedAt, ...cleanBackup } = backup;
+    this._applyBackup(cleanBackup, { silent: false });
+  }
+
+  // Merge a backup object into the app state (from Firestore or server)
+  _applyBackup(backup, { silent }) {
+    let changed = false;
+
+    if (backup.calendar) {
+      const localJSON = JSON.stringify(state.todos);
+      const remoteJSON = JSON.stringify(backup.calendar);
+      if (localJSON !== remoteJSON) {
+        state.setTodos(backup.calendar);
+        localStorage.setItem('todos', remoteJSON);
+        changed = true;
+      }
+    }
+    if (backup.categories)     localStorage.setItem('projects',          JSON.stringify(backup.categories));
+    if (backup.templates)      localStorage.setItem('dayTemplates',      JSON.stringify(backup.templates));
+    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
+    if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
+    if (backup.config) {
+      if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
+      if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
+      if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+    }
+
+    if (changed && !silent) this.render();
+  }
+
+  _updateUserBtn() {
+    const user       = getCurrentUser();
+    const btn        = document.getElementById('userBtn');
+    const logoAvatar = document.getElementById('logoAvatar');
+    if (!btn && !logoAvatar) return;
+    const guest = !!user?.isAnonymous;
+
+    if (btn) {
+      btn.classList.toggle('authenticated', !!user && !guest);
+      btn.title = guest ? 'Invité — cliquer pour créer un compte' : (user?.email || 'Mon compte');
+    }
+
+    let avatarData = null;
+    try { avatarData = JSON.parse(localStorage.getItem('profileAvatar')); } catch {}
+
+    const defaultLogoSVG = `<svg class="logo-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="26" height="26" rx="7" fill="var(--primary)"/><path d="M7 13.5L11 17.5L19 9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const defaultBtnSVG  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+
+    if (avatarData?.type === 'emoji' && avatarData.value) {
+      if (logoAvatar) {
+        logoAvatar.classList.add('logo-avatar--has-avatar');
+        logoAvatar.innerHTML = `<span class="logo-avatar-emoji">${avatarData.value}</span>`;
+      }
+      if (btn) { btn.classList.add('user-btn--has-avatar'); btn.innerHTML = `<span class="user-btn-emoji">${avatarData.value}</span>`; }
+    } else if (avatarData?.type === 'photo' && avatarData.data) {
+      const f = FILTERS.find(f => f.id === avatarData.filter);
+      const styleAttr = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
+      if (logoAvatar) {
+        logoAvatar.classList.add('logo-avatar--has-avatar');
+        logoAvatar.innerHTML = `<img src="${avatarData.data}" class="logo-avatar-photo"${styleAttr}>`;
+      }
+      if (btn) { btn.classList.add('user-btn--has-avatar'); btn.innerHTML = `<img src="${avatarData.data}" class="user-btn-photo"${styleAttr}>`; }
+    } else {
+      if (logoAvatar) { logoAvatar.classList.remove('logo-avatar--has-avatar'); logoAvatar.innerHTML = defaultLogoSVG; }
+      if (btn) { btn.classList.remove('user-btn--has-avatar'); btn.innerHTML = defaultBtnSVG; }
+    }
+  }
+
+  openUserArea() {
+    if (isGuest()) this.openAuthModal();
+    else           this.setView('profile');
+  }
+
+  _leavingAttempted = null;
+
+  _setupLeavePrompt() {
+    window.addEventListener('beforeunload', e => {
+      if (!isGuest()) return;
+      this._leavingAttempted = Date.now();
+      e.preventDefault();
+      e.returnValue = '';
+    });
+    window.addEventListener('focus', () => {
+      if (this._leavingAttempted && Date.now() - this._leavingAttempted < 10000 && isGuest()) {
+        this._leavingAttempted = null;
+        this.showLeavePrompt();
+      }
+    });
+  }
+
+  showLeavePrompt() {
+    document.getElementById('leavePromptOverlay').classList.remove('hidden');
+  }
+
+  closeLeavePrompt() {
+    document.getElementById('leavePromptOverlay').classList.add('hidden');
+  }
+
+  leaveKeepData() {
+    this.closeLeavePrompt();
+  }
+
+  async leaveDeleteData() {
+    // Delete Firestore doc
+    await deleteUserFirestoreDoc();
+    // Clear all app localStorage keys
+    Object.keys(localStorage)
+      .filter(k => !k.startsWith('firebase:'))
+      .forEach(k => localStorage.removeItem(k));
+    // Get fresh anonymous session
+    await signOut();
+    this.closeLeavePrompt();
+    this.render();
+  }
+
+  // ── Auth modal ────────────────────────────────────────
+  _authMode = 'login'; // 'login' | 'register'
+
+  openAuthModal() {
+    const user = getCurrentUser();
+    const panelUser = document.getElementById('authPanelUser');
+    const panelForm = document.getElementById('authPanelForm');
+
+    const showUserPanel = user && !user.isAnonymous;
+    const showGuestPanel = user?.isAnonymous;
+    // showForm = no user at all (shouldn't normally happen since we always sign in as guest)
+
+    panelUser.classList.toggle('hidden', !showUserPanel && !showGuestPanel);
+    panelForm.classList.toggle('hidden',  showUserPanel || showGuestPanel);
+
+    if (showUserPanel) {
+      document.getElementById('authUserName').textContent = user.email || 'Utilisateur';
+      document.getElementById('authUserSub').textContent  = 'Compte connecté';
+      document.getElementById('authAvatar').textContent   = '✓';
+      document.getElementById('authUpgradeSection').classList.add('hidden');
+    } else if (showGuestPanel) {
+      document.getElementById('authUserName').textContent = 'Invité';
+      document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
+      document.getElementById('authAvatar').textContent   = '👤';
+      document.getElementById('authUpgradeSection').classList.remove('hidden');
+    }
+
+    document.getElementById('authModalOverlay').classList.remove('hidden');
+    document.getElementById('authError').classList.add('hidden');
+    document.getElementById('authEmail').value    = '';
+    document.getElementById('authPassword').value = '';
+  }
+
+  showAuthRegister() {
+    const panelUser = document.getElementById('authPanelUser');
+    const panelForm = document.getElementById('authPanelForm');
+    panelUser.classList.add('hidden');
+    panelForm.classList.remove('hidden');
+    this._authMode = 'register';
+    this._updateAuthFormLabels();
+  }
+
+  closeAuthModal() {
+    document.getElementById('authModalOverlay').classList.add('hidden');
+  }
+
+  authToggleMode() {
+    this._authMode = this._authMode === 'login' ? 'register' : 'login';
+    this._updateAuthFormLabels();
+  }
+
+  _updateAuthFormLabels() {
+    const isRegister = this._authMode === 'register';
+    document.getElementById('authFormTitle').textContent   = isRegister ? 'Créer un compte' : 'Se connecter';
+    document.getElementById('authSubmitBtn').textContent   = isRegister ? 'Créer mon compte' : 'Se connecter';
+    document.getElementById('authSwitchText').textContent  = isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?';
+    document.getElementById('authSwitchBtn').textContent   = isRegister ? 'Se connecter' : 'Créer un compte';
+    document.getElementById('authError').classList.add('hidden');
+  }
+
+  async authSubmit() {
+    const email    = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errEl    = document.getElementById('authError');
+    errEl.classList.add('hidden');
+
+    if (!email || !password) {
+      errEl.textContent = 'Veuillez remplir tous les champs.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      if (this._authMode === 'register') {
+        const user = getCurrentUser();
+        if (user?.isAnonymous) {
+          // Upgrade the guest account → same uid, data preserved
+          await upgradeGuestToEmail(email, password);
+        } else {
+          await registerWithEmail(email, password);
+        }
+      } else {
+        await signInWithEmail(email, password);
+        // Pull the newly logged-in user's data from Firestore
+        await this._syncFirebase();
+      }
+      this.closeAuthModal();
+      this._updateUserBtn();
+      this.render();
+    } catch (err) {
+      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  authContinueAsGuest() {
+    this.closeAuthModal();
+  }
+
+  async authSignOut() {
+    await signOut(); // re-signs in as guest automatically
+    this.closeAuthModal();
+    this._updateUserBtn();
+  }
+
+  // ── Upgrade prompt (shown to guests proactively) ──────
+  showUpgradePrompt() {
+    document.getElementById('upgradePromptOverlay').classList.remove('hidden');
+    document.getElementById('upgradeError').classList.add('hidden');
+    document.getElementById('upgradeEmail').value    = '';
+    document.getElementById('upgradePassword').value = '';
+  }
+
+  async upgradeSubmit() {
+    const email    = document.getElementById('upgradeEmail').value.trim();
+    const password = document.getElementById('upgradePassword').value;
+    const errEl    = document.getElementById('upgradeError');
+    errEl.classList.add('hidden');
+
+    if (!email || !password) {
+      errEl.textContent = 'Veuillez remplir tous les champs.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+
+    try {
+      await upgradeGuestToEmail(email, password);
+      document.getElementById('upgradePromptOverlay').classList.add('hidden');
+      this._updateUserBtn();
+    } catch (err) {
+      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  upgradeDismiss() {
+    document.getElementById('upgradePromptOverlay').classList.add('hidden');
+  }
+
+  _firebaseErrorMessage(code) {
+    const messages = {
+      'auth/email-already-in-use':    'Cet email est déjà utilisé.',
+      'auth/invalid-email':           'Email invalide.',
+      'auth/weak-password':           'Mot de passe trop faible (minimum 6 caractères).',
+      'auth/wrong-password':          'Mot de passe incorrect.',
+      'auth/user-not-found':          'Aucun compte associé à cet email.',
+      'auth/too-many-requests':       'Trop de tentatives. Réessayez plus tard.',
+      'auth/credential-already-in-use': 'Cet email est déjà associé à un autre compte.',
+      'auth/network-request-failed':  'Erreur réseau. Vérifiez votre connexion.',
+    };
+    return messages[code] || 'Une erreur est survenue. Veuillez réessayer.';
   }
 
   // ═══════════════════════════════════════════════════
