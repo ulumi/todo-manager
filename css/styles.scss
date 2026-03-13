@@ -2963,7 +2963,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size:      101px;
   line-height:    1;
   position:       relative;
-  z-index:        3; // always above ::after (z-index:2) regardless of animation state
+  z-index:        1; // below ::after (z-index:2) so ring overlay masks the edges
   pointer-events: none;
   translate:      var(--ed-x, 0px) calc(8px + var(--ed-y, 0px)); // portrait offset + user drag
   scale:          var(--ed-s, 1);
@@ -3080,9 +3080,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Emoji bursts from center — spring scale animation
 @keyframes avatar-burst {
   0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; z-index: 3; }
-  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; z-index: 3; }
-  75%  { transform: scale(0.95) rotate(-3deg);              z-index: 3; }
-  100% { transform: scale(1)    rotate(0deg);               z-index: 3; }
+  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; z-index: 3; } // peak: above ring
+  60%  {                                                     z-index: 1; } // snap under ring before rebound
+  100% { transform: scale(1)    rotate(0deg);               z-index: 1; }
 }
 
 @keyframes avatar-burst-preview {
