@@ -945,25 +945,21 @@ class TodoApp {
             ${getAvatarHTML(initials)}
             <span class="profile-avatar-hint">✏️</span>
           </div>
+          <button class="profile-avatar-edit-btn" onclick="window.app.openAvatarEditor()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span class="profile-avatar-edit-label">Modifier l'avatar</span>
+          </button>
           <h1 class="profile-hero-name">${esc(name)}</h1>
           <p class="profile-hero-email">${esc(user?.email || '')}</p>
         </div>
 
         <div class="profile-body">
           <div class="profile-section">
+            <h3 class="profile-section-title">Nom d'affichage</h3>
             <div class="profile-name-row">
-              <span class="profile-name-value">${esc(user?.displayName || user?.email?.split('@')[0] || '')}</span>
-              <button class="profile-edit-btn" onclick="window.app.toggleNameEdit()" title="Modifier le nom">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-            </div>
-            <div class="profile-name-edit hidden" id="profileNameEdit">
-              <p class="profile-edit-invite">Comment veux-tu qu'on t'appelle ?</p>
-              <div class="profile-name-input-row">
-                <input class="form-input" type="text" id="profileDisplayName"
-                  value="${esc(user?.displayName || '')}" placeholder="Ton prénom">
-                <button class="btn btn-primary btn-sm" onclick="window.app.saveDisplayName()">OK</button>
-              </div>
+              <input class="form-input" type="text" id="profileDisplayName"
+                value="${esc(user?.displayName || '')}" placeholder="Ton prénom">
+              <button class="btn btn-primary" onclick="window.app.saveDisplayName()">Sauvegarder</button>
             </div>
             <p class="profile-save-msg hidden" id="profileSaveMsg">✓ Sauvegardé</p>
           </div>
@@ -1010,23 +1006,12 @@ class TodoApp {
     `;
   }
 
-  toggleNameEdit() {
-    const form = document.getElementById('profileNameEdit');
-    if (!form) return;
-    const opening = form.classList.contains('hidden');
-    form.classList.toggle('hidden');
-    if (opening) document.getElementById('profileDisplayName')?.focus();
-  }
-
   async saveDisplayName() {
     const input = document.getElementById('profileDisplayName');
     const name  = input?.value?.trim();
     if (!name) return;
     await updateUserProfile(name);
     this._updateUserBtn();
-    const nameEl = document.querySelector('.profile-name-value');
-    if (nameEl) nameEl.textContent = name;
-    document.getElementById('profileNameEdit')?.classList.add('hidden');
     const msg = document.getElementById('profileSaveMsg');
     if (msg) {
       msg.classList.remove('hidden');

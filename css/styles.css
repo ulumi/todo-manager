@@ -3191,6 +3191,43 @@ body:has(.bottom-panel:not(.hidden))::before {
   transition: opacity 0.15s;
 }
 
+.profile-avatar-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: -8px;
+  margin-bottom: 14px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, gap 0.2s;
+  overflow: hidden;
+}
+.profile-avatar-edit-btn .profile-avatar-edit-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.25s ease, opacity 0.2s, margin-left 0.25s;
+  margin-left: 0;
+}
+.profile-avatar-edit-btn:hover {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  gap: 5px;
+}
+.profile-avatar-edit-btn:hover .profile-avatar-edit-label {
+  max-width: 110px;
+  opacity: 1;
+  margin-left: 0;
+}
+
 .avatar-editor-modal {
   max-width: 380px;
   position: relative;
@@ -3554,56 +3591,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .profile-name-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile-name-value {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.profile-edit-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color 0.15s, background 0.15s, transform 0.15s;
-}
-.profile-edit-btn:hover {
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  transform: scale(1.12);
-}
-
-.profile-name-edit {
-  margin-top: 12px;
-}
-.profile-name-edit.hidden {
-  display: none;
-}
-
-.profile-edit-invite {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-style: italic;
-  margin: 0 0 10px;
-}
-
-.profile-name-input-row {
-  display: flex;
   gap: 8px;
 }
-.profile-name-input-row .form-input {
+.profile-name-row .form-input {
   flex: 1;
 }
 
