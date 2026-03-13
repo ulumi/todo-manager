@@ -3315,6 +3315,53 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-name-row {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+}
+
+.profile-name-value {
+  flex:        1;
+  font-size:   16px;
+  font-weight: 600;
+  color:       var(--text);
+}
+
+.profile-edit-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           32px;
+  height:          32px;
+  border:          none;
+  border-radius:   8px;
+  background:      transparent;
+  color:           var(--text-muted);
+  cursor:          pointer;
+  flex-shrink:     0;
+  transition:      color .15s, background .15s, transform .15s;
+
+  &:hover {
+    color:      var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    transform:  scale(1.12);
+  }
+}
+
+.profile-name-edit {
+  margin-top: 12px;
+
+  &.hidden { display: none; }
+}
+
+.profile-edit-invite {
+  font-size:   13px;
+  color:       var(--text-muted);
+  font-style:  italic;
+  margin:      0 0 10px;
+}
+
+.profile-name-input-row {
   display: flex;
   gap:     8px;
 
