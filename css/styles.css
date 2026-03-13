@@ -3274,12 +3274,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 @keyframes avatar-burst {
   0% {
-    transform: scale(0.05) rotate(-12deg);
+    transform: scale(0.05);
     opacity: 0;
     z-index: 3;
   }
   55% {
-    transform: scale(1.5) rotate(6deg);
+    transform: scale(1.5);
     opacity: 1;
     z-index: 3;
   }
@@ -3287,18 +3287,18 @@ body:has(.bottom-panel:not(.hidden))::before {
     z-index: 1;
   }
   100% {
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
     z-index: 1;
   }
 }
 @keyframes avatar-burst-preview {
   0% {
-    transform: scale(0.05) rotate(-12deg);
+    transform: scale(0.05);
     opacity: 0;
     z-index: 3;
   }
   55% {
-    transform: scale(1.5) rotate(6deg);
+    transform: scale(1.5);
     opacity: 1;
     z-index: 3;
   }
@@ -3306,7 +3306,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     z-index: 1;
   }
   100% {
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
     z-index: 1;
   }
 }

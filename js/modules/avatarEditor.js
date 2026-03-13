@@ -37,9 +37,9 @@ let _emojiY    = 0;
 
 export function openAvatarEditor() {
   const saved = _loadAvatar();
-  if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; _emojiScale = saved.scale ?? 1.4; _emojiX = saved.x ?? 0; _emojiY = saved.y ?? 0; }
+  if (saved?.type === 'emoji')  { _emoji = saved.value; _mode = 'emoji'; _photo = null; _emojiScale = saved.scale ?? 1.2; _emojiX = saved.x ?? 0; _emojiY = saved.y ?? 0; }
   else if (saved?.type === 'photo') { _photo = saved.data; _filter = saved.filter || 'natural'; _mode = 'photo'; _emoji = null; }
-  else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; _emojiScale = 1.4; _emojiX = 0; _emojiY = 0; }
+  else { _emoji = null; _photo = null; _filter = 'natural'; _mode = 'emoji'; _emojiScale = 1.2; _emojiX = 0; _emojiY = 0; }
   _cropZoom = 1.4; _cropX = 0.5; _cropY = 0.5;
 
   _renderEditor();
@@ -89,7 +89,7 @@ export function selectAvatarFilter(id) {
 
 export function selectAvatarEmoji(emoji) {
   _emoji = emoji || null;
-  _emojiScale = 1.4; _emojiX = 0; _emojiY = 0;
+  _emojiScale = 1.2; _emojiX = 0; _emojiY = 0;
   _updatePreview();
   _syncEmojiSlider();
   document.querySelectorAll('.avatar-emoji-opt').forEach(b =>

@@ -3079,17 +3079,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Emoji bursts from center — spring scale animation
 @keyframes avatar-burst {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; z-index: 3; }
-  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; z-index: 3; } // peak: above ring
-  60%  {                                                     z-index: 1; } // snap under ring before rebound
-  100% { transform: scale(1)    rotate(0deg);               z-index: 1; }
+  0%   { transform: scale(0.05); opacity: 0; z-index: 3; }
+  55%  { transform: scale(1.5);  opacity: 1; z-index: 3; }
+  60%  {                          z-index: 1; }
+  100% { transform: scale(1);               z-index: 1; }
 }
 
 @keyframes avatar-burst-preview {
-  0%   { transform: scale(0.05) rotate(-12deg); opacity: 0; z-index: 3; }
-  55%  { transform: scale(1.5)  rotate(6deg);   opacity: 1; z-index: 3; } // peak: above ring
-  60%  {                                                     z-index: 1; } // snap under ring before rebound
-  100% { transform: scale(1)    rotate(0deg);               z-index: 1; }
+  0%   { transform: scale(0.05); opacity: 0; z-index: 3; }
+  55%  { transform: scale(1.5);  opacity: 1; z-index: 3; }
+  60%  {                          z-index: 1; }
+  100% { transform: scale(1);               z-index: 1; }
 }
 
 @keyframes emoji-bounce {
