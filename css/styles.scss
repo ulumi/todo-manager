@@ -2921,10 +2921,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow:        visible; // emoji bursts out
   transition:      transform .15s, box-shadow .15s;
 
-  // Photo mode: hard-clip to circle via JS-added class
+  // Photo mode: hard-clip to circle via JS-added class (same mechanism as .avatar-editor-preview)
   &--photo {
-    overflow:  hidden;
-    clip-path: circle(50% at center);
+    overflow:  visible;
+    clip-path: circle(60px at center);
   }
 
   // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
@@ -3274,15 +3274,14 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .avatar-save-btn { width: 100%; margin-top: 16px; }
 
-// Photo display in avatar circle
+// Photo display in avatar circle — fills container like editor canvas, clip-path on container handles the crop
 .profile-avatar-img {
-  width:         83%;
-  height:        83%;
-  object-fit:    cover;
-  border-radius: 50%;
-  display:       block;
-  position:      relative;
-  z-index:       1; // above ::before (z-0), below ::after ring overlay (z-2)
+  width:      100%;
+  height:     100%;
+  object-fit: cover;
+  display:    block;
+  position:   relative;
+  z-index:    1; // above ::before (z-0), below ::after ring overlay (z-2)
 }
 
 .profile-hero-name {

@@ -3138,8 +3138,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .profile-avatar--photo {
-  overflow: hidden;
-  clip-path: circle(50% at center);
+  overflow: visible;
+  clip-path: circle(60px at center);
 }
 .profile-avatar::before {
   content: "";
@@ -3517,10 +3517,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .profile-avatar-img {
-  width: 83%;
-  height: 83%;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 50%;
   display: block;
   position: relative;
   z-index: 1;
