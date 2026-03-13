@@ -144,22 +144,29 @@ header.scrolled {
 }
 
 #logoAvatar.logo-avatar--entering {
-  animation: logo-entrance 0.42s cubic-bezier(0.34, 1.8, 0.64, 1) both;
+  animation: logo-surge 0.7s cubic-bezier(0.08, 0.82, 0.17, 1) both;
 }
 
-@keyframes logo-entrance {
-  from {
+@keyframes logo-surge {
+  0% {
     opacity: 0;
-    transform: scale(0.55) translateY(-10px);
-    filter: blur(5px);
+    transform: scale(6);
+    filter: blur(10px);
+    box-shadow: 0 0 0 5px #f59e0b, 0 0 50px #f59e0b;
   }
-  80% {
-    transform: scale(1.07) translateY(1px);
+  22% {
+    opacity: 1;
+    filter: blur(0);
+    box-shadow: 0 0 0 3px #f59e0b, 0 0 22px color-mix(in srgb, #f59e0b 70%, transparent);
   }
-  to {
+  75% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 2px color-mix(in srgb, #f59e0b 25%, transparent);
+  }
+  100% {
     opacity: 1;
     transform: none;
-    filter: blur(0);
+    box-shadow: none;
   }
 }
 @keyframes char-pop {
@@ -1065,10 +1072,12 @@ main {
   pointer-events: auto;
 }
 .week-day-col.is-today {
+  flex: 1.8;
   border-color: var(--today-border);
   background: var(--today);
 }
-.week-day-col.is-today:hover {
+.week-day-col.is-today:hover, .week-day-col.is-today:active {
+  flex: 2.4;
   border-color: var(--today-border);
 }
 .week-day-col.is-today .week-day-header {
@@ -1198,6 +1207,7 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
   cursor: default;
   color: var(--text);
   font-weight: 500;
