@@ -3137,8 +3137,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: visible;
   transition: transform 0.15s, box-shadow 0.15s;
 }
-.profile-avatar:has(.profile-avatar-img) {
+.profile-avatar--photo {
   overflow: hidden;
+  clip-path: circle(50% at center);
 }
 .profile-avatar::before {
   content: "";

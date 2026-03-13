@@ -2918,11 +2918,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom:   20px;
   cursor:          pointer;
   position:        relative;
-  overflow:        visible; // emoji bursts out — overridden for photo below
+  overflow:        visible; // emoji bursts out
   transition:      transform .15s, box-shadow .15s;
 
-  // When a photo is inside: hard-clip everything to the circle
-  &:has(.profile-avatar-img) { overflow: hidden; }
+  // Photo mode: hard-clip to circle via JS-added class
+  &--photo {
+    overflow:  hidden;
+    clip-path: circle(50% at center);
+  }
 
   // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
   &::before {
