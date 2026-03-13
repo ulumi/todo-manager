@@ -89,7 +89,9 @@ export function selectAvatarFilter(id) {
 
 export function selectAvatarEmoji(emoji) {
   _emoji = emoji || null;
+  _emojiScale = 1.4; _emojiX = 0; _emojiY = 0;
   _updatePreview();
+  _syncEmojiSlider();
   document.querySelectorAll('.avatar-emoji-opt').forEach(b =>
     b.classList.toggle('active', b.dataset.emoji === (emoji || '')));
 }
