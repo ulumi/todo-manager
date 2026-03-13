@@ -8,6 +8,10 @@ import {
   createUserWithEmailAndPassword,
   linkWithCredential,
   EmailAuthProvider,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  signInWithPopup,
+  linkWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
@@ -75,6 +79,29 @@ export async function registerWithEmail(email, password) {
 export async function upgradeGuestToEmail(email, password) {
   const credential = EmailAuthProvider.credential(email, password);
   const { user } = await linkWithCredential(_currentUser, credential);
+  return user;
+}
+
+// ── Google / Facebook OAuth ───────────────────────────────
+// For guests: links the anonymous account (preserves uid + data).
+// For registered users: signs in with the provider.
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  if (_currentUser?.isAnonymous) {
+    const { user } = await linkWithPopup(_currentUser, provider);
+    return user;
+  }
+  const { user } = await signInWithPopup(auth, provider);
+  return user;
+}
+
+export async function signInWithFacebook() {
+  const provider = new FacebookAuthProvider();
+  if (_currentUser?.isAnonymous) {
+    const { user } = await linkWithPopup(_currentUser, provider);
+    return user;
+  }
+  const { user } = await signInWithPopup(auth, provider);
   return user;
 }
 

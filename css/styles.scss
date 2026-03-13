@@ -4719,3 +4719,80 @@ body:has(.bottom-panel:not(.hidden))::before {
     background: var(--border);
   }
 }
+
+.btn-social {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             10px;
+  width:           100%;
+  background:      var(--surface);
+  color:           var(--text);
+  border:          1.5px solid var(--border);
+  font-weight:     500;
+  padding:         10px 16px;
+
+  &:hover  { background: var(--surface2); border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+  &:active { transform: translateY(0); }
+
+  svg { flex-shrink: 0; }
+}
+
+
+// ─── 23. Admin toast (admin → user message) ──────────────────────────────
+
+@keyframes toast-in  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { from { opacity: 1; transform: translateY(0);    } to { opacity: 0; transform: translateY(8px); } }
+
+.admin-toast {
+  position:      fixed;
+  bottom:        24px;
+  right:         24px;
+  z-index:       9999;
+  display:       flex;
+  align-items:   flex-start;
+  gap:           12px;
+  background:    var(--surface);
+  border:        1px solid var(--primary);
+  border-radius: 12px;
+  box-shadow:    0 8px 24px rgba(0,0,0,.3);
+  padding:       16px;
+  max-width:     340px;
+  animation:     toast-in .25s ease;
+
+  &--out { animation: toast-out .3s ease forwards; }
+
+  &__icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+  &__body { flex: 1; min-width: 0; }
+
+  &__label {
+    color:       var(--primary);
+    font-size:   11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  &__text {
+    color:     var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  &__close {
+    background: none;
+    border:     none;
+    color:      var(--text-muted);
+    cursor:     pointer;
+    font-size:  14px;
+    flex-shrink: 0;
+    padding:    0;
+    line-height: 1;
+    transition: color .15s;
+
+    &:hover { color: var(--text); }
+  }
+}

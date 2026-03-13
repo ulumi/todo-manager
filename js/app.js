@@ -46,8 +46,10 @@ import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
   upgradeGuestToEmail, signOut, updateUserProfile,
+  signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
+import { initPresence, destroyPresence } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
@@ -1447,8 +1449,15 @@ class TodoApp {
     });
 
     // 5. Update user button on every auth state change
-    onUserChange(() => this._updateUserBtn());
+    onUserChange(user => {
+      this._updateUserBtn();
+      if (user) initPresence(user); else destroyPresence();
+    });
     this._updateUserBtn();
+
+    // 6. Start presence tracking for the current user
+    const currentUser = getCurrentUser();
+    if (currentUser) initPresence(currentUser);
 
     // 6. Leave prompt for guests
     this._setupLeavePrompt();
@@ -1677,6 +1686,37 @@ class TodoApp {
     this._updateAuthFormLabels();
   }
 
+  showAuthLogin() {
+    const panelUser = document.getElementById('authPanelUser');
+    const panelForm = document.getElementById('authPanelForm');
+    panelUser.classList.add('hidden');
+    panelForm.classList.remove('hidden');
+    this._authMode = 'login';
+    this._updateAuthFormLabels();
+  }
+
+  // ── Social auth (Google / Facebook) ───────────────────
+  async _runSocialAuth(providerFn, errElId) {
+    const errEl = document.getElementById(errElId);
+    errEl.classList.add('hidden');
+    try {
+      await providerFn();
+      await this._syncFirebase();
+      document.getElementById('authModalOverlay').classList.add('hidden');
+      document.getElementById('upgradePromptOverlay').classList.add('hidden');
+      this._updateUserBtn();
+      this.render();
+    } catch (err) {
+      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.classList.remove('hidden');
+    }
+  }
+
+  authGoogleSignIn()      { return this._runSocialAuth(() => signInWithGoogle(),   'authError'); }
+  authFacebookSignIn()    { return this._runSocialAuth(() => signInWithFacebook(), 'authError'); }
+  upgradeGoogleSignIn()   { return this._runSocialAuth(() => signInWithGoogle(),   'upgradeError'); }
+  upgradeFacebookSignIn() { return this._runSocialAuth(() => signInWithFacebook(), 'upgradeError'); }
+
   closeAuthModal() {
     document.getElementById('authModalOverlay').classList.add('hidden');
   }
@@ -1784,6 +1824,9 @@ class TodoApp {
       'auth/too-many-requests':       'Trop de tentatives. Réessayez plus tard.',
       'auth/credential-already-in-use': 'Cet email est déjà associé à un autre compte.',
       'auth/network-request-failed':  'Erreur réseau. Vérifiez votre connexion.',
+      'auth/popup-closed-by-user':    'Connexion annulée.',
+      'auth/popup-blocked':           'Popup bloquée. Autorisez les popups pour ce site.',
+      'auth/account-exists-with-different-credential': 'Un compte existe déjà avec cet email. Connectez-vous avec la méthode d\'origine.',
     };
     return messages[code] || 'Une erreur est survenue. Veuillez réessayer.';
   }
