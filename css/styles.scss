@@ -1349,6 +1349,7 @@ main {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
   min-width: 0;
@@ -2917,8 +2918,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom:   20px;
   cursor:          pointer;
   position:        relative;
-  overflow:        visible; // emoji bursts out
+  overflow:        visible; // emoji bursts out — overridden for photo below
   transition:      transform .15s, box-shadow .15s;
+
+  // When a photo is inside: hard-clip everything to the circle
+  &:has(.profile-avatar-img) { overflow: hidden; }
 
   // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
   &::before {
@@ -3177,6 +3181,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .crop-zoom-slider {
   flex:              1;
   -webkit-appearance: none;
+  appearance:        none;
   height:            4px;
   border-radius:     2px;
   background:        var(--border);
@@ -3525,6 +3530,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   margin-top: -4px;
 }

@@ -1411,6 +1411,7 @@ main {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
   min-width: 0;
@@ -3136,6 +3137,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: visible;
   transition: transform 0.15s, box-shadow 0.15s;
 }
+.profile-avatar:has(.profile-avatar-img) {
+  overflow: hidden;
+}
 .profile-avatar::before {
   content: "";
   position: absolute;
@@ -3411,6 +3415,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .crop-zoom-slider {
   flex: 1;
   -webkit-appearance: none;
+  appearance: none;
   height: 4px;
   border-radius: 2px;
   background: var(--border);
@@ -3778,6 +3783,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   margin-top: -4px;
 }
