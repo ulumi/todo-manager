@@ -1545,8 +1545,34 @@ class TodoApp {
     const el = document.getElementById('logoText');
     if (!el || el.dataset.text === text) return;
     el.dataset.text = text;
+
+    // Compute per-char delays based on katana groups:
+    // "2FŨKOI, username" → username first (fast stagger), then 2 / FŨ / KOI
+    const delays = new Array(text.length).fill(0);
+    const commaIdx = text.indexOf(', ');
+
+    if (commaIdx > 0) {
+      const usernameLen = text.length - commaIdx - 2;
+      // username: stagger 22ms each, start at 0
+      for (let i = 0; i < usernameLen; i++) delays[commaIdx + 2 + i] = i * 22;
+      // comma
+      delays[commaIdx]     = usernameLen * 22 + 15;
+      // space
+      delays[commaIdx + 1] = usernameLen * 22 + 25;
+      // 2 — one slash, after gap
+      const b = usernameLen * 22 + 85;
+      delays[0] = b;
+      // FŨ — big gap (---), one stroke
+      delays[1] = b + 105; delays[2] = b + 118;
+      // KOI — medium gap (--), one stroke
+      delays[3] = b + 175; delays[4] = b + 188; delays[5] = b + 201;
+    } else {
+      // No username: just 2FŨKOI
+      [0, 105, 118, 178, 191, 204].forEach((d, i) => { delays[i] = d; });
+    }
+
     el.innerHTML = [...text].map((ch, i) =>
-      `<span class="ninja-char" style="--i:${i}">${ch === ' ' ? '\u00A0' : esc(ch)}</span>`
+      `<span class="ninja-char" style="--delay:${delays[i]}ms">${ch === ' ' ? '\u00A0' : esc(ch)}</span>`
     ).join('');
   }
 

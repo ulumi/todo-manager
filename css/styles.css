@@ -141,13 +141,16 @@ header.scrolled {
 @keyframes ninja-in {
   0% {
     opacity: 0;
-    transform: translateY(-10px) skewX(-30deg) scaleX(1.3);
-    filter: blur(4px);
+    transform: translateX(-14px) skewX(-45deg) scaleX(1.5);
+    filter: blur(7px);
   }
-  60% {
+  50% {
     opacity: 1;
-    transform: translateY(1px) skewX(4deg) scaleX(0.97);
+    transform: translateX(2px) skewX(6deg) scaleX(0.95);
     filter: blur(0);
+  }
+  75% {
+    transform: translateX(-1px) skewX(-1deg) scaleX(1.01);
   }
   100% {
     opacity: 1;
@@ -156,8 +159,8 @@ header.scrolled {
 }
 .ninja-char {
   display: inline-block;
-  animation: ninja-in 0.22s cubic-bezier(0.2, 1.4, 0.3, 1) both;
-  animation-delay: calc(var(--i) * 38ms);
+  animation: ninja-in 0.15s cubic-bezier(0.12, 1.6, 0.25, 1) both;
+  animation-delay: var(--delay, 0ms);
 }
 
 .view-tabs {
