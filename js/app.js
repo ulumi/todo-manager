@@ -1539,6 +1539,14 @@ class TodoApp {
       if (logoAvatar) { logoAvatar.classList.remove('logo-avatar--has-avatar'); logoAvatar.innerHTML = defaultLogoSVG; }
       if (btn) { btn.classList.remove('user-btn--has-avatar'); btn.innerHTML = defaultBtnSVG; }
     }
+
+    // Trigger logo entrance animation AFTER content is set (first call only)
+    if (logoAvatar && !logoAvatar.dataset.animated) {
+      logoAvatar.dataset.animated = '1';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        logoAvatar.classList.add('logo-avatar--entering');
+      }));
+    }
   }
 
   _animateLogoText(text) {

@@ -177,9 +177,13 @@ header {
   opacity: 0; // hidden until JS runs — prevents flash
 }
 
-// ── Logo avatar entrance (plays once on load) ───────────────────────────
+// ── Logo avatar entrance (JS adds .logo-avatar--entering after content is set) ──
 #logoAvatar {
-  animation: logo-entrance .42s cubic-bezier(.34, 1.8, .64, 1) 30ms both;
+  opacity: 0; // hidden until JS sets content then triggers anim
+}
+
+#logoAvatar.logo-avatar--entering {
+  animation: logo-entrance .42s cubic-bezier(.34, 1.8, .64, 1) both;
 }
 
 @keyframes logo-entrance {
