@@ -172,36 +172,152 @@
 
     .empty { color: var(--muted); padding: 32px; text-align: center; }
 
-    /* ── Send message panel ─────────────────────────── */
-    .message-form {
-      background: var(--surface);
+    /* ── Chat panel ─────────────────────────────────── */
+    .admin-chat {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      height: calc(100vh - 140px);
+      max-height: 640px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .admin-chat__sidebar {
+      border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      max-width: 540px;
+      overflow: hidden;
     }
-    .message-form label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
-    .message-form select,
-    .message-form textarea {
+    .admin-chat__sidebar-header {
+      padding: 12px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .admin-chat__user-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .admin-chat__user-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .admin-chat__user-item:hover  { background: var(--surface2); }
+    .admin-chat__user-item.active { background: rgba(245,158,11,.1); border-left: 2px solid var(--primary); }
+    .admin-chat__user-email { font-size: 13px; font-weight: 500; word-break: break-all; }
+    .admin-chat__user-type  { font-size: 11px; color: var(--muted); }
+    .admin-chat__empty-list { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+
+    .admin-chat__main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .admin-chat__convo-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      min-height: 49px;
+    }
+    .admin-chat__convo-name  { font-weight: 600; font-size: 14px; flex: 1; }
+    .admin-chat__convo-empty { color: var(--muted); font-size: 13px; }
+
+    .admin-chat__messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .admin-chat__placeholder {
+      margin: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    /* Chat bubbles (admin = right side) */
+    .chat-msg {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .chat-msg__bubble {
+      background: var(--primary);
+      color: #0f1117;
+      border-radius: 12px 12px 4px 12px;
+      padding: 8px 14px;
+      max-width: 70%;
+      font-size: 13px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .chat-msg__time {
+      font-size: 10px;
+      color: rgba(0,0,0,.5);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    /* Input bar */
+    .admin-chat__input-bar {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    .admin-chat__input {
+      flex: 1;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--text);
-      font-size: 14px;
-      padding: 10px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      padding: 9px 12px;
       outline: none;
+      resize: none;
+      line-height: 1.4;
+      max-height: 120px;
       transition: border-color .15s;
-      width: 100%;
     }
-    .message-form select:focus,
-    .message-form textarea:focus { border-color: var(--primary); }
-    .message-form textarea { resize: vertical; min-height: 100px; font-family: inherit; }
-    #sendStatus { font-size: 13px; display: none; }
-    #sendStatus.ok  { color: var(--success); }
-    #sendStatus.err { color: var(--danger); }
+    .admin-chat__input:focus { border-color: var(--primary); }
+    .admin-chat__input::placeholder { color: var(--muted); }
+    .admin-chat__input:disabled { opacity: .5; }
+    .admin-chat__send {
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: #0f1117;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 16px;
+      transition: opacity .15s;
+      flex-shrink: 0;
+    }
+    .admin-chat__send:hover    { opacity: .85; }
+    .admin-chat__send:disabled { opacity: .5; cursor: default; }
+
+    #sendStatus { font-size: 13px; display: none; padding: 0 14px 10px; }
+    #sendStatus.ok  { color: var(--success); display: block; }
+    #sendStatus.err { color: var(--danger);  display: block; }
 
     /* ── Refresh btn spinner ────────────────────────── */
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -299,21 +415,30 @@
 
     <!-- Message panel -->
     <div id="messagePanel" class="panel">
-      <div class="message-form">
-        <h2 style="font-size:14px; font-weight:600;">Send a message to a user</h2>
-        <div>
-          <label for="msgTarget">Recipient</label>
-          <select id="msgTarget">
-            <option value="">— select a user —</option>
-          </select>
+      <div class="admin-chat">
+        <!-- Sidebar: user list -->
+        <div class="admin-chat__sidebar">
+          <div class="admin-chat__sidebar-header">Conversations</div>
+          <div class="admin-chat__user-list" id="chatUserList">
+            <div class="admin-chat__empty-list">Load users first</div>
+          </div>
         </div>
-        <div>
-          <label for="msgText">Message</label>
-          <textarea id="msgText" placeholder="Write your message…"></textarea>
-        </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button class="btn" id="sendBtn">Send</button>
+
+        <!-- Main: conversation -->
+        <div class="admin-chat__main">
+          <div class="admin-chat__convo-header" id="chatConvoHeader">
+            <span class="admin-chat__convo-empty">← Select a user</span>
+          </div>
+          <div class="admin-chat__messages" id="chatConvoMessages">
+            <div class="admin-chat__placeholder">
+              Select a user from the list<br>to start a conversation.
+            </div>
+          </div>
           <span id="sendStatus"></span>
+          <div class="admin-chat__input-bar">
+            <textarea class="admin-chat__input" id="msgText" placeholder="Write a message…" rows="1" disabled></textarea>
+            <button class="admin-chat__send" id="sendBtn" disabled>Send</button>
+          </div>
         </div>
       </div>
     </div>
@@ -325,6 +450,8 @@
   import { initializeApp }               from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+  import { getFirestore, doc, setDoc, serverTimestamp }
+    from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
   const firebaseConfig = {
     apiKey:            'AIzaSyCp3bbr6hMjP7oo7bfUmRNfIA4O6IKbtkQ',
@@ -339,6 +466,28 @@
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  // ── Presence (admin page) ────────────────────────────
+  let _presenceInterval = null;
+
+  function startPresence(user) {
+    stopPresence();
+    const ref = doc(db, 'presence', user.uid);
+    const setOnline = () => setDoc(ref, {
+      online: true, lastSeen: serverTimestamp(),
+      email: user.email || null, displayName: 'Admin', isAnonymous: false,
+    }, { merge: true }).catch(() => {});
+    const setOffline = () => setDoc(ref, { online: false, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+    setOnline();
+    _presenceInterval = setInterval(setOnline, 30_000);
+    window.addEventListener('beforeunload', setOffline);
+    document.addEventListener('visibilitychange', () => document.hidden ? setOffline() : setOnline());
+  }
+
+  function stopPresence() {
+    if (_presenceInterval) { clearInterval(_presenceInterval); _presenceInterval = null; }
+  }
 
   // ── UI refs ──────────────────────────────────────────
   const loginScreen  = document.getElementById('loginScreen');
@@ -354,10 +503,7 @@
   const usersCount   = document.getElementById('usersCount');
   const onlineBody   = document.getElementById('onlineBody');
   const onlineCount  = document.getElementById('onlineCount');
-  const msgTarget    = document.getElementById('msgTarget');
-  const msgText      = document.getElementById('msgText');
-  const sendBtn      = document.getElementById('sendBtn');
-  const sendStatus   = document.getElementById('sendStatus');
+  // msgText / sendBtn / sendStatus are referenced in the chat section below
 
   let _token = null;
 
@@ -431,9 +577,11 @@
       adminEmail.textContent = user.email;
       loginScreen.style.display = 'none';
       dashboard.style.display = 'block';
+      startPresence(user);
       loadUsers();
     } else {
       _token = null;
+      stopPresence();
       loginScreen.style.display = 'flex';
       dashboard.style.display = 'none';
       loginBtn.disabled = false;
@@ -530,57 +678,111 @@
 
   document.getElementById('refreshOnline').addEventListener('click', loadOnline);
 
-  // ── Send message ─────────────────────────────────────
-  function populateTargetList() {
-    msgTarget.innerHTML = '<option value="">— select a user —</option>';
-    const registered = _users.filter(u => !u.isAnonymous && u.email);
-    registered.sort((a, b) => (a.email || '').localeCompare(b.email || ''));
-    registered.forEach(u => {
-      const opt = document.createElement('option');
-      opt.value       = u.uid;
-      opt.textContent = u.email;
-      msgTarget.appendChild(opt);
-    });
-    // Also allow targeting by raw UID (guests)
-    const guests = _users.filter(u => u.isAnonymous);
-    if (guests.length) {
-      const grp = document.createElement('optgroup');
-      grp.label = 'Guests';
-      guests.forEach(u => {
-        const opt = document.createElement('option');
-        opt.value       = u.uid;
-        opt.textContent = u.uid.slice(0, 20) + '…';
-        grp.appendChild(opt);
-      });
-      msgTarget.appendChild(grp);
-    }
-  }
+  // ── Chat interface (Send message) ────────────────────
+  let _selectedUid    = null;
+  let _selectedLabel  = null;
+  let _sessionHistory = {}; // uid → [{text, time}]
 
-  sendBtn.addEventListener('click', async () => {
-    const targetUid = msgTarget.value;
-    const message   = msgText.value.trim();
-    if (!targetUid || !message) {
-      showStatus('Please select a recipient and write a message.', false);
+  const chatUserList     = document.getElementById('chatUserList');
+  const chatConvoHeader  = document.getElementById('chatConvoHeader');
+  const chatConvoMessages= document.getElementById('chatConvoMessages');
+  const msgText          = document.getElementById('msgText');
+  const sendBtn          = document.getElementById('sendBtn');
+  const sendStatus       = document.getElementById('sendStatus');
+
+  function populateTargetList() {
+    chatUserList.innerHTML = '';
+    const all = [
+      ..._users.filter(u => !u.isAnonymous && u.email).sort((a, b) => (a.email || '').localeCompare(b.email || '')),
+      ..._users.filter(u => u.isAnonymous),
+    ];
+    if (!all.length) {
+      chatUserList.innerHTML = '<div class="admin-chat__empty-list">No users yet.</div>';
       return;
     }
+    all.forEach(u => {
+      const label = u.email || u.uid.slice(0, 18) + '…';
+      const type  = u.isAnonymous ? 'Guest' : 'Account';
+      const item  = document.createElement('div');
+      item.className = 'admin-chat__user-item' + (u.uid === _selectedUid ? ' active' : '');
+      item.innerHTML = `<span class="admin-chat__user-email">${label}</span><span class="admin-chat__user-type">${type}</span>`;
+      item.addEventListener('click', () => selectUser(u.uid, label));
+      chatUserList.appendChild(item);
+    });
+  }
+
+  function selectUser(uid, label) {
+    _selectedUid   = uid;
+    _selectedLabel = label;
+    // Update sidebar active state
+    chatUserList.querySelectorAll('.admin-chat__user-item').forEach(el => el.classList.remove('active'));
+    event?.currentTarget?.classList.add('active');
+    // Update header
+    chatConvoHeader.innerHTML = `<span class="admin-chat__convo-name">${label}</span>`;
+    // Enable input
+    msgText.disabled = false;
+    sendBtn.disabled = false;
+    msgText.focus();
+    // Render history
+    renderConvo();
+  }
+
+  function renderConvo() {
+    const msgs = _sessionHistory[_selectedUid] || [];
+    if (!msgs.length) {
+      chatConvoMessages.innerHTML = '<div class="admin-chat__placeholder">No messages yet.<br>Send the first one ↓</div>';
+      return;
+    }
+    chatConvoMessages.innerHTML = msgs.map(m => `
+      <div class="chat-msg">
+        <div class="chat-msg__bubble">
+          ${m.text}
+          <div class="chat-msg__time">${m.time}</div>
+        </div>
+      </div>`).join('');
+    chatConvoMessages.scrollTop = chatConvoMessages.scrollHeight;
+  }
+
+  async function doSend() {
+    const message = msgText.value.trim();
+    if (!_selectedUid || !message) return;
     sendBtn.disabled = true;
-    sendStatus.style.display = 'none';
+    showStatus('', false);
     try {
-      await apiPost('/admin/message', { targetUid, message });
+      await apiPost('/admin/message', { targetUid: _selectedUid, message });
+      // Add to session history
+      if (!_sessionHistory[_selectedUid]) _sessionHistory[_selectedUid] = [];
+      _sessionHistory[_selectedUid].push({
+        text: message,
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      });
       msgText.value = '';
-      showStatus('Message sent ✓', true);
+      msgText.style.height = '';
+      renderConvo();
+      showStatus('✓ Envoyé', true);
     } catch (e) {
       showStatus(e.message, false);
     } finally {
       sendBtn.disabled = false;
     }
+  }
+
+  sendBtn.addEventListener('click', doSend);
+
+  msgText.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
+  });
+
+  // Auto-resize textarea
+  msgText.addEventListener('input', () => {
+    msgText.style.height = '';
+    msgText.style.height = Math.min(msgText.scrollHeight, 120) + 'px';
   });
 
   function showStatus(msg, ok) {
     sendStatus.textContent = msg;
     sendStatus.className   = ok ? 'ok' : 'err';
-    sendStatus.style.display = 'inline';
-    setTimeout(() => { sendStatus.style.display = 'none'; }, 4000);
+    if (msg) setTimeout(() => { sendStatus.textContent = ''; sendStatus.className = ''; }, 3000);
   }
 </script>
 </body>

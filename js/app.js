@@ -49,7 +49,7 @@ import {
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
-import { initPresence, destroyPresence } from './modules/presence.js';
+import { initPresence, destroyPresence, markAllMessagesRead } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
@@ -1451,13 +1451,14 @@ class TodoApp {
     // 5. Update user button on every auth state change
     onUserChange(user => {
       this._updateUserBtn();
-      if (user) initPresence(user); else destroyPresence();
+      if (user) initPresence(user, { onMessagesUpdate: msgs => this._updateChatWidget(msgs) });
+      else destroyPresence();
     });
     this._updateUserBtn();
 
     // 6. Start presence tracking for the current user
     const currentUser = getCurrentUser();
-    if (currentUser) initPresence(currentUser);
+    if (currentUser) initPresence(currentUser, { onMessagesUpdate: msgs => this._updateChatWidget(msgs) });
 
     // 6. Leave prompt for guests
     this._setupLeavePrompt();
@@ -1664,11 +1665,13 @@ class TodoApp {
       document.getElementById('authUserSub').textContent  = 'Compte connecté';
       document.getElementById('authAvatar').textContent   = '✓';
       document.getElementById('authUpgradeSection').classList.add('hidden');
+      document.getElementById('authWelcomeBubble').textContent = 'Tes tâches se synchronisent automatiquement sur tous tes appareils. ✓';
     } else if (showGuestPanel) {
       document.getElementById('authUserName').textContent = 'Invité';
       document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
       document.getElementById('authAvatar').textContent   = '👤';
       document.getElementById('authUpgradeSection').classList.remove('hidden');
+      document.getElementById('authWelcomeBubble').textContent = 'Tes tâches sont sauvegardées sur cet appareil. Crée un compte pour y accéder depuis n\'importe où 🔒';
     }
 
     document.getElementById('authModalOverlay').classList.remove('hidden');
@@ -1717,6 +1720,65 @@ class TodoApp {
   upgradeGoogleSignIn()   { return this._runSocialAuth(() => signInWithGoogle(),   'upgradeError'); }
   upgradeFacebookSignIn() { return this._runSocialAuth(() => signInWithFacebook(), 'upgradeError'); }
 
+  // ── Chat inbox widget (admin messages) ────────────────
+  _chatMessages = [];
+
+  _updateChatWidget(messages) {
+    this._chatMessages = messages;
+    const unread = messages.filter(m => !m.read).length;
+    const badge  = document.getElementById('chatBadge');
+    const btn    = document.getElementById('chatInboxBtn');
+    if (badge) {
+      badge.textContent = unread;
+      badge.classList.toggle('hidden', unread === 0);
+    }
+    if (btn) btn.classList.toggle('has-unread', unread > 0);
+    this._renderChatInbox();
+  }
+
+  openChat() {
+    document.getElementById('chatInboxPanel').classList.remove('hidden');
+    markAllMessagesRead();
+    const badge = document.getElementById('chatBadge');
+    if (badge) badge.classList.add('hidden');
+    const btn = document.getElementById('chatInboxBtn');
+    if (btn) btn.classList.remove('has-unread');
+    this._renderChatInbox();
+  }
+
+  closeChat() {
+    document.getElementById('chatInboxPanel').classList.add('hidden');
+  }
+
+  _renderChatInbox() {
+    const list = document.getElementById('chatInboxList');
+    if (!list) return;
+    if (!this._chatMessages.length) {
+      list.innerHTML = '<p class="chat-empty-msg">Aucun message pour l\'instant.</p>';
+      return;
+    }
+    list.innerHTML = this._chatMessages.map(msg => {
+      const ts = msg.sentAt?.seconds
+        ? new Date(msg.sentAt.seconds * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : '';
+      return `
+        <div class="chat-bubble">
+          <span class="chat-bubble__icon">📣</span>
+          <div class="chat-bubble__body">
+            <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
+            ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    list.scrollTop = list.scrollHeight;
+  }
+
+  _escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   closeAuthModal() {
     document.getElementById('authModalOverlay').classList.add('hidden');
   }
@@ -1733,6 +1795,10 @@ class TodoApp {
     document.getElementById('authSwitchText').textContent  = isRegister ? 'Déjà un compte ?' : 'Pas encore de compte ?';
     document.getElementById('authSwitchBtn').textContent   = isRegister ? 'Se connecter' : 'Créer un compte';
     document.getElementById('authError').classList.add('hidden');
+    const bubble = document.getElementById('authFormBubble');
+    if (bubble) bubble.textContent = isRegister
+      ? 'Crée un compte gratuit pour retrouver tes tâches sur tous tes appareils 🚀'
+      : 'Connecte-toi pour retrouver tes tâches sur tous tes appareils.';
   }
 
   async authSubmit() {

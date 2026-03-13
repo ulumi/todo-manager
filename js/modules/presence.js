@@ -15,20 +15,25 @@
 // ════════════════════════════════════════════════════════
 
 import {
-  doc, setDoc, updateDoc, collection, query, where,
+  doc, setDoc, updateDoc, collection, query,
   onSnapshot, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
 import { db } from './firebase.js';
 
-let _heartbeat  = null;
-let _inboxUnsub = null;
-let _setOffline = null;
+let _heartbeat         = null;
+let _inboxUnsub        = null;
+let _setOffline        = null;
+let _onMessagesUpdate  = null;
+let _allMessages       = [];
 
 // ── Init ─────────────────────────────────────────────────
 // Call after every auth state change that yields a real user.
-export function initPresence(user) {
+// options.onMessagesUpdate(messages[]) is called whenever the inbox changes.
+export function initPresence(user, { onMessagesUpdate } = {}) {
   destroyPresence();
+  _onMessagesUpdate = onMessagesUpdate || null;
+  _allMessages = [];
 
   const presenceRef = doc(db, 'presence', user.uid);
 
@@ -40,6 +45,7 @@ export function initPresence(user) {
     isAnonymous: user.isAnonymous,
   }, { merge: true }).catch(() => {});
 
+  _setOnline = setOnline;
   _setOffline = () => setDoc(presenceRef, {
     online:   false,
     lastSeen: serverTimestamp(),
@@ -51,35 +57,66 @@ export function initPresence(user) {
   window.addEventListener('beforeunload', _setOffline);
   document.addEventListener('visibilitychange', _onVisibility);
 
-  // Listen for unread admin messages
+  // Listen to ALL inbox messages (not just unread) for the chat widget.
+  // Toasts are only shown for messages that arrive AFTER the initial load.
   const inboxRef = collection(db, 'admin_messages', user.uid, 'inbox');
+  let _initialLoadDone = false;
+
   _inboxUnsub = onSnapshot(
-    query(inboxRef, where('read', '==', false)),
+    query(inboxRef),
     snap => {
-      snap.docChanges().forEach(change => {
-        if (change.type === 'added') {
-          _showMessage(change.doc.data().message, change.doc.ref);
-        }
+      _allMessages = [];
+      snap.forEach(d => _allMessages.push({ id: d.id, ref: d.ref, ...d.data() }));
+      // Sort by sentAt ascending (serverTimestamp → seconds field)
+      _allMessages.sort((a, b) => {
+        const ta = a.sentAt?.seconds ?? 0;
+        const tb = b.sentAt?.seconds ?? 0;
+        return ta - tb;
       });
+
+      if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
+
+      // Show toasts only for newly added unread messages (after initial load)
+      if (_initialLoadDone) {
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added' && !change.doc.data().read) {
+            _showMessage(change.doc.data().message, change.doc.ref);
+          }
+        });
+      }
+      _initialLoadDone = true;
     },
     err => console.warn('[presence] inbox:', err.message),
   );
+}
+
+// ── Mark all messages as read ─────────────────────────────
+export function markAllMessagesRead() {
+  _allMessages.forEach(m => {
+    if (!m.read) {
+      m.read = true; // optimistic
+      updateDoc(m.ref, { read: true }).catch(() => {});
+    }
+  });
 }
 
 // ── Cleanup ───────────────────────────────────────────────
 export function destroyPresence() {
   if (_heartbeat)  { clearInterval(_heartbeat); _heartbeat = null; }
   if (_inboxUnsub) { _inboxUnsub(); _inboxUnsub = null; }
-  if (_setOffline) {
-    window.removeEventListener('beforeunload', _setOffline);
-    _setOffline = null;
-  }
+  if (_setOffline) { window.removeEventListener('beforeunload', _setOffline); _setOffline = null; }
+  _setOnline = null;
+  _onMessagesUpdate = null;
+  _allMessages = [];
   document.removeEventListener('visibilitychange', _onVisibility);
 }
 
 // ── Internals ─────────────────────────────────────────────
+let _setOnline = null;
+
 function _onVisibility() {
-  if (_setOffline) document.hidden ? _setOffline() : null;
+  if (document.hidden) { if (_setOffline) _setOffline(); }
+  else                  { if (_setOnline)  _setOnline();  }
 }
 
 function _showMessage(message, docRef) {
@@ -95,15 +132,12 @@ function _showMessage(message, docRef) {
   `;
   document.body.appendChild(toast);
 
-  // Mark as read after a short delay
-  setTimeout(() => updateDoc(docRef, { read: true }).catch(() => {}), 800);
-
-  const dismiss = () => {
+  // Only dismiss + mark as read when the user explicitly clicks ✕
+  toast.querySelector('.admin-toast__close').addEventListener('click', () => {
+    updateDoc(docRef, { read: true }).catch(() => {});
     toast.classList.add('admin-toast--out');
     setTimeout(() => toast.remove(), 300);
-  };
-  toast.querySelector('.admin-toast__close').addEventListener('click', dismiss);
-  setTimeout(dismiss, 12_000);
+  });
 }
 
 function _esc(str) {
