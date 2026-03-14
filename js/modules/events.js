@@ -10,9 +10,6 @@ export function setupEventListeners(app) {
     });
   });
 
-  // Navigation
-  document.getElementById('todayBtn').addEventListener('click', () => app.todayNav());
-
   // Modal interactions
   document.getElementById('cancelModal').addEventListener('click', () => app.closeModal());
   document.getElementById('cancelDeleteModal').addEventListener('click', () => app.closeDeleteModal());

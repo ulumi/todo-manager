@@ -10,6 +10,15 @@ const path  = require('path');
 const os    = require('os');
 const admin = require('firebase-admin');
 
+// ── Load .env ────────────────────────────────────────────
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => {
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, '');
+  });
+}
+
 const API_PORT  = 3333;
 const APP_PORT  = 3000;
 const DATA_DIR  = path.join(os.homedir(), '.todo-hugues');

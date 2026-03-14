@@ -32,7 +32,7 @@ export const TRANSLATIONS = {
     dayFull:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
   },
   fr: {
-    viewDay:'Jour', viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Catégories',
+    viewDay:"Aujourd'hui", viewWeek:'Semaine', viewMonth:'Mois', viewYear:'Année', viewProjects:'Catégories',
     today:"Aujourd'hui", tomorrow:'Demain', thisPeriod:'Récurrent', addTask:'＋ Ajouter', addTaskShort:'AJOUTER UNE TÂCHE',
     groupOnce:"Aujourd'hui", week:'Semaine',
     newTask:'Nouvelle tâche', editTask:'Modifier', task:'Tâche', date:'Date', repeat:'Répétitions',
