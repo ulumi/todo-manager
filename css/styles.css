@@ -5564,6 +5564,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   word-break: break-word;
   margin: 0;
 }
+.chat-bubble__tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+}
 .chat-bubble__time {
   font-size: 10px;
   color: var(--text-muted);

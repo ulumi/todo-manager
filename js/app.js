@@ -1853,6 +1853,7 @@ class TodoApp {
         : `<div class="chat-bubble">
             <span class="chat-bubble__icon">📣</span>
             <div class="chat-bubble__body">
+              ${msg.broadcastId ? `<p class="chat-bubble__tag">Envoyé à tous</p>` : ''}
               <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
               ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
             </div>

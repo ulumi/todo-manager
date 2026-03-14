@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
       const { message } = payload;
       if (!message) { res.status(400).json({ error: 'Missing message' }); return; }
       const result = await admin.auth().listUsers(1000);
-      const targets = result.users.filter(u => !ADMIN_UIDS.includes(u.uid));
+      const targets = result.users;
       const db          = admin.firestore();
       const broadcastRef = db.collection('broadcasts').doc();
       const broadcastId  = broadcastRef.id;

@@ -5005,6 +5005,15 @@ body:has(.bottom-panel:not(.hidden))::before {
     margin:      0;
   }
 
+  &__tag {
+    font-size:      10px;
+    font-weight:    600;
+    color:          var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin:         0 0 4px;
+  }
+
   &__time {
     font-size:  10px;
     color:      var(--text-muted);
