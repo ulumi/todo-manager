@@ -49,7 +49,7 @@ import {
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
-import { initPresence, destroyPresence, markAllMessagesRead } from './modules/presence.js';
+import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
@@ -1725,7 +1725,8 @@ class TodoApp {
 
   _updateChatWidget(messages) {
     this._chatMessages = messages;
-    const unread = messages.filter(m => !m.read).length;
+    // Only count unread messages FROM admin (not user's own replies)
+    const unread = messages.filter(m => m.from !== 'user' && !m.read).length;
     const badge  = document.getElementById('chatBadge');
     const btn    = document.getElementById('chatInboxBtn');
     if (badge) {
@@ -1737,17 +1738,35 @@ class TodoApp {
   }
 
   openChat() {
-    document.getElementById('chatInboxPanel').classList.remove('hidden');
+    document.getElementById('chatInboxPanel').classList.add('open');
+    document.getElementById('chatInboxOverlay').classList.add('open');
     markAllMessagesRead();
     const badge = document.getElementById('chatBadge');
     if (badge) badge.classList.add('hidden');
     const btn = document.getElementById('chatInboxBtn');
     if (btn) btn.classList.remove('has-unread');
     this._renderChatInbox();
+    // Focus reply input
+    setTimeout(() => document.getElementById('chatReplyInput')?.focus(), 200);
   }
 
   closeChat() {
-    document.getElementById('chatInboxPanel').classList.add('hidden');
+    document.getElementById('chatInboxPanel').classList.remove('open');
+    document.getElementById('chatInboxOverlay').classList.remove('open');
+  }
+
+  async sendChatMessage() {
+    const input = document.getElementById('chatReplyInput');
+    const text  = input?.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = '';
+    try {
+      await sendUserMessage(text);
+      // Firestore listener will pick it up and re-render automatically
+    } catch (e) {
+      console.warn('[chat] send failed:', e);
+    }
   }
 
   _renderChatInbox() {
@@ -1761,14 +1780,21 @@ class TodoApp {
       const ts = msg.sentAt?.seconds
         ? new Date(msg.sentAt.seconds * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
         : '';
-      return `
-        <div class="chat-bubble">
-          <span class="chat-bubble__icon">📣</span>
-          <div class="chat-bubble__body">
-            <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
-            ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
-          </div>
-        </div>`;
+      const isUser = msg.from === 'user';
+      return isUser
+        ? `<div class="chat-bubble chat-bubble--user">
+            <div class="chat-bubble__body">
+              <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
+              ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
+            </div>
+          </div>`
+        : `<div class="chat-bubble">
+            <span class="chat-bubble__icon">📣</span>
+            <div class="chat-bubble__body">
+              <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
+              ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
+            </div>
+          </div>`;
     }).join('');
     list.scrollTop = list.scrollHeight;
   }

@@ -453,8 +453,11 @@
   </div>
 </div>
 
-<!-- Admin inbox chat panel -->
-<div class="chat-inbox-panel hidden" id="chatInboxPanel">
+<!-- Chat off-canvas overlay -->
+<div class="chat-inbox-overlay" id="chatInboxOverlay" onclick="window.app.closeChat()"></div>
+
+<!-- Admin inbox — off-canvas panel -->
+<div class="chat-inbox-panel" id="chatInboxPanel">
   <div class="chat-inbox-panel__header">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     <span class="chat-inbox-panel__title">Messages</span>
@@ -462,6 +465,12 @@
   </div>
   <div class="chat-inbox-panel__body" id="chatInboxList">
     <p class="chat-empty-msg">Aucun message pour l'instant.</p>
+  </div>
+  <div class="chat-inbox-panel__reply">
+    <textarea id="chatReplyInput" class="chat-inbox-panel__reply-input" placeholder="Répondre…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.app.sendChatMessage()}" oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="chat-inbox-panel__reply-send" onclick="window.app.sendChatMessage()" title="Envoyer">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
   </div>
 </div>
 

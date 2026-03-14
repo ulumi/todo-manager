@@ -170,6 +170,27 @@ http.createServer(async (req, res) => {
         res.writeHead(200);
         res.end(JSON.stringify({ ok: true }));
 
+      // GET /admin/messages/:uid — full thread for a user
+      } else if (req.method === 'GET' && req.url.startsWith('/admin/messages/')) {
+        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        const targetUid = decodeURIComponent(req.url.slice('/admin/messages/'.length));
+        if (!targetUid) { res.writeHead(400); res.end(JSON.stringify({ error: 'Missing uid' })); return; }
+        const snap = await admin.firestore()
+          .collection('admin_messages').doc(targetUid)
+          .collection('inbox')
+          .orderBy('sentAt', 'asc')
+          .get();
+        const messages = [];
+        snap.forEach(d => messages.push({
+          id:      d.id,
+          message: d.data().message,
+          from:    d.data().from || 'admin',
+          sentAt:  d.data().sentAt?.toMillis?.() ?? null,
+          read:    d.data().read,
+        }));
+        res.writeHead(200);
+        res.end(JSON.stringify(messages));
+
       } else {
         res.writeHead(404);
         res.end(JSON.stringify({ error: 'Unknown admin route' }));

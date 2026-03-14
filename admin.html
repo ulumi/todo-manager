@@ -251,15 +251,35 @@
       line-height: 1.6;
     }
 
-    /* Chat bubbles (admin = right side) */
+    /* Chat bubbles */
     .chat-msg {
       display: flex;
+      gap: 8px;
+    }
+    /* Admin message = right (amber) */
+    .chat-msg--admin {
       justify-content: flex-end;
     }
-    .chat-msg__bubble {
+    .chat-msg--admin .chat-msg__bubble {
       background: var(--primary);
       color: #0f1117;
-      border-radius: 12px 12px 4px 12px;
+      border-radius: 12px 4px 12px 12px;
+    }
+    .chat-msg--admin .chat-msg__time { color: rgba(0,0,0,.5); text-align: right; }
+
+    /* User message = left (surface) */
+    .chat-msg--user {
+      justify-content: flex-start;
+    }
+    .chat-msg--user .chat-msg__bubble {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 4px 12px 12px 12px;
+    }
+    .chat-msg--user .chat-msg__time { color: var(--muted); }
+
+    .chat-msg__bubble {
       padding: 8px 14px;
       max-width: 70%;
       font-size: 13px;
@@ -268,9 +288,7 @@
     }
     .chat-msg__time {
       font-size: 10px;
-      color: rgba(0,0,0,.5);
       margin-top: 4px;
-      text-align: right;
     }
 
     /* Input bar */
@@ -680,15 +698,14 @@
 
   // ── Chat interface (Send message) ────────────────────
   let _selectedUid    = null;
-  let _selectedLabel  = null;
-  let _sessionHistory = {}; // uid → [{text, time}]
+  let _pollInterval   = null;
 
-  const chatUserList     = document.getElementById('chatUserList');
-  const chatConvoHeader  = document.getElementById('chatConvoHeader');
-  const chatConvoMessages= document.getElementById('chatConvoMessages');
-  const msgText          = document.getElementById('msgText');
-  const sendBtn          = document.getElementById('sendBtn');
-  const sendStatus       = document.getElementById('sendStatus');
+  const chatUserList      = document.getElementById('chatUserList');
+  const chatConvoHeader   = document.getElementById('chatConvoHeader');
+  const chatConvoMessages = document.getElementById('chatConvoMessages');
+  const msgText           = document.getElementById('msgText');
+  const sendBtn           = document.getElementById('sendBtn');
+  const sendStatus        = document.getElementById('sendStatus');
 
   function populateTargetList() {
     chatUserList.innerHTML = '';
@@ -706,59 +723,64 @@
       const item  = document.createElement('div');
       item.className = 'admin-chat__user-item' + (u.uid === _selectedUid ? ' active' : '');
       item.innerHTML = `<span class="admin-chat__user-email">${label}</span><span class="admin-chat__user-type">${type}</span>`;
-      item.addEventListener('click', () => selectUser(u.uid, label));
+      item.addEventListener('click', () => selectUser(u.uid, label, item));
       chatUserList.appendChild(item);
     });
   }
 
-  function selectUser(uid, label) {
-    _selectedUid   = uid;
-    _selectedLabel = label;
-    // Update sidebar active state
+  async function selectUser(uid, label, itemEl) {
+    _selectedUid = uid;
     chatUserList.querySelectorAll('.admin-chat__user-item').forEach(el => el.classList.remove('active'));
-    event?.currentTarget?.classList.add('active');
-    // Update header
+    itemEl?.classList.add('active');
     chatConvoHeader.innerHTML = `<span class="admin-chat__convo-name">${label}</span>`;
-    // Enable input
     msgText.disabled = false;
     sendBtn.disabled = false;
     msgText.focus();
-    // Render history
-    renderConvo();
+    // Stop previous poll
+    if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+    // Load thread immediately, then poll every 4s
+    await loadThread();
+    _pollInterval = setInterval(loadThread, 4000);
   }
 
-  function renderConvo() {
-    const msgs = _sessionHistory[_selectedUid] || [];
-    if (!msgs.length) {
+  async function loadThread() {
+    if (!_selectedUid) return;
+    try {
+      const msgs = await api(`/admin/messages/${encodeURIComponent(_selectedUid)}`);
+      renderConvo(msgs);
+    } catch (e) {
+      // Fail silently on poll errors
+    }
+  }
+
+  function renderConvo(msgs) {
+    if (!msgs?.length) {
       chatConvoMessages.innerHTML = '<div class="admin-chat__placeholder">No messages yet.<br>Send the first one ↓</div>';
       return;
     }
-    chatConvoMessages.innerHTML = msgs.map(m => `
-      <div class="chat-msg">
+    const wasAtBottom = chatConvoMessages.scrollHeight - chatConvoMessages.scrollTop <= chatConvoMessages.clientHeight + 40;
+    chatConvoMessages.innerHTML = msgs.map(m => {
+      const isAdmin = m.from !== 'user';
+      const time = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      return `<div class="chat-msg chat-msg--${isAdmin ? 'admin' : 'user'}">
         <div class="chat-msg__bubble">
-          ${m.text}
-          <div class="chat-msg__time">${m.time}</div>
+          ${m.message}
+          ${time ? `<div class="chat-msg__time">${time}</div>` : ''}
         </div>
-      </div>`).join('');
-    chatConvoMessages.scrollTop = chatConvoMessages.scrollHeight;
+      </div>`;
+    }).join('');
+    if (wasAtBottom) chatConvoMessages.scrollTop = chatConvoMessages.scrollHeight;
   }
 
   async function doSend() {
     const message = msgText.value.trim();
     if (!_selectedUid || !message) return;
     sendBtn.disabled = true;
-    showStatus('', false);
     try {
       await apiPost('/admin/message', { targetUid: _selectedUid, message });
-      // Add to session history
-      if (!_sessionHistory[_selectedUid]) _sessionHistory[_selectedUid] = [];
-      _sessionHistory[_selectedUid].push({
-        text: message,
-        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      });
       msgText.value = '';
       msgText.style.height = '';
-      renderConvo();
+      await loadThread(); // refresh immediately after send
       showStatus('✓ Envoyé', true);
     } catch (e) {
       showStatus(e.message, false);
@@ -768,12 +790,9 @@
   }
 
   sendBtn.addEventListener('click', doSend);
-
   msgText.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
   });
-
-  // Auto-resize textarea
   msgText.addEventListener('input', () => {
     msgText.style.height = '';
     msgText.style.height = Math.min(msgText.scrollHeight, 120) + 'px';

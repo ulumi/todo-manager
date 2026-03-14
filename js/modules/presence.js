@@ -15,7 +15,7 @@
 // ════════════════════════════════════════════════════════
 
 import {
-  doc, setDoc, updateDoc, collection, query,
+  doc, setDoc, updateDoc, collection, query, addDoc,
   onSnapshot, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
@@ -26,6 +26,7 @@ let _inboxUnsub        = null;
 let _setOffline        = null;
 let _onMessagesUpdate  = null;
 let _allMessages       = [];
+let _userId            = null;
 
 // ── Init ─────────────────────────────────────────────────
 // Call after every auth state change that yields a real user.
@@ -34,6 +35,7 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
   destroyPresence();
   _onMessagesUpdate = onMessagesUpdate || null;
   _allMessages = [];
+  _userId = user.uid;
 
   const presenceRef = doc(db, 'presence', user.uid);
 
@@ -76,11 +78,12 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
 
       if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
 
-      // Show toasts only for newly added unread messages (after initial load)
+      // Show toasts only for NEW unread messages FROM admin (after initial load)
       if (_initialLoadDone) {
         snap.docChanges().forEach(change => {
-          if (change.type === 'added' && !change.doc.data().read) {
-            _showMessage(change.doc.data().message, change.doc.ref);
+          const d = change.doc.data();
+          if (change.type === 'added' && !d.read && d.from !== 'user') {
+            _showMessage(d.message, change.doc.ref);
           }
         });
       }
@@ -90,7 +93,18 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
   );
 }
 
-// ── Mark all messages as read ─────────────────────────────
+// ── Send a reply from the user to admin ──────────────────
+export async function sendUserMessage(text) {
+  if (!_userId || !text) return;
+  await addDoc(collection(db, 'admin_messages', _userId, 'inbox'), {
+    message: text,
+    from:    'user',
+    sentAt:  serverTimestamp(),
+    read:    true, // user's own message — no unread badge for themselves
+  });
+}
+
+// ── Mark all admin messages as read ──────────────────────
 export function markAllMessagesRead() {
   _allMessages.forEach(m => {
     if (!m.read) {
@@ -108,6 +122,7 @@ export function destroyPresence() {
   _setOnline = null;
   _onMessagesUpdate = null;
   _allMessages = [];
+  _userId = null;
   document.removeEventListener('visibilitychange', _onVisibility);
 }
 
