@@ -350,7 +350,7 @@ function buildScene(quote, stats, mascot) {
   tl.to(unicornWrap, { y: -28, duration: 0.22, ease: 'power2.out', yoyo: true, repeat: 9 }, '-=0.6');
 
   // Auto-dismiss after quote has been readable
-  tl.call(() => dismiss(), [], '+=1.2');
+  tl.call(() => dismiss(), [], '+=3.0');
 
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;
@@ -369,11 +369,19 @@ function buildScene(quote, stats, mascot) {
     gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
   };
 
-  // Dismiss on mousemove or keydown — but only after minimum 2s
-  // so the animation is fully visible before it can be closed
+  // Dismiss on mousemove (with distance threshold) or keydown
+  // — only after minimum 3.5s so the animation is fully visible
   let acceptInput = false;
-  setTimeout(() => { acceptInput = true; }, 2000);
-  const onMouseMove = () => { if (acceptInput) dismiss(); };
+  let moveOrigin = null;
+  const MOVE_THRESHOLD = 80; // px before mousemove dismisses
+  setTimeout(() => { acceptInput = true; }, 3500);
+  const onMouseMove = (e) => {
+    if (!acceptInput) return;
+    if (!moveOrigin) { moveOrigin = { x: e.clientX, y: e.clientY }; return; }
+    const dx = e.clientX - moveOrigin.x;
+    const dy = e.clientY - moveOrigin.y;
+    if (Math.sqrt(dx * dx + dy * dy) >= MOVE_THRESHOLD) dismiss();
+  };
   const onKeyDown  = () => { if (acceptInput) dismiss(); };
 
   window.addEventListener('mousemove', onMouseMove);
