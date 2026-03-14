@@ -544,8 +544,7 @@
   import { initializeApp }               from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-  import { getFirestore, doc, setDoc, serverTimestamp,
-           collection, getDocs, query, where, orderBy, addDoc }
+  import { getFirestore, doc, setDoc, serverTimestamp }
     from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -805,9 +804,7 @@
     const btn = document.getElementById('refreshOnline');
     setRefreshSpin(btn, true);
     try {
-      const snap   = await getDocs(query(collection(db, 'presence'), where('online', '==', true)));
-      const online = [];
-      snap.forEach(d => online.push({ uid: d.id, ...d.data(), lastSeen: d.data().lastSeen?.toMillis?.() ?? null }));
+      const online = await api('/admin-presence');
       _lastOnline = online;
       onlineCount.textContent = online.length;
       online.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
@@ -909,18 +906,7 @@
   async function loadThread() {
     if (!_selectedUid) return;
     try {
-      const snap = await getDocs(query(
-        collection(db, 'admin_messages', _selectedUid, 'inbox'),
-        orderBy('sentAt', 'asc')
-      ));
-      const msgs = [];
-      snap.forEach(d => msgs.push({
-        id:      d.id,
-        message: d.data().message,
-        from:    d.data().from || 'admin',
-        sentAt:  d.data().sentAt?.toMillis?.() ?? null,
-        read:    d.data().read,
-      }));
+      const msgs = await api(`/admin-messages?uid=${encodeURIComponent(_selectedUid)}`);
       renderConvo(msgs);
     } catch (e) {
       // Fail silently on poll errors
@@ -951,9 +937,12 @@
     if (!_selectedUid || !message) return;
     sendBtn.disabled = true;
     try {
-      await addDoc(collection(db, 'admin_messages', _selectedUid, 'inbox'), {
-        message, from: 'admin', sentAt: serverTimestamp(), read: false,
+      const res = await fetch(API + '/admin-messages', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: _selectedUid, message }),
       });
+      if (!res.ok) throw new Error(await res.text());
       msgText.value = '';
       msgText.style.height = '';
       await loadThread(); // refresh immediately after send
