@@ -421,6 +421,67 @@
       font-size: 11px;
       padding: 2px 8px;
     }
+
+    /* ── Stats grid ─────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+    /* ── Row action buttons ──────────────────────────── */
+    .row-actions { display: flex; gap: 4px; }
+    .btn-icon {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 7px;
+      transition: background .1s, color .1s;
+      white-space: nowrap;
+    }
+    .btn-icon:hover { background: var(--surface); color: var(--text); }
+    .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
+    .btn-icon.warn:hover   { color: var(--primary); border-color: var(--primary); }
+
+    /* ── Broadcast bar ───────────────────────────────── */
+    .broadcast-bar {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .broadcast-bar input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 7px 10px;
+      outline: none;
+    }
+    .broadcast-bar input:focus { border-color: var(--primary); }
+    .broadcast-bar input::placeholder { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -449,6 +510,7 @@
     <button class="tab active" data-panel="usersPanel">Users</button>
     <button class="tab"        data-panel="onlinePanel">Online now</button>
     <button class="tab"        data-panel="messagePanel">Send message</button>
+    <button class="tab"        data-panel="statsPanel">Stats</button>
   </nav>
 
   <main>
@@ -458,6 +520,7 @@
         <div class="card-header">
           <h2>All accounts <span id="usersCount" class="count-badge">—</span></h2>
           <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="deleteAnonBtn">🗑 Delete all guests</button>
             <button class="btn btn-ghost btn-sm" id="refreshUsers">↻ Refresh</button>
           </div>
         </div>
@@ -469,6 +532,7 @@
               <th>Registered</th>
               <th>Last sign-in</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="usersBody">
@@ -484,6 +548,7 @@
         <div class="card-header">
           <h2>Online now <span id="onlineCount" class="count-badge">—</span></h2>
           <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="cleanSessionsBtn">🧹 Clean stale</button>
             <button class="btn btn-ghost btn-sm" id="togglePalace">🏰 Palace</button>
             <button class="btn btn-ghost btn-sm" id="refreshOnline">↻ Refresh</button>
           </div>
@@ -520,6 +585,10 @@
 
         <!-- Main: conversation -->
         <div class="admin-chat__main">
+          <div class="broadcast-bar">
+            <input type="text" id="broadcastInput" placeholder="📢 Broadcast to all users…">
+            <button class="btn btn-sm" id="broadcastBtn">Send all</button>
+          </div>
           <div class="admin-chat__convo-header" id="chatConvoHeader">
             <span class="admin-chat__convo-empty">← Select a user</span>
           </div>
@@ -534,6 +603,19 @@
             <button class="admin-chat__send" id="sendBtn" disabled>Send</button>
           </div>
         </div>
+      </div>
+    </div>
+    <!-- Stats panel -->
+    <div id="statsPanel" class="panel">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-value" id="s-total">—</div><div class="stat-label">Total users</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-reg">—</div><div class="stat-label">Comptes</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-anon">—</div><div class="stat-label">Guests</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-dis">—</div><div class="stat-label">Désactivés</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-a7">—</div><div class="stat-label">Actifs 7 jours</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-a30">—</div><div class="stat-label">Actifs 30 jours</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-nw">—</div><div class="stat-label">Nouveaux / semaine</div></div>
+        <div class="stat-card"><div class="stat-value" id="s-nm">—</div><div class="stat-label">Nouveaux / mois</div></div>
       </div>
     </div>
   </main>
@@ -685,6 +767,7 @@
       document.getElementById(tab.dataset.panel).classList.add('active');
       if (tab.dataset.panel === 'onlinePanel')  loadOnline();
       if (tab.dataset.panel === 'messagePanel') populateTargetList();
+      if (tab.dataset.panel === 'statsPanel')   loadStats();
     });
   });
 
@@ -712,7 +795,7 @@
     }
     users.sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
     usersBody.innerHTML = users.map(u => `
-      <tr>
+      <tr id="row-${u.uid}">
         <td>
           <div style="font-weight:500">${u.email || '<span style="color:var(--muted)">—</span>'}</div>
           <div style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</div>
@@ -725,11 +808,55 @@
         <td>${u.disabled
           ? '<span class="badge badge-muted">Disabled</span>'
           : '<span class="badge badge-green">Active</span>'}</td>
+        <td><div class="row-actions">
+          <button class="btn-icon warn"   onclick="userAction('${u.uid}','${u.disabled ? 'enable' : 'disable'}')">${u.disabled ? '✓ Enable' : '⊘ Disable'}</button>
+          <button class="btn-icon warn"   onclick="userAction('${u.uid}','revoke')"  title="Revoke session">⟳ Revoke</button>
+          <button class="btn-icon danger" onclick="userAction('${u.uid}','delete')"  title="Delete account">✕ Delete</button>
+        </div></td>
       </tr>
     `).join('');
   }
 
   document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+
+  // ── User actions ─────────────────────────────────────
+  const ACTION_LABELS = { disable: 'désactiver', enable: 'réactiver', delete: 'supprimer', revoke: 'révoquer la session de' };
+
+  async function userAction(uid, action) {
+    const label = ACTION_LABELS[action] || action;
+    if (!confirm(`Voulez-vous vraiment ${label} ce compte ?\n\n${uid}`)) return;
+    try {
+      const res = await fetch(API + '/admin-user-action', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, uid }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      if (action === 'delete') {
+        document.getElementById('row-' + uid)?.remove();
+        _users = _users.filter(u => u.uid !== uid);
+        usersCount.textContent = _users.length;
+      } else if (action === 'disable' || action === 'enable') {
+        await loadUsers(); // refresh to reflect new state
+      }
+    } catch (e) { alert('Erreur : ' + e.message); }
+  }
+
+  document.getElementById('deleteAnonBtn').addEventListener('click', async () => {
+    const anons = _users.filter(u => u.isAnonymous).length;
+    if (!confirm(`Supprimer ${anons} compte(s) guest ? Cette action est irréversible.`)) return;
+    try {
+      const res = await fetch(API + '/admin-batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete-anon' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await loadUsers();
+      alert(`✓ ${data.deleted} compte(s) guest supprimé(s).`);
+    } catch (e) { alert('Erreur : ' + e.message); }
+  });
 
   // ── Online ───────────────────────────────────────────
   let _palaceMode = false;
@@ -837,6 +964,38 @@
   }
 
   document.getElementById('refreshOnline').addEventListener('click', loadOnline);
+
+  document.getElementById('cleanSessionsBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('cleanSessionsBtn');
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const res  = await fetch(API + '/admin-batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'clean-sessions' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      btn.textContent = `✓ ${data.cleaned} cleaned`;
+      setTimeout(() => { btn.textContent = '🧹 Clean stale'; btn.disabled = false; }, 2500);
+      loadOnline();
+    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = '🧹 Clean stale'; btn.disabled = false; }
+  });
+
+  // ── Stats ─────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const s = await api('/admin-stats');
+      document.getElementById('s-total').textContent = s.total;
+      document.getElementById('s-reg').textContent   = s.registered;
+      document.getElementById('s-anon').textContent  = s.anonymous;
+      document.getElementById('s-dis').textContent   = s.disabled;
+      document.getElementById('s-a7').textContent    = s.active7d;
+      document.getElementById('s-a30').textContent   = s.active30d;
+      document.getElementById('s-nw').textContent    = s.newWeek;
+      document.getElementById('s-nm').textContent    = s.newMonth;
+    } catch (e) { console.error('Stats error:', e); }
+  }
 
   document.getElementById('togglePalace').addEventListener('click', () => {
     _palaceMode = !_palaceMode;
@@ -953,6 +1112,27 @@
       sendBtn.disabled = false;
     }
   }
+
+  document.getElementById('broadcastBtn').addEventListener('click', async () => {
+    const input   = document.getElementById('broadcastInput');
+    const message = input.value.trim();
+    if (!message) return;
+    const btn = document.getElementById('broadcastBtn');
+    if (!confirm(`Envoyer ce message à TOUS les utilisateurs ?\n\n"${message}"`)) return;
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const res  = await fetch(API + '/admin-batch', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'broadcast', message }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      input.value = '';
+      btn.textContent = `✓ Sent to ${data.sent}`;
+      setTimeout(() => { btn.textContent = 'Send all'; btn.disabled = false; }, 3000);
+    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = 'Send all'; btn.disabled = false; }
+  });
 
   sendBtn.addEventListener('click', doSend);
   msgText.addEventListener('keydown', e => {
