@@ -4105,52 +4105,19 @@ body:has(.bottom-panel:not(.hidden))::before {
   .month-year-panel {
     display: none;
   }
+  .week-grid {
+    flex-wrap: wrap;
+  }
+  .week-grid .week-day-col {
+    flex-basis: calc(25% - 9px);
+  }
 }
 @media (max-width: 768px) {
-  .zoom-group {
-    display: none;
-  }
   header {
     padding: 0 16px;
   }
-  .header-top {
-    gap: 10px;
-  }
-  .period-label {
-    min-width: 100px;
-  }
-  .admin-form {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 900px) {
-  .week-grid {
-    flex-wrap: wrap;
-  }
-  .week-grid .week-day-col {
-    flex-basis: calc(25% - 9px);
-  }
-}
-@media (max-width: 700px) {
-  .week-grid {
-    flex-wrap: wrap;
-  }
-  .week-grid .week-day-col {
-    flex-basis: calc(25% - 9px);
-  }
-  .year-view {
-    grid-template-columns: repeat(2, 1fr);
-  }
   main {
-    padding: 12px;
-  }
-}
-@media (max-width: 600px) {
-  .lang-select {
-    display: none;
-  }
-  header {
-    padding: 0 12px;
+    padding: 16px;
   }
   .header-top {
     flex-wrap: wrap;
@@ -4161,9 +4128,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   .header-sep {
     display: none;
   }
+  .header-spacer {
+    display: none;
+  }
   .app-title {
     order: 1;
     margin-right: auto;
+    flex-shrink: 0;
   }
   #themeBtn {
     order: 2;
@@ -4178,16 +4149,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   .user-btn {
     order: 5;
   }
-  .user-label {
-    display: none;
-  }
   .add-btn {
     display: none;
   }
   .zoom-group {
-    display: none;
-  }
-  .header-spacer {
     display: none;
   }
   .header-top::after {
@@ -4204,8 +4169,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   .view-tab {
     flex: 1;
     text-align: center;
-    padding: 6px 4px;
-    font-size: 12px;
+    padding: 6px 6px;
+    font-size: 13px;
   }
   .categories-tab {
     order: 10;
@@ -4226,8 +4191,68 @@ body:has(.bottom-panel:not(.hidden))::before {
     margin-left: 0;
   }
   .period-label {
-    min-width: 90px;
+    min-width: 100px;
+    font-size: 14px;
+  }
+  .day-columns {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .day-col--punctual .todo-list {
+    grid-template-columns: 1fr;
+  }
+  .day-header-wrapper {
+    grid-template-columns: 28px 44px 1fr 44px 28px;
+  }
+  .day-title-line {
+    font-size: 18px;
+  }
+  .year-view {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-form {
+    grid-template-columns: 1fr;
+  }
+  .admin-layout {
+    flex-direction: column;
+  }
+  .admin-sidenav {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 0 0 12px 0;
+    border-right: none;
+    border-bottom: 1.5px solid var(--border);
+    margin-right: 0;
+    margin-bottom: 16px;
+    gap: 4px;
+  }
+  .admin-sidenav-link {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .admin-data-sections {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  header {
+    padding: 0 12px;
+  }
+  main {
+    padding: 12px;
+  }
+  .header-top {
+    padding: 8px 4px;
+    gap: 8px;
+  }
+  .view-tab {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+  .period-label {
     font-size: 13px;
+    min-width: 90px;
   }
   .day-columns,
   .day-columns--three {
@@ -4239,9 +4264,6 @@ body:has(.bottom-panel:not(.hidden))::before {
     padding-left: 0;
     border-top: 1px solid var(--border);
     padding-top: 16px;
-  }
-  .day-col--punctual .todo-list {
-    grid-template-columns: 1fr;
   }
   .day-header-wrapper {
     grid-template-columns: 28px 40px 1fr 40px 28px;
@@ -4267,40 +4289,11 @@ body:has(.bottom-panel:not(.hidden))::before {
     margin-top: 0;
     padding-right: 0;
   }
-  .admin-layout {
-    flex-direction: column;
-  }
-  .admin-sidenav {
-    width: 100%;
-    flex-direction: row;
-    flex-wrap: wrap;
-    padding: 0 0 12px 0;
-    border-right: none;
-    border-bottom: 1.5px solid var(--border);
-    margin-right: 0;
-    margin-bottom: 16px;
-    gap: 4px;
-  }
-  .admin-sidenav-link {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-  .admin-data-sections {
-    grid-template-columns: 1fr;
-  }
   .week-grid {
     flex-wrap: wrap;
   }
   .week-grid .week-day-col {
     flex-basis: calc(50% - 6px);
-  }
-  .quick-add-float-btn,
-  .clear-day-float-btn,
-  .template-day-float-btn {
-    display: none !important;
-  }
-  .day-action-bar {
-    display: flex;
   }
   .todo-check {
     width: 28px;
@@ -4309,37 +4302,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   .todo-item {
     padding: 14px;
   }
-  .template-day-float-btn,
-  .clear-day-float-btn {
-    flex-direction: row-reverse;
-    justify-content: flex-start;
-    min-width: 56px;
-    max-width: 56px;
-    padding: 0 21px 0 8px;
-    overflow: hidden;
-    transition: max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s, color 0.15s, box-shadow 0.15s;
-  }
-  .template-day-float-btn:hover,
-  .clear-day-float-btn:hover {
-    max-width: 200px;
-  }
-  .tdb-label, .cdb-label {
-    font-size: 13px;
-    opacity: 0;
-    white-space: nowrap;
-    transition: opacity 0.15s 0.1s;
-  }
-  .template-day-float-btn:hover .tdb-label,
-  .clear-day-float-btn:hover .cdb-label {
-    opacity: 1;
-  }
 }
 @media (max-width: 420px) {
   .app-title {
     display: none;
   }
   .view-tab {
-    padding: 5px 8px;
+    padding: 5px 4px;
+    font-size: 11px;
   }
   .month-cell {
     min-height: 60px;
@@ -4351,12 +4321,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   .month-todo-dot {
     font-size: 10px;
     padding: 2px 4px;
-  }
-  .week-grid {
-    flex-wrap: wrap;
-  }
-  .week-grid .week-day-col {
-    flex-basis: calc(50% - 6px);
   }
   .year-view {
     grid-template-columns: repeat(2, 1fr);
