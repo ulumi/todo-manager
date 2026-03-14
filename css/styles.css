@@ -4101,7 +4101,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     display: none;
   }
 }
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   header {
     padding: 0 16px;
   }
@@ -4122,8 +4122,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
   .app-title {
     order: 1;
-    margin-right: auto;
     flex-shrink: 0;
+  }
+  .chat-inbox-btn {
+    order: 1;
+    flex-shrink: 0;
+    margin-right: auto;
   }
   #themeBtn {
     order: 2;

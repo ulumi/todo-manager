@@ -3770,8 +3770,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   #calSidebar { display: none; }
 }
 
-// ── Tablet (601px – 900px) ────────────────────────────────────────────────
-@media (max-width: 900px) {
+// ── Tablet (601px – 960px) ────────────────────────────────────────────────
+@media (max-width: 960px) {
   header { padding: 0 16px; }
   main   { padding: 16px; }
 
@@ -3786,14 +3786,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   .header-sep    { display: none; }
   .header-spacer { display: none; }
 
-  // Row 1: icon+title — space — theme — lang — hamburger — account
-  .app-title      { order: 1; margin-right: auto; flex-shrink: 0; }
-  #themeBtn       { order: 2; }
-  .lang-select    { display: block; order: 3; }
-  .hamburger-wrap { order: 4; }
-  .user-btn       { order: 5; }
-  .add-btn        { display: none; }
-  .zoom-group     { display: none; }
+  // Row 1: [logo] [chat | spacer→] [theme] [lang] [hamburger] [account]
+  .app-title       { order: 1; flex-shrink: 0; }
+  .chat-inbox-btn  { order: 1; flex-shrink: 0; margin-right: auto; }
+  #themeBtn        { order: 2; }
+  .lang-select     { display: block; order: 3; }
+  .hamburger-wrap  { order: 4; }
+  .user-btn        { order: 5; }
+  .add-btn         { display: none; }
+  .zoom-group      { display: none; }
 
   // Flex break after row 1
   .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
