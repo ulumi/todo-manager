@@ -1436,8 +1436,13 @@ class TodoApp {
     // 1. Wait for Firebase to restore the previous session (or get null)
     const user = await initAuth();
 
-    // 2. No session → sign in as guest automatically
-    if (!user) await signInGuest();
+    // 2. No session → sign in as guest automatically, then prompt for name
+    if (!user) {
+      const guest = await signInGuest();
+      if (guest?.isAnonymous && !guest.displayName && !localStorage.getItem('guestNameSkipped')) {
+        await this._promptGuestName();
+      }
+    }
 
     // 3. Merge Firestore data into the app (first load)
     await this._syncFirebase();
@@ -1604,6 +1609,35 @@ class TodoApp {
   }
 
   _leavingAttempted = null;
+
+  _promptGuestName() {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('guestNameOverlay');
+      const input   = document.getElementById('guestNameInput');
+      if (!overlay) { resolve(); return; }
+      overlay.classList.remove('hidden');
+      input.focus();
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') this.saveGuestName(); }, { once: true });
+      this._resolveGuestNamePrompt = resolve;
+    });
+  }
+
+  async saveGuestName() {
+    const input = document.getElementById('guestNameInput');
+    const name  = input?.value.trim();
+    if (name) await updateUserProfile(name);
+    document.getElementById('guestNameOverlay')?.classList.add('hidden');
+    this._resolveGuestNamePrompt?.();
+    this._resolveGuestNamePrompt = null;
+    this._updateUserBtn();
+  }
+
+  skipGuestName() {
+    localStorage.setItem('guestNameSkipped', '1');
+    document.getElementById('guestNameOverlay')?.classList.add('hidden');
+    this._resolveGuestNamePrompt?.();
+    this._resolveGuestNamePrompt = null;
+  }
 
   _setupLeavePrompt() {
     window.addEventListener('beforeunload', e => {
