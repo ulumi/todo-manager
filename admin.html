@@ -217,6 +217,25 @@
     .admin-chat__user-email { font-size: 13px; font-weight: 500; word-break: break-all; }
     .admin-chat__user-type  { font-size: 11px; color: var(--muted); }
     .admin-chat__empty-list { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+    .admin-chat__search {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .admin-chat__search input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 5px 9px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .admin-chat__search input:focus { border-color: var(--primary); }
+    .admin-chat__search input::placeholder { color: var(--muted); }
+
     .admin-chat__group-header {
       padding: 6px 14px 4px;
       font-size: 10px;
@@ -229,7 +248,14 @@
       position: sticky;
       top: 0;
       z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
+    .admin-chat__group-header.collapsible { cursor: pointer; user-select: none; }
+    .admin-chat__group-header.collapsible:hover { color: var(--text); }
+    .group-arrow { transition: transform .15s; font-style: normal; }
+    .group-arrow.collapsed { transform: rotate(-90deg); }
 
     .admin-chat__main {
       display: flex;
@@ -591,6 +617,9 @@
         <!-- Sidebar: user list -->
         <div class="admin-chat__sidebar">
           <div class="admin-chat__sidebar-header">Conversations</div>
+          <div class="admin-chat__search">
+            <input type="text" id="chatSearch" placeholder="Search…" autocomplete="off">
+          </div>
           <div class="admin-chat__user-list" id="chatUserList">
             <div class="admin-chat__empty-list">Load users first</div>
           </div>
@@ -1038,42 +1067,82 @@
   const sendBtn           = document.getElementById('sendBtn');
   const sendStatus        = document.getElementById('sendStatus');
 
+  let _guestsExpanded = false;
+
+  function timeSince(ms) {
+    if (!ms) return '—';
+    const d = Date.now() - ms;
+    if (d < 60_000)      return 'just now';
+    if (d < 3_600_000)   return `${Math.floor(d / 60_000)}m ago`;
+    if (d < 86_400_000)  return `${Math.floor(d / 3_600_000)}h ago`;
+    if (d < 2_592_000_000) return `${Math.floor(d / 86_400_000)}d ago`;
+    return fmtDate(new Date(ms).toISOString());
+  }
+
   function populateTargetList() {
+    const q          = (document.getElementById('chatSearch')?.value || '').toLowerCase();
+    const onlineMap  = new Map(_lastOnline.map(u => [u.uid, u]));
+
+    const match = u => !q
+      || (u.email || '').toLowerCase().includes(q)
+      || u.uid.toLowerCase().includes(q);
+
+    const registered = _users
+      .filter(u => !u.isAnonymous && u.email && match(u));
+    const guests = _users
+      .filter(u => u.isAnonymous && match(u))
+      .sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
+
+    const onlineGroup  = registered.filter(u =>  onlineMap.has(u.uid));
+    const offlineGroup = registered.filter(u => !onlineMap.has(u.uid))
+      .sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
+
     chatUserList.innerHTML = '';
-    const onlineUids   = new Set(_lastOnline.map(u => u.uid));
-    const registered   = _users.filter(u => !u.isAnonymous && u.email);
-    if (!registered.length) {
-      chatUserList.innerHTML = '<div class="admin-chat__empty-list">No registered users yet.</div>';
+
+    if (!registered.length && !guests.length) {
+      chatUserList.innerHTML = `<div class="admin-chat__empty-list">${q ? 'No results.' : 'No users yet.'}</div>`;
       return;
     }
 
-    const onlineGroup  = registered.filter(u =>  onlineUids.has(u.uid));
-    const offlineGroup = registered.filter(u => !onlineUids.has(u.uid))
-      .sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
-
-    function makeItem(u) {
+    function makeItem(u, label) {
+      const online  = onlineMap.get(u.uid);
+      const lastMs  = online?.lastSeen ?? (u.lastSignIn ? new Date(u.lastSignIn).getTime() : 0);
+      const subHtml = online
+        ? `<span style="color:var(--success)">● Online · ${timeSince(lastMs)}</span>`
+        : `<span>${timeSince(lastMs)}</span>`;
       const item = document.createElement('div');
       item.className = 'admin-chat__user-item' + (u.uid === _selectedUid ? ' active' : '');
       item._uid = u.uid;
-      const sub = onlineUids.has(u.uid)
-        ? '<span style="color:var(--success)">● Online</span>'
-        : `<span>${fmtDate(u.lastSignIn)}</span>`;
-      item.innerHTML = `<span class="admin-chat__user-email">${u.email}</span><span class="admin-chat__user-type">${sub}</span>`;
-      item.addEventListener('click', () => selectUser(u.uid, u.email, item));
+      item.innerHTML = `<span class="admin-chat__user-email">${label}</span><span class="admin-chat__user-type">${subHtml}</span>`;
+      item.addEventListener('click', () => selectUser(u.uid, label, item));
       return item;
     }
 
-    if (onlineGroup.length) {
+    function makeHeader(text, collapsible = false, expanded = true) {
       const h = document.createElement('div');
-      h.className = 'admin-chat__group-header'; h.textContent = `Online now (${onlineGroup.length})`;
-      chatUserList.appendChild(h);
-      onlineGroup.forEach(u => chatUserList.appendChild(makeItem(u)));
+      h.className = 'admin-chat__group-header' + (collapsible ? ' collapsible' : '');
+      h.innerHTML = `<span>${text}</span>${collapsible ? `<span class="group-arrow${expanded ? '' : ' collapsed'}">▾</span>` : ''}`;
+      return h;
+    }
+
+    if (onlineGroup.length) {
+      chatUserList.appendChild(makeHeader(`Online now (${onlineGroup.length})`));
+      onlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, u.email)));
     }
     if (offlineGroup.length) {
-      const h = document.createElement('div');
-      h.className = 'admin-chat__group-header'; h.textContent = `Registered (${offlineGroup.length})`;
+      chatUserList.appendChild(makeHeader(`Registered (${offlineGroup.length})`));
+      offlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, u.email)));
+    }
+    if (guests.length) {
+      const h = makeHeader(`Guests (${guests.length})`, true, _guestsExpanded);
+      h.addEventListener('click', () => {
+        _guestsExpanded = !_guestsExpanded;
+        populateTargetList();
+      });
       chatUserList.appendChild(h);
-      offlineGroup.forEach(u => chatUserList.appendChild(makeItem(u)));
+      if (_guestsExpanded) {
+        guests.forEach(u => chatUserList.appendChild(makeItem(u, u.uid.slice(0, 14) + '…')));
+      }
     }
   }
 
@@ -1142,6 +1211,8 @@
       sendBtn.disabled = false;
     }
   }
+
+  document.getElementById('chatSearch').addEventListener('input', populateTargetList);
 
   document.getElementById('broadcastBtn').addEventListener('click', async () => {
     const input   = document.getElementById('broadcastInput');
