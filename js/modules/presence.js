@@ -83,7 +83,7 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
         snap.docChanges().forEach(change => {
           const d = change.doc.data();
           if (change.type === 'added' && !d.read && d.from !== 'user') {
-            _showMessage(d.message, change.doc.ref);
+            _showMessage(d, change.doc.ref);
           }
         });
       }
@@ -134,14 +134,15 @@ function _onVisibility() {
   else                  { if (_setOnline)  _setOnline();  }
 }
 
-function _showMessage(message, docRef) {
+function _showMessage(data, docRef) {
+  const label = data.broadcastId ? 'Envoyé à tous' : 'Admin';
   const toast = document.createElement('div');
   toast.className = 'admin-toast';
   toast.innerHTML = `
     <span class="admin-toast__icon">📣</span>
     <div class="admin-toast__body">
-      <p class="admin-toast__label">Admin</p>
-      <p class="admin-toast__text">${_esc(message)}</p>
+      <p class="admin-toast__label">${label}</p>
+      <p class="admin-toast__text">${_esc(data.message)}</p>
     </div>
     <button class="admin-toast__close" aria-label="Fermer">✕</button>
   `;

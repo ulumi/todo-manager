@@ -544,8 +544,13 @@
       padding: 7px 10px;
       outline: none;
     }
-    .broadcast-bar input:focus { border-color: var(--primary); }
-    .broadcast-bar input::placeholder { color: var(--muted); }
+    .broadcast-bar input[type=text]:focus { border-color: var(--primary); }
+    .broadcast-bar input[type=text]::placeholder { color: var(--muted); }
+    .broadcast-public-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--muted); white-space: nowrap;
+      cursor: pointer; flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -654,6 +659,9 @@
         <div class="admin-chat__main">
           <div class="broadcast-bar">
             <input type="text" id="broadcastInput" placeholder="📢 Broadcast to all users…">
+            <label class="broadcast-public-label" title="Afficher 'Envoyé à tous' aux destinataires">
+              <input type="checkbox" id="broadcastPublic" checked> Public
+            </label>
             <button class="btn btn-sm" id="broadcastBtn">Send all</button>
           </div>
           <div class="admin-chat__convo-header" id="chatConvoHeader">
@@ -1284,7 +1292,7 @@
       const res  = await fetch(API + '/admin-batch', {
         method: 'POST',
         headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'broadcast', message }),
+        body: JSON.stringify({ action: 'broadcast', message, showPublicTag: document.getElementById('broadcastPublic').checked }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

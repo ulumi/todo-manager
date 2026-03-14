@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
 
     // ── Broadcast message to all registered users ─────────
     } else if (payload.action === 'broadcast') {
-      const { message } = payload;
+      const { message, showPublicTag = true } = payload;
       if (!message) { res.status(400).json({ error: 'Missing message' }); return; }
       const result = await admin.auth().listUsers(1000);
       const targets = result.users;
@@ -52,10 +52,10 @@ module.exports = async function handler(req, res) {
       const broadcastId  = broadcastRef.id;
       const ts           = admin.firestore.FieldValue.serverTimestamp();
       await broadcastRef.set({ message, from: 'admin', sentAt: ts, recipientCount: targets.length });
+      const inboxDoc = { message, from: 'admin', sentAt: ts, read: false };
+      if (showPublicTag) inboxDoc.broadcastId = broadcastId;
       await Promise.all(targets.map(u =>
-        db.collection('admin_messages').doc(u.uid).collection('inbox').add({
-          message, from: 'admin', broadcastId, sentAt: ts, read: false,
-        })
+        db.collection('admin_messages').doc(u.uid).collection('inbox').add(inboxDoc)
       ));
       res.status(200).json({ ok: true, sent: targets.length, broadcastId });
 
