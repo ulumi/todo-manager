@@ -3767,14 +3767,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   #calSidebar { display: none; }
 }
 
+// ── Tablet (601px – 900px) ────────────────────────────────────────────────
 @media (max-width: 900px) {
-  .year-view        { grid-template-columns: repeat(3, 1fr); }
-  .month-year-panel { display: none; }
-  .week-grid        { flex-wrap: wrap; .week-day-col { flex-basis: calc(25% - 9px); } }
-}
-
-// ── Tablet (601px – 768px) ────────────────────────────────────────────────
-@media (max-width: 768px) {
   header { padding: 0 16px; }
   main   { padding: 16px; }
 
@@ -3820,7 +3814,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .day-title-line     { font-size: 18px; }
 
   // Year / week
-  .year-view { grid-template-columns: repeat(2, 1fr); }
+  .month-year-panel { display: none; }
+  .year-view        { grid-template-columns: repeat(3, 1fr); }
+  .week-grid        { flex-wrap: wrap; .week-day-col { flex-basis: calc(25% - 9px); } }
 
   // Admin
   .admin-form          { grid-template-columns: 1fr; }
