@@ -337,6 +337,78 @@
     #sendStatus.ok  { color: var(--success); display: block; }
     #sendStatus.err { color: var(--danger);  display: block; }
 
+    /* ── Palace view ────────────────────────────────── */
+    .palace-room {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      border-radius: 0 0 var(--radius) var(--radius);
+      overflow: hidden;
+      background:
+        repeating-linear-gradient(0deg,   transparent, transparent 59px, rgba(255,255,255,.025) 59px, rgba(255,255,255,.025) 60px),
+        repeating-linear-gradient(90deg,  transparent, transparent 59px, rgba(255,255,255,.025) 59px, rgba(255,255,255,.025) 60px),
+        radial-gradient(ellipse at 20% 80%, rgba(139,92,246,.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 60%, rgba(59,130,246,.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 110%, rgba(245,158,11,.08) 0%, transparent 55%),
+        linear-gradient(180deg, #06080f 0%, #0c0f1e 40%, #111520 100%);
+    }
+    .palace-room__empty {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 13px;
+    }
+    .palace-avatar-wrap {
+      position: absolute;
+      animation: pal-float 3s ease-in-out infinite;
+    }
+    .palace-avatar {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer;
+      transition: transform .18s ease;
+    }
+    .palace-avatar:hover { transform: scale(1.2); }
+    .palace-avatar:hover .palace-tooltip { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+    .palace-avatar__circle {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 21px; font-weight: 700; color: #0f1117;
+      box-shadow: 0 6px 24px rgba(0,0,0,.7), 0 0 0 2px rgba(255,255,255,.13);
+      position: relative;
+    }
+    .palace-avatar__dot {
+      position: absolute; bottom: 2px; right: 2px;
+      width: 12px; height: 12px;
+      border-radius: 50%; background: var(--success); border: 2px solid #06080f;
+      animation: pal-pulse 2.4s ease-in-out infinite;
+    }
+    .palace-avatar__name {
+      font-size: 11px; font-weight: 500; color: #fff;
+      text-shadow: 0 1px 8px rgba(0,0,0,1);
+      max-width: 84px; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      background: rgba(0,0,0,.6); border-radius: 4px; padding: 1px 6px;
+    }
+    .palace-tooltip {
+      position: absolute; bottom: calc(100% + 12px); left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px 13px;
+      font-size: 12px; line-height: 1.7; white-space: nowrap; color: var(--text);
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s, transform .15s;
+      z-index: 20; box-shadow: 0 6px 24px rgba(0,0,0,.55);
+    }
+    .palace-tooltip b { display: block; color: var(--primary); margin-bottom: 2px; }
+    @keyframes pal-float {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-8px); }
+    }
+    @keyframes pal-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,.6); }
+      60%       { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+    }
+
     /* ── Refresh btn spinner ────────────────────────── */
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinning { animation: spin .6s linear infinite; display: inline-block; }
@@ -412,22 +484,26 @@
         <div class="card-header">
           <h2>Online now <span id="onlineCount" class="count-badge">—</span></h2>
           <div class="toolbar">
+            <button class="btn btn-ghost btn-sm" id="togglePalace">🏰 Palace</button>
             <button class="btn btn-ghost btn-sm" id="refreshOnline">↻ Refresh</button>
           </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>UID</th>
-              <th>Last seen</th>
-              <th>Type</th>
-            </tr>
-          </thead>
-          <tbody id="onlineBody">
-            <tr><td colspan="4" class="empty">Loading…</td></tr>
-          </tbody>
-        </table>
+        <div id="onlineTableWrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>UID</th>
+                <th>Last seen</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody id="onlineBody">
+              <tr><td colspan="4" class="empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="palaceRoom" class="palace-room" style="display:none"></div>
       </div>
     </div>
 
@@ -663,30 +739,103 @@
   document.getElementById('refreshUsers').addEventListener('click', loadUsers);
 
   // ── Online ───────────────────────────────────────────
+  let _palaceMode = false;
+  let _lastOnline = [];
+
+  function _hash(str) {
+    let h = 0;
+    for (const c of str) h = (Math.imul(h, 31) + c.charCodeAt(0)) | 0;
+    return h;
+  }
+  function uidToColor(uid) {
+    const palette = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+    return palette[Math.abs(_hash(uid)) % palette.length];
+  }
+
+  function renderPalace(online) {
+    const room = document.getElementById('palaceRoom');
+    if (!room) return;
+    room.innerHTML = '';
+    if (!online.length) {
+      room.innerHTML = '<div class="palace-room__empty">Personne en ligne.</div>';
+      return;
+    }
+    const W = room.clientWidth  - 100;
+    const H = room.clientHeight - 110;
+    online.forEach((u, i) => {
+      const h1    = _hash(u.uid);
+      const h2    = (Math.imul(h1, 1664525) + 1013904223) | 0;
+      // Keep avatars away from top edge (leave room for tooltip)
+      const x     = 20 + ((h1 & 0x7fffffff) % Math.max(W - 20, 1));
+      const y     = 90 + ((h2 & 0x7fffffff) % Math.max(H - 90, 1));
+      const delay = ((i * 0.65) % 3).toFixed(2);
+      const label = u.email ? u.email.split('@')[0] : u.uid.slice(0, 8) + '…';
+      const full  = u.email || u.uid;
+      const type  = u.isAnonymous ? 'Guest' : 'Account';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'palace-avatar-wrap';
+      wrap.style.cssText = `left:${x}px; top:${y}px; animation-delay:-${delay}s;`;
+      wrap.innerHTML = `
+        <div class="palace-avatar">
+          <div class="palace-tooltip">
+            <b>${full}</b>
+            Vu : ${fmtMs(u.lastSeen)}<br>
+            Type : ${type}
+          </div>
+          <div class="palace-avatar__circle" style="background:${uidToColor(u.uid)}">
+            ${label[0].toUpperCase()}
+            <span class="palace-avatar__dot"></span>
+          </div>
+          <span class="palace-avatar__name">${label}</span>
+        </div>
+      `;
+      wrap.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelector('[data-panel="messagePanel"]').classList.add('active');
+        document.getElementById('messagePanel').classList.add('active');
+        populateTargetList();
+        setTimeout(() => {
+          const items = chatUserList.querySelectorAll('.admin-chat__user-item');
+          for (const item of items) {
+            if (item._uid === u.uid) { item.click(); break; }
+          }
+        }, 40);
+      });
+      room.appendChild(wrap);
+    });
+  }
+
   async function loadOnline() {
     const btn = document.getElementById('refreshOnline');
     setRefreshSpin(btn, true);
     try {
       const online = await api('/admin/presence');
+      _lastOnline = online;
       onlineCount.textContent = online.length;
-      if (!online.length) {
-        onlineBody.innerHTML = '<tr><td colspan="4" class="empty">No one online right now.</td></tr>';
-        return;
-      }
       online.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
-      onlineBody.innerHTML = online.map(u => `
-        <tr>
-          <td>
-            <span class="dot dot-green"></span>
-            ${u.email || '<span style="color:var(--muted)">Guest</span>'}
-          </td>
-          <td style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</td>
-          <td style="color:var(--muted)">${fmtMs(u.lastSeen)}</td>
-          <td>${u.isAnonymous
-            ? '<span class="badge badge-muted">Guest</span>'
-            : '<span class="badge badge-green">Account</span>'}</td>
-        </tr>
-      `).join('');
+      if (_palaceMode) {
+        renderPalace(online);
+      } else {
+        if (!online.length) {
+          onlineBody.innerHTML = '<tr><td colspan="4" class="empty">No one online right now.</td></tr>';
+        } else {
+          onlineBody.innerHTML = online.map(u => `
+            <tr>
+              <td>
+                <span class="dot dot-green"></span>
+                ${u.email || '<span style="color:var(--muted)">Guest</span>'}
+              </td>
+              <td style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</td>
+              <td style="color:var(--muted)">${fmtMs(u.lastSeen)}</td>
+              <td>${u.isAnonymous
+                ? '<span class="badge badge-muted">Guest</span>'
+                : '<span class="badge badge-green">Account</span>'}</td>
+            </tr>
+          `).join('');
+        }
+      }
     } catch (e) {
       onlineBody.innerHTML = `<tr><td colspan="4" class="empty" style="color:var(--danger)">${e.message}</td></tr>`;
     } finally {
@@ -695,6 +844,23 @@
   }
 
   document.getElementById('refreshOnline').addEventListener('click', loadOnline);
+
+  document.getElementById('togglePalace').addEventListener('click', () => {
+    _palaceMode = !_palaceMode;
+    const btn    = document.getElementById('togglePalace');
+    const tableW = document.getElementById('onlineTableWrapper');
+    const palace = document.getElementById('palaceRoom');
+    if (_palaceMode) {
+      btn.textContent = '📋 Table';
+      tableW.style.display = 'none';
+      palace.style.display = 'block';
+      renderPalace(_lastOnline);
+    } else {
+      btn.textContent = '🏰 Palace';
+      tableW.style.display = '';
+      palace.style.display = 'none';
+    }
+  });
 
   // ── Chat interface (Send message) ────────────────────
   let _selectedUid    = null;
@@ -722,6 +888,7 @@
       const type  = u.isAnonymous ? 'Guest' : 'Account';
       const item  = document.createElement('div');
       item.className = 'admin-chat__user-item' + (u.uid === _selectedUid ? ' active' : '');
+      item._uid = u.uid;
       item.innerHTML = `<span class="admin-chat__user-email">${label}</span><span class="admin-chat__user-type">${type}</span>`;
       item.addEventListener('click', () => selectUser(u.uid, label, item));
       chatUserList.appendChild(item);
