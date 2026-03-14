@@ -217,6 +217,19 @@
     .admin-chat__user-email { font-size: 13px; font-weight: 500; word-break: break-all; }
     .admin-chat__user-type  { font-size: 11px; color: var(--muted); }
     .admin-chat__empty-list { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+    .admin-chat__group-header {
+      padding: 6px 14px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
 
     .admin-chat__main {
       display: flex;
@@ -1027,24 +1040,41 @@
 
   function populateTargetList() {
     chatUserList.innerHTML = '';
-    const all = [
-      ..._users.filter(u => !u.isAnonymous && u.email).sort((a, b) => (a.email || '').localeCompare(b.email || '')),
-      ..._users.filter(u => u.isAnonymous),
-    ];
-    if (!all.length) {
-      chatUserList.innerHTML = '<div class="admin-chat__empty-list">No users yet.</div>';
+    const onlineUids   = new Set(_lastOnline.map(u => u.uid));
+    const registered   = _users.filter(u => !u.isAnonymous && u.email);
+    if (!registered.length) {
+      chatUserList.innerHTML = '<div class="admin-chat__empty-list">No registered users yet.</div>';
       return;
     }
-    all.forEach(u => {
-      const label = u.email || u.uid.slice(0, 18) + '…';
-      const type  = u.isAnonymous ? 'Guest' : 'Account';
-      const item  = document.createElement('div');
+
+    const onlineGroup  = registered.filter(u =>  onlineUids.has(u.uid));
+    const offlineGroup = registered.filter(u => !onlineUids.has(u.uid))
+      .sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
+
+    function makeItem(u) {
+      const item = document.createElement('div');
       item.className = 'admin-chat__user-item' + (u.uid === _selectedUid ? ' active' : '');
       item._uid = u.uid;
-      item.innerHTML = `<span class="admin-chat__user-email">${label}</span><span class="admin-chat__user-type">${type}</span>`;
-      item.addEventListener('click', () => selectUser(u.uid, label, item));
-      chatUserList.appendChild(item);
-    });
+      const sub = onlineUids.has(u.uid)
+        ? '<span style="color:var(--success)">● Online</span>'
+        : `<span>${fmtDate(u.lastSignIn)}</span>`;
+      item.innerHTML = `<span class="admin-chat__user-email">${u.email}</span><span class="admin-chat__user-type">${sub}</span>`;
+      item.addEventListener('click', () => selectUser(u.uid, u.email, item));
+      return item;
+    }
+
+    if (onlineGroup.length) {
+      const h = document.createElement('div');
+      h.className = 'admin-chat__group-header'; h.textContent = `Online now (${onlineGroup.length})`;
+      chatUserList.appendChild(h);
+      onlineGroup.forEach(u => chatUserList.appendChild(makeItem(u)));
+    }
+    if (offlineGroup.length) {
+      const h = document.createElement('div');
+      h.className = 'admin-chat__group-header'; h.textContent = `Registered (${offlineGroup.length})`;
+      chatUserList.appendChild(h);
+      offlineGroup.forEach(u => chatUserList.appendChild(makeItem(u)));
+    }
   }
 
   async function selectUser(uid, label, itemEl) {
