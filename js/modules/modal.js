@@ -84,10 +84,12 @@ export function openModal(date, todos) {
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
   );
   _initModalSwipe();
+  _initCombobox(todos);
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
 export function closeModal() {
+  _destroyCombobox();
   state.setEditingId(null);
   state.setInsertAfterId(null);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
@@ -157,6 +159,7 @@ export function openEditModal(id, dateStr, todos) {
     { scale: 0.92, y: 24, opacity: 0 },
     { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
   );
+  _initCombobox(todos);
   _initModalSwipe();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
@@ -547,4 +550,108 @@ function getSuggestions(todos) {
   todos.filter(t => !t.recurrence || t.recurrence==='none')
     .forEach(t => { counts[t.title] = (counts[t.title]||0)+1; });
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>t);
+}
+
+// ─── Combobox (title autocomplete) ───────────────────────────────────────
+
+let _comboboxPool = [];
+let _comboboxActiveIdx = -1;
+let _comboboxHandlers = null;
+
+function _buildPool(todos) {
+  const cfg = getSuggestedTasks();
+  const recurring = [...cfg.daily, ...cfg.weekly, ...cfg.monthly];
+  const frequent  = getSuggestions(todos);
+  // Deduplicate: frequent first (ordered by usage), then recurring
+  const seen = new Set(frequent);
+  const extra = recurring.filter(t => !seen.has(t));
+  return [...frequent, ...extra];
+}
+
+function _renderCombobox(matches, query) {
+  const box = document.getElementById('titleCombobox');
+  if (!box) return;
+  if (!matches.length) { box.classList.add('hidden'); return; }
+  _comboboxActiveIdx = -1;
+  box.innerHTML = matches.map((title, i) => {
+    const lo = title.toLowerCase();
+    const qi = lo.indexOf(query.toLowerCase());
+    let label = esc(title);
+    if (qi !== -1) {
+      const pre  = esc(title.slice(0, qi));
+      const bold = esc(title.slice(qi, qi + query.length));
+      const post = esc(title.slice(qi + query.length));
+      label = `${pre}<strong>${bold}</strong>${post}`;
+    }
+    return `<div class="title-combobox-item" data-idx="${i}" role="option">${label}</div>`;
+  }).join('');
+  box.classList.remove('hidden');
+}
+
+function _comboboxSelect(title) {
+  const input = document.getElementById('taskTitle');
+  if (input) { input.value = title; input.dispatchEvent(new Event('input')); }
+  const box = document.getElementById('titleCombobox');
+  if (box) box.classList.add('hidden');
+}
+
+function _initCombobox(todos) {
+  _destroyCombobox();
+  _comboboxPool = _buildPool(todos);
+  const input = document.getElementById('taskTitle');
+  const box   = document.getElementById('titleCombobox');
+  if (!input || !box) return;
+
+  const onInput = () => {
+    const q = input.value.trim();
+    if (!q) { box.classList.add('hidden'); return; }
+    const lo = q.toLowerCase();
+    const prefix = _comboboxPool.filter(t => t.toLowerCase().startsWith(lo));
+    const sub    = _comboboxPool.filter(t => !t.toLowerCase().startsWith(lo) && t.toLowerCase().includes(lo));
+    _renderCombobox([...prefix, ...sub].slice(0, 6), q);
+  };
+
+  const onKeydown = e => {
+    if (box.classList.contains('hidden')) return;
+    const items = box.querySelectorAll('.title-combobox-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _comboboxActiveIdx = Math.min(_comboboxActiveIdx + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('active', i === _comboboxActiveIdx));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _comboboxActiveIdx = Math.max(_comboboxActiveIdx - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('active', i === _comboboxActiveIdx));
+    } else if (e.key === 'Enter' && _comboboxActiveIdx >= 0) {
+      e.preventDefault();
+      _comboboxSelect(items[_comboboxActiveIdx].textContent);
+    } else if (e.key === 'Escape') {
+      box.classList.add('hidden');
+    }
+  };
+
+  const onBlur = () => setTimeout(() => box.classList.add('hidden'), 150);
+
+  const onClick = e => {
+    const item = e.target.closest('.title-combobox-item');
+    if (item) _comboboxSelect(_comboboxPool[+item.dataset.idx]);
+  };
+
+  input.addEventListener('input',   onInput);
+  input.addEventListener('keydown', onKeydown);
+  input.addEventListener('blur',    onBlur);
+  box.addEventListener('mousedown', onClick);
+
+  _comboboxHandlers = { input, box, onInput, onKeydown, onBlur, onClick };
+}
+
+function _destroyCombobox() {
+  if (!_comboboxHandlers) return;
+  const { input, box, onInput, onKeydown, onBlur, onClick } = _comboboxHandlers;
+  input?.removeEventListener('input',   onInput);
+  input?.removeEventListener('keydown', onKeydown);
+  input?.removeEventListener('blur',    onBlur);
+  box?.removeEventListener('mousedown', onClick);
+  if (box) box.classList.add('hidden');
+  _comboboxHandlers = null;
 }

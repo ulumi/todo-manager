@@ -61,6 +61,15 @@ export function loadTodos() {
   return JSON.parse(localStorage.getItem('todos') || '[]');
 }
 
+// Sync across tabs: fires when another tab writes to localStorage
+// onUpdate(key, rawValue) — rawValue is the raw string; caller handles JSON parsing
+export function initCrossTabSync(onUpdate) {
+  window.addEventListener('storage', (e) => {
+    if (!e.newValue || e.newValue === e.oldValue) return;
+    onUpdate(e.key, e.newValue);
+  });
+}
+
 export function getAppConfig() {
   return {
     theme: localStorage.getItem('theme'),

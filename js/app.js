@@ -11,7 +11,7 @@ import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
   downloadICalFile, getICalBlobURL, generateICalURL,
-  loadFromServer, saveBackupToServer, getFullBackup
+  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -103,6 +103,34 @@ class TodoApp {
       }, 150);
     });
     setupOfflineIndicator();
+    initCrossTabSync((key, raw) => {
+      switch (key) {
+        case 'todos':
+          try { state.setTodos(JSON.parse(raw)); this.render(); } catch (_) {}
+          break;
+        case 'theme':
+          document.documentElement.setAttribute('data-theme', raw);
+          this.updateThemeBtn();
+          break;
+        case 'zoom':
+          this.zoomIdx = parseInt(raw, 10);
+          this.applyZoom();
+          break;
+        case 'lang':
+          state.setLang(raw);
+          this.applyLang();
+          this.render();
+          break;
+        case 'projects':
+        case 'dayTemplates':
+        case 'suggestedTasks':
+        case 'projectTaskOrder':
+        case 'categoriesCols':
+        case 'categoriesSort':
+          this.render();
+          break;
+      }
+    });
     this._initFirebase(); // async — does not block render
   }
 

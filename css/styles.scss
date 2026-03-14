@@ -1755,6 +1755,35 @@ main {
 
 // ─── 12. Forms ───────────────────────────────────────────────────────────
 
+.title-combobox {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  z-index: 900;
+  overflow: hidden;
+  backdrop-filter: blur(16px);
+
+  &.hidden { display: none; }
+}
+
+.title-combobox-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s;
+
+  strong { color: var(--primary); font-weight: 700; }
+
+  &:hover, &.active { background: var(--primary-light); }
+  & + & { border-top: 1px solid var(--border); }
+}
+
 .form-group { margin-bottom: 22px; }
 
 .form-label {
