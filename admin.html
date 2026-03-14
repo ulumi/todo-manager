@@ -544,7 +544,8 @@
   import { initializeApp }               from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-  import { getFirestore, doc, setDoc, serverTimestamp }
+  import { getFirestore, doc, setDoc, serverTimestamp,
+           collection, getDocs, query, where, orderBy, addDoc }
     from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
   const firebaseConfig = {
@@ -556,7 +557,7 @@
     appId:             '1:708112988153:web:af75de9f76959816dc2f28',
   };
 
-  const API = 'http://localhost:3333';
+  const API = '/api';
 
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -602,19 +603,10 @@
   let _token = null;
 
   // ── Helpers ──────────────────────────────────────────
+  // api() is used only for /api/admin-users (the one endpoint needing Admin SDK)
   async function api(path) {
     const res = await fetch(API + path, {
       headers: { Authorization: `Bearer ${_token}` },
-    });
-    if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-    return res.json();
-  }
-
-  async function apiPost(path, body) {
-    const res = await fetch(API + path, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
     return res.json();
@@ -657,11 +649,13 @@
   onAuthStateChanged(auth, async user => {
     if (user) {
       _token = await user.getIdToken();
-      // Verify admin access
+      // Verify admin access via Vercel serverless function
       try {
-        await api('/admin/users');
+        await api('/admin-users');
       } catch (e) {
-        loginError.textContent = 'Access denied — not an admin account.';
+        loginError.textContent = e.message.startsWith('403')
+          ? 'Access denied — not an admin account.'
+          : `Error: ${e.message}`;
         loginError.style.display = 'block';
         loginBtn.disabled = false;
         loginBtn.textContent = 'Sign in';
@@ -702,7 +696,7 @@
     const btn = document.getElementById('refreshUsers');
     setRefreshSpin(btn, true);
     try {
-      _users = await api('/admin/users');
+      _users = await api('/admin-users');
       renderUsers(_users);
     } catch (e) {
       usersBody.innerHTML = `<tr><td colspan="5" class="empty" style="color:var(--danger)">${e.message}</td></tr>`;
@@ -811,7 +805,9 @@
     const btn = document.getElementById('refreshOnline');
     setRefreshSpin(btn, true);
     try {
-      const online = await api('/admin/presence');
+      const snap   = await getDocs(query(collection(db, 'presence'), where('online', '==', true)));
+      const online = [];
+      snap.forEach(d => online.push({ uid: d.id, ...d.data(), lastSeen: d.data().lastSeen?.toMillis?.() ?? null }));
       _lastOnline = online;
       onlineCount.textContent = online.length;
       online.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
@@ -913,7 +909,18 @@
   async function loadThread() {
     if (!_selectedUid) return;
     try {
-      const msgs = await api(`/admin/messages/${encodeURIComponent(_selectedUid)}`);
+      const snap = await getDocs(query(
+        collection(db, 'admin_messages', _selectedUid, 'inbox'),
+        orderBy('sentAt', 'asc')
+      ));
+      const msgs = [];
+      snap.forEach(d => msgs.push({
+        id:      d.id,
+        message: d.data().message,
+        from:    d.data().from || 'admin',
+        sentAt:  d.data().sentAt?.toMillis?.() ?? null,
+        read:    d.data().read,
+      }));
       renderConvo(msgs);
     } catch (e) {
       // Fail silently on poll errors
@@ -944,7 +951,9 @@
     if (!_selectedUid || !message) return;
     sendBtn.disabled = true;
     try {
-      await apiPost('/admin/message', { targetUid: _selectedUid, message });
+      await addDoc(collection(db, 'admin_messages', _selectedUid, 'inbox'), {
+        message, from: 'admin', sentAt: serverTimestamp(), read: false,
+      });
       msgText.value = '';
       msgText.style.height = '';
       await loadThread(); // refresh immediately after send
