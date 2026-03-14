@@ -47,15 +47,17 @@ module.exports = async function handler(req, res) {
       if (!message) { res.status(400).json({ error: 'Missing message' }); return; }
       const result = await admin.auth().listUsers(1000);
       const targets = result.users.filter(u => !ADMIN_UIDS.includes(u.uid));
-      const db = admin.firestore();
+      const db          = admin.firestore();
+      const broadcastRef = db.collection('broadcasts').doc();
+      const broadcastId  = broadcastRef.id;
+      const ts           = admin.firestore.FieldValue.serverTimestamp();
+      await broadcastRef.set({ message, from: 'admin', sentAt: ts, recipientCount: targets.length });
       await Promise.all(targets.map(u =>
         db.collection('admin_messages').doc(u.uid).collection('inbox').add({
-          message, from: 'admin',
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          read: false,
+          message, from: 'admin', broadcastId, sentAt: ts, read: false,
         })
       ));
-      res.status(200).json({ ok: true, sent: targets.length });
+      res.status(200).json({ ok: true, sent: targets.length, broadcastId });
 
     // ── Clean stale presence sessions ─────────────────────
     } else if (payload.action === 'clean-sessions') {

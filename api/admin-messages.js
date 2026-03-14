@@ -26,8 +26,23 @@ module.exports = async function handler(req, res) {
 
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
-  // GET /api/admin-messages?uid=xxx — fetch thread
-  if (req.method === 'GET') {
+  // GET /api/admin-messages?broadcasts=1 — fetch broadcast history
+  if (req.method === 'GET' && req.query?.broadcasts) {
+    const snap = await admin.firestore()
+      .collection('broadcasts').orderBy('sentAt', 'desc').get();
+    const list = [];
+    snap.forEach(d => list.push({
+      id:             d.id,
+      message:        d.data().message,
+      from:           'admin',
+      sentAt:         d.data().sentAt?.toMillis?.() ?? null,
+      recipientCount: d.data().recipientCount ?? null,
+      broadcast:      true,
+    }));
+    res.status(200).json(list);
+
+  // GET /api/admin-messages?uid=xxx — fetch user thread
+  } else if (req.method === 'GET') {
     const uid = req.query?.uid;
     if (!uid) { res.status(400).json({ error: 'Missing uid' }); return; }
     const snap = await admin.firestore()
@@ -35,11 +50,12 @@ module.exports = async function handler(req, res) {
       .orderBy('sentAt', 'asc').get();
     const msgs = [];
     snap.forEach(d => msgs.push({
-      id:      d.id,
-      message: d.data().message,
-      from:    d.data().from || 'admin',
-      sentAt:  d.data().sentAt?.toMillis?.() ?? null,
-      read:    d.data().read,
+      id:          d.id,
+      message:     d.data().message,
+      from:        d.data().from || 'admin',
+      sentAt:      d.data().sentAt?.toMillis?.() ?? null,
+      read:        d.data().read,
+      broadcastId: d.data().broadcastId ?? null,
     }));
     res.status(200).json(msgs);
 

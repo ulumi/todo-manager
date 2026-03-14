@@ -257,6 +257,31 @@
     .group-arrow { transition: transform .15s; font-style: normal; }
     .group-arrow.collapsed { transform: rotate(-90deg); }
 
+    .admin-chat__broadcast-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+      background: rgba(245,158,11,.04);
+      transition: background .1s;
+    }
+    .admin-chat__broadcast-item:hover  { background: rgba(245,158,11,.1); }
+    .admin-chat__broadcast-item.active { background: rgba(245,158,11,.15); border-left: 2px solid var(--primary); }
+    .admin-chat__broadcast-item span:first-child { font-size: 13px; font-weight: 600; }
+    .admin-chat__broadcast-item span:last-child  { font-size: 11px; color: var(--muted); }
+
+    .msg-tag {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      letter-spacing: .03em;
+    }
+    .msg-tag--broadcast { background: rgba(245,158,11,.2); color: var(--primary); }
+    .msg-tag--reply     { background: rgba(99,102,241,.2);  color: #818cf8; }
+
     .admin-chat__main {
       display: flex;
       flex-direction: column;
@@ -1099,6 +1124,15 @@
 
     chatUserList.innerHTML = '';
 
+    // ── Broadcast history item (always at top) ────────────
+    if (!q) {
+      const bc = document.createElement('div');
+      bc.className = 'admin-chat__broadcast-item' + (_selectedUid === '__broadcasts__' ? ' active' : '');
+      bc.innerHTML = `<span>📢 Broadcast history</span><span>All users</span>`;
+      bc.addEventListener('click', () => selectUser('__broadcasts__', '📢 Broadcast history', bc));
+      chatUserList.appendChild(bc);
+    }
+
     if (!registered.length && !guests.length) {
       chatUserList.innerHTML = `<div class="admin-chat__empty-list">${q ? 'No results.' : 'No users yet.'}</div>`;
       return;
@@ -1148,23 +1182,26 @@
 
   async function selectUser(uid, label, itemEl) {
     _selectedUid = uid;
-    chatUserList.querySelectorAll('.admin-chat__user-item').forEach(el => el.classList.remove('active'));
+    chatUserList.querySelectorAll('.admin-chat__user-item, .admin-chat__broadcast-item')
+      .forEach(el => el.classList.remove('active'));
     itemEl?.classList.add('active');
     chatConvoHeader.innerHTML = `<span class="admin-chat__convo-name">${label}</span>`;
-    msgText.disabled = false;
-    sendBtn.disabled = false;
-    msgText.focus();
-    // Stop previous poll
+    const isBroadcastView = uid === '__broadcasts__';
+    msgText.disabled = isBroadcastView;
+    sendBtn.disabled = isBroadcastView;
+    if (!isBroadcastView) msgText.focus();
     if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
-    // Load thread immediately, then poll every 4s
     await loadThread();
-    _pollInterval = setInterval(loadThread, 4000);
+    if (!isBroadcastView) _pollInterval = setInterval(loadThread, 4000);
   }
 
   async function loadThread() {
     if (!_selectedUid) return;
     try {
-      const msgs = await api(`/admin-messages?uid=${encodeURIComponent(_selectedUid)}`);
+      const url  = _selectedUid === '__broadcasts__'
+        ? '/admin-messages?broadcasts=1'
+        : `/admin-messages?uid=${encodeURIComponent(_selectedUid)}`;
+      const msgs = await api(url);
       renderConvo(msgs);
     } catch (e) {
       // Fail silently on poll errors
@@ -1177,13 +1214,36 @@
       return;
     }
     const wasAtBottom = chatConvoMessages.scrollHeight - chatConvoMessages.scrollTop <= chatConvoMessages.clientHeight + 40;
-    chatConvoMessages.innerHTML = msgs.map(m => {
-      const isAdmin = m.from !== 'user';
-      const time = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+    // Track which messages were broadcasts so user replies can be tagged
+    const broadcastIdsBefore = new Set();
+    chatConvoMessages.innerHTML = msgs.map((m, i) => {
+      const isAdmin  = m.from !== 'user';
+      const time     = m.sentAt ? new Date(m.sentAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+      const dateStr  = m.sentAt ? timeSince(m.sentAt) : '';
+
+      let tag = '';
+      if (m.broadcast || m.broadcastId) {
+        // Admin message sent as broadcast
+        const count = m.recipientCount ? ` · ${m.recipientCount} recipients` : '';
+        tag = `<div class="msg-tag msg-tag--broadcast">📢 Broadcast${count}</div>`;
+        if (m.id) broadcastIdsBefore.add(m.id);
+        if (m.broadcastId) broadcastIdsBefore.add(m.broadcastId);
+      } else if (!isAdmin) {
+        // User reply — check if previous admin message was a broadcast
+        const prev = msgs.slice(0, i).reverse().find(p => p.from !== 'user');
+        if (prev && (prev.broadcast || prev.broadcastId)) {
+          tag = `<div class="msg-tag msg-tag--reply">↩ reply to broadcast</div>`;
+        }
+      }
+
+      // Broadcast history view: show date instead of time
+      const timeHtml = m.broadcast
+        ? `<div class="chat-msg__time">${dateStr}</div>`
+        : time ? `<div class="chat-msg__time">${time}</div>` : '';
+
       return `<div class="chat-msg chat-msg--${isAdmin ? 'admin' : 'user'}">
         <div class="chat-msg__bubble">
-          ${m.message}
-          ${time ? `<div class="chat-msg__time">${time}</div>` : ''}
+          ${tag}${m.message}${timeHtml}
         </div>
       </div>`;
     }).join('');
