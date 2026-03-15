@@ -3851,6 +3851,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .year-view        { grid-template-columns: repeat(3, 1fr); }
   .week-grid        { flex-wrap: wrap; .week-day-col { flex-basis: calc(25% - 9px); } }
 
+  // Prevent iOS auto-zoom on focus (font-size must be ≥ 16px)
+  input, textarea, select { font-size: 16px !important; }
+
   // Admin
   .admin-form          { grid-template-columns: 1fr; }
   .admin-layout        { flex-direction: column; }

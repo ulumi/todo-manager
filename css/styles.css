@@ -4247,6 +4247,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .week-grid .week-day-col {
     flex-basis: calc(25% - 9px);
   }
+  input, textarea, select {
+    font-size: 16px !important;
+  }
   .admin-form {
     grid-template-columns: 1fr;
   }
