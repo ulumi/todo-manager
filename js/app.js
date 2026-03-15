@@ -1059,7 +1059,7 @@ class TodoApp {
   selectAvatarFilter(id)       { selectAvatarFilter(id); }
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
-  async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); pushToFirestore(getFullBackup(state.todos)); }
+  async saveAvatar()           { await saveAvatar(); localStorage.setItem('_localWriteTime', Date.now().toString()); this._updateUserBtn(); pushToFirestore(getFullBackup(state.todos)); }
   cropDragStart(e)             { cropDragStart(e); }
   setCropZoom(val)             { setCropZoom(val); }
   setEmojiZoom(val)            { setEmojiZoom(val); }
@@ -1523,6 +1523,12 @@ class TodoApp {
 
   // Merge a backup object into the app state (from Firestore or server)
   _applyBackup(backup, { silent }) {
+    // If our local data was saved more recently than this backup, it's our own
+    // Firestore echo — skip to avoid overwriting a newer local change.
+    // Only applies when backup.pushedAt is present (new format).
+    const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
+    if (backup.pushedAt > 0 && localWriteTime > backup.pushedAt) return;
+
     let changed = false;
 
     if (backup.calendar) {

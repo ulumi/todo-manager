@@ -88,6 +88,7 @@ export function getFullBackup(todos) {
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
     avatar: raw('profileAvatar'),
+    pushedAt: parseInt(localStorage.getItem('_localWriteTime') || '0'),
     exportDate: new Date().toISOString()
   };
 }
