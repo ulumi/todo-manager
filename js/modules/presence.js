@@ -27,6 +27,8 @@ let _setOffline        = null;
 let _onMessagesUpdate  = null;
 let _allMessages       = [];
 let _userId            = null;
+let _clickCount        = 0;
+let _sessionStartMs    = null;
 
 // ── Init ─────────────────────────────────────────────────
 // Call after every auth state change that yields a real user.
@@ -36,25 +38,36 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
   _onMessagesUpdate = onMessagesUpdate || null;
   _allMessages = [];
   _userId = user.uid;
+  _clickCount = 0;
+  _sessionStartMs = Date.now();
 
   const presenceRef = doc(db, 'presence', user.uid);
 
-  const setOnline = () => setDoc(presenceRef, {
-    online:      true,
-    lastSeen:    serverTimestamp(),
-    email:       user.email       || null,
-    displayName: user.displayName || null,
-    isAnonymous: user.isAnonymous,
+  // First call: set sessionStart for this session
+  setDoc(presenceRef, {
+    online:       true,
+    lastSeen:     serverTimestamp(),
+    sessionStart: serverTimestamp(),
+    clickCount:   0,
+    email:        user.email       || null,
+    displayName:  user.displayName || null,
+    isAnonymous:  user.isAnonymous,
   }, { merge: true }).catch(() => {});
 
-  _setOnline = setOnline;
+  // Heartbeat: update lastSeen + clickCount only (keeps sessionStart intact)
+  _setOnline = () => setDoc(presenceRef, {
+    online:     true,
+    lastSeen:   serverTimestamp(),
+    clickCount: _clickCount,
+  }, { merge: true }).catch(() => {});
+
   _setOffline = () => setDoc(presenceRef, {
     online:   false,
     lastSeen: serverTimestamp(),
   }, { merge: true }).catch(() => {});
 
-  setOnline();
-  _heartbeat = setInterval(setOnline, 30_000);
+  _heartbeat = setInterval(_setOnline, 30_000);
+  document.addEventListener('click', _onUserClick, { capture: true });
 
   window.addEventListener('beforeunload', _setOffline);
   document.addEventListener('visibilitychange', _onVisibility);
@@ -123,11 +136,16 @@ export function destroyPresence() {
   _onMessagesUpdate = null;
   _allMessages = [];
   _userId = null;
+  _clickCount = 0;
+  _sessionStartMs = null;
+  document.removeEventListener('click', _onUserClick, { capture: true });
   document.removeEventListener('visibilitychange', _onVisibility);
 }
 
 // ── Internals ─────────────────────────────────────────────
 let _setOnline = null;
+
+function _onUserClick() { _clickCount++; }
 
 function _onVisibility() {
   if (document.hidden) { if (_setOffline) _setOffline(); }

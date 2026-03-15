@@ -434,6 +434,44 @@
     @keyframes pal-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(74,222,128,.6); } 60% { box-shadow: 0 0 0 6px rgba(74,222,128,0); } }
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinning { animation: spin .6s linear infinite; display: inline-block; }
+
+    /* ── Live indicator ──────────────────────────────── */
+    .live-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success); flex-shrink: 0;
+      animation: pal-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes flash-green {
+      0%   { background: rgba(74,222,128,.3); }
+      100% { background: transparent; }
+    }
+    .flash-update { animation: flash-green .7s ease; border-radius: 6px; }
+
+    /* ── Section label ───────────────────────────────── */
+    .section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: -8px;
+    }
+
+    /* ── Insights strip ──────────────────────────────── */
+    .insights-strip {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+    }
+    @media (max-width: 1100px) { .insights-strip { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 700px)  { .insights-strip { grid-template-columns: repeat(2, 1fr); } }
+
+    .insight-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 14px 12px;
+    }
+    .insight-value { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1; }
+    .insight-value.na { color: var(--muted); font-size: 18px; }
+    .insight-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 5px; }
+    .insight-desc  { font-size: 10px; color: var(--muted); margin-top: 3px; opacity: .7; }
+    .insight-bar   { height: 3px; background: var(--surface2); border-radius: 99px; margin-top: 8px; overflow: hidden; }
+    .insight-bar__fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .6s ease; }
+    .insight-bar__fill.success { background: var(--success); }
+    .insight-bar__fill.danger  { background: var(--danger); }
   </style>
 </head>
 <body>
@@ -498,13 +536,54 @@
       </div>
     </div>
 
+    <!-- Insights strip -->
+    <div class="section-label">Insights</div>
+    <div class="insights-strip">
+      <div class="insight-card">
+        <div class="insight-value na" id="ins-conversion">—</div>
+        <div class="insight-label">Conversion</div>
+        <div class="insight-desc">guests → accounts</div>
+        <div class="insight-bar"><div class="insight-bar__fill success" id="ins-conversion-bar" style="width:0%"></div></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-value na" id="ins-engagement">—</div>
+        <div class="insight-label">Engagement 7d</div>
+        <div class="insight-desc">% users active</div>
+        <div class="insight-bar"><div class="insight-bar__fill" id="ins-engagement-bar" style="width:0%"></div></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-value na" id="ins-stickiness">—</div>
+        <div class="insight-label">Stickiness</div>
+        <div class="insight-desc">7d / 30d actives</div>
+        <div class="insight-bar"><div class="insight-bar__fill success" id="ins-stickiness-bar" style="width:0%"></div></div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-value na" id="ins-growth">—</div>
+        <div class="insight-label">Growth velocity</div>
+        <div class="insight-desc">vs monthly average</div>
+        <div class="insight-bar"><div class="insight-bar__fill" id="ins-growth-bar" style="width:0%"></div></div>
+      </div>
+      <div class="insight-card" title="Requires sessionStart data (updates after next user login)">
+        <div class="insight-value na" id="ins-session">—</div>
+        <div class="insight-label">Avg session</div>
+        <div class="insight-desc">minutes online</div>
+        <div class="insight-bar"><div class="insight-bar__fill success" id="ins-session-bar" style="width:0%"></div></div>
+      </div>
+      <div class="insight-card" title="Clicks tracked per session since last deploy">
+        <div class="insight-value na" id="ins-clicks">—</div>
+        <div class="insight-label">Avg clicks/min</div>
+        <div class="insight-desc">user interactions</div>
+        <div class="insight-bar"><div class="insight-bar__fill" id="ins-clicks-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
     <!-- Row 2: Three modules -->
     <div class="modules-row">
 
       <!-- Online Now -->
       <div class="module">
         <div class="module__header">
-          <h2>Online now <span id="onlineCount" class="count-badge">—</span></h2>
+          <h2><span class="live-dot"></span> Online now <span id="onlineCount" class="count-badge">—</span></h2>
           <div class="module__actions">
             <button class="btn-icon" id="cleanSessionsBtn" title="Clean stale presence">🧹</button>
             <button class="btn-icon" id="toggleOnlineView" title="Toggle palace view">🏰</button>
@@ -686,9 +765,11 @@
   let _token              = null;
   let _users              = [];
   let _lastOnline         = [];
+  let _lastStats          = null;
   let _palaceMode         = false;
   let _onlineTimer        = null;
   let _statsTimer         = null;
+  let _prevOnlineCount    = -1;
   let _selectedUid        = null;
   let _pollInterval       = null;
   let _guestsExpanded     = false;
@@ -785,8 +866,8 @@
       loadUsers();
       loadOnline();
       loadStats();
-      _onlineTimer = setInterval(() => loadOnline(true), 30_000);
-      _statsTimer  = setInterval(() => loadStats(true),  60_000);
+      _onlineTimer = setInterval(() => loadOnline(true), 10_000);
+      _statsTimer  = setInterval(() => loadStats(true),  20_000);
     } else {
       _token = null;
       stopPresence();
@@ -961,14 +1042,24 @@
     if (!silent) { btn.innerHTML = '<span class="spinning">↻</span>'; btn.disabled = true; }
     try {
       const online = await api('/admin-presence');
-      _lastOnline = online;
-      onlineCount.textContent = online.length;
       online.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+      // Flash count badge if count changed
+      const newCount = online.length;
+      if (_prevOnlineCount >= 0 && newCount !== _prevOnlineCount) {
+        onlineCount.classList.remove('flash-update');
+        void onlineCount.offsetWidth;
+        onlineCount.classList.add('flash-update');
+        if (!silent) logActivity(newCount > _prevOnlineCount ? '🟢' : '🔴', `Online: ${_prevOnlineCount} → ${newCount}`);
+      }
+      _prevOnlineCount = newCount;
+      _lastOnline = online;
+      onlineCount.textContent = newCount;
       if (_palaceMode) renderPalace(online);
       else             renderOnlineModule(online);
-      if (!silent) logActivity('👁', `${online.length} user(s) online`);
-      // Refresh online dots in users table
+      if (!silent && _prevOnlineCount < 0) logActivity('👁', `${newCount} user(s) online`);
+      // Refresh online dots in users table + insights
       if (_users.length) renderUsers();
+      updateInsights();
     } catch (e) {
       if (!silent) document.getElementById('onlineModuleBody').innerHTML = `<div class="online-empty" style="color:var(--danger)">${e.message}</div>`;
     } finally {
@@ -1020,6 +1111,7 @@
   async function loadStats(silent = false) {
     try {
       const s = await api('/admin-stats');
+      _lastStats = s;
       document.getElementById('s-total').textContent = s.total;
       document.getElementById('s-reg').textContent   = s.registered;
       document.getElementById('s-anon').textContent  = s.anonymous;
@@ -1034,7 +1126,59 @@
       const lr = document.getElementById('dashLastRefresh');
       if (lr) lr.textContent = `Refreshed ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
       if (!silent) logActivity('📊', `Stats loaded — ${s.total} users total`);
+      updateInsights();
     } catch (e) { console.error('Stats error:', e); }
+  }
+
+  // ── Insights ──────────────────────────────────────────
+  function setInsight(id, value, barId, pct, colorClass = '') {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = value; el.className = `insight-value${value === '—' ? ' na' : ''}`; }
+    const bar = document.getElementById(barId);
+    if (bar) {
+      bar.style.width = Math.min(pct, 100) + '%';
+      bar.className   = `insight-bar__fill${colorClass ? ' ' + colorClass : ''}`;
+    }
+  }
+
+  function updateInsights() {
+    const s = _lastStats;
+    if (s) {
+      // Conversion: registered / total
+      const convPct = s.total > 0 ? (s.registered / s.total * 100) : 0;
+      setInsight('ins-conversion', s.total > 0 ? convPct.toFixed(1) + '%' : '—', 'ins-conversion-bar', convPct, 'success');
+
+      // Engagement 7d: active7d / total
+      const engPct = s.total > 0 ? (s.active7d / s.total * 100) : 0;
+      setInsight('ins-engagement', s.total > 0 ? engPct.toFixed(1) + '%' : '—', 'ins-engagement-bar', engPct);
+
+      // Stickiness: active7d / active30d (weekly/monthly active ratio)
+      const stickyPct = s.active30d > 0 ? (s.active7d / s.active30d * 100) : 0;
+      setInsight('ins-stickiness', s.active30d > 0 ? stickyPct.toFixed(1) + '%' : '—', 'ins-stickiness-bar', stickyPct, 'success');
+
+      // Growth velocity: newWeek vs monthly avg (newMonth/4.3)
+      const monthlyAvg = s.newMonth / 4.3;
+      const growthPct  = monthlyAvg > 0 ? (s.newWeek / monthlyAvg * 100) : 0;
+      const growthLabel = monthlyAvg > 0 ? growthPct.toFixed(0) + '%' : '—';
+      setInsight('ins-growth', growthLabel, 'ins-growth-bar', Math.min(growthPct, 200) / 2, growthPct >= 100 ? 'success' : 'danger');
+    }
+
+    // Session + clicks from live presence data
+    const withSession = _lastOnline.filter(u => u.sessionStart && u.lastSeen && u.lastSeen > u.sessionStart);
+    if (withSession.length) {
+      const avgMs  = withSession.reduce((sum, u) => sum + (u.lastSeen - u.sessionStart), 0) / withSession.length;
+      const avgMin = avgMs / 60_000;
+      setInsight('ins-session', avgMin >= 1 ? avgMin.toFixed(1) + 'm' : '<1m', 'ins-session-bar', Math.min(avgMin / 30 * 100, 100), 'success');
+
+      const withClicks = withSession.filter(u => u.clickCount > 0);
+      if (withClicks.length) {
+        const avgCpm = withClicks.reduce((sum, u) => {
+          const mins = (u.lastSeen - u.sessionStart) / 60_000;
+          return sum + (mins > 0 ? u.clickCount / mins : 0);
+        }, 0) / withClicks.length;
+        setInsight('ins-clicks', avgCpm.toFixed(1), 'ins-clicks-bar', Math.min(avgCpm / 10 * 100, 100));
+      }
+    }
   }
 
   // ── Broadcast (two sources: dashboard + panel) ────────

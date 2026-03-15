@@ -28,6 +28,13 @@ module.exports = async function handler(req, res) {
 
   const snap   = await admin.firestore().collection('presence').where('online', '==', true).get();
   const online = [];
-  snap.forEach(d => online.push({ uid: d.id, ...d.data(), lastSeen: d.data().lastSeen?.toMillis?.() ?? null }));
+  snap.forEach(d => {
+    const data = d.data();
+    online.push({
+      uid: d.id, ...data,
+      lastSeen:     data.lastSeen?.toMillis?.()     ?? null,
+      sessionStart: data.sessionStart?.toMillis?.() ?? null,
+    });
+  });
   res.status(200).json(online);
 };
