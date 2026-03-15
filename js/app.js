@@ -129,6 +129,9 @@ class TodoApp {
         case 'categoriesSort':
           this.render();
           break;
+        case 'profileAvatar':
+          this._updateUserBtn();
+          break;
       }
     });
     this._initFirebase(); // async — does not block render
