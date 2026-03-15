@@ -872,7 +872,7 @@
     usersBody.innerHTML = users.map(u => `
       <tr id="row-${u.uid}">
         <td>
-          <div style="font-weight:500">${u.email || '<span style="color:var(--muted)">—</span>'}</div>
+          <div style="font-weight:500">${u.email || (u.displayName ? `<span style="color:var(--muted)">${u.displayName}</span>` : '<span style="color:var(--muted)">—</span>')}</div>
           <div style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</div>
         </td>
         <td>${u.isAnonymous
@@ -1183,7 +1183,7 @@
       });
       chatUserList.appendChild(h);
       if (_guestsExpanded) {
-        guests.forEach(u => chatUserList.appendChild(makeItem(u, u.uid.slice(0, 14) + '…')));
+        guests.forEach(u => chatUserList.appendChild(makeItem(u, u.displayName || u.uid.slice(0, 14) + '…')));
       }
     }
   }
