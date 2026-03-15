@@ -485,14 +485,34 @@
 
 <!-- Guest Name Prompt -->
 <div class="modal-overlay hidden" id="guestNameOverlay">
-  <div class="modal" style="max-width:340px;padding:28px 24px;display:flex;flex-direction:column;gap:16px;">
-    <div style="font-size:22px;text-align:center;">👋</div>
+  <div class="modal" style="max-width:360px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;">
     <div style="text-align:center;">
-      <div style="font-weight:600;font-size:15px;margin-bottom:4px;">Comment t'appeler ?</div>
-      <div style="font-size:13px;color:var(--text-muted);">Optionnel — tu peux changer ça plus tard dans ton profil.</div>
+      <div style="font-size:24px;margin-bottom:6px;">👋</div>
+      <div style="font-weight:600;font-size:15px;margin-bottom:4px;">Bienvenue !</div>
+      <div style="font-size:13px;color:var(--text-muted);">Personnalise ton expérience — tout est optionnel.</div>
     </div>
+
+    <button class="btn btn-ghost" style="width:100%;justify-content:center;gap:8px;display:flex;align-items:center;"
+      onclick="window.app.openAvatarFromPrompt()">
+      🎨 <span>Choisir un avatar ou une photo</span>
+    </button>
+
     <input class="form-input" type="text" id="guestNameInput" placeholder="Ton prénom" maxlength="32" autocomplete="off">
-    <div style="display:flex;gap:8px;">
+
+    <div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:11px;">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span>ou crée un compte</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <div>
+      <input class="form-input" type="email" id="guestEmailInput" placeholder="Email — sync multi-appareils" autocomplete="email">
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;padding-left:2px;">
+        Un compte garde tes tâches sur tous tes appareils.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:2px;">
       <button class="btn btn-ghost" style="flex:1" onclick="window.app.skipGuestName()">Passer</button>
       <button class="btn btn-primary" style="flex:1" onclick="window.app.saveGuestName()">Continuer</button>
     </div>
