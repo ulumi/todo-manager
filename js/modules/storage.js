@@ -65,7 +65,7 @@ export function loadTodos() {
 // onUpdate(key, rawValue) — rawValue is the raw string; caller handles JSON parsing
 export function initCrossTabSync(onUpdate) {
   window.addEventListener('storage', (e) => {
-    if (!e.newValue || e.newValue === e.oldValue) return;
+    if (e.newValue === e.oldValue) return;
     onUpdate(e.key, e.newValue);
   });
 }
@@ -87,6 +87,7 @@ export function getFullBackup(todos) {
     templates: raw('dayTemplates'),
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
+    avatar: raw('profileAvatar'),
     exportDate: new Date().toISOString()
   };
 }

@@ -1059,7 +1059,7 @@ class TodoApp {
   selectAvatarFilter(id)       { selectAvatarFilter(id); }
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
-  async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); }
+  async saveAvatar()           { await saveAvatar(); this._updateUserBtn(); pushToFirestore(getFullBackup(state.todos)); }
   cropDragStart(e)             { cropDragStart(e); }
   setCropZoom(val)             { setCropZoom(val); }
   setEmojiZoom(val)            { setEmojiZoom(val); }
@@ -1542,6 +1542,11 @@ class TodoApp {
       if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
       if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
       if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+    }
+    if ('avatar' in backup) {
+      if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
+      else               localStorage.removeItem('profileAvatar');
+      this._updateUserBtn();
     }
 
     if (changed && !silent) this.render();
