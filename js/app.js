@@ -48,7 +48,7 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc } from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID } from './modules/sync.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -1481,7 +1481,7 @@ class TodoApp {
     // 4. Listen for realtime updates from other devices (guard against re-init)
     if (this._firestoreUnsub) this._firestoreUnsub();
     this._firestoreUnsub = subscribeToFirestore(backup => {
-      this._applyBackup(backup, { silent: true });
+      this._applyBackup(backup, { silent: false });
     });
 
     // 5. Update user button on every auth state change
@@ -1508,11 +1508,14 @@ class TodoApp {
       return;
     }
 
-    // If local data was written more recently than Firestore, local wins.
-    // Covers: task created offline, or push not yet confirmed before refresh.
+    // Compare timestamps to decide which source is newer.
+    // _localWriteTime is a client clock; _firestoreUpdatedAt is a Firestore server clock.
+    // A 30-second tolerance absorbs typical clock drift between devices.
+    // This ensures offline edits (where Firestore push failed) still win over stale server data.
     const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
     const firestoreTime  = backup._firestoreUpdatedAt || 0;
-    if (localWriteTime > firestoreTime) {
+    const localIsNewer   = localWriteTime > 0 && firestoreTime > 0 && (localWriteTime - firestoreTime > 30000);
+    if (localIsNewer) {
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
@@ -1523,11 +1526,9 @@ class TodoApp {
 
   // Merge a backup object into the app state (from Firestore or server)
   _applyBackup(backup, { silent }) {
-    // If our local data was saved more recently than this backup, it's our own
-    // Firestore echo — skip to avoid overwriting a newer local change.
-    // Only applies when backup.pushedAt is present (new format).
-    const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
-    if (backup.pushedAt > 0 && localWriteTime > backup.pushedAt) return;
+    // Skip our own Firestore echoes using the session ID stamped in every push.
+    // This is clock-independent and works even across rapid saves.
+    if (backup._pushedBySession && backup._pushedBySession === SESSION_ID) return;
 
     let changed = false;
 
@@ -1565,7 +1566,7 @@ class TodoApp {
     if (!btn && !logoAvatar) return;
     const guest = !!user?.isAnonymous;
 
-    const uname = !guest && user ? (user.displayName || user.email?.split('@')[0] || '') : '';
+    const uname = user ? (user.displayName || (!guest ? user.email?.split('@')[0] : '') || '') : '';
     const fullTitle = uname ? `2FŨKOI, ${uname}` : '2FŨKOI';
     document.title = fullTitle;
     this._animateLogoText(fullTitle);
@@ -1665,17 +1666,33 @@ class TodoApp {
   }
 
   async saveGuestName() {
-    const input = document.getElementById('guestNameInput');
-    const name  = input?.value.trim();
+    const name  = document.getElementById('guestNameInput')?.value.trim();
+    const email = document.getElementById('guestEmailInput')?.value.trim();
     if (name) await updateUserProfile(name);
-    document.getElementById('guestNameOverlay')?.classList.add('hidden');
-    this._resolveGuestNamePrompt?.();
-    this._resolveGuestNamePrompt = null;
+    this._closeGuestNamePrompt();
     this._updateUserBtn();
+    if (email) {
+      this.openAuthModal();
+      this.showAuthRegister();
+      document.getElementById('authEmail').value = email;
+      document.getElementById('authPassword')?.focus();
+    }
   }
 
   skipGuestName() {
     localStorage.setItem('guestNameSkipped', '1');
+    this._closeGuestNamePrompt();
+  }
+
+  async openAvatarFromPrompt() {
+    const name = document.getElementById('guestNameInput')?.value.trim();
+    if (name) await updateUserProfile(name);
+    this._closeGuestNamePrompt();
+    this._updateUserBtn();
+    this.openAvatarEditor();
+  }
+
+  _closeGuestNamePrompt() {
     document.getElementById('guestNameOverlay')?.classList.add('hidden');
     this._resolveGuestNamePrompt?.();
     this._resolveGuestNamePrompt = null;

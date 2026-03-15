@@ -6,6 +6,10 @@ import {
   doc, getDoc, setDoc, deleteDoc, onSnapshot, serverTimestamp,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
+// Unique ID for this browser session — used to detect own Firestore echoes.
+// Never matches a previous session (even on the same device) since it's regenerated on each page load.
+export const SESSION_ID = Math.random().toString(36).slice(2, 10);
+
 import { db }             from './firebase.js';
 import { getCurrentUser } from './auth.js';
 
@@ -32,9 +36,10 @@ export async function loadFromFirestore() {
 
 // ── Write full backup to Firestore ────────────────────────
 // Fire-and-forget: does not throw, caller doesn't need to await.
+// Includes SESSION_ID so the realtime listener can skip our own echoes.
 export async function pushToFirestore(backup) {
   try {
-    await setDoc(userDocRef(), { ...backup, updatedAt: serverTimestamp() });
+    await setDoc(userDocRef(), { ...backup, updatedAt: serverTimestamp(), _pushedBySession: SESSION_ID });
   } catch (err) {
     console.warn('[sync] pushToFirestore failed:', err.message);
   }
