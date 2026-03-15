@@ -32,17 +32,24 @@ export async function loadFromFirestore() {
 
 // ── Write full backup to Firestore ────────────────────────
 // Fire-and-forget: does not throw, caller doesn't need to await.
+// Tracks in-flight pushes so the realtime listener can ignore its own echoes.
+let _pendingPushCount = 0;
+export function hasPendingFirestorePush() { return _pendingPushCount > 0; }
+
 export async function pushToFirestore(backup) {
+  _pendingPushCount++;
   try {
     await setDoc(userDocRef(), { ...backup, updatedAt: serverTimestamp() });
   } catch (err) {
     console.warn('[sync] pushToFirestore failed:', err.message);
+  } finally {
+    _pendingPushCount--;
   }
 }
 
 // ── Realtime listener ─────────────────────────────────────
 // Calls `onData(backup)` every time the Firestore doc changes
-// (from another device, tab, or external update).
+// from another device or tab. Skips echoes of our own in-flight writes.
 // Returns an unsubscribe function.
 export function subscribeToFirestore(onData) {
   let ref;
@@ -53,9 +60,9 @@ export function subscribeToFirestore(onData) {
   }
 
   return onSnapshot(ref, { includeMetadataChanges: true }, snap => {
-    // Skip cache-only snapshots — could be stale and would overwrite newer local data
-    if (snap.metadata.fromCache) return;
+    if (snap.metadata.fromCache) return; // stale cache, skip
     if (!snap.exists()) return;
+    if (hasPendingFirestorePush()) return; // our own write in flight — wait for it
     const { updatedAt, ...data } = snap.data();
     onData(data);
   }, err => {
