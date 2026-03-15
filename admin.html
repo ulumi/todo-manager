@@ -964,7 +964,7 @@
       const x     = 20 + ((h1 & 0x7fffffff) % Math.max(W - 20, 1));
       const y     = 90 + ((h2 & 0x7fffffff) % Math.max(H - 90, 1));
       const delay = ((i * 0.65) % 3).toFixed(2);
-      const label = u.email ? u.email.split('@')[0] : u.uid.slice(0, 8) + '…';
+      const label = u.email ? u.email.split('@')[0] : u.displayName || u.uid.slice(0, 8) + '…';
       const full  = u.email || u.uid;
       const type  = u.isAnonymous ? 'Guest' : 'Account';
 
@@ -1020,7 +1020,7 @@
             <tr>
               <td>
                 <span class="dot dot-green"></span>
-                ${u.email || '<span style="color:var(--muted)">Guest</span>'}
+                ${u.email || u.displayName || '<span style="color:var(--muted)">Guest</span>'}
               </td>
               <td style="color:var(--muted);font-size:11px;font-family:monospace">${u.uid}</td>
               <td style="color:var(--muted)">${fmtMs(u.lastSeen)}</td>
