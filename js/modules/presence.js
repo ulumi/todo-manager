@@ -205,20 +205,37 @@ function _showMessage(data, docRef) {
   const toast = document.createElement('div');
   toast.className = 'admin-toast';
   toast.innerHTML = `
-    <span class="admin-toast__icon">📣</span>
-    <div class="admin-toast__body">
-      <p class="admin-toast__label">${label}</p>
-      <p class="admin-toast__text">${_esc(data.message)}</p>
+    <div class="admin-toast__main" role="button" tabindex="0" aria-label="Ouvrir le chat pour répondre">
+      <span class="admin-toast__icon">📣</span>
+      <div class="admin-toast__body">
+        <p class="admin-toast__label">${label}</p>
+        <p class="admin-toast__text">${_esc(data.message)}</p>
+        <p class="admin-toast__reply-cta"><span class="admin-toast__reply-arrow">↩</span> Répondre</p>
+      </div>
     </div>
     <button class="admin-toast__close" aria-label="Fermer">✕</button>
   `;
   document.body.appendChild(toast);
 
-  // Only dismiss + mark as read when the user explicitly clicks ✕
-  toast.querySelector('.admin-toast__close').addEventListener('click', () => {
-    updateDoc(docRef, { read: true }).catch(() => {});
+  const dismiss = () => {
     toast.classList.add('admin-toast--out');
     setTimeout(() => toast.remove(), 300);
+  };
+
+  // Main area → open chat + focus reply
+  const main = toast.querySelector('.admin-toast__main');
+  const openAndReply = () => {
+    updateDoc(docRef, { read: true }).catch(() => {});
+    dismiss();
+    window.app?.openChat?.();
+  };
+  main.addEventListener('click', openAndReply);
+  main.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openAndReply(); });
+
+  // ✕ button → dismiss only, mark as read
+  toast.querySelector('.admin-toast__close').addEventListener('click', () => {
+    updateDoc(docRef, { read: true }).catch(() => {});
+    dismiss();
   });
 }
 
