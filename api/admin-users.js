@@ -40,16 +40,29 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const result = await admin.auth().listUsers(1000);
-    const users  = result.users.map(u => ({
-      uid:          u.uid,
-      email:        u.email       || null,
-      displayName:  u.displayName || null,
-      isAnonymous:  u.providerData.length === 0,
-      creationTime: u.metadata.creationTime,
-      lastSignIn:   u.metadata.lastSignInTime,
-      disabled:     u.disabled,
-    }));
+    // Fetch auth users + presence docs in parallel.
+    // Presence docs may contain displayName set via in-app guest prompt
+    // even when Firebase Auth u.displayName is null.
+    const [authResult, presenceSnap] = await Promise.all([
+      admin.auth().listUsers(1000),
+      admin.firestore().collection('presence').get(),
+    ]);
+
+    const presenceMap = {};
+    presenceSnap.forEach(d => { presenceMap[d.id] = d.data(); });
+
+    const users = authResult.users.map(u => {
+      const p = presenceMap[u.uid] || {};
+      return {
+        uid:          u.uid,
+        email:        u.email       || null,
+        displayName:  u.displayName || p.displayName || null,
+        isAnonymous:  u.providerData.length === 0,
+        creationTime: u.metadata.creationTime,
+        lastSignIn:   u.metadata.lastSignInTime,
+        disabled:     u.disabled,
+      };
+    });
     res.status(200).json(users);
   } catch (e) {
     res.status(500).json({ error: e.message });
