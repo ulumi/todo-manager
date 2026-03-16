@@ -511,6 +511,26 @@
     .insight-bar__fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width .6s ease; }
     .insight-bar__fill.success { background: var(--success); }
     .insight-bar__fill.danger  { background: var(--danger); }
+
+    /* ── Broadcast panel history ─────────────────────── */
+    .bp-history-item { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+    .bp-history-item__msg  { font-size: 13px; line-height: 1.4; }
+    .bp-history-item__meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; }
+    .bp-empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+    /* ── Recent messages panel ───────────────────────── */
+    .recent-msg-item { padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+    .recent-msg-item:hover { background: var(--surface2); }
+    .recent-msg-item__from { font-size: 11px; font-weight: 600; color: var(--primary); margin-bottom: 3px; }
+    .recent-msg-item__text { font-size: 13px; color: var(--text); line-height: 1.4; white-space: pre-wrap; }
+    .recent-msg-item__time { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Panel section label ─────────────────────────── */
+    .panel-section-label {
+      padding: 8px 16px 6px; font-size: 10px; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -670,16 +690,11 @@
           </div>
         </div>
         <div class="module__body">
-          <div class="broadcast-composer">
-            <textarea id="broadcastInput" placeholder="📢 Broadcast to all users…" rows="3"></textarea>
-            <div class="broadcast-composer__footer">
-              <label class="broadcast-public-label">
-                <input type="checkbox" id="broadcastPublic" checked> Public
-              </label>
-              <button class="btn btn-sm" id="broadcastBtn">Send all</button>
-            </div>
-          </div>
           <div class="action-buttons">
+            <button class="action-btn" id="openBroadcastBtn">
+              <span class="action-btn__icon">📢</span>
+              <span class="action-btn__label">Broadcast all users</span>
+            </button>
             <button class="action-btn danger" id="deleteAnonBtn">
               <span class="action-btn__icon">🗑</span>
               <span class="action-btn__label">Delete all guests</span>
@@ -782,13 +797,6 @@
     </div>
     <!-- Convo -->
     <div style="display:flex; flex-direction:column; flex:1; overflow:hidden; min-width:0">
-      <div class="broadcast-bar">
-        <input type="text" id="broadcastInputPanel" placeholder="📢 Broadcast to all…">
-        <label class="broadcast-public-label2">
-          <input type="checkbox" id="broadcastPublicPanel" checked> Public
-        </label>
-        <button class="btn btn-sm" id="broadcastBtnPanel">Send all</button>
-      </div>
       <div class="admin-chat__convo-header" id="chatConvoHeader">
         <span class="admin-chat__convo-empty">← Select a user</span>
       </div>
@@ -801,6 +809,40 @@
         <button class="admin-chat__send" id="sendBtn" disabled>Send</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════ BROADCAST PANEL ══════════ -->
+<div id="broadcastBackdrop" class="chat-backdrop"></div>
+<div id="broadcastPanel" class="chat-panel" style="width:480px">
+  <div class="chat-panel__header">
+    <div class="chat-panel__title">📢 Broadcast</div>
+    <button class="btn-icon" id="broadcastClose">✕ Close</button>
+  </div>
+  <div style="padding:16px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; flex-direction:column; gap:8px">
+    <textarea id="bpText" class="admin-chat__input" style="resize:vertical;min-height:80px;max-height:180px" placeholder="Message to all users…" rows="3"></textarea>
+    <div style="display:flex; align-items:center; justify-content:space-between">
+      <label class="broadcast-public-label"><input type="checkbox" id="bpPublic" checked> Public</label>
+      <button class="btn btn-sm" id="bpSendBtn">Send to all</button>
+    </div>
+  </div>
+  <div class="panel-section-label">Recent broadcasts</div>
+  <div id="bpHistory" style="flex:1; overflow-y:auto">
+    <div class="bp-empty">Loading…</div>
+  </div>
+</div>
+
+<!-- ══════════ MESSAGES PANEL ══════════ -->
+<div id="messagesBackdrop" class="chat-backdrop"></div>
+<div id="messagesPanel" class="chat-panel" style="width:440px">
+  <div class="chat-panel__header">
+    <div class="chat-panel__title">💬 Recent messages</div>
+    <button class="btn btn-sm btn-ghost" id="openFullChatBtn">Full chat →</button>
+    <button class="btn-icon" id="messagesClose">✕ Close</button>
+  </div>
+  <div class="panel-section-label">Last 5 messages from users</div>
+  <div id="recentMsgsList" style="flex:1; overflow-y:auto">
+    <div class="bp-empty">Loading…</div>
   </div>
 </div>
 
@@ -825,6 +867,8 @@
   const app  = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db   = getFirestore(app);
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   // ── Presence ─────────────────────────────────────────
   let _presenceInterval = null;
@@ -1299,6 +1343,7 @@
     const message = input.value.trim();
     if (!message) return;
     const btn = document.getElementById(btnId);
+    const origLabel = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
       const res  = await fetch(API + '/admin-batch', {
@@ -1311,12 +1356,9 @@
       input.value = '';
       btn.textContent = `✓ Sent to ${data.sent}`;
       logActivity('📢', `Broadcast to ${data.sent} users: "${message.slice(0,40)}${message.length > 40 ? '…' : ''}"`);
-      setTimeout(() => { btn.textContent = 'Send all'; btn.disabled = false; }, 3000);
-    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = 'Send all'; btn.disabled = false; }
+      setTimeout(() => { btn.textContent = origLabel; btn.disabled = false; }, 3000);
+    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = origLabel; btn.disabled = false; }
   }
-
-  document.getElementById('broadcastBtn').addEventListener('click',      () => doBroadcast('broadcastInput',      'broadcastPublic',      'broadcastBtn'));
-  document.getElementById('broadcastBtnPanel').addEventListener('click', () => doBroadcast('broadcastInputPanel', 'broadcastPublicPanel', 'broadcastBtnPanel'));
 
   // ── Chat slide-over ───────────────────────────────────
   const chatBackdrop = document.getElementById('chatBackdrop');
@@ -1338,7 +1380,6 @@
   window.closeChat = closeChat;
   document.getElementById('chatClose').addEventListener('click', closeChat);
   chatBackdrop.addEventListener('click', closeChat);
-  document.getElementById('openMessagesBtn').addEventListener('click', openChat);
 
   window.openChatFor = function(uid, label) {
     openChat();
@@ -1481,6 +1522,87 @@
     if (msg) setTimeout(() => { sendStatus.textContent = ''; sendStatus.className = ''; }, 3000);
   }
 
+  // ── Broadcast Panel ───────────────────────────────────
+  const broadcastBackdropEl = document.getElementById('broadcastBackdrop');
+  const broadcastPanelEl    = document.getElementById('broadcastPanel');
+
+  function openBroadcastPanel() {
+    broadcastBackdropEl.classList.add('open');
+    broadcastPanelEl.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadBpHistory();
+    document.getElementById('bpText').focus();
+  }
+  function closeBroadcastPanel() {
+    broadcastBackdropEl.classList.remove('open');
+    broadcastPanelEl.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  async function loadBpHistory() {
+    const el = document.getElementById('bpHistory');
+    try {
+      const list = await api('/admin-messages?broadcasts=1');
+      const top5 = list.slice(0, 5);
+      if (!top5.length) { el.innerHTML = '<div class="bp-empty">No broadcasts yet.</div>'; return; }
+      el.innerHTML = top5.map(m => {
+        const count = m.recipientCount ? `· ${m.recipientCount} recipients` : '';
+        return `<div class="bp-history-item">
+          <div class="bp-history-item__msg">${esc(m.message)}</div>
+          <div class="bp-history-item__meta"><span>${timeSince(m.sentAt)}</span><span>${count}</span></div>
+        </div>`;
+      }).join('');
+    } catch { el.innerHTML = '<div class="bp-empty">Failed to load.</div>'; }
+  }
+  document.getElementById('broadcastClose').addEventListener('click', closeBroadcastPanel);
+  broadcastBackdropEl.addEventListener('click', closeBroadcastPanel);
+  document.getElementById('openBroadcastBtn').addEventListener('click', openBroadcastPanel);
+  document.getElementById('bpSendBtn').addEventListener('click', async () => {
+    await doBroadcast('bpText', 'bpPublic', 'bpSendBtn');
+    loadBpHistory();
+  });
+
+  // ── Messages Panel ────────────────────────────────────
+  const messagesBackdropEl = document.getElementById('messagesBackdrop');
+  const messagesPanelEl    = document.getElementById('messagesPanel');
+
+  function openMessagesPanel() {
+    messagesBackdropEl.classList.add('open');
+    messagesPanelEl.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadRecentMessages();
+  }
+  function closeMessagesPanel() {
+    messagesBackdropEl.classList.remove('open');
+    messagesPanelEl.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  async function loadRecentMessages() {
+    const el = document.getElementById('recentMsgsList');
+    try {
+      const msgs = await api('/admin-messages?incoming=5');
+      if (!msgs.length) { el.innerHTML = '<div class="bp-empty">No messages yet.</div>'; return; }
+      el.innerHTML = msgs.map(m => {
+        const user = _users.find(u => u.uid === m.uid);
+        const fromLabel = user ? (user.email || user.displayName || m.uid.slice(0,14) + '…') : m.uid.slice(0,14) + '…';
+        return `<div class="recent-msg-item" data-uid="${esc(m.uid)}" data-label="${esc(fromLabel)}">
+          <div class="recent-msg-item__from">${esc(fromLabel)}</div>
+          <div class="recent-msg-item__text">${esc(m.message)}</div>
+          <div class="recent-msg-item__time">${timeSince(m.sentAt)}</div>
+        </div>`;
+      }).join('');
+      el.querySelectorAll('.recent-msg-item').forEach(item => {
+        item.addEventListener('click', () => {
+          closeMessagesPanel();
+          openChatFor(item.dataset.uid, item.dataset.label);
+        });
+      });
+    } catch { el.innerHTML = '<div class="bp-empty">Failed to load.</div>'; }
+  }
+  document.getElementById('messagesClose').addEventListener('click', closeMessagesPanel);
+  messagesBackdropEl.addEventListener('click', closeMessagesPanel);
+  document.getElementById('openMessagesBtn').addEventListener('click', openMessagesPanel);
+  document.getElementById('openFullChatBtn').addEventListener('click', () => { closeMessagesPanel(); openChat(); });
+
   // ── Dashboard layout: drag / collapse / hide ──────────
   const LAYOUT_KEY = 'adminDashboardLayout';
   const DEFAULT_ORDER  = ['stats', 'insights', 'online', 'actions', 'activity', 'users'];
@@ -1569,7 +1691,9 @@
 
   function initDrag() {
     document.getElementById('dashboardCanvas').addEventListener('dragstart', e => {
-      if (!e.target.closest('.drag-handle')) { e.preventDefault(); return; }
+      const fromHeader = e.target.closest('.module__header');
+      const fromBtn    = e.target.closest('button');
+      if (!fromHeader || fromBtn) { e.preventDefault(); return; }
       _dragEl = e.target.closest('.d-module');
       if (!_dragEl) return;
       e.dataTransfer.effectAllowed = 'move';

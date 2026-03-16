@@ -26,8 +26,24 @@ module.exports = async function handler(req, res) {
 
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
+  // GET /api/admin-messages?incoming=N — recent user→admin messages (collection group)
+  if (req.method === 'GET' && req.query?.incoming) {
+    const limit = Math.min(parseInt(req.query.incoming) || 5, 20);
+    const snap = await admin.firestore()
+      .collectionGroup('inbox')
+      .where('from', '==', 'user')
+      .orderBy('sentAt', 'desc')
+      .limit(limit)
+      .get();
+    const msgs = [];
+    snap.forEach(d => {
+      const uid = d.ref.parent.parent.id;
+      msgs.push({ id: d.id, uid, message: d.data().message, from: 'user', sentAt: d.data().sentAt?.toMillis?.() ?? null, read: d.data().read });
+    });
+    res.status(200).json(msgs);
+
   // GET /api/admin-messages?broadcasts=1 — fetch broadcast history
-  if (req.method === 'GET' && req.query?.broadcasts) {
+  } else if (req.method === 'GET' && req.query?.broadcasts) {
     const snap = await admin.firestore()
       .collection('broadcasts').orderBy('sentAt', 'desc').get();
     const list = [];

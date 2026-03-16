@@ -1637,6 +1637,7 @@ class TodoApp {
       [...username].forEach(ch =>
         html += `<span class="ninja-username-${variant}" style="--delay:${nameDelay}ms">${esc(ch)}</span>`
       );
+      html += `<span class="ninja-char" style="--delay:${nameDelay}ms">?</span>`;
       el.innerHTML = html;
     } else {
       // Guest / no username: just "2FŨKOI"
