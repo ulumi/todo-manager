@@ -698,23 +698,23 @@
         </div>
         <div class="module__body">
           <div class="action-buttons" id="actionButtons">
-            <button class="action-btn" id="openBroadcastBtn" data-action-id="broadcast" draggable="false">
+            <button class="action-btn" id="openBroadcastBtn" data-action-id="broadcast">
               <span class="action-drag">⠿</span>
               <span class="action-btn__icon">📢</span>
               <span class="action-btn__label">Broadcast all users</span>
             </button>
-            <button class="action-btn danger" id="deleteAnonBtn" data-action-id="delete-anon" draggable="false">
+            <button class="action-btn danger" id="deleteAnonBtn" data-action-id="delete-anon">
               <span class="action-drag">⠿</span>
               <span class="action-btn__icon">🗑</span>
               <span class="action-btn__label">Delete all guests</span>
               <span class="action-btn__count" id="anonCount">—</span>
             </button>
-            <button class="action-btn" id="cleanStaleBtn" data-action-id="clean" draggable="false">
+            <button class="action-btn" id="cleanStaleBtn" data-action-id="clean">
               <span class="action-drag">⠿</span>
               <span class="action-btn__icon">🧹</span>
               <span class="action-btn__label">Clean stale presence</span>
             </button>
-            <button class="action-btn" id="openMessagesBtn" data-action-id="messages" draggable="false">
+            <button class="action-btn" id="openMessagesBtn" data-action-id="messages">
               <span class="action-drag">⠿</span>
               <span class="action-btn__icon">💬</span>
               <span class="action-btn__label">Open messages</span>
@@ -1772,49 +1772,47 @@
 
   function initActionsDrag() {
     const container = document.getElementById('actionButtons');
-    let _dragBtn = null;
+    let _dragBtn  = null;
+    let _startY   = 0;
+    let _dragging = false;
 
-    container.addEventListener('mousedown', e => {
-      if (e.target.closest('.action-drag')) {
-        const btn = e.target.closest('.action-btn');
-        if (btn) btn.setAttribute('draggable', 'true');
+    container.addEventListener('pointerdown', e => {
+      if (!e.target.closest('.action-drag')) return;
+      _dragBtn  = e.target.closest('.action-btn');
+      if (!_dragBtn) return;
+      _startY   = e.clientY;
+      _dragging = false;
+      container.setPointerCapture(e.pointerId);
+      e.preventDefault(); // prevent click/text-select
+    });
+
+    container.addEventListener('pointermove', e => {
+      if (!_dragBtn) return;
+      if (!_dragging && Math.abs(e.clientY - _startY) > 5) {
+        _dragging = true;
+        _dragBtn.classList.add('is-dragging');
       }
-    });
-    document.addEventListener('mouseup', () => {
-      if (_dragBtn) return;
-      container.querySelectorAll('.action-btn').forEach(el => el.setAttribute('draggable', 'false'));
+      if (!_dragging) return;
+      // Find element under pointer (temporarily disable pointer events on dragged btn)
+      _dragBtn.style.pointerEvents = 'none';
+      const below = document.elementFromPoint(e.clientX, e.clientY);
+      _dragBtn.style.pointerEvents = '';
+      const target = below?.closest('.action-btn');
+      if (!target || target === _dragBtn) return;
+      const rect  = target.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      if (after) target.after(_dragBtn);
+      else       target.before(_dragBtn);
     });
 
-    container.addEventListener('dragstart', e => {
-      _dragBtn = e.target.closest('.action-btn[draggable="true"]');
-      if (!_dragBtn) { e.preventDefault(); return; }
-      e.dataTransfer.effectAllowed = 'move';
-      setTimeout(() => _dragBtn?.classList.add('is-dragging'), 0);
-    });
-    container.addEventListener('dragend', () => {
-      _dragBtn?.classList.remove('is-dragging');
-      _dragBtn?.setAttribute('draggable', 'false');
-      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
+    container.addEventListener('pointerup', e => {
+      if (!_dragBtn) return;
+      _dragBtn.classList.remove('is-dragging');
+      _dragBtn  = null;
+      _dragging = false;
+      if (container.hasPointerCapture(e.pointerId)) container.releasePointerCapture(e.pointerId);
       const order = [...container.querySelectorAll('.action-btn[data-action-id]')].map(el => el.dataset.actionId);
       localStorage.setItem(ACTIONS_ORDER_KEY, JSON.stringify(order));
-      _dragBtn = null;
-    });
-    container.addEventListener('dragover', e => {
-      e.preventDefault();
-      const target = e.target.closest('.action-btn');
-      if (!target || target === _dragBtn) return;
-      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
-      target.classList.add('drag-over');
-      const rect = target.getBoundingClientRect();
-      if (e.clientY > rect.top + rect.height / 2) target.after(_dragBtn);
-      else target.before(_dragBtn);
-    });
-    container.addEventListener('dragleave', e => {
-      e.target.closest('.action-btn')?.classList.remove('drag-over');
-    });
-    container.addEventListener('drop', e => {
-      e.preventDefault();
-      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
     });
   }
 
