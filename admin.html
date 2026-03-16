@@ -1272,9 +1272,9 @@
   function populateTargetList() {
     const q        = (document.getElementById('chatSearch')?.value || '').toLowerCase();
     const onlineMap = new Map(_lastOnline.map(u => [u.uid, u]));
-    const match = u => !q || (u.email || '').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q);
+    const match = u => !q || (u.email || '').toLowerCase().includes(q) || u.uid.toLowerCase().includes(q) || (u.displayName || '').toLowerCase().includes(q);
 
-    const registered   = _users.filter(u => !u.isAnonymous && u.email && match(u));
+    const registered   = _users.filter(u => !u.isAnonymous && match(u));
     const guests       = _users.filter(u => u.isAnonymous && match(u)).sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
     const onlineGroup  = registered.filter(u =>  onlineMap.has(u.uid));
     const offlineGroup = registered.filter(u => !onlineMap.has(u.uid)).sort((a, b) => new Date(b.lastSignIn || 0) - new Date(a.lastSignIn || 0));
@@ -1312,8 +1312,9 @@
       return h;
     }
 
-    if (onlineGroup.length)  { chatUserList.appendChild(makeHeader(`Online now (${onlineGroup.length})`));  onlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, u.email))); }
-    if (offlineGroup.length) { chatUserList.appendChild(makeHeader(`Registered (${offlineGroup.length})`)); offlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, u.email))); }
+    const regLabel = u => u.email || u.displayName || u.uid.slice(0, 14) + '…';
+    if (onlineGroup.length)  { chatUserList.appendChild(makeHeader(`Online now (${onlineGroup.length})`));  onlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, regLabel(u)))); }
+    if (offlineGroup.length) { chatUserList.appendChild(makeHeader(`Registered (${offlineGroup.length})`)); offlineGroup.forEach(u => chatUserList.appendChild(makeItem(u, regLabel(u)))); }
     if (guests.length) {
       const h = makeHeader(`Guests (${guests.length})`, true, _guestsExpanded);
       h.addEventListener('click', () => { _guestsExpanded = !_guestsExpanded; populateTargetList(); });
