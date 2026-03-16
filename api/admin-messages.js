@@ -27,23 +27,20 @@ module.exports = async function handler(req, res) {
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
   // GET /api/admin-messages?incoming=N — recent user→admin messages (collection group)
-  // Note: no .where() here to avoid requiring a composite Firestore index; filter client-side.
+  // No .where() or .orderBy() to avoid requiring any Firestore composite/collection-group index.
+  // Filter and sort entirely in JS after fetching.
   if (req.method === 'GET' && req.query?.incoming) {
     const limit = Math.min(parseInt(req.query.incoming) || 5, 20);
-    const snap = await admin.firestore()
-      .collectionGroup('inbox')
-      .orderBy('sentAt', 'desc')
-      .limit(limit * 6) // fetch more to have enough after filtering to 'user' only
-      .get();
+    const snap = await admin.firestore().collectionGroup('inbox').get();
     const msgs = [];
     snap.forEach(d => {
-      if (msgs.length >= limit) return;
       const data = d.data();
       if (data.from !== 'user') return;
       const uid = d.ref.parent.parent.id;
-      msgs.push({ id: d.id, uid, message: data.message, from: 'user', sentAt: data.sentAt?.toMillis?.() ?? null, read: data.read });
+      msgs.push({ id: d.id, uid, message: data.message, from: 'user', sentAt: data.sentAt?.toMillis?.() ?? 0, read: data.read });
     });
-    res.status(200).json(msgs);
+    msgs.sort((a, b) => b.sentAt - a.sentAt);
+    res.status(200).json(msgs.slice(0, limit));
 
   // GET /api/admin-messages?broadcasts=1 — fetch broadcast history
   } else if (req.method === 'GET' && req.query?.broadcasts) {

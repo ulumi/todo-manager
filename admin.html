@@ -83,7 +83,7 @@
     /* ── Dashboard canvas ────────────────────────────── */
     .dashboard-canvas {
       padding: 24px 28px; max-width: 1280px;
-      display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch;
     }
     .d-module[data-size="full"]  { flex: 0 0 100%; min-width: 0; }
     .d-module[data-size="third"] { flex: 0 0 calc(33.333% - 14px); min-width: 0; }
@@ -512,6 +512,13 @@
     .insight-bar__fill.success { background: var(--success); }
     .insight-bar__fill.danger  { background: var(--danger); }
 
+    /* ── Action buttons drag handle ─────────────────── */
+    .action-drag { cursor: grab; color: var(--border); font-size: 14px; line-height: 1; flex-shrink: 0; transition: color .15s; user-select: none; margin-right: 2px; }
+    .action-drag:hover { color: var(--muted); }
+    .action-drag:active { cursor: grabbing; }
+    .action-btn.is-dragging { opacity: .3; }
+    .action-btn.drag-over   { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: 8px; }
+
     /* ── Broadcast panel history ─────────────────────── */
     .bp-history-item { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
     .bp-history-item__msg  { font-size: 13px; line-height: 1.4; }
@@ -690,21 +697,25 @@
           </div>
         </div>
         <div class="module__body">
-          <div class="action-buttons">
-            <button class="action-btn" id="openBroadcastBtn">
+          <div class="action-buttons" id="actionButtons">
+            <button class="action-btn" id="openBroadcastBtn" data-action-id="broadcast" draggable="false">
+              <span class="action-drag">⠿</span>
               <span class="action-btn__icon">📢</span>
               <span class="action-btn__label">Broadcast all users</span>
             </button>
-            <button class="action-btn danger" id="deleteAnonBtn">
+            <button class="action-btn danger" id="deleteAnonBtn" data-action-id="delete-anon" draggable="false">
+              <span class="action-drag">⠿</span>
               <span class="action-btn__icon">🗑</span>
               <span class="action-btn__label">Delete all guests</span>
               <span class="action-btn__count" id="anonCount">—</span>
             </button>
-            <button class="action-btn" id="cleanStaleBtn">
+            <button class="action-btn" id="cleanStaleBtn" data-action-id="clean" draggable="false">
+              <span class="action-drag">⠿</span>
               <span class="action-btn__icon">🧹</span>
               <span class="action-btn__label">Clean stale presence</span>
             </button>
-            <button class="action-btn" id="openMessagesBtn">
+            <button class="action-btn" id="openMessagesBtn" data-action-id="messages" draggable="false">
+              <span class="action-drag">⠿</span>
               <span class="action-btn__icon">💬</span>
               <span class="action-btn__label">Open messages</span>
             </button>
@@ -1017,6 +1028,8 @@
       dashboard.style.display = 'block';
       loadLayout();
       initDrag();
+      loadActionsOrder();
+      initActionsDrag();
       startPresence(user);
       logActivity('🔐', `Signed in as ${user.email}`);
       loadUsers();
@@ -1740,6 +1753,69 @@
   function saveOrder() {
     _layout.order = [...document.querySelectorAll('#dashboardCanvas .d-module')].map(el => el.dataset.module);
     saveLayout();
+  }
+
+  // ── Quick Actions drag-reorder ────────────────────────
+  const ACTIONS_ORDER_KEY = 'adminActionsOrder';
+
+  function loadActionsOrder() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ACTIONS_ORDER_KEY));
+      if (!Array.isArray(saved)) return;
+      const container = document.getElementById('actionButtons');
+      saved.forEach(id => {
+        const el = container.querySelector(`[data-action-id="${id}"]`);
+        if (el) container.appendChild(el);
+      });
+    } catch {}
+  }
+
+  function initActionsDrag() {
+    const container = document.getElementById('actionButtons');
+    let _dragBtn = null;
+
+    container.addEventListener('mousedown', e => {
+      if (e.target.closest('.action-drag')) {
+        const btn = e.target.closest('.action-btn');
+        if (btn) btn.setAttribute('draggable', 'true');
+      }
+    });
+    document.addEventListener('mouseup', () => {
+      if (_dragBtn) return;
+      container.querySelectorAll('.action-btn').forEach(el => el.setAttribute('draggable', 'false'));
+    });
+
+    container.addEventListener('dragstart', e => {
+      _dragBtn = e.target.closest('.action-btn[draggable="true"]');
+      if (!_dragBtn) { e.preventDefault(); return; }
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => _dragBtn?.classList.add('is-dragging'), 0);
+    });
+    container.addEventListener('dragend', () => {
+      _dragBtn?.classList.remove('is-dragging');
+      _dragBtn?.setAttribute('draggable', 'false');
+      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
+      const order = [...container.querySelectorAll('.action-btn[data-action-id]')].map(el => el.dataset.actionId);
+      localStorage.setItem(ACTIONS_ORDER_KEY, JSON.stringify(order));
+      _dragBtn = null;
+    });
+    container.addEventListener('dragover', e => {
+      e.preventDefault();
+      const target = e.target.closest('.action-btn');
+      if (!target || target === _dragBtn) return;
+      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
+      target.classList.add('drag-over');
+      const rect = target.getBoundingClientRect();
+      if (e.clientY > rect.top + rect.height / 2) target.after(_dragBtn);
+      else target.before(_dragBtn);
+    });
+    container.addEventListener('dragleave', e => {
+      e.target.closest('.action-btn')?.classList.remove('drag-over');
+    });
+    container.addEventListener('drop', e => {
+      e.preventDefault();
+      container.querySelectorAll('.action-btn.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
   }
 
 </script>
