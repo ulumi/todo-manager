@@ -88,6 +88,8 @@ body {
   font-size: 15px;
   transition: background-color .3s ease;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 
@@ -396,6 +398,8 @@ header {
   align-items: flex-start;
   max-width: 1440px;
   margin: 0 auto;
+  flex: 1;
+  width: 100%;
 }
 
 main {
@@ -4482,7 +4486,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 #versionLabel {
   display: block;
   width: fit-content;
-  margin: 40px auto 0;
+  margin: auto auto 12px;
   padding: 4px 10px 6px;
   font-size: 11px;
   color: var(--text-muted);
