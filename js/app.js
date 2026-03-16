@@ -49,7 +49,7 @@ import {
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
 import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID } from './modules/sync.js';
-import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage } from './modules/presence.js';
+import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
   handleAvatarFile, selectAvatarFilter, selectAvatarEmoji,
@@ -1045,6 +1045,7 @@ class TodoApp {
     const name  = input?.value?.trim();
     if (!name) return;
     await updateUserProfile(name);
+    updatePresenceName(name);
     this._updateUserBtn();
     const msg = document.getElementById('profileSaveMsg');
     if (msg) {
@@ -1669,7 +1670,7 @@ class TodoApp {
   async saveGuestName() {
     const name  = document.getElementById('guestNameInput')?.value.trim();
     const email = document.getElementById('guestEmailInput')?.value.trim();
-    if (name) await updateUserProfile(name);
+    if (name) { await updateUserProfile(name); updatePresenceName(name); }
     this._closeGuestNamePrompt();
     this._updateUserBtn();
     if (email) {
@@ -1687,7 +1688,7 @@ class TodoApp {
 
   async openAvatarFromPrompt() {
     const name = document.getElementById('guestNameInput')?.value.trim();
-    if (name) await updateUserProfile(name);
+    if (name) { await updateUserProfile(name); updatePresenceName(name); }
     this._closeGuestNamePrompt();
     this._updateUserBtn();
     this.openAvatarEditor();

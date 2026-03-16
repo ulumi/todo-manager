@@ -141,6 +141,14 @@ export async function updatePresenceAvatar() {
   setDoc(_presenceRef, { avatar: avatar ?? null }, { merge: true }).catch(() => {});
 }
 
+// ── Update displayName in presence (call after updateProfile) ────────────
+// updateProfile() does NOT trigger onAuthStateChanged in Firebase v9,
+// so initPresence is never re-called — we must push the name manually.
+export function updatePresenceName(displayName) {
+  if (!_presenceRef || !displayName) return;
+  setDoc(_presenceRef, { displayName }, { merge: true }).catch(() => {});
+}
+
 // ── Cleanup ───────────────────────────────────────────────
 export function destroyPresence() {
   if (_heartbeat)  { clearInterval(_heartbeat); _heartbeat = null; }
