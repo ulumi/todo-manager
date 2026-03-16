@@ -97,7 +97,7 @@
     }
     .module__header h2 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
     .module__actions   { display: flex; align-items: center; gap: 6px; }
-    .module__body      { padding: 16px; overflow: auto; }
+    .module__body      { padding: 16px; overflow: auto; flex: 1; }
     .module__body.no-pad { padding: 0; }
 
     /* ── Stats strip ─────────────────────────────────── */
@@ -125,7 +125,7 @@
     /* ── Modules row ─────────────────────────────────── */
     .modules-row {
       display: grid; grid-template-columns: 1fr 1fr 1fr;
-      gap: 20px; align-items: start;
+      gap: 20px; align-items: stretch;
     }
     @media (max-width: 900px) { .modules-row { grid-template-columns: 1fr; } }
 
@@ -203,7 +203,7 @@
     .disabled-widget__label { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
     /* ── Activity feed ───────────────────────────────── */
-    .feed-body { max-height: 280px; overflow-y: auto; }
+    .feed-body { flex: 1; overflow-y: auto; min-height: 80px; }
     .feed-item {
       display: flex; align-items: flex-start; gap: 10px;
       padding: 9px 16px; border-bottom: 1px solid var(--border); font-size: 12px;
