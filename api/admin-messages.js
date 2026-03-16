@@ -27,18 +27,21 @@ module.exports = async function handler(req, res) {
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
   // GET /api/admin-messages?incoming=N — recent user→admin messages (collection group)
+  // Note: no .where() here to avoid requiring a composite Firestore index; filter client-side.
   if (req.method === 'GET' && req.query?.incoming) {
     const limit = Math.min(parseInt(req.query.incoming) || 5, 20);
     const snap = await admin.firestore()
       .collectionGroup('inbox')
-      .where('from', '==', 'user')
       .orderBy('sentAt', 'desc')
-      .limit(limit)
+      .limit(limit * 6) // fetch more to have enough after filtering to 'user' only
       .get();
     const msgs = [];
     snap.forEach(d => {
+      if (msgs.length >= limit) return;
+      const data = d.data();
+      if (data.from !== 'user') return;
       const uid = d.ref.parent.parent.id;
-      msgs.push({ id: d.id, uid, message: d.data().message, from: 'user', sentAt: d.data().sentAt?.toMillis?.() ?? null, read: d.data().read });
+      msgs.push({ id: d.id, uid, message: data.message, from: 'user', sentAt: data.sentAt?.toMillis?.() ?? null, read: data.read });
     });
     res.status(200).json(msgs);
 
