@@ -80,10 +80,14 @@
     #adminEmail   { color: var(--muted); font-size: 12px; }
     .header-meta  { font-size: 11px; color: var(--muted); }
 
-    .dashboard-body {
+    /* ── Dashboard canvas ────────────────────────────── */
+    .dashboard-canvas {
       padding: 24px 28px; max-width: 1280px;
-      display: flex; flex-direction: column; gap: 20px;
+      display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;
     }
+    .d-module[data-size="full"]  { flex: 0 0 100%; min-width: 0; }
+    .d-module[data-size="third"] { flex: 0 0 calc(33.333% - 14px); min-width: 0; }
+    @media (max-width: 900px) { .d-module[data-size="third"] { flex: 0 0 100%; } }
 
     /* ── Module card ─────────────────────────────────── */
     .module {
@@ -92,13 +96,48 @@
       display: flex; flex-direction: column;
     }
     .module__header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px 10px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
-    .module__header h2 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-    .module__actions   { display: flex; align-items: center; gap: 6px; }
+    .module__header h2 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex: 1; }
+    .module__actions   { display: flex; align-items: center; gap: 4px; }
     .module__body      { padding: 16px; overflow: auto; flex: 1; }
     .module__body.no-pad { padding: 0; }
+
+    /* ── Drag handle ─────────────────────────────────── */
+    .drag-handle {
+      cursor: grab; color: var(--border); font-size: 16px;
+      padding: 2px 4px; user-select: none; flex-shrink: 0;
+      transition: color .15s; line-height: 1;
+    }
+    .drag-handle:hover  { color: var(--muted); }
+    .drag-handle:active { cursor: grabbing; }
+    .d-module.is-dragging { opacity: .3; }
+    .d-module.drag-over   { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius); }
+
+    /* ── Collapse ────────────────────────────────────── */
+    .module-toggle { transition: transform .18s; font-size: 11px; }
+    .d-module.collapsed .module-toggle { transform: rotate(-90deg); }
+    .d-module.collapsed .module__body,
+    .d-module.collapsed .feed-body,
+    .d-module.collapsed .palace-room { display: none !important; }
+
+    /* ── Hidden modules bar ──────────────────────────── */
+    .hidden-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 10px 28px; display: flex; align-items: center; gap: 12px;
+      z-index: 150; transform: translateY(100%); transition: transform .2s ease;
+    }
+    .hidden-bar.visible { transform: translateY(0); }
+    .hidden-bar__label  { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
+    .hidden-pills       { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+    .hidden-pill {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 99px;
+      font-size: 12px; padding: 3px 10px; cursor: pointer; color: var(--muted);
+      transition: color .1s, border-color .1s;
+    }
+    .hidden-pill:hover  { color: var(--text); border-color: var(--primary); }
 
     /* ── Stats strip ─────────────────────────────────── */
     .stats-strip {
@@ -494,12 +533,23 @@
     <h1>⚡ Super Admin</h1>
     <span class="header-meta" id="dashLastRefresh"></span>
     <span id="adminEmail"></span>
+    <button class="btn btn-ghost btn-sm" id="resetLayoutBtn" title="Reset module layout">⊞ Reset layout</button>
     <button class="btn btn-ghost btn-sm" id="logoutBtn">Sign out</button>
   </header>
 
-  <div class="dashboard-body">
+  <div class="dashboard-canvas" id="dashboardCanvas">
 
-    <!-- Row 1: Stats -->
+    <!-- Stats module -->
+    <div class="module d-module" data-module="stats" data-size="full">
+      <div class="module__header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <h2>Stats</h2>
+        <div class="module__actions">
+          <button class="module-toggle btn-icon" data-for="stats" title="Collapse">▾</button>
+          <button class="module-hide btn-icon" data-for="stats" title="Hide module">✕</button>
+        </div>
+      </div>
+      <div class="module__body">
     <div class="stats-strip">
       <div class="stat-card accent">
         <div class="stat-value" id="s-total">—</div>
@@ -535,9 +585,20 @@
         <div class="stat-label">New / month</div>
       </div>
     </div>
+      </div>
+    </div>
 
-    <!-- Insights strip -->
-    <div class="section-label">Insights</div>
+    <!-- Insights module -->
+    <div class="module d-module" data-module="insights" data-size="full">
+      <div class="module__header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
+        <h2>Insights</h2>
+        <div class="module__actions">
+          <button class="module-toggle btn-icon" data-for="insights" title="Collapse">▾</button>
+          <button class="module-hide btn-icon" data-for="insights" title="Hide module">✕</button>
+        </div>
+      </div>
+      <div class="module__body">
     <div class="insights-strip">
       <div class="insight-card">
         <div class="insight-value na" id="ins-conversion">—</div>
@@ -576,18 +637,20 @@
         <div class="insight-bar"><div class="insight-bar__fill" id="ins-clicks-bar" style="width:0%"></div></div>
       </div>
     </div>
-
-    <!-- Row 2: Three modules -->
-    <div class="modules-row">
+      </div>
+    </div>
 
       <!-- Online Now -->
-      <div class="module">
+      <div class="module d-module" data-module="online" data-size="third">
         <div class="module__header">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
           <h2><span class="live-dot"></span> Online now <span id="onlineCount" class="count-badge">—</span></h2>
           <div class="module__actions">
             <button class="btn-icon" id="cleanSessionsBtn" title="Clean stale presence">🧹</button>
             <button class="btn-icon" id="toggleOnlineView" title="Toggle palace view">🏰</button>
             <button class="btn-icon" id="refreshOnline" title="Refresh">↻</button>
+            <button class="module-toggle btn-icon" data-for="online" title="Collapse">▾</button>
+            <button class="module-hide btn-icon" data-for="online" title="Hide module">✕</button>
           </div>
         </div>
         <div class="module__body" id="onlineModuleBody">
@@ -597,9 +660,14 @@
       </div>
 
       <!-- Quick Actions -->
-      <div class="module">
+      <div class="module d-module" data-module="actions" data-size="third">
         <div class="module__header">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
           <h2>Quick Actions</h2>
+          <div class="module__actions">
+            <button class="module-toggle btn-icon" data-for="actions" title="Collapse">▾</button>
+            <button class="module-hide btn-icon" data-for="actions" title="Hide module">✕</button>
+          </div>
         </div>
         <div class="module__body">
           <div class="broadcast-composer">
@@ -637,26 +705,32 @@
       </div>
 
       <!-- Activity Feed -->
-      <div class="module">
+      <div class="module d-module" data-module="activity" data-size="third">
         <div class="module__header">
+          <span class="drag-handle" title="Drag to reorder">⠿</span>
           <h2>Activity</h2>
-          <button class="btn-icon" id="clearActivityBtn">Clear</button>
+          <div class="module__actions">
+            <button class="btn-icon" id="clearActivityBtn">Clear</button>
+            <button class="module-toggle btn-icon" data-for="activity" title="Collapse">▾</button>
+            <button class="module-hide btn-icon" data-for="activity" title="Hide module">✕</button>
+          </div>
         </div>
         <div class="feed-body" id="activityFeed">
           <div class="feed-empty">Actions will appear here.</div>
         </div>
       </div>
 
-    </div><!-- /.modules-row -->
-
-    <!-- Row 3: Users table -->
-    <div class="module">
+    <!-- Users table -->
+    <div class="module d-module" data-module="users" data-size="full">
       <div class="module__header">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
         <h2>All accounts <span id="usersCount" class="count-badge">—</span></h2>
         <div class="module__actions">
           <input type="text" id="usersSearch" placeholder="Search email or UID…" class="search-input" />
           <button class="btn-icon danger" id="deleteAnonBtnTable" title="Delete all guests">🗑 Guests</button>
           <button class="btn-icon" id="refreshUsers">↻ Refresh</button>
+          <button class="module-toggle btn-icon" data-for="users" title="Collapse">▾</button>
+          <button class="module-hide btn-icon" data-for="users" title="Hide module">✕</button>
         </div>
       </div>
       <div class="module__body no-pad" style="overflow-x:auto">
@@ -678,8 +752,15 @@
       </div>
     </div>
 
-  </div><!-- /.dashboard-body -->
+  </div><!-- /.dashboard-canvas -->
 </div><!-- /#dashboard -->
+
+<!-- ══════════ HIDDEN MODULES BAR ══════════ -->
+<div class="hidden-bar" id="hiddenBar">
+  <span class="hidden-bar__label">Hidden</span>
+  <div class="hidden-pills" id="hiddenPills"></div>
+  <button class="btn btn-ghost btn-sm" id="resetLayoutBtnBar">⊞ Reset layout</button>
+</div>
 
 <!-- ══════════ CHAT SLIDE-OVER ══════════ -->
 <div id="chatBackdrop" class="chat-backdrop"></div>
@@ -890,6 +971,8 @@
       adminEmail.textContent = user.email;
       loginScreen.style.display = 'none';
       dashboard.style.display = 'block';
+      loadLayout();
+      initDrag();
       startPresence(user);
       logActivity('🔐', `Signed in as ${user.email}`);
       loadUsers();
@@ -1397,6 +1480,144 @@
     sendStatus.textContent = msg; sendStatus.className = ok ? 'ok' : 'err';
     if (msg) setTimeout(() => { sendStatus.textContent = ''; sendStatus.className = ''; }, 3000);
   }
+
+  // ── Dashboard layout: drag / collapse / hide ──────────
+  const LAYOUT_KEY = 'adminDashboardLayout';
+  const DEFAULT_ORDER  = ['stats', 'insights', 'online', 'actions', 'activity', 'users'];
+  const MODULE_LABELS  = { stats: 'Stats', insights: 'Insights', online: 'Online Now', actions: 'Quick Actions', activity: 'Activity', users: 'Users' };
+
+  let _layout = { order: [...DEFAULT_ORDER], collapsed: {}, hidden: {} };
+
+  function loadLayout() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LAYOUT_KEY));
+      if (saved?.order) _layout = { order: DEFAULT_ORDER.map(id => id), ...saved };
+    } catch {}
+    applyLayout();
+  }
+
+  function saveLayout() {
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify(_layout));
+  }
+
+  function applyLayout() {
+    const canvas = document.getElementById('dashboardCanvas');
+    // Re-order DOM
+    _layout.order.forEach(id => {
+      const el = canvas.querySelector(`[data-module="${id}"]`);
+      if (el) canvas.appendChild(el);
+    });
+    // Apply collapsed / hidden states
+    canvas.querySelectorAll('.d-module').forEach(el => {
+      const id = el.dataset.module;
+      el.classList.toggle('collapsed', !!_layout.collapsed[id]);
+      el.style.display = _layout.hidden[id] ? 'none' : '';
+      const btn = el.querySelector(`.module-toggle[data-for="${id}"]`);
+      if (btn) btn.textContent = _layout.collapsed[id] ? '▸' : '▾';
+    });
+    updateHiddenBar();
+  }
+
+  function updateHiddenBar() {
+    const hiddenIds = DEFAULT_ORDER.filter(id => _layout.hidden[id]);
+    const bar   = document.getElementById('hiddenBar');
+    const pills = document.getElementById('hiddenPills');
+    if (!hiddenIds.length) { bar.classList.remove('visible'); return; }
+    bar.classList.add('visible');
+    pills.innerHTML = hiddenIds.map(id =>
+      `<button class="hidden-pill" data-show="${id}">${MODULE_LABELS[id]}</button>`
+    ).join('');
+    pills.querySelectorAll('.hidden-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _layout.hidden[btn.dataset.show] = false;
+        saveLayout(); applyLayout();
+      });
+    });
+  }
+
+  // Collapse toggle
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.module-toggle');
+    if (!btn) return;
+    const id = btn.dataset.for;
+    if (!id) return;
+    _layout.collapsed[id] = !_layout.collapsed[id];
+    saveLayout(); applyLayout();
+  });
+
+  // Hide button
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('.module-hide');
+    if (!btn) return;
+    const id = btn.dataset.for;
+    if (!id) return;
+    _layout.hidden[id] = true;
+    saveLayout(); applyLayout();
+  });
+
+  // Reset layout
+  function resetLayout() {
+    _layout = { order: [...DEFAULT_ORDER], collapsed: {}, hidden: {} };
+    saveLayout(); applyLayout();
+  }
+  document.getElementById('resetLayoutBtn').addEventListener('click', resetLayout);
+  document.getElementById('resetLayoutBtnBar').addEventListener('click', resetLayout);
+  window.resetDashboard = resetLayout;
+
+  // ── Drag and drop ─────────────────────────────────────
+  let _dragEl = null;
+
+  function initDrag() {
+    document.getElementById('dashboardCanvas').addEventListener('dragstart', e => {
+      if (!e.target.closest('.drag-handle')) { e.preventDefault(); return; }
+      _dragEl = e.target.closest('.d-module');
+      if (!_dragEl) return;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', _dragEl.dataset.module);
+      setTimeout(() => _dragEl?.classList.add('is-dragging'), 0);
+    });
+
+    document.getElementById('dashboardCanvas').addEventListener('dragend', () => {
+      _dragEl?.classList.remove('is-dragging');
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      _dragEl = null;
+      saveOrder();
+    });
+
+    document.getElementById('dashboardCanvas').addEventListener('dragover', e => {
+      e.preventDefault();
+      const target = e.target.closest('.d-module');
+      if (!target || target === _dragEl) return;
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      target.classList.add('drag-over');
+      // Insert before or after based on mouse position
+      const rect = target.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      if (after) target.after(_dragEl);
+      else       target.before(_dragEl);
+    });
+
+    document.getElementById('dashboardCanvas').addEventListener('dragleave', e => {
+      const target = e.target.closest('.d-module');
+      if (target && !target.contains(e.relatedTarget)) target.classList.remove('drag-over');
+    });
+
+    document.getElementById('dashboardCanvas').addEventListener('drop', e => {
+      e.preventDefault();
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    // Make modules draggable via handle
+    document.getElementById('dashboardCanvas').querySelectorAll('.d-module').forEach(el => {
+      el.setAttribute('draggable', 'true');
+    });
+  }
+
+  function saveOrder() {
+    _layout.order = [...document.querySelectorAll('#dashboardCanvas .d-module')].map(el => el.dataset.module);
+    saveLayout();
+  }
+
 </script>
 </body>
 </html>
