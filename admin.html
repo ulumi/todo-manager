@@ -799,6 +799,35 @@
     return res.json();
   }
 
+  // ── Avatar helpers ────────────────────────────────────
+  const FILTER_CSS = {
+    bw:      'grayscale(1)',
+    sepia:   'sepia(1)',
+    vivid:   'saturate(2) contrast(1.1)',
+    cool:    'hue-rotate(200deg) saturate(1.3)',
+    vintage: 'sepia(.4) saturate(.9) brightness(1.05)',
+    cartoon: 'contrast(1.5) saturate(1.8)',
+  };
+
+  function avatarCircleHTML(u, size, circleClass = 'mini-avatar__circle', dotClass = 'mini-avatar__dot') {
+    const bg    = uidToColor(u.uid);
+    const label = u.email ? u.email.split('@')[0] : u.displayName || u.uid.slice(0,8) + '…';
+    const dot   = `<span class="${dotClass}"></span>`;
+    const av    = u.avatar;
+
+    if (av?.type === 'emoji' && av.value) {
+      const fs = Math.round(size * 0.5);
+      const st = `transform:scale(${av.scale ?? 1.2}) translate(${av.x ?? 0}px,${av.y ?? 0}px);display:inline-block;line-height:1`;
+      return `<div class="${circleClass}" style="background:${bg};font-size:${fs}px"><span style="${st}">${av.value}</span>${dot}</div>`;
+    }
+    if (av?.type === 'photo' && av.data) {
+      const filt = FILTER_CSS[av.filter] ? `;filter:${FILTER_CSS[av.filter]}` : '';
+      return `<div class="${circleClass}" style="background:${bg}"><img src="${av.data}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%${filt}" />${dot}</div>`;
+    }
+    // Fallback: initial letter
+    return `<div class="${circleClass}" style="background:${bg};font-size:${Math.round(size * 0.38)}px">${label[0].toUpperCase()}${dot}</div>`;
+  }
+
   // ── Format helpers ───────────────────────────────────
   function fmtDate(str) {
     if (!str) return '—';
@@ -1001,7 +1030,7 @@
     body.innerHTML = `<div class="mini-palace">${online.map(u => {
       const label = u.email ? u.email.split('@')[0] : u.displayName || u.uid.slice(0,8) + '…';
       return `<div class="mini-avatar" data-uid="${u.uid}" data-label="${u.email || u.displayName || u.uid}" title="${u.email || u.uid}">
-        <div class="mini-avatar__circle" style="background:${uidToColor(u.uid)}">${label[0].toUpperCase()}<span class="mini-avatar__dot"></span></div>
+        ${avatarCircleHTML(u, 40)}
         <span class="mini-avatar__name">${label}</span>
       </div>`;
     }).join('')}</div>`;
@@ -1029,7 +1058,7 @@
       wrap.style.cssText = `left:${x}px; top:${y}px; animation-delay:-${delay}s;`;
       wrap.innerHTML = `<div class="palace-avatar">
         <div class="palace-tooltip"><b>${full}</b>Vu : ${fmtMs(u.lastSeen)}<br>Type : ${u.isAnonymous ? 'Guest' : 'Account'}</div>
-        <div class="palace-avatar__circle" style="background:${uidToColor(u.uid)}">${label[0].toUpperCase()}<span class="palace-avatar__dot"></span></div>
+        ${avatarCircleHTML(u, 44, 'palace-avatar__circle', 'palace-avatar__dot')}
         <span class="palace-avatar__name">${label}</span>
       </div>`;
       wrap.addEventListener('click', () => openChatFor(u.uid, full));

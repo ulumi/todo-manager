@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { esc } from './utils.js';
+import { updatePresenceAvatar } from './presence.js';
 
 const AVATAR_KEY = 'profileAvatar';
 const SIZE = 240; // compressed canvas size
@@ -126,6 +127,7 @@ export async function saveAvatar() {
   }
   closeAvatarEditor();
   window.app.render();
+  updatePresenceAvatar();
 }
 
 // ── Crop controls (exported) ──────────────────────────

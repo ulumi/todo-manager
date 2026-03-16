@@ -27,6 +27,7 @@ let _setOffline        = null;
 let _onMessagesUpdate  = null;
 let _allMessages       = [];
 let _userId            = null;
+let _presenceRef       = null;
 let _clickCount        = 0;
 let _sessionStartMs    = null;
 
@@ -41,7 +42,8 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
   _clickCount = 0;
   _sessionStartMs = Date.now();
 
-  const presenceRef = doc(db, 'presence', user.uid);
+  _presenceRef = doc(db, 'presence', user.uid);
+  const presenceRef = _presenceRef;
 
   // First call: set sessionStart for this session
   setDoc(presenceRef, {
@@ -68,6 +70,11 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
 
   _heartbeat = setInterval(_setOnline, 30_000);
   document.addEventListener('click', _onUserClick, { capture: true });
+
+  // Write avatar asynchronously (fire-and-forget)
+  _getPresenceAvatar().then(avatar => {
+    setDoc(presenceRef, { avatar: avatar ?? null }, { merge: true }).catch(() => {});
+  });
 
   window.addEventListener('beforeunload', _setOffline);
   document.addEventListener('visibilitychange', _onVisibility);
@@ -127,6 +134,13 @@ export function markAllMessagesRead() {
   });
 }
 
+// ── Update avatar in presence (call after user changes avatar) ──────────
+export async function updatePresenceAvatar() {
+  if (!_presenceRef) return;
+  const avatar = await _getPresenceAvatar();
+  setDoc(_presenceRef, { avatar: avatar ?? null }, { merge: true }).catch(() => {});
+}
+
 // ── Cleanup ───────────────────────────────────────────────
 export function destroyPresence() {
   if (_heartbeat)  { clearInterval(_heartbeat); _heartbeat = null; }
@@ -138,6 +152,7 @@ export function destroyPresence() {
   _userId = null;
   _clickCount = 0;
   _sessionStartMs = null;
+  _presenceRef = null;
   document.removeEventListener('click', _onUserClick, { capture: true });
   document.removeEventListener('visibilitychange', _onVisibility);
 }
@@ -146,6 +161,31 @@ export function destroyPresence() {
 let _setOnline = null;
 
 function _onUserClick() { _clickCount++; }
+
+async function _getPresenceAvatar() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('profileAvatar'));
+    if (!saved) return null;
+    if (saved.type === 'emoji') {
+      return { type: 'emoji', value: saved.value, scale: saved.scale ?? 1.2, x: saved.x ?? 0, y: saved.y ?? 0 };
+    }
+    if (saved.type === 'photo' && saved.data) {
+      // Downscale to 48px thumbnail — lightweight for Firestore
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const c = document.createElement('canvas');
+          c.width = c.height = 48;
+          c.getContext('2d').drawImage(img, 0, 0, 48, 48);
+          resolve({ type: 'photo', data: c.toDataURL('image/jpeg', 0.7), filter: saved.filter || 'natural' });
+        };
+        img.onerror = () => resolve(null);
+        img.src = saved.data;
+      });
+    }
+  } catch {}
+  return null;
+}
 
 function _onVisibility() {
   if (document.hidden) { if (_setOffline) _setOffline(); }
