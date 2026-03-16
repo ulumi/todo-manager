@@ -1875,7 +1875,8 @@ class TodoApp {
       const ts = msg.sentAt?.seconds
         ? new Date(msg.sentAt.seconds * 1000).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
         : '';
-      const isUser = msg.from === 'user';
+      const isUser      = msg.from === 'user';
+      const isBroadcast = !isUser && !!msg.broadcastId;
       return isUser
         ? `<div class="chat-bubble chat-bubble--user">
             <div class="chat-bubble__body">
@@ -1883,10 +1884,19 @@ class TodoApp {
               ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
             </div>
           </div>`
-        : `<div class="chat-bubble">
-            <span class="chat-bubble__icon">📣</span>
+        : isBroadcast
+        ? `<div class="chat-bubble chat-bubble--broadcast">
+            <span class="chat-bubble__icon">📢</span>
             <div class="chat-bubble__body">
-              ${msg.broadcastId ? `<p class="chat-bubble__tag">Envoyé à tous</p>` : ''}
+              <p class="chat-bubble__tag"><span class="chat-bubble__tag-dot"></span>À tous</p>
+              <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
+              ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
+            </div>
+          </div>`
+        : `<div class="chat-bubble chat-bubble--direct">
+            <span class="chat-bubble__icon">💬</span>
+            <div class="chat-bubble__body">
+              <p class="chat-bubble__tag"><span class="chat-bubble__tag-dot"></span>Message direct</p>
               <p class="chat-bubble__text">${this._escHtml(msg.message)}</p>
               ${ts ? `<p class="chat-bubble__time">${ts}</p>` : ''}
             </div>

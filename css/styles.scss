@@ -5009,12 +5009,23 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   &__tag {
+    display:        inline-flex;
+    align-items:    center;
+    gap:            5px;
     font-size:      10px;
-    font-weight:    600;
-    color:          var(--text-muted);
+    font-weight:    700;
     text-transform: uppercase;
-    letter-spacing: .04em;
-    margin:         0 0 4px;
+    letter-spacing: .05em;
+    margin:         0 0 6px;
+    border-radius:  99px;
+    padding:        2px 8px 2px 6px;
+  }
+
+  &__tag-dot {
+    width:         6px;
+    height:        6px;
+    border-radius: 50%;
+    flex-shrink:   0;
   }
 
   &__time {
@@ -5023,6 +5034,38 @@ body:has(.bottom-panel:not(.hidden))::before {
     margin-top: 4px;
     margin-bottom: 0;
   }
+}
+
+// Broadcast bubble — warm amber
+.chat-bubble--broadcast {
+  .chat-bubble__body {
+    background:    rgba(245,158,11,.10);
+    border-color:  rgba(245,158,11,.35);
+    border-radius: 4px 12px 12px 12px;
+  }
+  .chat-bubble__tag {
+    background: rgba(245,158,11,.18);
+    color:      #d97706;
+    [data-theme="dark"] & { color: #fbbf24; background: rgba(245,158,11,.22); }
+  }
+  .chat-bubble__tag-dot { background: #f59e0b; }
+  .chat-bubble__time    { color: rgba(217,119,6,.7); }
+  [data-theme="dark"] & .chat-bubble__time { color: rgba(251,191,36,.55); }
+}
+
+// Direct message bubble — indigo/personal
+.chat-bubble--direct {
+  .chat-bubble__body {
+    background:    rgba(99,102,241,.08);
+    border-color:  rgba(99,102,241,.3);
+    border-radius: 4px 12px 12px 12px;
+  }
+  .chat-bubble__tag {
+    background: rgba(99,102,241,.14);
+    color:      #4f46e5;
+    [data-theme="dark"] & { color: #a5b4fc; background: rgba(99,102,241,.2); }
+  }
+  .chat-bubble__tag-dot { background: #6366f1; }
 }
 
 // User's own reply bubble — right-aligned
