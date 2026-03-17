@@ -318,9 +318,8 @@ class TodoApp {
     window.scrollTo(0, 0);
 
     // 4. Enter
-    gsap.set(main, { x: slideX, y: slideY });
+    gsap.set(main, { x: slideX, y: slideY, opacity: 1 });
     await gsap.to(main, {
-      opacity: 1,
       x: 0,
       y: 0,
       duration: (isDay || isMonth) && delta ? 0.28 : 0.25,
