@@ -634,8 +634,10 @@ class TodoApp {
     if (!grid) return;
     let draggedId = null, draggedDate = null;
 
-    interact('.week-todo-item.interact-draggable', { context: grid })
+    interact('.week-todo-item.interact-draggable')
       .draggable({
+        inertia: true,
+        autoScroll: true,
         listeners: {
           start(event) {
             draggedId = event.target.dataset.id;
@@ -646,15 +648,15 @@ class TodoApp {
             event.target.classList.remove('dragging');
             draggedId = null;
             draggedDate = null;
-            grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+            document.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
           }
         }
       });
 
-    interact('.week-day-todos', { context: grid })
+    interact('.week-day-todos')
       .dropzone({
         accept: '.week-todo-item.interact-draggable',
-        overlap: 0.5,
+        overlap: 0.1,
         ondragenter(event) {
           if (draggedId && event.target.dataset.date !== draggedDate) {
             event.target.classList.add('drag-over');
@@ -676,8 +678,10 @@ class TodoApp {
     if (!grid) return;
     let draggedId = null, draggedDate = null;
 
-    interact('.month-todo-dot.interact-draggable', { context: grid })
+    interact('.month-todo-dot.interact-draggable')
       .draggable({
+        inertia: true,
+        autoScroll: true,
         listeners: {
           start(event) {
             draggedId = event.target.dataset.id;
@@ -688,15 +692,15 @@ class TodoApp {
             event.target.classList.remove('dragging');
             draggedId = null;
             draggedDate = null;
-            grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+            document.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
           }
         }
       });
 
-    interact('.month-cell[data-date]', { context: grid })
+    interact('.month-cell[data-date]')
       .dropzone({
         accept: '.month-todo-dot.interact-draggable',
-        overlap: 0.5,
+        overlap: 0.1,
         ondragenter(event) {
           if (draggedId && event.target.dataset.date !== draggedDate) {
             event.target.classList.add('drag-over');
@@ -720,8 +724,10 @@ class TodoApp {
     const indicator = document.createElement('div');
     indicator.className = 'drop-indicator';
 
-    interact('.todo-item.interact-draggable', { context: container })
+    interact('.todo-item.interact-draggable')
       .draggable({
+        inertia: true,
+        autoScroll: true,
         listeners: {
           start(event) {
             draggedEl = event.target;
@@ -744,7 +750,7 @@ class TodoApp {
             indicator.remove();
             if (draggedEl && dropTarget) {
               window.app.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
-              const targetEl = container.querySelector(`.todo-item[data-id="${dropTarget}"]`);
+              const targetEl = document.querySelector(`.todo-item[data-id="${dropTarget}"]`);
               if (targetEl) {
                 if (dropBefore) {
                   targetEl.parentNode.insertBefore(draggedEl, targetEl);
