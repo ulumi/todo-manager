@@ -33,9 +33,9 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     return `<span class="todo-priority-badge" style="color:${c.color};border-color:${c.border};background:${c.bg};">${c.label}</span>`;
   })();
   const hasMeta = categoryBadge || rec || priorityBadge;
-  const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
+  const draggableClass = group ? 'interact-draggable' : '';
   return `
-    <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
+    <div class="todo-item ${draggableClass}${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${group ? ` data-group="${group}"` : ''} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       ${dragHandleHTML}
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <div class="todo-content">
@@ -212,7 +212,7 @@ export function renderWeekView(todos) {
         ${items.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
-          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
+          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''} ${!isRec?'interact-draggable':''}" data-id="${t.id}" data-date="${ds}"  onclick="event.stopPropagation()">
             <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
             <span class="week-todo-text" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">${esc(t.title)}</span>
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
@@ -319,7 +319,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
-      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}>
+      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''} ${!isRec?'interact-draggable':''}" data-id="${t.id}" data-date="${ds}">
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
