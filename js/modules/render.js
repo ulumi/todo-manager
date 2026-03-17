@@ -33,9 +33,9 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     return `<span class="todo-priority-badge" style="color:${c.color};border-color:${c.border};background:${c.bg};">${c.label}</span>`;
   })();
   const hasMeta = categoryBadge || rec || priorityBadge;
-  const draggableClass = group ? 'interact-draggable' : '';
+  const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
-    <div class="todo-item ${draggableClass}${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${group ? ` data-group="${group}"` : ''} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
+    <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       ${dragHandleHTML}
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <div class="todo-content">
@@ -177,15 +177,13 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
 export function renderWeekView(todos) {
   const todayStr = DS(new Date());
   const weekStart = startOfWeek(state.navDate);
-  const weekEnd = addDays(weekStart, 13); // 14 days for 2 weeks
-  const weekNumStart = getWeekNumber(weekStart);
-  const weekNumEnd = getWeekNumber(weekEnd);
+  const weekEnd = addDays(weekStart, 6);
+  const weekNum = getWeekNumber(weekStart);
   const startStr2 = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
   const endStr2   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
   const totalWeeks = getTotalWeeks(weekEnd.getFullYear());
-  const weekLabel = weekNumStart === weekNumEnd ? `${state.T.week} ${weekNumStart}/${totalWeeks}` : `${state.T.week} ${weekNumStart}-${weekNumEnd}/${totalWeeks}`;
   const header = viewNavHeader(
-    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${weekLabel}</span>`,
+    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span>`,
     `window.app.navigate(-1)`,
     `window.app.navigate(1)`,
     `window.app.navigateMonth(-1)`,
@@ -197,7 +195,7 @@ export function renderWeekView(todos) {
       ${header}
       <div class="week-grid">`;
 
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
     const ds = DS(d);
     const isT = ds === todayStr;
@@ -212,7 +210,7 @@ export function renderWeekView(todos) {
         ${items.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
-          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''} ${!isRec?'interact-draggable':''}" data-id="${t.id}" data-date="${ds}"  onclick="event.stopPropagation()">
+          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
             <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
             <span class="week-todo-text" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">${esc(t.title)}</span>
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
@@ -319,7 +317,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
-      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''} ${!isRec?'interact-draggable':''}" data-id="${t.id}" data-date="${ds}">
+      return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}>
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>

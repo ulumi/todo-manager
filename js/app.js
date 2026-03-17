@@ -2,7 +2,6 @@
 //  MAIN APPLICATION
 // ════════════════════════════════════════════════════════
 
-import interact from 'interactjs';
 import { TRANSLATIONS, ZOOM_SIZES } from './modules/config.js';
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
@@ -248,7 +247,7 @@ class TodoApp {
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     state.setNavDate(d);
     this._pushHistory();
-    this.render();
+    await this._animateViewChange(delta);
   }
 
   async navigateMonth(delta) {
@@ -272,7 +271,7 @@ class TodoApp {
     }
     localStorage.setItem('view', v);
     this._pushHistory();
-    this.render();
+    await this._animateViewChange();
   }
 
   _pushHistory() {
@@ -294,21 +293,15 @@ class TodoApp {
     const main = document.getElementById('mainContent');
     const isDay = state.view === 'day';
     const isMonth = state.view === 'month';
-    const slideX = 0; // Removed slide animation for scroll
-    const slideY = 0; // Removed slide animation for scroll
+    const slideX = isDay && delta !== 0 ? (delta > 0 ? 60 : -60) : 0;
+    const slideY = isMonth && delta !== 0 ? (delta > 0 ? 40 : -40) : 0;
 
-    if (state.view === 'week') {
-      this.render();
-      console.log("stateView = week");
-      return;
-    }
-    console.log("BeforeExit");
     // 1. Exit
     await gsap.to(main, {
       opacity: 0,
       x: slideX ? -slideX : 0,
       y: slideY ? -slideY : 0,
-      duration: 0, // Instant exit
+      duration: (isDay || isMonth) && delta ? 0.15 : 0.12,
       ease: 'power2.in'
     });
 
@@ -316,17 +309,49 @@ class TodoApp {
     this.render();
 
     // 2b. Hide blocks immediately (no flash frame)
-    // const blocks = document.querySelectorAll('.week-container, .month-cell, .year-month-card');
-    // if (blocks.length > 0) {
-    //   gsap.set(blocks, { opacity: 0, y: 0 });
-    // }
+    const blocks = document.querySelectorAll('.week-container, .month-cell, .year-month-card');
+    if (blocks.length > 0) {
+      gsap.set(blocks, { opacity: 0, y: 12 });
+    }
 
     // 3. Scroll to top before entering new view
-    if (state.view !== 'week') window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
 
     // 4. Enter
-    gsap.set(main, { x: 0, y: 0, opacity: 1 }); // Instant enter
-    // Removed gsap.to for enter animation
+    gsap.set(main, { x: slideX, y: slideY });
+    await gsap.to(main, {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      duration: (isDay || isMonth) && delta ? 0.28 : 0.25,
+      delay: 0.02,
+      ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
+    });
+
+    // 5. Stagger blocks — total spread capped at 120ms regardless of count
+    if (blocks.length > 0) {
+      gsap.to(blocks, {
+        opacity: 1,
+        y: 0,
+        duration: 0.25,
+        stagger: { amount: 0.12 },
+        ease: 'power3.out',
+        delay: 0.05,
+        overwrite: 'auto'
+      });
+    }
+
+    // 6. Stagger todo items
+    setTimeout(() => {
+      gsap.from('.todo-item', {
+        opacity: 0,
+        y: 8,
+        duration: 0.2,
+        stagger: { amount: 0.08 },
+        ease: 'power3.out',
+        overwrite: 'auto'
+      });
+    }, 220);
 
     // Setup hover animations
     setupTodoItemHoverAnimations();
@@ -616,7 +641,7 @@ class TodoApp {
         });
       localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
     }
-    // this.render(); // Removed to avoid reload during drag and drop
+    this.render();
   }
 
   moveTodoToDate(todoId, newDateStr) {
@@ -632,145 +657,125 @@ class TodoApp {
   initWeekDragDrop() {
     const grid = document.querySelector('.week-grid');
     if (!grid) return;
-    // Clean up previous interactions
-    interact('.week-todo-item.interact-draggable').unset();
-    interact('.week-day-todos').unset();
     let draggedId = null, draggedDate = null;
 
-    interact('.week-todo-item.interact-draggable')
-      .draggable({
-        inertia: true,
-        autoScroll: true,
-        listeners: {
-          start(event) {
-            draggedId = event.target.dataset.id;
-            draggedDate = event.target.dataset.date;
-            event.target.classList.add('dragging');
-          },
-          end(event) {
-            event.target.classList.remove('dragging');
-            draggedId = null;
-            draggedDate = null;
-            document.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
-          }
-        }
-      });
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.week-todo-item[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
 
-    interact('.week-day-todos')
-      .dropzone({
-        accept: '.week-todo-item.interact-draggable',
-        overlap: 0.5,
-        ondragenter(event) {
-          if (draggedId && event.target.dataset.date !== draggedDate) {
-            event.target.classList.add('drag-over');
-          }
-        },
-        ondragleave(event) {
-          event.target.classList.remove('drag-over');
-        },
-        ondrop(event) {
-          const newDate = event.target.dataset.date;
-          event.target.classList.remove('drag-over');
-          if (newDate && newDate !== draggedDate) window.app.moveTodoToDate(draggedId, newDate);
-        }
-      });
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.week-todo-item');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const col = e.target.closest('.week-day-todos');
+      if (!col) return;
+      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (col.dataset.date !== draggedDate) col.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const col = e.target.closest('.week-day-todos');
+      if (!col || !draggedId) return;
+      const newDate = col.dataset.date;
+      col.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
   }
 
   initMonthDragDrop() {
     const grid = document.querySelector('.month-grid');
     if (!grid) return;
-    // Clean up previous interactions
-    interact('.month-todo-dot.interact-draggable').unset();
-    interact('.month-cell[data-date]').unset();
     let draggedId = null, draggedDate = null;
 
-    interact('.month-todo-dot.interact-draggable')
-      .draggable({
-        inertia: true,
-        autoScroll: true,
-        listeners: {
-          start(event) {
-            draggedId = event.target.dataset.id;
-            draggedDate = event.target.dataset.date;
-            event.target.classList.add('dragging');
-          },
-          end(event) {
-            event.target.classList.remove('dragging');
-            draggedId = null;
-            draggedDate = null;
-            document.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
-          }
-        }
-      });
+    grid.addEventListener('dragstart', e => {
+      const item = e.target.closest('.month-todo-dot[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      draggedDate = item.dataset.date;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
 
-    interact('.month-cell[data-date]')
-      .dropzone({
-        accept: '.month-todo-dot.interact-draggable',
-        overlap: 0.5,
-        ondragenter(event) {
-          if (draggedId && event.target.dataset.date !== draggedDate) {
-            event.target.classList.add('drag-over');
-          }
-        },
-        ondragleave(event) {
-          event.target.classList.remove('drag-over');
-        },
-        ondrop(event) {
-          const newDate = event.target.dataset.date;
-          event.target.classList.remove('drag-over');
-          if (newDate && newDate !== draggedDate) window.app.moveTodoToDate(draggedId, newDate);
-        }
-      });
+    grid.addEventListener('dragend', e => {
+      const item = e.target.closest('.month-todo-dot');
+      if (item) item.classList.remove('dragging');
+      draggedId = null; draggedDate = null;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+    });
+
+    grid.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedId) return;
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell) return;
+      grid.querySelectorAll('.month-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+      if (cell.dataset.date !== draggedDate) cell.classList.add('drag-over');
+    });
+
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      const cell = e.target.closest('.month-cell[data-date]');
+      if (!cell || !draggedId) return;
+      const newDate = cell.dataset.date;
+      cell.classList.remove('drag-over');
+      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+    });
   }
 
   initDayDragDrop() {
     const container = document.querySelector('.day-columns');
     if (!container) return;
-    // Clean up previous interactions
-    interact('.todo-item.interact-draggable').unset();
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropBefore = false;
     const indicator = document.createElement('div');
     indicator.className = 'drop-indicator';
 
-    interact('.todo-item.interact-draggable')
-      .draggable({
-        inertia: true,
-        autoScroll: true,
-        listeners: {
-          start(event) {
-            draggedEl = event.target;
-            draggedGroup = event.target.dataset.group;
-            event.target.classList.add('dragging');
-          },
-          move(event) {
-            // Handle indicator positioning
-            const elements = document.elementsFromPoint(event.clientX, event.clientY);
-            const target = elements.find(el => el.classList.contains('todo-item') && el.classList.contains('interact-draggable') && el !== draggedEl && el.dataset.group === draggedGroup);
-            if (!target) return;
-            const rect = target.getBoundingClientRect();
-            dropBefore = event.clientY < rect.top + rect.height / 2;
-            dropTarget = target.dataset.id;
-            if (dropBefore) target.parentNode.insertBefore(indicator, target);
-            else target.parentNode.insertBefore(indicator, target.nextSibling);
-          },
-          end(event) {
-            if (draggedEl) draggedEl.classList.remove('dragging');
-            indicator.remove();
-            if (draggedEl && dropTarget) {
-              window.app.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
-              const targetEl = document.querySelector(`.todo-item[data-id="${dropTarget}"]`);
-              if (targetEl) {
-                if (dropBefore) {
-                  targetEl.parentNode.insertBefore(draggedEl, targetEl);
-                } else {
-                  targetEl.parentNode.insertBefore(draggedEl, targetEl.nextSibling);
-                }
-              }
-            }
-            draggedEl = null; draggedGroup = null; dropTarget = null;
-          }
-        }
-      });
+    container.addEventListener('dragstart', e => {
+      const item = e.target.closest('.todo-item[draggable]');
+      if (!item) return;
+      draggedEl = item;
+      draggedGroup = item.dataset.group;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', item.dataset.id);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    container.addEventListener('dragend', () => {
+      if (draggedEl) draggedEl.classList.remove('dragging');
+      indicator.remove();
+      draggedEl = null; draggedGroup = null; dropTarget = null;
+    });
+
+    container.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedEl) return;
+      const target = e.target.closest('.todo-item[draggable]');
+      if (!target || target === draggedEl || target.dataset.group !== draggedGroup) return;
+      const rect = target.getBoundingClientRect();
+      dropBefore = e.clientY < rect.top + rect.height / 2;
+      dropTarget = target.dataset.id;
+      if (dropBefore) target.parentNode.insertBefore(indicator, target);
+      else target.parentNode.insertBefore(indicator, target.nextSibling);
+    });
+
+    container.addEventListener('drop', e => {
+      e.preventDefault();
+      indicator.remove();
+      if (draggedEl && dropTarget) this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
+    });
   }
 
   setQuickAddTarget(target) {
@@ -957,7 +962,7 @@ class TodoApp {
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     this.renderQACloud();
-    if (state.view !== 'week') this._animateQuickAddBtn();
+    this._animateQuickAddBtn();
     this._applyMultilineClasses();
   }
 
@@ -1110,12 +1115,19 @@ class TodoApp {
         // Mobile: add on left, template+clear on right
         if (!this._quickAddInDayMode) {
           this._quickAddInDayMode = true;
-          gsap.set(btn, { right: 'auto', left: 16, bottom: 16 });
-          if (tBtn) gsap.set(tBtn, { left: 'auto', right: 16, bottom: 16, opacity: 1 });
-          if (cBtn) gsap.set(cBtn, { left: 'auto', right: 82, bottom: 16, opacity: 1 });
+          gsap.set(btn, { right: 'auto', left: 16, bottom: -80, xPercent: 0 });
+          if (tBtn) gsap.set(tBtn, { left: 'auto', right: 16, bottom: -80, xPercent: 0, opacity: 0 });
+          if (cBtn) gsap.set(cBtn, { left: 'auto', right: 82, bottom: -80, xPercent: 0, opacity: 0 });
         }
-        if (tBtn) tBtn.style.pointerEvents = 'auto';
-        if (cBtn) cBtn.style.pointerEvents = 'auto';
+        gsap.to(btn, { bottom: 16, duration: 0.28, ease: 'expo.out', overwrite: 'auto' });
+        if (tBtn) {
+          gsap.to(tBtn, { bottom: 16, opacity: 1, duration: 0.28, delay: 0.06, ease: 'expo.out', overwrite: 'auto' });
+          setTimeout(() => { if (tBtn) tBtn.style.pointerEvents = 'auto'; }, 340);
+        }
+        if (cBtn) {
+          gsap.to(cBtn, { bottom: 16, opacity: 1, duration: 0.28, delay: 0.12, ease: 'expo.out', overwrite: 'auto' });
+          setTimeout(() => { if (cBtn) cBtn.style.pointerEvents = 'auto'; }, 400);
+        }
         return;
       }
 
@@ -1140,19 +1152,20 @@ class TodoApp {
       }
 
       // Add button: move to anchor (left-aligned group), expand to pill
-      gsap.set(btn, { left: anchorX, bottom: 32, width: 220 });
-      if (label) gsap.set(label, { width: 160, opacity: 1 });
-      btn.classList.add('pill');
+      gsap.to(btn, { left: anchorX, bottom: 32, duration: 0.32, ease: 'expo.out', overwrite: 'auto' });
+      gsap.to(btn, { width: 220, duration: 0.22, delay: 0.1, ease: 'expo.out', overwrite: false });
+      if (label) gsap.to(label, { width: 160, opacity: 1, duration: 0.18, delay: 0.22, ease: 'power2.out', overwrite: 'auto' });
+      setTimeout(() => btn.classList.add('pill'), 320);
 
       // Template button: slide in to the right of add button
       if (tBtn) {
-        gsap.set(tBtn, { left: tBtnLeft, bottom: 32, opacity: 1 });
-        tBtn.style.pointerEvents = 'auto';
+        gsap.to(tBtn, { left: tBtnLeft, bottom: 32, opacity: 1, duration: 0.28, delay: 0.2, ease: 'expo.out', overwrite: 'auto' });
+        setTimeout(() => { if (tBtn) tBtn.style.pointerEvents = 'auto'; }, 480);
       }
       // Clear day button: slide in to the left of add button
       if (cBtn) {
-        gsap.set(cBtn, { left: cBtnLeft, bottom: 32, opacity: 1 });
-        cBtn.style.pointerEvents = 'auto';
+        gsap.to(cBtn, { left: cBtnLeft, bottom: 32, opacity: 1, duration: 0.28, delay: 0.2, ease: 'expo.out', overwrite: 'auto' });
+        setTimeout(() => { if (cBtn) cBtn.style.pointerEvents = 'auto'; }, 480);
       }
 
     } else {
@@ -1163,11 +1176,11 @@ class TodoApp {
       // Hide satellite buttons
       if (tBtn) {
         tBtn.style.pointerEvents = 'none';
-        gsap.set(tBtn, { opacity: 0 });
+        gsap.to(tBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
       }
       if (cBtn) {
         cBtn.style.pointerEvents = 'none';
-        gsap.set(cBtn, { opacity: 0 });
+        gsap.to(cBtn, { opacity: 0, duration: 0.15, ease: 'power2.in', overwrite: 'auto' });
       }
 
       if (isMobile) {
