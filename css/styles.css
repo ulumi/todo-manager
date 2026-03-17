@@ -1080,6 +1080,10 @@ main {
   gap: 12px;
 }
 
+.week-view * {
+  transition: none !important;
+}
+
 .week-day-col {
   flex: 1;
   min-width: 0;
