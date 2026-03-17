@@ -177,13 +177,15 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
 export function renderWeekView(todos) {
   const todayStr = DS(new Date());
   const weekStart = startOfWeek(state.navDate);
-  const weekEnd = addDays(weekStart, 6);
-  const weekNum = getWeekNumber(weekStart);
+  const weekEnd = addDays(weekStart, 13); // 14 days for 2 weeks
+  const weekNumStart = getWeekNumber(weekStart);
+  const weekNumEnd = getWeekNumber(weekEnd);
   const startStr2 = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
   const endStr2   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
   const totalWeeks = getTotalWeeks(weekEnd.getFullYear());
+  const weekLabel = weekNumStart === weekNumEnd ? `${state.T.week} ${weekNumStart}/${totalWeeks}` : `${state.T.week} ${weekNumStart}-${weekNumEnd}/${totalWeeks}`;
   const header = viewNavHeader(
-    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span>`,
+    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${weekLabel}</span>`,
     `window.app.navigate(-1)`,
     `window.app.navigate(1)`,
     `window.app.navigateMonth(-1)`,
@@ -195,7 +197,7 @@ export function renderWeekView(todos) {
       ${header}
       <div class="week-grid">`;
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 14; i++) {
     const d = addDays(weekStart, i);
     const ds = DS(d);
     const isT = ds === todayStr;
