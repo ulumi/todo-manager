@@ -632,6 +632,9 @@ class TodoApp {
   initWeekDragDrop() {
     const grid = document.querySelector('.week-grid');
     if (!grid) return;
+    // Clean up previous interactions
+    interact('.week-todo-item.interact-draggable').unset();
+    interact('.week-day-todos').unset();
     let draggedId = null, draggedDate = null;
 
     interact('.week-todo-item.interact-draggable')
@@ -656,7 +659,7 @@ class TodoApp {
     interact('.week-day-todos')
       .dropzone({
         accept: '.week-todo-item.interact-draggable',
-        overlap: 0.1,
+        overlap: 0.5,
         ondragenter(event) {
           if (draggedId && event.target.dataset.date !== draggedDate) {
             event.target.classList.add('drag-over');
@@ -676,6 +679,9 @@ class TodoApp {
   initMonthDragDrop() {
     const grid = document.querySelector('.month-grid');
     if (!grid) return;
+    // Clean up previous interactions
+    interact('.month-todo-dot.interact-draggable').unset();
+    interact('.month-cell[data-date]').unset();
     let draggedId = null, draggedDate = null;
 
     interact('.month-todo-dot.interact-draggable')
@@ -700,7 +706,7 @@ class TodoApp {
     interact('.month-cell[data-date]')
       .dropzone({
         accept: '.month-todo-dot.interact-draggable',
-        overlap: 0.1,
+        overlap: 0.5,
         ondragenter(event) {
           if (draggedId && event.target.dataset.date !== draggedDate) {
             event.target.classList.add('drag-over');
@@ -720,6 +726,8 @@ class TodoApp {
   initDayDragDrop() {
     const container = document.querySelector('.day-columns');
     if (!container) return;
+    // Clean up previous interactions
+    interact('.todo-item.interact-draggable').unset();
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropBefore = false;
     const indicator = document.createElement('div');
     indicator.className = 'drop-indicator';
