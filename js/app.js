@@ -691,7 +691,27 @@ class TodoApp {
       if (!col || !draggedId) return;
       const newDate = col.dataset.date;
       col.classList.remove('drag-over');
-      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+      if (newDate && newDate !== draggedDate) {
+        const todo = state.todos.find(t => t.id === draggedId);
+        if (todo) {
+          snapshot(state.todos);
+          todo.date = newDate;
+          saveTodos(state.todos);
+          // Move DOM element
+          const oldCol = grid.querySelector(`.week-day-todos[data-date="${draggedDate}"]`);
+          if (oldCol && draggedEl.parentNode === oldCol) {
+            oldCol.removeChild(draggedEl);
+          }
+          col.appendChild(draggedEl);
+          draggedEl.dataset.date = newDate;
+          // Update completion status
+          const d = this.parseDS(newDate);
+          const done = isCompleted(todo, d);
+          draggedEl.classList.toggle('done', done);
+          const checkDiv = draggedEl.querySelector('.week-todo-check');
+          if (checkDiv) checkDiv.classList.toggle('checked', done);
+        }
+      }
     });
   }
 
@@ -732,7 +752,25 @@ class TodoApp {
       if (!cell || !draggedId) return;
       const newDate = cell.dataset.date;
       cell.classList.remove('drag-over');
-      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+      if (newDate && newDate !== draggedDate) {
+        const todo = state.todos.find(t => t.id === draggedId);
+        if (todo) {
+          snapshot(state.todos);
+          todo.date = newDate;
+          saveTodos(state.todos);
+          // Move DOM element
+          const oldCell = grid.querySelector(`.month-cell[data-date="${draggedDate}"]`);
+          if (oldCell && draggedEl.parentNode === oldCell) {
+            oldCell.removeChild(draggedEl);
+          }
+          cell.appendChild(draggedEl);
+          draggedEl.dataset.date = newDate;
+          // Update class
+          const d = this.parseDS(newDate);
+          const done = isCompleted(todo, d);
+          draggedEl.className = `month-todo-dot ${done ? 'done' : ''} priority-${todo.priority || 0}`;
+        }
+      }
     });
   }
 
