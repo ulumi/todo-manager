@@ -710,6 +710,7 @@ class TodoApp {
           draggedEl.classList.toggle('done', done);
           const checkDiv = draggedEl.querySelector('.week-todo-check');
           if (checkDiv) checkDiv.classList.toggle('checked', done);
+          this.render(); // Update the visual
         }
       }
     });
@@ -769,6 +770,7 @@ class TodoApp {
           const d = this.parseDS(newDate);
           const done = isCompleted(todo, d);
           draggedEl.className = `month-todo-dot ${done ? 'done' : ''} priority-${todo.priority || 0}`;
+          this.render(); // Update the visual
         }
       }
     });
