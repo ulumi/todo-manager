@@ -293,15 +293,20 @@ class TodoApp {
     const main = document.getElementById('mainContent');
     const isDay = state.view === 'day';
     const isMonth = state.view === 'month';
-    const slideX = isDay && delta !== 0 ? (delta > 0 ? 60 : -60) : 0;
-    const slideY = isMonth && delta !== 0 ? (delta > 0 ? 40 : -40) : 0;
+    const slideX = 0; // Removed slide animation for scroll
+    const slideY = 0; // Removed slide animation for scroll
+
+    if (state.view === 'week') {
+      this.render();
+      return;
+    }
 
     // 1. Exit
     await gsap.to(main, {
-      opacity: 0,
+      ...(state.view !== 'week' && { opacity: 0 }),
       x: slideX ? -slideX : 0,
       y: slideY ? -slideY : 0,
-      duration: (isDay || isMonth) && delta ? 0.15 : 0.12,
+      duration: 0, // Instant exit
       ease: 'power2.in'
     });
 
@@ -309,48 +314,31 @@ class TodoApp {
     this.render();
 
     // 2b. Hide blocks immediately (no flash frame)
-    const blocks = document.querySelectorAll('.week-container, .month-cell, .year-month-card');
-    if (blocks.length > 0) {
-      gsap.set(blocks, { opacity: 0, y: 12 });
-    }
+    // const blocks = document.querySelectorAll('.week-container, .month-cell, .year-month-card');
+    // if (blocks.length > 0) {
+    //   gsap.set(blocks, { opacity: 0, y: 12 });
+    // }
 
     // 3. Scroll to top before entering new view
-    window.scrollTo(0, 0);
+    if (state.view !== 'week') window.scrollTo(0, 0);
 
     // 4. Enter
-    gsap.set(main, { x: slideX, y: slideY, opacity: 1 });
-    await gsap.to(main, {
-      x: 0,
-      y: 0,
-      duration: (isDay || isMonth) && delta ? 0.28 : 0.25,
-      delay: 0.02,
-      ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
-    });
-
-    // 5. Stagger blocks — total spread capped at 120ms regardless of count
-    if (blocks.length > 0) {
-      gsap.to(blocks, {
-        opacity: 1,
-        y: 0,
-        duration: 0.25,
-        stagger: { amount: 0.12 },
-        ease: 'power3.out',
-        delay: 0.05,
-        overwrite: 'auto'
-      });
-    }
+    gsap.set(main, { x: 0, y: 0, ...(state.view !== 'week' && { opacity: 1 }) }); // Instant enter
+    // Removed gsap.to for enter animation
 
     // 6. Stagger todo items
-    setTimeout(() => {
-      gsap.from('.todo-item', {
-        opacity: 0,
-        y: 8,
-        duration: 0.2,
-        stagger: { amount: 0.08 },
-        ease: 'power3.out',
-        overwrite: 'auto'
-      });
-    }, 220);
+    if (state.view !== 'week') {
+      setTimeout(() => {
+        gsap.from('.todo-item', {
+          opacity: 0,
+          y: 8,
+          duration: 0.2,
+          stagger: { amount: 0.08 },
+          ease: 'power3.out',
+          overwrite: 'auto'
+        });
+      }, 220);
+    }
 
     // Setup hover animations
     setupTodoItemHoverAnimations();
