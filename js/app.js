@@ -641,7 +641,7 @@ class TodoApp {
         });
       localStorage.setItem('recurringOrder', JSON.stringify(this.recurringOrder));
     }
-    this.render();
+    // this.render(); // Removed to avoid reload during drag and drop
   }
 
   moveTodoToDate(todoId, newDateStr) {
@@ -774,7 +774,17 @@ class TodoApp {
     container.addEventListener('drop', e => {
       e.preventDefault();
       indicator.remove();
-      if (draggedEl && dropTarget) this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
+      if (draggedEl && dropTarget) {
+        this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
+        const targetEl = container.querySelector(`.todo-item[data-id="${dropTarget}"]`);
+        if (targetEl) {
+          if (dropBefore) {
+            targetEl.parentNode.insertBefore(draggedEl, targetEl);
+          } else {
+            targetEl.parentNode.insertBefore(draggedEl, targetEl.nextSibling);
+          }
+        }
+      }
     });
   }
 
