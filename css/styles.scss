@@ -1004,7 +1004,9 @@ main {
 
 
 .week-grid {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -3852,7 +3854,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Year / week
   .month-year-panel { display: none; }
   .year-view        { grid-template-columns: repeat(3, 1fr); }
-  .week-grid        { flex-wrap: wrap; .week-day-col { flex-basis: calc(25% - 9px); } }
+  .week-grid        { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
   // Prevent iOS auto-zoom on focus (font-size must be ≥ 16px)
   input, textarea, select { font-size: 16px !important; }
@@ -3910,7 +3912,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .modal-right-inner { width: 100%; max-height: 180px; margin-top: 0; padding-right: 0; }
 
   // Week
-  .week-grid { flex-wrap: wrap; .week-day-col { flex-basis: calc(50% - 6px); } }
+  .week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
   // Todo items: larger tap targets
   .todo-check { width: 28px; height: 28px; }
