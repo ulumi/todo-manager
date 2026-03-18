@@ -286,7 +286,7 @@ export function openAdminModal() {
               <h3>iCal</h3>
               <div class="admin-data-grid">
                 <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;">Télécharger .ics</button>
-                <button class="btn btn-ghost" onclick="window.app.copyICalSubscriptionLink()" style="width:100%;">Copier le lien</button>
+                <button class="btn btn-ghost" onclick="window.app.setView('profile')" style="width:100%;">Lien d'abonnement →</button>
               </div>
             </div>
             <div class="admin-section">
