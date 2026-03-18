@@ -1348,7 +1348,8 @@ class TodoApp {
     if (!input) return;
     const token = await getOrCreateICalToken();
     if (!token) return;
-    input.value = `https://${window.location.host}/api/ical?token=${token}`;
+    const host = window.location.hostname === 'localhost' ? 'todo.hugues.app' : window.location.host;
+    input.value = `https://${host}/api/ical?token=${token}`;
   }
 
   async copyICalLink() {
