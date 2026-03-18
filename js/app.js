@@ -1348,7 +1348,7 @@ class TodoApp {
     if (!input) return;
     const token = await getOrCreateICalToken();
     if (!token) return;
-    input.value = `webcal://${window.location.host}/api/ical?token=${token}`;
+    input.value = `https://${window.location.host}/api/ical?token=${token}`;
   }
 
   async copyICalLink() {
