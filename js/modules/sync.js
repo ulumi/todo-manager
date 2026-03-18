@@ -76,11 +76,13 @@ export async function deleteUserFirestoreDoc() {
   }
 }
 
-// ── iCal token (stored at users/{uid} root doc) ───────────
-function userRootRef() {
+// ── iCal token (stored at users/{uid}/data/ical) ──────────
+// Stored in the 'data' subcollection (same rules as todos) instead of the
+// root 'users/{uid}' doc, which is often not writable by client security rules.
+function userICalRef() {
   const user = getCurrentUser();
   if (!user) throw new Error('sync: no authenticated user');
-  return doc(db, 'users', user.uid);
+  return doc(db, 'users', user.uid, 'data', 'ical');
 }
 
 function genToken() {
@@ -91,7 +93,7 @@ export async function getOrCreateICalToken() {
   const cached = localStorage.getItem('icalToken');
 
   try {
-    const snap = await getDoc(userRootRef());
+    const snap = await getDoc(userICalRef());
     if (snap.exists() && snap.data().icalToken) {
       // Firestore is authoritative — sync to localStorage
       const token = snap.data().icalToken;
@@ -101,10 +103,10 @@ export async function getOrCreateICalToken() {
     // No token in Firestore — use cached or generate new, then save to Firestore
     const token = cached || genToken();
     localStorage.setItem('icalToken', token);
-    await setDoc(userRootRef(), { icalToken: token }, { merge: true });
+    await setDoc(userICalRef(), { icalToken: token });
     return token;
   } catch {
-    // Offline — use cached or generate locally only
+    // Offline or unauthenticated — use cached or generate locally only
     const token = cached || genToken();
     localStorage.setItem('icalToken', token);
     return token;
