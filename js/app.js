@@ -242,7 +242,7 @@ class TodoApp {
   async navigate(delta) {
     const d = new Date(state.navDate);
     if (state.view==='day')   d.setDate(d.getDate()+delta);
-    if (state.view==='week')  d.setDate(d.getDate()+delta*7);
+    if (state.view==='week')  d.setDate(d.getDate()+delta*14);
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     state.setNavDate(d);
@@ -655,44 +655,105 @@ class TodoApp {
   }
 
   initWeekDragDrop() {
-    const grid = document.querySelector('.week-grid');
-    if (!grid) return;
-    let draggedId = null, draggedDate = null;
+    const view = document.querySelector('.week-view');
+    if (!view) return;
+    let draggedId = null, draggedDate = null, draggedHeight = 0;
+    let placeholder = null, dropTargetId = null, dropBefore = false;
 
-    grid.addEventListener('dragstart', e => {
+    const removePlaceholder = () => {
+      if (placeholder) { placeholder.remove(); placeholder = null; }
+      dropTargetId = null;
+    };
+
+    const getOrCreatePlaceholder = (height) => {
+      if (!placeholder) {
+        placeholder = document.createElement('div');
+        placeholder.className = 'week-drop-placeholder';
+        placeholder.style.height = height + 'px';
+      }
+      return placeholder;
+    };
+
+    view.addEventListener('dragstart', e => {
       const item = e.target.closest('.week-todo-item[draggable]');
       if (!item) return;
       draggedId = item.dataset.id;
       draggedDate = item.dataset.date;
+      draggedHeight = item.offsetHeight;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
     });
 
-    grid.addEventListener('dragend', e => {
+    view.addEventListener('dragend', e => {
       const item = e.target.closest('.week-todo-item');
       if (item) item.classList.remove('dragging');
       draggedId = null; draggedDate = null;
-      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
+      removePlaceholder();
     });
 
-    grid.addEventListener('dragover', e => {
+    view.addEventListener('dragover', e => {
       e.preventDefault();
       if (!draggedId) return;
+      const ph = getOrCreatePlaceholder(draggedHeight);
+
+      // Hovering over another todo item → insert before/after it
+      const targetItem = e.target.closest('.week-todo-item[draggable]');
+      if (targetItem && targetItem.dataset.id !== draggedId) {
+        const rect = targetItem.getBoundingClientRect();
+        dropBefore = e.clientY < rect.top + rect.height / 2;
+        dropTargetId = targetItem.dataset.id;
+        if (dropBefore) targetItem.parentNode.insertBefore(ph, targetItem);
+        else targetItem.parentNode.insertBefore(ph, targetItem.nextSibling);
+        return;
+      }
+
+      // Hovering over a column (no item target) → append at end
       const col = e.target.closest('.week-day-todos');
-      if (!col) return;
-      grid.querySelectorAll('.week-day-todos.drag-over').forEach(el => el.classList.remove('drag-over'));
-      if (col.dataset.date !== draggedDate) col.classList.add('drag-over');
+      if (col && !col.contains(e.target.closest('.week-todo-item'))) {
+        dropTargetId = null;
+        col.appendChild(ph);
+      }
     });
 
-    grid.addEventListener('drop', e => {
+    view.addEventListener('drop', e => {
       e.preventDefault();
-      const col = e.target.closest('.week-day-todos');
-      if (!col || !draggedId) return;
-      const newDate = col.dataset.date;
-      col.classList.remove('drag-over');
-      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+      removePlaceholder();
+      if (!draggedId) return;
+
+      if (dropTargetId) {
+        // Reorder within same day or move + reorder to another day
+        const targetItem = view.querySelector(`.week-todo-item[data-id="${dropTargetId}"]`);
+        const newDate = targetItem?.dataset.date;
+        if (newDate && newDate !== draggedDate) {
+          this.moveTodoToDate(draggedId, newDate);
+        } else if (newDate) {
+          this.weekReorder(draggedId, newDate, dropTargetId, dropBefore);
+        }
+      } else {
+        // Dropped on empty column area
+        const col = e.target.closest('.week-day-todos');
+        if (!col || !col.dataset.date) return;
+        const newDate = col.dataset.date;
+        if (newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+      }
     });
+  }
+
+  weekReorder(draggedId, dateStr, targetId, before) {
+    if (draggedId === targetId) return;
+    const d = new Date(dateStr + 'T00:00:00');
+    const items = getTodosForDate(d, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
+    let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
+    items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+    order = order.filter(id => items.some(t => t.id === id));
+    const newOrder = order.filter(id => id !== draggedId);
+    const idx = newOrder.indexOf(targetId);
+    if (idx < 0) return;
+    newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+    this.dayOrder[dateStr] = newOrder;
+    localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    this.render();
   }
 
   initMonthDragDrop() {

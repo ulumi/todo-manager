@@ -174,27 +174,14 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
   </div>`;
 }
 
-export function renderWeekView(todos) {
-  const todayStr = DS(new Date());
-  const weekStart = startOfWeek(state.navDate);
+function _renderWeekBlock(todos, weekStart, todayStr) {
   const weekEnd = addDays(weekStart, 6);
   const weekNum = getWeekNumber(weekStart);
-  const startStr2 = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
-  const endStr2   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
   const totalWeeks = getTotalWeeks(weekEnd.getFullYear());
-  const header = viewNavHeader(
-    `${startStr2} – ${endStr2} <span style="font-size:.7em;opacity:.55;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span>`,
-    `window.app.navigate(-1)`,
-    `window.app.navigate(1)`,
-    `window.app.navigateMonth(-1)`,
-    `window.app.navigateMonth(1)`
-  );
-
-  let html = `<div class="week-view">
-    <div class="week-container">
-      ${header}
-      <div class="week-grid">`;
-
+  const startStr = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
+  const endStr   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
+  let html = `<div class="week-block-label">${startStr} – ${endStr} <span style="font-size:.7em;opacity:.5;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span></div>`;
+  html += `<div class="week-grid">`;
   for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
     const ds = DS(d);
@@ -221,9 +208,36 @@ export function renderWeekView(todos) {
       </div>
     </div>`;
   }
-
-  html += '</div></div></div>';
+  html += `</div>`;
   return html;
+}
+
+export function renderWeekView(todos) {
+  const todayStr = DS(new Date());
+  const week1Start = startOfWeek(state.navDate);
+  const week2Start = addDays(week1Start, 7);
+  const week2End   = addDays(week2Start, 6);
+
+  const startStr = week1Start.getDate() + ' ' + state.MONTHS[week1Start.getMonth()];
+  const endStr   = week2End.getDate() + ' ' + state.MONTHS[week2End.getMonth()] + ' ' + week2End.getFullYear();
+
+  const header = viewNavHeader(
+    `${startStr} – ${endStr}`,
+    `window.app.navigate(-1)`,
+    `window.app.navigate(1)`,
+    `window.app.navigateMonth(-1)`,
+    `window.app.navigateMonth(1)`
+  );
+
+  return `<div class="week-view">
+    <div class="week-container">
+      ${header}
+      ${_renderWeekBlock(todos, week1Start, todayStr)}
+    </div>
+    <div class="week-container">
+      ${_renderWeekBlock(todos, week2Start, todayStr)}
+    </div>
+  </div>`;
 }
 
 function getWeekNumber(date) {

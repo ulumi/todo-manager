@@ -2,13 +2,21 @@
   "name": "todo-manager-server",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Local API server for todo-manager (dev only)",
   "main": "server.js",
   "scripts": {
-    "server": "node server.js"
+    "server": "node server.js",
+    "svelte:dev": "vite --config vite.config.js"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0",
     "interactjs": "^1.10.27"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "sass": "^1.98.0",
+    "svelte": "^5.54.0",
+    "vite": "^8.0.0"
   }
 }

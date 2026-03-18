@@ -991,7 +991,17 @@ main {
 .week-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 4px;
+}
+
+.week-block-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding-left: 2px;
+  margin-bottom: -6px;
 }
 
 .week-container {
@@ -1006,13 +1016,17 @@ main {
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: repeat(2, 1fr);
   gap: 12px;
 }
 
 .week-view * {
   transition: none !important;
   animation: none !important;
+}
+
+.week-view .week-container {
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .week-day-col {
@@ -1080,10 +1094,12 @@ main {
 
 .week-todo-item[draggable] { cursor: grab; }
 .week-todo-item.dragging   { opacity: .35; }
-.week-day-todos.drag-over  {
+.week-drop-placeholder {
+  border-radius: 6px;
+  border: 2px dashed var(--primary);
   background: rgba(99,102,241,.08);
-  outline: 2px dashed var(--primary);
-  border-radius: 8px;
+  box-sizing: border-box;
+  min-height: 28px;
 }
 
 .week-todo-item {
