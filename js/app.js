@@ -977,25 +977,9 @@ class TodoApp {
     downloadICalFile(state.todos);
   }
 
-  getICalSubscriptionURL() {
-    return getICalBlobURL(state.todos);
-  }
-
-  copyICalSubscriptionLink() {
-    // Generate the iCal content
-    const icalContent = generateICalURL(state.todos);
-
-    // Create a data URL (client-side solution)
-    // Note: For production, you'd deploy this to a server endpoint
-    const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icalContent);
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(dataUrl).then(() => {
-      alert('✓ Calendar data URL copied!\n\nFor actual subscriptions, you need a real server.\n\nQuick fix:\n1. Use "Download Calendar" button\n2. Upload the .ics to your calendar app\n\nOr: Copy your site to a hosting service (Vercel, GitHub Pages, etc.)');
-    }).catch(() => {
-      prompt('Copy this calendar URL:', dataUrl);
-    });
-  }
+  // Legacy — kept as no-op to avoid errors from old cached HTML calls
+  getICalSubscriptionURL() { return ''; }
+  copyICalSubscriptionLink() { this.setView('profile'); }
 
   undoAction() {
     const prev = undo();
