@@ -88,25 +88,24 @@ function genToken() {
 }
 
 export async function getOrCreateICalToken() {
-  // 1. Try localStorage first (works offline / guest mode)
   const cached = localStorage.getItem('icalToken');
-  if (cached) return cached;
 
-  // 2. Try Firestore
   try {
     const snap = await getDoc(userRootRef());
     if (snap.exists() && snap.data().icalToken) {
-      localStorage.setItem('icalToken', snap.data().icalToken);
-      return snap.data().icalToken;
+      // Firestore is authoritative — sync to localStorage
+      const token = snap.data().icalToken;
+      localStorage.setItem('icalToken', token);
+      return token;
     }
-    // Generate new, save to both
-    const token = genToken();
+    // No token in Firestore — use cached or generate new, then save to Firestore
+    const token = cached || genToken();
     localStorage.setItem('icalToken', token);
     await setDoc(userRootRef(), { icalToken: token }, { merge: true });
     return token;
   } catch {
-    // Offline or guest — generate and store locally only
-    const token = genToken();
+    // Offline — use cached or generate locally only
+    const token = cached || genToken();
     localStorage.setItem('icalToken', token);
     return token;
   }
