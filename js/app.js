@@ -53,7 +53,7 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken, revokeICalToken } from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken} from './modules/sync.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -1302,7 +1302,6 @@ class TodoApp {
               <button class="btn btn-primary" onclick="window.app.copyICalLink()" title="Copier l'URL">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
               </button>
-              <button class="btn btn-ghost" onclick="window.app.revokeICalLink()" title="Régénérer (invalide l'ancien lien)" style="font-size:11px;">↺</button>
             </div>
             <p class="ical-copy-msg hidden" id="icalCopyMsg" style="font-size:12px;color:var(--success);margin-top:6px;">✓ URL copiée !</p>
           </div>
@@ -1348,10 +1347,7 @@ class TodoApp {
     const input = document.getElementById('icalUrlInput');
     if (!input) return;
     const token = await getOrCreateICalToken();
-    if (!token) {
-      input.placeholder = 'Connexion requise pour obtenir l\'URL';
-      return;
-    }
+    if (!token) return;
     input.value = `webcal://${window.location.host}/api/ical?token=${token}`;
   }
 
@@ -1368,16 +1364,6 @@ class TodoApp {
     if (msg) {
       msg.classList.remove('hidden');
       setTimeout(() => msg.classList.add('hidden'), 2500);
-    }
-  }
-
-  async revokeICalLink() {
-    if (!confirm('Régénérer le lien ? L\'ancien ne fonctionnera plus.')) return;
-    const token = await revokeICalToken();
-    if (!token) return;
-    const input = document.getElementById('icalUrlInput');
-    if (input) {
-      input.value = `webcal://${window.location.host}/api/ical?token=${token}`;
     }
   }
 

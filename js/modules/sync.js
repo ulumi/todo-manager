@@ -83,30 +83,32 @@ function userRootRef() {
   return doc(db, 'users', user.uid);
 }
 
+function genToken() {
+  return crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
 export async function getOrCreateICalToken() {
+  // 1. Try localStorage first (works offline / guest mode)
+  const cached = localStorage.getItem('icalToken');
+  if (cached) return cached;
+
+  // 2. Try Firestore
   try {
     const snap = await getDoc(userRootRef());
     if (snap.exists() && snap.data().icalToken) {
+      localStorage.setItem('icalToken', snap.data().icalToken);
       return snap.data().icalToken;
     }
-    // Generate a new token
-    const token = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // Generate new, save to both
+    const token = genToken();
+    localStorage.setItem('icalToken', token);
     await setDoc(userRootRef(), { icalToken: token }, { merge: true });
     return token;
-  } catch (err) {
-    console.warn('[sync] getOrCreateICalToken failed:', err.message);
-    return null;
-  }
-}
-
-export async function revokeICalToken() {
-  try {
-    const token = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    await setDoc(userRootRef(), { icalToken: token }, { merge: true });
+  } catch {
+    // Offline or guest — generate and store locally only
+    const token = genToken();
+    localStorage.setItem('icalToken', token);
     return token;
-  } catch (err) {
-    console.warn('[sync] revokeICalToken failed:', err.message);
-    return null;
   }
 }
 
