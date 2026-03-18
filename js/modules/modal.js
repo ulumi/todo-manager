@@ -7,6 +7,19 @@ import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 
+export function toggleInboxMode() {
+  state.setInboxMode(!state.inboxMode);
+  const dateInputRow = document.getElementById('dateInputRow');
+  const btn = document.getElementById('inboxModeBtn');
+  if (state.inboxMode) {
+    if (dateInputRow) dateInputRow.style.display = 'none';
+    if (btn) { btn.classList.add('active'); btn.title = 'Cliquer pour assigner une date'; }
+  } else {
+    if (dateInputRow) dateInputRow.style.display = '';
+    if (btn) { btn.classList.remove('active'); btn.title = 'Sauvegarder sans date dans l\'inbox'; }
+  }
+}
+
 function populateCategorySelect(selectedId) {
   const sel = document.getElementById('taskCategory');
   if (!sel) return;
@@ -34,7 +47,7 @@ export function addCategoryInline() {
   const categories = getCategories();
   const color = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
   const id = Date.now().toString();
-  categories.push({ id, name, color, icon: '', description: '' });
+  categories.push({ id, name, color, icon: '', description: '', status: 'active', deadline: '' });
   saveCategories(categories);
   input.value = '';
   document.getElementById('newCatRow').style.display = 'none';
@@ -48,9 +61,10 @@ export function selectPriority(p) {
   );
 }
 
-export function openModal(date, todos) {
+export function openModal(date, todos, forInbox = false) {
   date = date || state.navDate;
   state.setEditingId(null);
+  state.setInboxMode(forInbox);
   state.setSelectedRecurrence('none');
   state.setSelectedWeekDays([]);
   state.setSelectedMonthDays([]);
@@ -66,8 +80,13 @@ export function openModal(date, todos) {
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec==='none'));
   document.getElementById('recDetail').innerHTML = '';
   document.getElementById('dateGroup').style.display = '';
+  const dateInputRow = document.getElementById('dateInputRow');
+  if (dateInputRow) dateInputRow.style.display = forInbox ? 'none' : '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   populateCategorySelect('');
+  // Sync inbox button state
+  const btn = document.getElementById('inboxModeBtn');
+  if (btn) btn.classList.toggle('active', forInbox);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
   // Reset right column state (open)
@@ -104,15 +123,20 @@ export function openEditModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
   state.setEditingId(id);
+  // Inbox mode: task has no date and no recurrence
+  const isInbox = (!t.recurrence || t.recurrence === 'none') && !t.date;
+  state.setInboxMode(isInbox);
   state.setSelectedRecurrence(t.recurrence || 'none');
   state.setSelectedWeekDays(t.recDays ? [...t.recDays] : []);
   document.getElementById('modalTitleEl').textContent = state.T.editTask;
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('taskDescription').value = t.description || '';
-  document.getElementById('modalClouds').innerHTML = cloudsHTML(parseDS(dateStr), todos);
+  document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
+  const btn = document.getElementById('inboxModeBtn');
+  if (btn) btn.classList.toggle('active', isInbox);
 
   // Set recurrence UI
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence));
@@ -121,7 +145,9 @@ export function openEditModal(id, dateStr, todos) {
 
   if (state.selectedRecurrence === 'none') {
     dateGroup.style.display = '';
-    document.getElementById('taskDate').value = t.date || dateStr;
+    const dateInputRow2 = document.getElementById('dateInputRow');
+    if (dateInputRow2) dateInputRow2.style.display = isInbox ? 'none' : '';
+    document.getElementById('taskDate').value = t.date || dateStr || '';
     detail.innerHTML = '';
   } else if (state.selectedRecurrence === 'daily') {
     dateGroup.style.display = 'none';
@@ -169,15 +195,21 @@ export function selectRecurrence(rec) {
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec===rec));
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
+  const inboxBtn = document.getElementById('inboxModeBtn');
 
   if (rec==='none') {
     dateGroup.style.display = '';
+    const dateInputRow = document.getElementById('dateInputRow');
+    if (dateInputRow) dateInputRow.style.display = state.inboxMode ? 'none' : '';
+    if (inboxBtn) inboxBtn.style.display = '';
     detail.innerHTML = '';
   } else if (rec==='daily') {
     dateGroup.style.display = 'none';
+    if (inboxBtn) inboxBtn.style.display = 'none';
     detail.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-top:4px;">${state.T.repeatsEveryDay}</p>`;
   } else if (rec==='weekly') {
     dateGroup.style.display = 'none';
+    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedWeekDays([today().getDay()]);
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
       ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
@@ -185,11 +217,13 @@ export function selectRecurrence(rec) {
     </div>`;
   } else if (rec==='monthly') {
     dateGroup.style.display = 'none';
+    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedMonthDays([state.navDate.getDate()]);
     state.setSelectedMonthLastDay(false);
     detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (rec==='yearly') {
     dateGroup.style.display = 'none';
+    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedYearMonth(state.navDate.getMonth());
     state.setSelectedYearDay(state.navDate.getDate());
     detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
@@ -394,7 +428,11 @@ export function saveTaskLogic(todos) {
   const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority, description };
 
   if (state.selectedRecurrence==='none') {
-    data.date = document.getElementById('taskDate').value || DS(state.navDate);
+    if (state.inboxMode) {
+      data.date = null; // inbox: no date
+    } else {
+      data.date = document.getElementById('taskDate').value || DS(state.navDate);
+    }
   } else if (state.selectedRecurrence==='weekly') {
     if (state.selectedWeekDays.length===0) { alert(state.T.selectWeekdayError); return true; }
     data.recDays = [...state.selectedWeekDays];

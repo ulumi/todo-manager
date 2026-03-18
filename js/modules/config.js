@@ -27,6 +27,8 @@ export const TRANSLATIONS = {
     exportData:'Export Data', importData:'Import Data', exportCalendar:'Export Calendar', exportConfig:'Export Settings',
     importSuccess:'Data imported successfully!', importError:'Failed to import data',
     clearAllData:'Clear all calendar data', confirmClearAllData:'Are you sure you want to clear ALL calendar data? This action is irreversible.',
+    viewInbox:'Inbox', assignToday:'Today', assignTomorrow:'Tomorrow',
+    viewPlan:'Plan',
     months:['January','February','March','April','May','June','July','August','September','October','November','December'],
     days:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
     dayFull:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
@@ -55,6 +57,8 @@ export const TRANSLATIONS = {
     exportData:'Exporter les données', importData:'Importer les données', exportCalendar:'Exporter le calendrier', exportConfig:'Exporter les paramètres',
     importSuccess:'Données importées avec succès !', importError:'Échec de l\'importation',
     clearAllData:'Vider toutes les données du calendrier', confirmClearAllData:'Êtes-vous sûr de vouloir vider TOUTES les données du calendrier ? Cette action est irréversible.',
+    viewInbox:'Inbox', assignToday:"Auj.", assignTomorrow:'Demain',
+    viewPlan:'Planifier',
     months:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],
     days:['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],
     dayFull:['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']

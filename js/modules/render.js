@@ -5,7 +5,7 @@
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
 import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
-import { getCategories, categoryIconSVG } from './admin.js';
+import { getCategories, categoryIconSVG, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './admin.js';
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
@@ -623,15 +623,28 @@ export function renderCategoriesView(todos) {
     ['done',  'Faites ↓'],
   ].map(([v, l]) => `<option value="${v}"${sort === v ? ' selected' : ''}>${l}</option>`).join('');
 
+  const todayDS = DS(new Date());
   const cards = sorted.map(({ p, total, done, pct }) => {
     const cardIcon = p.icon
       ? `<span class="category-card-icon" style="color:${p.color};">${categoryIconSVG(p.icon, 16, p.color)}</span>`
       : `<span class="category-card-dot" style="background:${p.color};"></span>`;
+    const status = p.status || 'active';
+    const statusLabel = (PROJECT_STATUS_LABELS && PROJECT_STATUS_LABELS[status]) || status;
+    const statusColor = (PROJECT_STATUS_COLORS && PROJECT_STATUS_COLORS[status]) || '#10b981';
+    const statusBadge = `<span class="category-status-badge" style="background:${statusColor}20;color:${statusColor};border-color:${statusColor}40;">${statusLabel}</span>`;
+    const deadlineBadge = p.deadline
+      ? (() => {
+          const isOverdue = p.deadline < todayDS;
+          const label = p.deadline.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1').replace(/\/\d{4}$/, '/' + p.deadline.slice(2, 4));
+          return `<span class="category-deadline-badge${isOverdue && status !== 'completed' ? ' overdue' : ''}">📅 ${p.deadline.slice(5).replace('-', '/')}</span>`;
+        })()
+      : '';
     return `
-      <div class="category-card" onclick="window.app.openCategoryView('${p.id}')" style="border-top:3px solid ${p.color};">
+      <div class="category-card${status === 'archived' || status === 'completed' ? ' category-card--dim' : ''}" onclick="window.app.openCategoryView('${p.id}')" style="border-top:3px solid ${p.color};">
         <div class="category-card-header">
           ${cardIcon}
           <span class="category-card-name">${esc(p.name)}</span>
+          <div class="category-card-badges">${statusBadge}${deadlineBadge}</div>
         </div>
         ${p.description ? `<div class="category-card-description">${esc(p.description)}</div>` : ''}
         <div class="category-card-stats">
@@ -668,6 +681,84 @@ export function renderCategoriesView(todos) {
           <span class="category-card-add-label">Nouvelle catégorie</span>
         </div>
       </div>` : ''}
+    </div>`;
+}
+
+// ─── Inbox View ────────────────────────────────────────────────────────────
+
+export function getInboxCount(todos) {
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date).length;
+}
+
+export function renderInboxView(todos) {
+  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+
+  const sort = localStorage.getItem('inboxSort') || 'date';
+  const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
+  const sorted = [...inboxItems].sort((a, b) => {
+    if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
+    if (sort === 'title')    return a.title.localeCompare(b.title);
+    if (sort === 'category') return (a.projectId || '').localeCompare(b.projectId || '');
+    return b.id.localeCompare(a.id); // newest first (default)
+  });
+
+  const categories = getCategories();
+  const items = sorted.map(t => {
+    const cat = t.projectId ? categories.find(c => c.id === t.projectId) : null;
+    const catBadge = cat
+      ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
+      : '';
+    const prioCfg = { high: { label: '▲ Haute', color: 'var(--danger)', border: 'rgba(239,68,68,.35)', bg: 'rgba(239,68,68,.08)' }, medium: { label: '▸ Moy.', color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)' }, low: { label: '▾ Basse', color: '#3b82f6', border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)' } };
+    const pc = t.priority ? prioCfg[t.priority] : null;
+    const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
+    const hasMeta = catBadge || prioBadge;
+    return `
+      <div class="inbox-item" data-id="${t.id}" draggable="true" onclick="window.app.openEditModal('${t.id}', null)">
+        <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
+        <div class="inbox-item-body">
+          <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
+          ${hasMeta ? `<div class="todo-meta">${prioBadge}${catBadge}</div>` : ''}
+        </div>
+        <div class="inbox-item-actions">
+          <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Assigner à aujourd'hui">
+            ${state.T.assignToday || "Auj."}
+          </button>
+          <button class="inbox-assign-date" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)" title="Choisir une date">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </button>
+          <button class="todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)">✎</button>
+          <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const empty = sorted.length === 0 ? `
+    <div class="inbox-empty">
+      <div class="inbox-empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      </div>
+      <p>Inbox vide — tout est planifié !</p>
+      <button class="btn btn-primary" onclick="window.app.openModalForInbox()">＋ Capturer une tâche</button>
+    </div>` : '';
+
+  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie']];
+  const sortBtns = sortLabels.map(([v, l]) =>
+    `<button class="inbox-sort-btn${sort === v ? ' active' : ''}" onclick="window.app.setInboxSort('${v}')">${l}</button>`
+  ).join('');
+
+  return `
+    <div class="inbox-view">
+      <div class="inbox-view-header">
+        <h1 class="inbox-view-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+          Inbox
+        </h1>
+        <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+        <div class="inbox-sort-group">${sortBtns}</div>
+        <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
+      </div>
+      ${empty}
+      ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
     </div>`;
 }
 

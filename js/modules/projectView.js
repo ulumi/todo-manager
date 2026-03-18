@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, esc } from './utils.js';
-import { getCategories, saveCategories, CATEGORY_ICONS, categoryIconSVG } from './admin.js';
+import { getCategories, saveCategories, CATEGORY_ICONS, categoryIconSVG, PROJECT_STATUSES, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './admin.js';
 import { isCompleted } from './calendar.js';
 import * as state from './state.js';
 
@@ -110,6 +110,22 @@ export function renderCategoryPanel(categoryId) {
       <textarea class="cv-description" placeholder="Description..." rows="2"
         onblur="window.app.saveCategoryDescription('${categoryId}',this.value)"
       >${esc(cat.description || '')}</textarea>
+      <div class="cv-meta-row">
+        <div class="cv-meta-field">
+          <label class="cv-meta-label">Statut</label>
+          <select class="cv-status-select" onchange="window.app.setCategoryStatus('${categoryId}',this.value)">
+            ${(PROJECT_STATUSES || ['active','on_hold','completed','archived']).map(s =>
+              `<option value="${s}"${(cat.status || 'active') === s ? ' selected' : ''}>${(PROJECT_STATUS_LABELS || {})[s] || s}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="cv-meta-field">
+          <label class="cv-meta-label">Échéance</label>
+          <input type="date" class="cv-deadline-input" value="${esc(cat.deadline || '')}"
+            onchange="window.app.setCategoryDeadline('${categoryId}',this.value)"
+            onclick="this.showPicker()">
+        </div>
+      </div>
     </div>
 
     <div class="cv-stats">
@@ -183,6 +199,18 @@ export function saveCategoryDescription(categoryId, description) {
   const categories = getCategories();
   const cat = categories.find(p => p.id === categoryId);
   if (cat) { cat.description = description; saveCategories(categories); }
+}
+
+export function saveCategoryStatus(categoryId, status) {
+  const categories = getCategories();
+  const cat = categories.find(p => p.id === categoryId);
+  if (cat) { cat.status = status; saveCategories(categories); }
+}
+
+export function saveCategoryDeadline(categoryId, deadline) {
+  const categories = getCategories();
+  const cat = categories.find(p => p.id === categoryId);
+  if (cat) { cat.deadline = deadline; saveCategories(categories); }
 }
 
 export function setCategoryIcon(categoryId, icon) {

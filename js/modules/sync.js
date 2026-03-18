@@ -76,6 +76,40 @@ export async function deleteUserFirestoreDoc() {
   }
 }
 
+// ── iCal token (stored at users/{uid} root doc) ───────────
+function userRootRef() {
+  const user = getCurrentUser();
+  if (!user) throw new Error('sync: no authenticated user');
+  return doc(db, 'users', user.uid);
+}
+
+export async function getOrCreateICalToken() {
+  try {
+    const snap = await getDoc(userRootRef());
+    if (snap.exists() && snap.data().icalToken) {
+      return snap.data().icalToken;
+    }
+    // Generate a new token
+    const token = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    await setDoc(userRootRef(), { icalToken: token }, { merge: true });
+    return token;
+  } catch (err) {
+    console.warn('[sync] getOrCreateICalToken failed:', err.message);
+    return null;
+  }
+}
+
+export async function revokeICalToken() {
+  try {
+    const token = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    await setDoc(userRootRef(), { icalToken: token }, { merge: true });
+    return token;
+  } catch (err) {
+    console.warn('[sync] revokeICalToken failed:', err.message);
+    return null;
+  }
+}
+
 // ── Offline / online indicator ────────────────────────────
 export function setupOfflineIndicator() {
   const badge = document.getElementById('offlineBadge');

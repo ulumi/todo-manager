@@ -26,6 +26,7 @@ export let editingId = null;
 export let insertAfterId = null;
 export let pendingDelete = null;
 export let _sugg = []; // safe ref for inline onclick
+export let inboxMode = false; // true when modal opened without a date (inbox capture)
 
 export let lang = localStorage.getItem('lang') || (navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en');
 export let T = TRANSLATIONS[lang] || TRANSLATIONS.en;
@@ -90,6 +91,10 @@ export function setPendingDelete(del) {
 
 export function setSuggestions(sugg) {
   _sugg = sugg;
+}
+
+export function setInboxMode(val) {
+  inboxMode = val;
 }
 
 export function setLang(newLang) {

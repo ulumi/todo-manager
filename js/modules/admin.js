@@ -48,11 +48,15 @@ export function addCategory() {
   if (!name) return;
   const categories = getCategories();
   const color = CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length];
-  categories.push({ id: Date.now().toString(), name, color, icon: '', description: '' });
+  categories.push({ id: Date.now().toString(), name, color, icon: '', description: '', status: 'active', deadline: '' });
   saveCategories(categories);
   input.value = '';
   renderAdminCategories();
 }
+
+export const PROJECT_STATUSES = ['active', 'on_hold', 'completed', 'archived'];
+export const PROJECT_STATUS_LABELS = { active: 'Actif', on_hold: 'En pause', completed: 'Terminé', archived: 'Archivé' };
+export const PROJECT_STATUS_COLORS = { active: '#10b981', on_hold: '#f59e0b', completed: '#3b82f6', archived: '#94a3b8' };
 
 export function removeCategory(id) {
   saveCategories(getCategories().filter(p => p.id !== id));

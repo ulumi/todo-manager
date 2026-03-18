@@ -24,11 +24,11 @@ import {
   selectYearMonth, selectYearDay,
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
   toggleCloudSection, toggleModalRight, selectPriority,
-  toggleNewCatRow, addCategoryInline
+  toggleNewCatRow, addCategoryInline, toggleInboxMode
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  renderCategoriesView,
+  renderCategoriesView, renderInboxView, getInboxCount,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar
 } from './modules/render.js';
@@ -39,7 +39,8 @@ import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, re
 import {
   openCategoryView, closeCategoryView, renderCategoryPanel,
   getCurrentCategoryId, getCategoryTaskOrder, saveCategoryTaskOrder,
-  saveCategoryDescription, setCategoryIcon
+  saveCategoryDescription, setCategoryIcon,
+  saveCategoryStatus, saveCategoryDeadline
 } from './modules/projectView.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
 import {
@@ -48,7 +49,7 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
   signInWithGoogle, signInWithFacebook,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID } from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken, revokeICalToken } from './modules/sync.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -81,7 +82,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'plan'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -272,6 +273,7 @@ class TodoApp {
     localStorage.setItem('view', v);
     this._pushHistory();
     await this._animateViewChange();
+    this._updateInboxBadge();
   }
 
   _pushHistory() {
@@ -479,12 +481,69 @@ class TodoApp {
     openModal(date, state.todos);
   }
 
+  openModalForInbox() {
+    openModal(state.navDate, state.todos, true);
+  }
+
+  toggleInboxMode() {
+    toggleInboxMode();
+  }
+
   closeModal() {
     closeModal();
   }
 
   openEditModal(id, dateStr) {
     openEditModal(id, dateStr, state.todos);
+  }
+
+  // ═══════════════════════════════════════════════════
+  // INBOX
+  // ═══════════════════════════════════════════════════
+  _updateInboxBadge() {
+    const count = getInboxCount(state.todos);
+    const badge = document.getElementById('inboxBadge');
+    if (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('hidden', count === 0);
+    }
+  }
+
+  assignInboxToday(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = DS(today());
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  assignInboxToDate(id, dateStr) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = dateStr;
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  toggleInboxDone(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.completed = !t.completed;
+    saveTodos(state.todos);
+    if (!t.completed) celebrate(state.lang);
+    this.render();
+  }
+
+  setInboxSort(sort) {
+    localStorage.setItem('inboxSort', sort);
+    this.render();
+  }
+
+  quickEditInboxTitle(el, id) {
+    this.quickEditTitle(el, id, null);
   }
 
   selectRecurrence(rec) {
@@ -993,10 +1052,16 @@ class TodoApp {
   render() {
     const isCategories = state.view === 'categories';
     const isProfile    = state.view === 'profile';
+    const isInbox      = state.view === 'inbox';
+    const isPlan       = state.view === 'plan';
     document.body.classList.toggle('view-projects', isCategories);
     document.body.classList.toggle('view-profile',  isProfile);
-    document.getElementById('periodLabel').textContent = (isCategories || isProfile) ? '' : getPeriodLabel();
+    document.body.classList.toggle('view-inbox',    isInbox);
+    document.body.classList.toggle('view-plan',     isPlan);
+    const noLabel = isCategories || isProfile || isInbox || isPlan;
+    document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
+    this._updateInboxBadge();
 
     let html = '';
     if (state.view==='day')        html = renderDayView(state.todos);
@@ -1004,6 +1069,8 @@ class TodoApp {
     if (state.view==='month')      html = renderMonthView(state.todos);
     if (state.view==='year')       html = renderYearView(state.todos);
     if (state.view==='categories') html = renderCategoriesView(state.todos);
+    if (state.view==='inbox')      html = renderInboxView(state.todos);
+    if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
     document.getElementById('mainContent').innerHTML = html;
     const sidebar = document.getElementById('calSidebar');
@@ -1027,6 +1094,61 @@ class TodoApp {
     this._applyMultilineClasses();
   }
 
+  _renderPlanView() {
+    // Implemented in Feature 3 — for now, delegate to inbox + week side-by-side
+    const { renderInboxView: _ib, renderWeekView: _wv } = { renderInboxView, renderWeekView: null };
+    const inboxItems = state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+    return `<div class="plan-view">
+      <div class="plan-inbox-col">
+        ${renderInboxView(state.todos)}
+      </div>
+      <div class="plan-week-col">
+        ${this._renderPlanWeek()}
+      </div>
+    </div>`;
+  }
+
+  _renderPlanWeek() {
+    // Import renderWeekView is already available at module scope
+    // We re-render a compact week from navDate
+    const { DS: _DS, addDays: _add, startOfWeek: _sow } = { DS, addDays, startOfWeek };
+    const todayStr = DS(new Date());
+    const weekStart = startOfWeek(state.navDate);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(weekStart, i);
+      const ds = DS(d);
+      const isT = ds === todayStr;
+      const items = getTodosForDate(d, state.todos).filter(t => t.recurrence !== 'daily');
+      const taskRows = items.map(t => {
+        const done = isCompleted(t, d);
+        return `<div class="plan-week-task${done ? ' done' : ''}" data-id="${t.id}" data-date="${ds}">
+          <div class="week-todo-check${done ? ' checked' : ''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+          <span class="week-todo-text">${esc(t.title)}</span>
+          <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
+        </div>`;
+      }).join('');
+      days.push(`<div class="plan-week-day${isT ? ' is-today' : ''}" data-date="${ds}">
+        <div class="plan-week-day-header">
+          <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
+          <span class="plan-week-day-num">${d.getDate()}</span>
+        </div>
+        <div class="plan-week-day-tasks">${taskRows}</div>
+        <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
+      </div>`);
+    }
+    const prevWeek = `window.app.navigate(-1)`;
+    const nextWeek = `window.app.navigate(1)`;
+    const weekEnd = addDays(weekStart, 6);
+    const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
+    return `<div class="plan-week-header">
+      <button class="day-nav-btn" onclick="${prevWeek}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <span>${label}</span>
+      <button class="day-nav-btn" onclick="${nextWeek}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+    </div>
+    <div class="plan-week-grid">${days.join('')}</div>`;
+  }
+
   _renderProfileView() {
     const user     = getCurrentUser();
     const name     = user?.displayName || user?.email?.split('@')[0] || '';
@@ -1036,7 +1158,7 @@ class TodoApp {
     const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
     const done     = state.todos.filter(t => t.completed).length;
 
-    return `
+    const html = `
       <div class="profile-view">
         <div class="profile-hero">
           <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
@@ -1085,6 +1207,19 @@ class TodoApp {
           </div>
 
           <div class="profile-section">
+            <h3 class="profile-section-title">Abonnement calendrier (iCal)</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Abonne-toi à tes tâches depuis Apple Calendar, Google Calendar ou Outlook. L'URL se met à jour automatiquement.</p>
+            <div class="ical-url-row" id="icalUrlRow">
+              <input class="form-input ical-url-input" id="icalUrlInput" readonly placeholder="Chargement…" onclick="this.select()" style="font-size:11px;font-family:monospace;">
+              <button class="btn btn-primary" onclick="window.app.copyICalLink()" title="Copier l'URL">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+              <button class="btn btn-ghost" onclick="window.app.revokeICalLink()" title="Régénérer (invalide l'ancien lien)" style="font-size:11px;">↺</button>
+            </div>
+            <p class="ical-copy-msg hidden" id="icalCopyMsg" style="font-size:12px;color:var(--success);margin-top:6px;">✓ URL copiée !</p>
+          </div>
+
+          <div class="profile-section">
             <h3 class="profile-section-title">Données</h3>
             <div class="profile-rows">
               <button class="profile-row" onclick="window.app.exportAllData()">
@@ -1102,6 +1237,9 @@ class TodoApp {
         </div>
       </div>
     `;
+    // Load the iCal URL async after the profile view is injected into DOM
+    setTimeout(() => this.loadICalURL(), 0);
+    return html;
   }
 
   async saveDisplayName() {
@@ -1115,6 +1253,45 @@ class TodoApp {
     if (msg) {
       msg.classList.remove('hidden');
       setTimeout(() => msg.classList.add('hidden'), 2000);
+    }
+  }
+
+  async loadICalURL() {
+    const input = document.getElementById('icalUrlInput');
+    if (!input) return;
+    const token = await getOrCreateICalToken();
+    if (!token) {
+      input.placeholder = 'Connexion requise pour obtenir l\'URL';
+      return;
+    }
+    const base = window.location.origin;
+    input.value = `${base}/api/ical?token=${token}`;
+  }
+
+  async copyICalLink() {
+    const input = document.getElementById('icalUrlInput');
+    if (!input || !input.value) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch {
+      input.select();
+      document.execCommand('copy');
+    }
+    const msg = document.getElementById('icalCopyMsg');
+    if (msg) {
+      msg.classList.remove('hidden');
+      setTimeout(() => msg.classList.add('hidden'), 2500);
+    }
+  }
+
+  async revokeICalLink() {
+    if (!confirm('Régénérer le lien ? L\'ancien ne fonctionnera plus.')) return;
+    const token = await revokeICalToken();
+    if (!token) return;
+    const input = document.getElementById('icalUrlInput');
+    if (input) {
+      const base = window.location.origin;
+      input.value = `${base}/api/ical?token=${token}`;
     }
   }
 
@@ -1428,6 +1605,16 @@ class TodoApp {
 
   setCategoryIcon(categoryId, icon) {
     setCategoryIcon(categoryId, icon);
+    this.render();
+  }
+
+  setCategoryStatus(categoryId, status) {
+    saveCategoryStatus(categoryId, status);
+    this.render();
+  }
+
+  setCategoryDeadline(categoryId, deadline) {
+    saveCategoryDeadline(categoryId, deadline);
     this.render();
   }
 
