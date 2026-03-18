@@ -1114,8 +1114,24 @@ class TodoApp {
     </div>`;
   }
 
+  _getPlanRecFilter() {
+    const defaults = { daily: false, weekly: false, monthly: true, yearly: true, none: true };
+    try {
+      const stored = localStorage.getItem('planRecFilter');
+      return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+    } catch { return defaults; }
+  }
+
+  togglePlanRecFilter(key) {
+    const f = this._getPlanRecFilter();
+    f[key] = !f[key];
+    localStorage.setItem('planRecFilter', JSON.stringify(f));
+    this.render();
+  }
+
   _renderPlanCalendar() {
     const mode = localStorage.getItem('planMode') || 'week';
+    const filter = this._getPlanRecFilter();
     const todayStr = DS(new Date());
 
     const modeBtns = [
@@ -1126,15 +1142,30 @@ class TodoApp {
       `<button class="plan-mode-btn${mode===m?' active':''}" onclick="window.app.setPlanMode('${m}')">${l}</button>`
     ).join('');
 
+    const recToggles = [
+      ['none',    'Ponct.'],
+      ['daily',   'Quot.'],
+      ['weekly',  'Hebd.'],
+      ['monthly', 'Mens.'],
+      ['yearly',  'Ann.'],
+    ].map(([k, l]) =>
+      `<button class="plan-rec-btn${filter[k]?' active':''}" onclick="window.app.togglePlanRecFilter('${k}')" title="${k}">${l}</button>`
+    ).join('');
+
     const navPrev = `window.app.navigate(-1)`;
     const navNext = `window.app.navigate(1)`;
     const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
+    const recKey = (t) => {
+      if (!t.recurrence || t.recurrence === 'none') return 'none';
+      return t.recurrence; // 'daily' | 'weekly' | 'monthly' | 'yearly'
+    };
+
     const dayCol = (d) => {
       const ds = DS(d);
       const isT = ds === todayStr;
-      const items = getTodosForDate(d, state.todos);
+      const items = getTodosForDate(d, state.todos).filter(t => filter[recKey(t)] !== false);
       const taskRows = items.map(t => {
         const done = isCompleted(t, d);
         return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}">
@@ -1175,6 +1206,7 @@ class TodoApp {
         <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
         <div class="plan-mode-btns">${modeBtns}</div>
       </div>
+      <div class="plan-rec-toggles">${recToggles}</div>
       <div class="plan-month-daynames">${dayNames}</div>
       <div class="plan-week-grid plan-month-grid">${cells}</div>`;
     }
@@ -1191,6 +1223,7 @@ class TodoApp {
       <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
       <div class="plan-mode-btns">${modeBtns}</div>
     </div>
+    <div class="plan-rec-toggles">${recToggles}</div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
 

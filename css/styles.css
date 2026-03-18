@@ -6323,6 +6323,36 @@ body:has(.bottom-panel:not(.hidden))::before {
   text-transform: uppercase;
 }
 
+.plan-rec-toggles {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.plan-rec-btn {
+  padding: 2px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0.5;
+}
+.plan-rec-btn.active {
+  opacity: 1;
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.plan-rec-btn:hover:not(.active) {
+  opacity: 0.8;
+  border-color: var(--text-muted);
+}
+
 .plan-week-day--empty {
   border: none;
   background: transparent;
