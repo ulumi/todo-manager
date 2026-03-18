@@ -280,7 +280,7 @@ header {
 
 }
 
-.categories-tab, .inbox-tab, .plan-tab {
+.categories-tab, .inbox-tab, .plan-tab, .projects-tab {
   margin-left: 6px;
   display: inline-flex;
   align-items: center;
@@ -5226,7 +5226,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ─── 25. Inbox View ──────────────────────────────────────────────────────────
 
 // Inbox + Plan tab badge
-.inbox-tab, .plan-tab {
+.inbox-tab, .plan-tab, .projects-tab {
   display:     inline-flex;
   align-items: center;
   gap:         5px;
@@ -5646,7 +5646,156 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 
-// ─── 28. iCal URL Row ─────────────────────────────────────────────────────────
+// ─── 28. Projects tab ─────────────────────────────────────────────────────────
+
+.categories-tab, .inbox-tab, .plan-tab, .projects-tab {
+  // already styled by .categories-tab selector defined earlier; just extend
+}
+
+// ─── 28b. Plan view — improved + modes ────────────────────────────────────────
+
+.plan-mode-btns {
+  display:     flex;
+  gap:         4px;
+  margin-left: auto;
+}
+
+.plan-mode-btn {
+  padding:       3px 8px;
+  border:        1.5px solid var(--border);
+  border-radius: 5px;
+  background:    var(--surface2);
+  color:         var(--text-muted);
+  font-size:     11px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    all .15s;
+
+  &.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  &:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+}
+
+// Biweek = 2 rows of 7
+.plan-biweek-grid {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+// Month grid: 7 cols, auto rows
+.plan-month-grid {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.plan-month-daynames {
+  display:               grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap:                   8px;
+  margin-bottom:         4px;
+}
+
+.plan-month-dayname {
+  font-size:   10px;
+  font-weight: 700;
+  color:       var(--text-muted);
+  text-align:  center;
+  text-transform: uppercase;
+}
+
+.plan-week-day--empty {
+  border:     none;
+  background: transparent;
+  min-height: 60px;
+}
+
+// Plan inbox col — compact list
+.plan-inbox-header {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.plan-inbox-header-title {
+  font-size:   14px;
+  font-weight: 700;
+  color:       var(--text);
+}
+
+.plan-inbox-count {
+  font-size:     11px;
+  background:    var(--primary);
+  color:         #fff;
+  padding:       1px 6px;
+  border-radius: 10px;
+  font-weight:   700;
+}
+
+.plan-inbox-add {
+  margin-left: auto;
+  background:  none;
+  border:      1.5px dashed var(--border);
+  border-radius: 6px;
+  color:       var(--text-muted);
+  font-size:   16px;
+  width:       26px; height: 26px;
+  cursor:      pointer;
+  transition:  all .15s;
+  &:hover { border-color: var(--primary); color: var(--primary); }
+}
+
+.plan-inbox-list { display: flex; flex-direction: column; gap: 3px; }
+
+.plan-inbox-item {
+  display:       flex;
+  align-items:   center;
+  gap:           5px;
+  padding:       5px 7px;
+  border-radius: 7px;
+  cursor:        grab;
+  transition:    background .12s;
+  user-select:   none;
+
+  &:hover { background: var(--surface2); }
+  &:active { cursor: grabbing; }
+}
+
+.plan-inbox-drag {
+  color:     var(--text-muted);
+  font-size: 11px;
+  opacity:   .4;
+}
+
+.plan-inbox-title {
+  flex:          1;
+  min-width:     0;
+  font-size:     12px;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  color:         var(--text);
+}
+
+.plan-inbox-today {
+  flex-shrink:   0;
+  background:    none;
+  border:        none;
+  color:         var(--text-muted);
+  font-size:     14px;
+  cursor:        pointer;
+  padding:       0 3px;
+  transition:    color .12s;
+  &:hover { color: var(--primary); }
+}
+
+.plan-inbox-empty {
+  text-align:  center;
+  color:       var(--text-muted);
+  font-size:   13px;
+  padding:     24px 0;
+}
+
+// ─── 29. iCal URL Row ─────────────────────────────────────────────────────────
 
 .ical-url-row {
   display:  flex;

@@ -5,7 +5,8 @@
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
 import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
 import * as state from './state.js';
-import { getCategories, categoryIconSVG, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './admin.js';
+import { getCategories, categoryIconSVG } from './admin.js';
+import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
@@ -623,28 +624,15 @@ export function renderCategoriesView(todos) {
     ['done',  'Faites ↓'],
   ].map(([v, l]) => `<option value="${v}"${sort === v ? ' selected' : ''}>${l}</option>`).join('');
 
-  const todayDS = DS(new Date());
   const cards = sorted.map(({ p, total, done, pct }) => {
     const cardIcon = p.icon
       ? `<span class="category-card-icon" style="color:${p.color};">${categoryIconSVG(p.icon, 16, p.color)}</span>`
       : `<span class="category-card-dot" style="background:${p.color};"></span>`;
-    const status = p.status || 'active';
-    const statusLabel = (PROJECT_STATUS_LABELS && PROJECT_STATUS_LABELS[status]) || status;
-    const statusColor = (PROJECT_STATUS_COLORS && PROJECT_STATUS_COLORS[status]) || '#10b981';
-    const statusBadge = `<span class="category-status-badge" style="background:${statusColor}20;color:${statusColor};border-color:${statusColor}40;">${statusLabel}</span>`;
-    const deadlineBadge = p.deadline
-      ? (() => {
-          const isOverdue = p.deadline < todayDS;
-          const label = p.deadline.replace(/(\d{4})-(\d{2})-(\d{2})/, '$3/$2/$1').replace(/\/\d{4}$/, '/' + p.deadline.slice(2, 4));
-          return `<span class="category-deadline-badge${isOverdue && status !== 'completed' ? ' overdue' : ''}">📅 ${p.deadline.slice(5).replace('-', '/')}</span>`;
-        })()
-      : '';
     return `
-      <div class="category-card${status === 'archived' || status === 'completed' ? ' category-card--dim' : ''}" onclick="window.app.openCategoryView('${p.id}')" style="border-top:3px solid ${p.color};">
+      <div class="category-card" onclick="window.app.openCategoryView('${p.id}')" style="border-top:3px solid ${p.color};">
         <div class="category-card-header">
           ${cardIcon}
           <span class="category-card-name">${esc(p.name)}</span>
-          <div class="category-card-badges">${statusBadge}${deadlineBadge}</div>
         </div>
         ${p.description ? `<div class="category-card-description">${esc(p.description)}</div>` : ''}
         <div class="category-card-stats">
@@ -771,4 +759,133 @@ export function setupTodoItemHoverAnimations() {
       gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
     );
   });
+}
+
+// ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
+
+export function renderPlanInboxList(todos) {
+  const items = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+  const sort = localStorage.getItem('inboxSort') || 'date';
+  const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
+  const sorted = [...items].sort((a, b) => {
+    if (sort === 'priority') return (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
+    if (sort === 'title')    return a.title.localeCompare(b.title);
+    return b.id.localeCompare(a.id);
+  });
+
+  const cats = getCategories();
+  const rows = sorted.map(t => {
+    const cat = t.projectId ? cats.find(c => c.id === t.projectId) : null;
+    const catDot = cat ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${cat.color};flex-shrink:0;"></span>` : '';
+    const prioCfg = {
+      high:   { label:'▲', color:'var(--danger)' },
+      medium: { label:'▸', color:'var(--primary)' },
+      low:    { label:'▾', color:'#3b82f6' },
+    };
+    const pc = t.priority ? prioCfg[t.priority] : null;
+    const prio = pc ? `<span style="font-size:10px;color:${pc.color};flex-shrink:0;">${pc.label}</span>` : '';
+    return `
+      <div class="plan-inbox-item" data-id="${t.id}" draggable="true"
+        ondragstart="window.app.planDragStart(event,'${t.id}')"
+        onclick="window.app.openEditModal('${t.id}',null)">
+        <div class="plan-inbox-drag">⠿</div>
+        ${prio}${catDot}
+        <span class="plan-inbox-title">${esc(t.title)}</span>
+        <button class="plan-inbox-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Aujourd'hui">→</button>
+      </div>`;
+  }).join('');
+
+  const empty = sorted.length === 0
+    ? `<div class="plan-inbox-empty">Inbox vide !<br><button class="btn btn-primary" style="margin-top:8px;font-size:12px;" onclick="window.app.openModalForInbox()">＋ Capturer</button></div>`
+    : '';
+
+  return `
+    <div class="plan-inbox-header">
+      <span class="plan-inbox-header-title">Inbox</span>
+      <span class="plan-inbox-count">${sorted.length}</span>
+      <button class="plan-inbox-add" onclick="window.app.openModalForInbox()" title="Capturer">＋</button>
+    </div>
+    ${empty}
+    ${sorted.length > 0 ? `<div class="plan-inbox-list">${rows}</div>` : ''}`;
+}
+
+// ─── Projects View ────────────────────────────────────────────────────────────
+
+export function renderProjectsView() {
+  const projects = getProjects();
+  const cols = parseInt(localStorage.getItem('projectsCols') || '0');
+  const sort = localStorage.getItem('projectsSort') || 'name';
+  const todayDS = DS(new Date());
+
+  const sorted = [...projects].sort((a, b) => {
+    if (sort === 'status') return (a.status||'active').localeCompare(b.status||'active');
+    if (sort === 'deadline') {
+      const da = a.deadline || '9999-99-99', db = b.deadline || '9999-99-99';
+      return da.localeCompare(db);
+    }
+    return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+  });
+
+  const gridStyle = cols > 0
+    ? `grid-template-columns: repeat(${cols}, 1fr);`
+    : `grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));`;
+
+  const colBtns = [1,2,3,4,0].map(c => {
+    const label = c === 0 ? `<svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="0" y="0" width="4" height="4" rx="1"/><rect x="5" y="0" width="4" height="4" rx="1"/><rect x="10" y="0" width="4" height="4" rx="1"/><rect x="0" y="5" width="4" height="4" rx="1"/><rect x="5" y="5" width="4" height="4" rx="1"/><rect x="10" y="5" width="4" height="4" rx="1"/></svg>` : c;
+    return `<button class="cat-col-btn${cols===c?' active':''}" onclick="window.app.setProjectsCols(${c})">${label}</button>`;
+  }).join('');
+
+  const sortOptions = [
+    ['name','Nom A–Z'],['status','Statut'],['deadline','Échéance ↑'],
+  ].map(([v,l]) => `<option value="${v}"${sort===v?' selected':''}>${l}</option>`).join('');
+
+  const cards = sorted.map(p => {
+    const status = p.status || 'active';
+    const statusLabel = PROJECT_STATUS_LABELS[status] || status;
+    const statusColor = PROJECT_STATUS_COLORS[status] || '#10b981';
+    const isDim = status === 'archived' || status === 'completed';
+    const cardIcon = p.icon
+      ? `<span class="category-card-icon" style="color:${p.color};">${categoryIconSVG(p.icon, 16, p.color)}</span>`
+      : `<span class="category-card-dot" style="background:${p.color};"></span>`;
+    const statusBadge = `<span class="category-status-badge" style="background:${statusColor}20;color:${statusColor};border-color:${statusColor}40;">${statusLabel}</span>`;
+    const deadlineBadge = p.deadline
+      ? `<span class="category-deadline-badge${p.deadline < todayDS && status !== 'completed' ? ' overdue' : ''}">📅 ${p.deadline.slice(5).replace('-','/')}</span>`
+      : '';
+    return `
+      <div class="category-card${isDim ? ' category-card--dim' : ''}" onclick="window.app.openProjectPanel('${p.id}')" style="border-top:3px solid ${p.color};">
+        <div class="category-card-header">
+          ${cardIcon}
+          <span class="category-card-name">${esc(p.name)}</span>
+          <div class="category-card-badges">${statusBadge}${deadlineBadge}</div>
+        </div>
+        ${p.description ? `<div class="category-card-description">${esc(p.description)}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  const empty = projects.length === 0 ? `
+    <div class="categories-empty">
+      <div class="categories-empty-icon">🗂</div>
+      <p>Aucun projet pour l'instant.</p>
+      <button class="btn btn-primary" onclick="window.app.addProjectFromView()">＋ Créer un projet</button>
+    </div>` : '';
+
+  return `
+    <div class="categories-view">
+      <div class="categories-view-header">
+        <h1 class="categories-view-title">Projets</h1>
+        ${projects.length > 0 ? `
+        <div class="categories-view-controls">
+          <select class="categories-sort-select" onchange="window.app.setProjectsSort(this.value)">${sortOptions}</select>
+          <div class="categories-col-btns">${colBtns}</div>
+        </div>` : ''}
+      </div>
+      ${empty}
+      ${projects.length > 0 ? `<div class="categories-grid" style="${gridStyle}">
+        ${cards}
+        <div class="category-card category-card--add" onclick="window.app.addProjectFromView()">
+          <span class="category-card-add-icon">＋</span>
+          <span class="category-card-add-label">Nouveau projet</span>
+        </div>
+      </div>` : ''}
+    </div>`;
 }

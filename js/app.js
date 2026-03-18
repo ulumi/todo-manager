@@ -30,7 +30,8 @@ import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
   renderCategoriesView, renderInboxView, getInboxCount,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
-  renderSidebar, renderWeekSidebar, renderYearSidebar
+  renderSidebar, renderWeekSidebar, renderYearSidebar,
+  renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
@@ -40,8 +41,11 @@ import {
   openCategoryView, closeCategoryView, renderCategoryPanel,
   getCurrentCategoryId, getCategoryTaskOrder, saveCategoryTaskOrder,
   saveCategoryDescription, setCategoryIcon,
-  saveCategoryStatus, saveCategoryDeadline
 } from './modules/projectView.js';
+import {
+  getProjects, saveProjects, addProjectItem, deleteProjectItem, updateProjectItem,
+  openProjectPanel, closeProjectPanel, renderProjectPanel, getCurrentProjectId,
+} from './modules/projectManager.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
@@ -82,7 +86,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'plan'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'plan', 'projects'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -1051,17 +1055,20 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   render() {
     const isCategories = state.view === 'categories';
+    const isProjects   = state.view === 'projects';
     const isProfile    = state.view === 'profile';
     const isInbox      = state.view === 'inbox';
     const isPlan       = state.view === 'plan';
-    document.body.classList.toggle('view-projects', isCategories);
+    document.body.classList.toggle('view-projects', isCategories || isProjects);
     document.body.classList.toggle('view-profile',  isProfile);
     document.body.classList.toggle('view-inbox',    isInbox);
     document.body.classList.toggle('view-plan',     isPlan);
-    const noLabel = isCategories || isProfile || isInbox || isPlan;
+    const noLabel = isCategories || isProjects || isProfile || isInbox || isPlan;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
     this._updateInboxBadge();
+    // Close project panel when switching away
+    if (!isProjects && getCurrentProjectId()) closeProjectPanel({ immediate: true });
 
     let html = '';
     if (state.view==='day')        html = renderDayView(state.todos);
@@ -1069,6 +1076,7 @@ class TodoApp {
     if (state.view==='month')      html = renderMonthView(state.todos);
     if (state.view==='year')       html = renderYearView(state.todos);
     if (state.view==='categories') html = renderCategoriesView(state.todos);
+    if (state.view==='projects')   html = renderProjectsView();
     if (state.view==='inbox')      html = renderInboxView(state.todos);
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
@@ -1089,64 +1097,127 @@ class TodoApp {
     if (state.view === 'day') this.initDayDragDrop();
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
+    if (state.view === 'plan') this.initPlanDragDrop();
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
   }
 
   _renderPlanView() {
-    // Implemented in Feature 3 — for now, delegate to inbox + week side-by-side
-    const { renderInboxView: _ib, renderWeekView: _wv } = { renderInboxView, renderWeekView: null };
-    const inboxItems = state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
     return `<div class="plan-view">
       <div class="plan-inbox-col">
-        ${renderInboxView(state.todos)}
+        ${renderPlanInboxList(state.todos)}
       </div>
       <div class="plan-week-col">
-        ${this._renderPlanWeek()}
+        ${this._renderPlanCalendar()}
       </div>
     </div>`;
   }
 
-  _renderPlanWeek() {
-    // Import renderWeekView is already available at module scope
-    // We re-render a compact week from navDate
-    const { DS: _DS, addDays: _add, startOfWeek: _sow } = { DS, addDays, startOfWeek };
+  _renderPlanCalendar() {
+    const mode = localStorage.getItem('planMode') || 'week';
     const todayStr = DS(new Date());
-    const weekStart = startOfWeek(state.navDate);
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(weekStart, i);
+
+    const modeBtns = [
+      ['week',   'Sem.'],
+      ['biweek', '2 Sem.'],
+      ['month',  'Mois'],
+    ].map(([m, l]) =>
+      `<button class="plan-mode-btn${mode===m?' active':''}" onclick="window.app.setPlanMode('${m}')">${l}</button>`
+    ).join('');
+
+    const navPrev = `window.app.navigate(-1)`;
+    const navNext = `window.app.navigate(1)`;
+    const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+    const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+
+    const dayCol = (d) => {
       const ds = DS(d);
       const isT = ds === todayStr;
-      const items = getTodosForDate(d, state.todos).filter(t => t.recurrence !== 'daily');
+      const items = getTodosForDate(d, state.todos);
       const taskRows = items.map(t => {
         const done = isCompleted(t, d);
-        return `<div class="plan-week-task${done ? ' done' : ''}" data-id="${t.id}" data-date="${ds}">
-          <div class="week-todo-check${done ? ' checked' : ''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+        return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}">
+          <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
           <span class="week-todo-text">${esc(t.title)}</span>
           <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
         </div>`;
       }).join('');
-      days.push(`<div class="plan-week-day${isT ? ' is-today' : ''}" data-date="${ds}">
+      return `<div class="plan-week-day${isT?' is-today':''}" data-date="${ds}"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="window.app.planDrop(event,'${ds}')">
         <div class="plan-week-day-header">
           <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
           <span class="plan-week-day-num">${d.getDate()}</span>
         </div>
         <div class="plan-week-day-tasks">${taskRows}</div>
         <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
-      </div>`);
+      </div>`;
+    };
+
+    if (mode === 'month') {
+      const y = state.navDate.getFullYear(), m = state.navDate.getMonth();
+      const label = `${state.MONTHS[m]} ${y}`;
+      const firstDay = firstDayOfMonth(state.navDate);
+      const totalDays = daysInMonth(state.navDate);
+      const startOffset = (firstDay + 6) % 7; // Mon=0
+      const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
+      let cells = '';
+      for (let i = 0; i < startOffset; i++) cells += `<div class="plan-week-day plan-week-day--empty"></div>`;
+      for (let day = 1; day <= totalDays; day++) {
+        const d = new Date(y, m, day);
+        cells += dayCol(d);
+      }
+      return `<div class="plan-week-header">
+        <button class="day-nav-btn" onclick="${navPrev}">${navSvgL}</button>
+        <span>${label}</span>
+        <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
+        <div class="plan-mode-btns">${modeBtns}</div>
+      </div>
+      <div class="plan-month-daynames">${dayNames}</div>
+      <div class="plan-week-grid plan-month-grid">${cells}</div>`;
     }
-    const prevWeek = `window.app.navigate(-1)`;
-    const nextWeek = `window.app.navigate(1)`;
-    const weekEnd = addDays(weekStart, 6);
+
+    const numDays = mode === 'biweek' ? 14 : 7;
+    const weekStart = startOfWeek(state.navDate);
+    const days = [];
+    for (let i = 0; i < numDays; i++) days.push(dayCol(addDays(weekStart, i)));
+    const weekEnd = addDays(weekStart, numDays - 1);
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
     return `<div class="plan-week-header">
-      <button class="day-nav-btn" onclick="${prevWeek}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="day-nav-btn" onclick="${navPrev}">${navSvgL}</button>
       <span>${label}</span>
-      <button class="day-nav-btn" onclick="${nextWeek}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+      <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
+      <div class="plan-mode-btns">${modeBtns}</div>
     </div>
-    <div class="plan-week-grid">${days.join('')}</div>`;
+    <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
+  }
+
+  setPlanMode(mode) {
+    localStorage.setItem('planMode', mode);
+    this.render();
+  }
+
+  // Plan drag-drop
+  planDragStart(event, taskId) {
+    event.dataTransfer.setData('text/plain', taskId);
+    event.dataTransfer.effectAllowed = 'move';
+  }
+
+  planDrop(event, ds) {
+    event.preventDefault();
+    const col = event.currentTarget;
+    col.classList.remove('drag-over');
+    const taskId = event.dataTransfer.getData('text/plain');
+    if (taskId) this.assignInboxToDate(taskId, ds);
+  }
+
+  initPlanDragDrop() {
+    // HTML5 drag events are set inline; nothing extra needed here
+    // But we do clean up any stale drag-over classes
+    document.querySelectorAll('.plan-week-day.drag-over')
+      .forEach(el => el.classList.remove('drag-over'));
   }
 
   _renderProfileView() {
@@ -1264,8 +1335,7 @@ class TodoApp {
       input.placeholder = 'Connexion requise pour obtenir l\'URL';
       return;
     }
-    const base = window.location.origin;
-    input.value = `${base}/api/ical?token=${token}`;
+    input.value = `webcal://${window.location.host}/api/ical?token=${token}`;
   }
 
   async copyICalLink() {
@@ -1290,8 +1360,7 @@ class TodoApp {
     if (!token) return;
     const input = document.getElementById('icalUrlInput');
     if (input) {
-      const base = window.location.origin;
-      input.value = `${base}/api/ical?token=${token}`;
+      input.value = `webcal://${window.location.host}/api/ical?token=${token}`;
     }
   }
 
@@ -1608,16 +1677,6 @@ class TodoApp {
     this.render();
   }
 
-  setCategoryStatus(categoryId, status) {
-    saveCategoryStatus(categoryId, status);
-    this.render();
-  }
-
-  setCategoryDeadline(categoryId, deadline) {
-    saveCategoryDeadline(categoryId, deadline);
-    this.render();
-  }
-
   setCategoriesCols(n) {
     localStorage.setItem('categoriesCols', n);
     this.render();
@@ -1625,6 +1684,70 @@ class TodoApp {
 
   setCategoriesSort(s) {
     localStorage.setItem('categoriesSort', s);
+    this.render();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // PROJECTS (independent entities)
+  // ═══════════════════════════════════════════════════
+  addProjectFromView() {
+    const name = prompt('Nom du projet :');
+    if (!name || !name.trim()) return;
+    addProjectItem(name.trim());
+    this.render();
+  }
+
+  openProjectPanel(id)   { openProjectPanel(id); }
+  closeProjectPanel()    { closeProjectPanel(); }
+
+  saveProjectName(id, name) {
+    if (!name.trim()) return;
+    updateProjectItem(id, { name: name.trim() });
+    renderProjectPanel(id);
+    this.render();
+  }
+
+  setProjectColor(id, color) {
+    updateProjectItem(id, { color });
+    renderProjectPanel(id);
+    this.render();
+  }
+
+  setProjectIcon(id, icon) {
+    updateProjectItem(id, { icon });
+    renderProjectPanel(id);
+    this.render();
+  }
+
+  saveProjectDescription(id, description) {
+    updateProjectItem(id, { description });
+    this.render();
+  }
+
+  setProjectStatus(id, status) {
+    updateProjectItem(id, { status });
+    this.render();
+  }
+
+  setProjectDeadline(id, deadline) {
+    updateProjectItem(id, { deadline });
+    this.render();
+  }
+
+  confirmDeleteProject(id) {
+    if (!confirm('Supprimer ce projet ?')) return;
+    closeProjectPanel();
+    deleteProjectItem(id);
+    this.render();
+  }
+
+  setProjectsCols(n) {
+    localStorage.setItem('projectsCols', n);
+    this.render();
+  }
+
+  setProjectsSort(s) {
+    localStorage.setItem('projectsSort', s);
     this.render();
   }
 

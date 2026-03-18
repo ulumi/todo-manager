@@ -295,29 +295,29 @@ header.scrolled {
   box-shadow: var(--shadow);
 }
 
-.categories-tab, .inbox-tab, .plan-tab {
+.categories-tab, .inbox-tab, .plan-tab, .projects-tab {
   margin-left: 6px;
   display: inline-flex;
   align-items: center;
   gap: 5px;
 }
-.categories-tab .cat-icon, .inbox-tab .cat-icon, .plan-tab .cat-icon {
+.categories-tab .cat-icon, .inbox-tab .cat-icon, .plan-tab .cat-icon, .projects-tab .cat-icon {
   transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
   opacity: 0.7;
 }
-.categories-tab:hover, .inbox-tab:hover, .plan-tab:hover {
+.categories-tab:hover, .inbox-tab:hover, .plan-tab:hover, .projects-tab:hover {
   color: var(--primary);
 }
-.categories-tab:hover .cat-icon, .inbox-tab:hover .cat-icon, .plan-tab:hover .cat-icon {
+.categories-tab:hover .cat-icon, .inbox-tab:hover .cat-icon, .plan-tab:hover .cat-icon, .projects-tab:hover .cat-icon {
   transform: scale(1.25) rotate(-8deg);
   opacity: 1;
 }
-.categories-tab.active, .inbox-tab.active, .plan-tab.active {
+.categories-tab.active, .inbox-tab.active, .plan-tab.active, .projects-tab.active {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
   color: var(--primary);
   box-shadow: none;
 }
-.categories-tab.active .cat-icon, .inbox-tab.active .cat-icon, .plan-tab.active .cat-icon {
+.categories-tab.active .cat-icon, .inbox-tab.active .cat-icon, .plan-tab.active .cat-icon, .projects-tab.active .cat-icon {
   opacity: 1;
 }
 
@@ -5813,7 +5813,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--danger, #f87171);
 }
 
-.inbox-tab, .plan-tab {
+.inbox-tab, .plan-tab, .projects-tab {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -6271,6 +6271,163 @@ body:has(.bottom-panel:not(.hidden))::before {
 .cv-deadline-input:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.plan-mode-btns {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.plan-mode-btn {
+  padding: 3px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.plan-mode-btn.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+.plan-mode-btn:hover:not(.active) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.plan-biweek-grid {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.plan-month-grid {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.plan-month-daynames {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.plan-month-dayname {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.plan-week-day--empty {
+  border: none;
+  background: transparent;
+  min-height: 60px;
+}
+
+.plan-inbox-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.plan-inbox-header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.plan-inbox-count {
+  font-size: 11px;
+  background: var(--primary);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.plan-inbox-add {
+  margin-left: auto;
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 16px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.plan-inbox-add:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.plan-inbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.plan-inbox-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: 7px;
+  cursor: grab;
+  transition: background 0.12s;
+  user-select: none;
+}
+.plan-inbox-item:hover {
+  background: var(--surface2);
+}
+.plan-inbox-item:active {
+  cursor: grabbing;
+}
+
+.plan-inbox-drag {
+  color: var(--text-muted);
+  font-size: 11px;
+  opacity: 0.4;
+}
+
+.plan-inbox-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.plan-inbox-today {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 3px;
+  transition: color 0.12s;
+}
+.plan-inbox-today:hover {
+  color: var(--primary);
+}
+
+.plan-inbox-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 24px 0;
 }
 
 .ical-url-row {
