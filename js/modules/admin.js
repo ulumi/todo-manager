@@ -284,32 +284,31 @@ export function openAdminModal() {
               </div>
             </div>
             <div class="admin-section">
-              <h3>Paramètres d'affichage</h3>
-              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
-                <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;">
-                  <label style="font-size:12px;color:var(--text-muted);">Fuseau horaire</label>
+              <h3>Affichage &amp; Filtres</h3>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+                <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:140px;">
+                  <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Fuseau horaire</label>
                   <input id="adminIcalTimezone" class="form-input" style="font-size:13px;" placeholder="America/Montreal">
                 </div>
                 <div style="display:flex;flex-direction:column;gap:4px;">
-                  <label style="font-size:12px;color:var(--text-muted);">Heure des tâches</label>
+                  <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Heure de début</label>
                   <input id="adminIcalHour" type="time" class="form-input" style="font-size:13px;width:100px;">
                 </div>
               </div>
-            </div>
-            <div class="admin-section">
-              <h3>Filtres</h3>
-              <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+              <div style="height:1px;background:var(--border);margin:10px 0;opacity:.5;"></div>
+              <p style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Inclure dans le calendrier</p>
+              <div style="display:flex;flex-direction:column;gap:8px;">
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
                   <input type="checkbox" id="icalFilterCompleted" style="width:15px;height:15px;">
-                  Inclure les tâches complétées
+                  Tâches complétées
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
                   <input type="checkbox" id="icalFilterRecurring" style="width:15px;height:15px;">
-                  Inclure les tâches récurrentes
+                  Tâches récurrentes
                 </label>
                 <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
                   <input type="checkbox" id="icalFilterOneTime" style="width:15px;height:15px;">
-                  Inclure les tâches ponctuelles
+                  Tâches ponctuelles
                 </label>
               </div>
             </div>
