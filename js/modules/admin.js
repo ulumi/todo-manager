@@ -379,6 +379,7 @@ export function renderAdminICal() {
     ? `<p style="font-size:13px;color:var(--success);margin-bottom:8px;">✓ Connecté à Google Calendar</p>
        <div style="display:flex;gap:8px;flex-wrap:wrap;">
          <button class="btn btn-primary" onclick="window.app.gcalSyncNow()" style="flex:1;">Synchroniser maintenant</button>
+         <button class="btn btn-ghost" onclick="window.app.gcalSyncNow(true)" title="Réimporte tous les événements GCal même déjà vus">Forcer</button>
          <button class="btn btn-ghost" onclick="window.app.disconnectGoogleCalendar()" style="color:var(--danger);border-color:var(--danger);">Déconnecter</button>
        </div>
        <p id="gcalSyncMsg" style="font-size:12px;color:var(--text-muted);margin-top:6px;display:none;"></p>`

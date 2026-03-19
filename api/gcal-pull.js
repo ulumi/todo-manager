@@ -76,7 +76,9 @@ module.exports = async function handler(req, res) {
 
     const accessToken    = await getAccessToken(data.gcalRefreshToken);
     const gcalEventIds   = data.gcalEventIds || {};   // { todoId: gcalEventId }
-    const gcalImported   = new Set(data.gcalImportedIds || []); // already-imported gcalEventIds
+    // ?force=1 clears the import cache so all GCal events are re-evaluated
+    const forceReimport  = req.query.force === '1';
+    const gcalImported   = forceReimport ? new Set() : new Set(data.gcalImportedIds || []);
 
     // Reverse map: gcalEventId → todoId
     const gcalToTodo = Object.fromEntries(
@@ -166,14 +168,17 @@ module.exports = async function handler(req, res) {
     const updates = {
       gcalLastSync:     admin.firestore.FieldValue.serverTimestamp(),
     };
-    if (newImportedIds.length > 0) {
+    if (forceReimport) {
+      updates.gcalImportedIds = newImportedIds; // replace, don't union
+      updates.gcalEventIds    = gcalEventIds;
+    } else if (newImportedIds.length > 0) {
       updates.gcalImportedIds = admin.firestore.FieldValue.arrayUnion(...newImportedIds);
       updates.gcalEventIds    = gcalEventIds;
     }
     await db.collection('users').doc(uid).collection('data').doc('main').set(updates, { merge: true });
 
-    console.log(`[gcal-pull] changed=${completedTodoIds.length + movedTodos.length} new=${newTodos.length}`);
-    res.json({ completedTodoIds, movedTodos, newTodos });
+    console.log(`[gcal-pull] cals=${calendarIds.length} changed=${completedTodoIds.length + movedTodos.length} new=${newTodos.length} force=${forceReimport}`);
+    res.json({ completedTodoIds, movedTodos, newTodos, debug: { calendars: calendarIds.length, newCount: newTodos.length } });
 
   } catch (err) {
     console.error('gcal-pull error:', err.message);

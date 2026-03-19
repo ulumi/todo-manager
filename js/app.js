@@ -1465,16 +1465,20 @@ class TodoApp {
     renderAdminICal();
   }
 
-  async gcalSyncNow() {
+  async gcalSyncNow(force = false) {
     const msg = document.getElementById('gcalSyncMsg');
     if (msg) { msg.style.display = 'block'; msg.textContent = 'Synchronisation…'; }
     try {
       await this._gcalPush();
-      const pulled = await this._gcalPull();
+      const pulled = await this._gcalPull(force);
       if (msg) {
-        const changes = (pulled?.completedTodoIds?.length || 0) + (pulled?.movedTodos?.length || 0);
-        msg.textContent = changes > 0 ? `✓ Sync OK — ${changes} changement(s) importé(s)` : '✓ Synchronisé';
-        setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
+        const newCount = pulled?.newTodos?.length || 0;
+        const changed  = (pulled?.completedTodoIds?.length || 0) + (pulled?.movedTodos?.length || 0);
+        const dbg      = pulled?.debug ? ` (${pulled.debug.calendars} cal)` : '';
+        msg.textContent = (newCount + changed) > 0
+          ? `✓ ${newCount} importé(s), ${changed} modifié(s)${dbg}`
+          : `✓ Synchronisé${dbg} — rien de nouveau`;
+        setTimeout(() => { if (msg) msg.style.display = 'none'; }, 5000);
       }
     } catch (err) {
       if (msg) { msg.textContent = 'Erreur: ' + err.message; }
@@ -1492,10 +1496,11 @@ class TodoApp {
     return res.json();
   }
 
-  async _gcalPull() {
+  async _gcalPull(force = false) {
     const token = await getIdToken();
     if (!token) return null;
-    const res = await fetch('/api/gcal-pull', { headers: { Authorization: `Bearer ${token}` } });
+    const url = force ? '/api/gcal-pull?force=1' : '/api/gcal-pull';
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) return null;
     const { completedTodoIds = [], movedTodos = [], newTodos = [] } = await res.json();
     let changed = false;
