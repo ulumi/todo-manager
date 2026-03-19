@@ -36,7 +36,7 @@ import {
 import { setupEventListeners } from './modules/events.js';
 import { celebrate } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
-import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories } from './modules/admin.js';
+import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
   openCategoryView, closeCategoryView, renderCategoryPanel,
   getCurrentCategoryId, getCategoryTaskOrder, saveCategoryTaskOrder,
@@ -171,9 +171,10 @@ class TodoApp {
     if (backup.config) {
       if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
       if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
-      if (backup.config.lang)     localStorage.setItem('lang',     backup.config.lang);
-      if (backup.config.timezone) localStorage.setItem('timezone', backup.config.timezone);
-      if (backup.config.icalHour) localStorage.setItem('icalHour', backup.config.icalHour);
+      if (backup.config.lang)        localStorage.setItem('lang',        backup.config.lang);
+      if (backup.config.timezone)    localStorage.setItem('timezone',    backup.config.timezone);
+      if (backup.config.icalHour)    localStorage.setItem('icalHour',    backup.config.icalHour);
+      if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
     }
     localStorage.setItem('todos', JSON.stringify(backup.calendar));
     this.render();
@@ -1016,9 +1017,10 @@ class TodoApp {
       if (data.config) {
         if (data.config.theme)    localStorage.setItem('theme',    data.config.theme);
         if (data.config.zoom)     localStorage.setItem('zoom',     data.config.zoom);
-        if (data.config.lang)     localStorage.setItem('lang',     data.config.lang);
-        if (data.config.timezone) localStorage.setItem('timezone', data.config.timezone);
-        if (data.config.icalHour) localStorage.setItem('icalHour', data.config.icalHour);
+        if (data.config.lang)        localStorage.setItem('lang',        data.config.lang);
+        if (data.config.timezone)    localStorage.setItem('timezone',    data.config.timezone);
+        if (data.config.icalHour)    localStorage.setItem('icalHour',    data.config.icalHour);
+        if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
         this.initTheme();
         this.applyLang();
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
@@ -1380,6 +1382,22 @@ class TodoApp {
     if (tz)   localStorage.setItem('timezone', tz);
     if (hour) localStorage.setItem('icalHour', hour);
     pushToFirestore(getFullBackup(state.todos));
+  }
+
+  saveICalAdminSettings() {
+    const tz   = document.getElementById('adminIcalTimezone')?.value?.trim();
+    const hour = document.getElementById('adminIcalHour')?.value;
+    if (tz)   localStorage.setItem('timezone', tz);
+    if (hour) localStorage.setItem('icalHour', hour);
+    const filters = {
+      completed: document.getElementById('icalFilterCompleted')?.checked || false,
+      recurring: document.getElementById('icalFilterRecurring')?.checked !== false,
+      oneTime:   document.getElementById('icalFilterOneTime')?.checked   !== false,
+    };
+    localStorage.setItem('icalFilters', JSON.stringify(filters));
+    pushToFirestore(getFullBackup(state.todos));
+    const msg = document.getElementById('icalAdminSaveMsg');
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
   }
 
   async copyICalLink() {
@@ -1957,9 +1975,10 @@ class TodoApp {
     if (backup.config) {
       if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
       if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
-      if (backup.config.lang)     localStorage.setItem('lang',     backup.config.lang);
-      if (backup.config.timezone) localStorage.setItem('timezone', backup.config.timezone);
-      if (backup.config.icalHour) localStorage.setItem('icalHour', backup.config.icalHour);
+      if (backup.config.lang)        localStorage.setItem('lang',        backup.config.lang);
+      if (backup.config.timezone)    localStorage.setItem('timezone',    backup.config.timezone);
+      if (backup.config.icalHour)    localStorage.setItem('icalHour',    backup.config.icalHour);
+      if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));

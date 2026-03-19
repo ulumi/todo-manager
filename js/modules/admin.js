@@ -223,6 +223,7 @@ export function openAdminModal() {
         <button class="admin-sidenav-link active" onclick="window.app.showAdminSection('taches')">📋 Tâches</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('categories')">📁 Catégories</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('ical')">📅 iCal</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
       </nav>
       <div class="admin-content">
@@ -271,6 +272,46 @@ export function openAdminModal() {
           <div id="templateAdminList"></div>
         </section>
 
+        <section id="section-ical" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">Export iCal</h2>
+          <div class="admin-form">
+            <div class="admin-section">
+              <h3>Paramètres d'affichage</h3>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+                <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px;">
+                  <label style="font-size:12px;color:var(--text-muted);">Fuseau horaire</label>
+                  <input id="adminIcalTimezone" class="form-input" style="font-size:13px;" placeholder="America/Montreal">
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <label style="font-size:12px;color:var(--text-muted);">Heure des tâches</label>
+                  <input id="adminIcalHour" type="time" class="form-input" style="font-size:13px;width:100px;">
+                </div>
+              </div>
+            </div>
+            <div class="admin-section">
+              <h3>Filtres</h3>
+              <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="icalFilterCompleted" style="width:15px;height:15px;">
+                  Inclure les tâches complétées
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="icalFilterRecurring" style="width:15px;height:15px;">
+                  Inclure les tâches récurrentes
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                  <input type="checkbox" id="icalFilterOneTime" style="width:15px;height:15px;">
+                  Inclure les tâches ponctuelles
+                </label>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-primary" onclick="window.app.saveICalAdminSettings()" style="flex:1;">Enregistrer</button>
+            <span id="icalAdminSaveMsg" style="font-size:12px;color:var(--success);display:none;">✓ Sauvegardé</span>
+          </div>
+        </section>
+
         <section id="section-donnees" class="admin-page-section" style="display:none">
           <h2 class="admin-section-title">Données</h2>
           <div class="admin-data-sections">
@@ -309,7 +350,22 @@ export function openAdminModal() {
   renderAdminLists(tasks);
   renderAdminTemplates();
   renderAdminCategories();
+  renderAdminICal();
   document.getElementById('adminModalOverlay').classList.remove('hidden');
+}
+
+export function renderAdminICal() {
+  const tz   = document.getElementById('adminIcalTimezone');
+  const hour = document.getElementById('adminIcalHour');
+  const filters = JSON.parse(localStorage.getItem('icalFilters') || '{}');
+
+  if (tz)   tz.value   = localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (hour) hour.value = localStorage.getItem('icalHour') || '05:00';
+
+  const el = (id) => document.getElementById(id);
+  if (el('icalFilterCompleted')) el('icalFilterCompleted').checked = filters.completed === true;
+  if (el('icalFilterRecurring')) el('icalFilterRecurring').checked = filters.recurring !== false;
+  if (el('icalFilterOneTime'))   el('icalFilterOneTime').checked   = filters.oneTime   !== false;
 }
 
 export function showAdminSection(id) {

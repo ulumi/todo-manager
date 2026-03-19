@@ -53,17 +53,25 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const config  = d.config || {};
-  const tz      = config.timezone || 'America/Montreal';
+  const config   = d.config || {};
+  const tz       = config.timezone || 'America/Montreal';
   const icalHour = config.icalHour || '05:00';
   const [hh, mm] = icalHour.split(':').map(n => String(n).padStart(2, '0'));
-  const timeStr  = `${hh}${mm}00`; // e.g. "050000"
-
-  // Compute end hour (+1h, wraps at 23→00 but good enough for todos)
-  const endHH = String((parseInt(hh, 10) + 1) % 24).padStart(2, '0');
+  const timeStr  = `${hh}${mm}00`;
+  const endHH    = String((parseInt(hh, 10) + 1) % 24).padStart(2, '0');
   const endTimeStr = `${endHH}${mm}00`;
 
-  const ical = generateICal(todos, tz, timeStr, endTimeStr);
+  // Apply filters
+  const f = config.icalFilters || {};
+  const filtered = todos.filter(t => {
+    if (t.completed && !f.completed) return false;
+    const isRec = t.recurrence && t.recurrence !== 'none';
+    if (isRec  && f.recurring === false) return false;
+    if (!isRec && f.oneTime   === false) return false;
+    return true;
+  });
+
+  const ical = generateICal(filtered, tz, timeStr, endTimeStr);
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="todo-manager.ics"');

@@ -71,12 +71,14 @@ export function initCrossTabSync(onUpdate) {
 }
 
 export function getAppConfig() {
+  const icalFilters = localStorage.getItem('icalFilters');
   return {
     theme: localStorage.getItem('theme'),
     zoom: localStorage.getItem('zoom'),
     lang: localStorage.getItem('lang'),
     timezone: localStorage.getItem('timezone'),
-    icalHour: localStorage.getItem('icalHour')
+    icalHour: localStorage.getItem('icalHour'),
+    icalFilters: icalFilters ? JSON.parse(icalFilters) : null
   };
 }
 
