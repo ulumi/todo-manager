@@ -57,10 +57,8 @@ module.exports = async function handler(req, res) {
 
   const tz       = config.timezone || 'America/Montreal';
   const icalHour = config.icalHour || '05:00';
-  const [hh, mm] = icalHour.split(':').map(n => String(n).padStart(2, '0'));
-  const timeStr  = `${hh}${mm}00`;
-  const endHH    = String((parseInt(hh, 10) + 1) % 24).padStart(2, '0');
-  const endTimeStr = `${endHH}${mm}00`;
+  const [hh, mm] = icalHour.split(':');
+  const baseMins = parseInt(hh, 10) * 60 + parseInt(mm, 10);
 
   // Apply filters
   const f = config.icalFilters || {};
@@ -72,7 +70,7 @@ module.exports = async function handler(req, res) {
     return true;
   });
 
-  const ical = generateICal(filtered, tz, timeStr, endTimeStr);
+  const ical = generateICal(filtered, tz, baseMins);
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="todo-manager.ics"');
@@ -82,9 +80,20 @@ module.exports = async function handler(req, res) {
 
 // ─── iCal generation ───────────────────────────────────────────────────────
 
-function generateICal(todos, tz, timeStr, endTimeStr) {
+// Convert total minutes → "HHMMSS" string (wraps past midnight)
+function minsToTime(mins) {
+  const m = ((mins % 1440) + 1440) % 1440;
+  return String(Math.floor(m / 60)).padStart(2, '0') + String(m % 60).padStart(2, '0') + '00';
+}
+
+function generateICal(todos, tz, baseMins) {
   const now = fmtDatetime(new Date());
-  const events = todos.map(t => buildEvent(t, now, tz, timeStr, endTimeStr)).filter(Boolean).join('\r\n');
+  let idx = 0;
+  const events = todos.map(t => {
+    const ev = buildEvent(t, now, tz, baseMins, idx);
+    if (ev) idx++;
+    return ev;
+  }).filter(Boolean).join('\r\n');
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -99,10 +108,16 @@ function generateICal(todos, tz, timeStr, endTimeStr) {
   ].join('\r\n');
 }
 
-function buildEvent(t, now, tz, timeStr, endTimeStr) {
+function buildEvent(t, now, tz, baseMins, idx) {
   const isRec = t.recurrence && t.recurrence !== 'none';
 
   if (!isRec && !t.date) return null; // inbox task — no date, skip
+
+  // Stagger each event by 30 min from the base hour
+  const startMins = baseMins + idx * 30;
+  const endMins   = startMins + 30;
+  const timeStr    = minsToTime(startMins);
+  const endTimeStr = minsToTime(endMins);
 
   const uid = `${t.id}@todo-manager.app`;
   const summary = escIcal(t.title || '');
