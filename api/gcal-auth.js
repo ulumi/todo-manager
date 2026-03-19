@@ -36,7 +36,9 @@ module.exports = async function handler(req, res) {
       state:         uid,
     });
 
-    res.json({ url: `https://accounts.google.com/o/oauth2/auth?${params}` });
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+    console.log('[gcal-auth] client_id length:', process.env.GCAL_CLIENT_ID?.length, 'url:', authUrl.slice(0, 120));
+    res.json({ url: authUrl });
   } catch (err) {
     console.error('gcal-auth error:', err.message);
     res.status(401).send('Invalid token');
