@@ -30,15 +30,26 @@ async function getAccessToken(refreshToken) {
   return data.access_token;
 }
 
-async function listEvents(accessToken, params) {
-  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?` +
+async function listEvents(accessToken, calendarId, params) {
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?` +
     new URLSearchParams(params);
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`GCal list error ${res.status}: ${text}`);
+    console.warn(`[gcal-pull] listEvents ${calendarId} → ${res.status}: ${text.slice(0, 200)}`);
+    return [];
   }
   return (await res.json()).items || [];
+}
+
+async function getAllCalendarIds(accessToken) {
+  const res = await fetch(
+    'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=50',
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!res.ok) return ['primary'];
+  const data = await res.json();
+  return (data.items || []).map(c => c.id).filter(Boolean);
 }
 
 module.exports = async function handler(req, res) {
@@ -74,6 +85,10 @@ module.exports = async function handler(req, res) {
     // All known gcalEventIds (managed + imported)
     const knownGcalIds = new Set([...Object.values(gcalEventIds), ...gcalImported]);
 
+    // Get all calendar IDs (not just primary)
+    const calendarIds = await getAllCalendarIds(accessToken);
+    console.log(`[gcal-pull] calendars: ${calendarIds.join(', ')}`);
+
     // ── 1. Check for changes to app-managed events since last sync ────────
     const completedTodoIds = [];
     const movedTodos = [];
@@ -82,19 +97,19 @@ module.exports = async function handler(req, res) {
       const lastSync   = data.gcalLastSync?.toDate?.() ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const updatedMin = lastSync.toISOString();
 
-      const changedEvents = await listEvents(accessToken, {
-        updatedMin, showDeleted: 'true', singleEvents: 'false', maxResults: '500',
-      });
-
-      for (const event of changedEvents) {
-        const todoId = gcalToTodo[event.id];
-        if (!todoId) continue;
-
-        if (event.status === 'cancelled') {
-          completedTodoIds.push(todoId);
-        } else if (event.start?.dateTime || event.start?.date) {
-          const newDate = (event.start.dateTime || event.start.date).slice(0, 10);
-          movedTodos.push({ id: todoId, date: newDate });
+      for (const calId of calendarIds) {
+        const changedEvents = await listEvents(accessToken, calId, {
+          updatedMin, showDeleted: 'true', singleEvents: 'false', maxResults: '500',
+        });
+        for (const event of changedEvents) {
+          const todoId = gcalToTodo[event.id];
+          if (!todoId) continue;
+          if (event.status === 'cancelled') {
+            completedTodoIds.push(todoId);
+          } else if (event.start?.dateTime || event.start?.date) {
+            const newDate = (event.start.dateTime || event.start.date).slice(0, 10);
+            movedTodos.push({ id: todoId, date: newDate });
+          }
         }
       }
     }
@@ -102,17 +117,21 @@ module.exports = async function handler(req, res) {
     // ── 2. Fetch upcoming GCal events not yet imported ────────────────────
     const now   = new Date();
     const until = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days ahead
-    // Also check past 7 days (to catch "ce soir" that may already have passed midnight)
-    const from  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const from  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);  // 7 days back
 
-    const upcomingEvents = await listEvents(accessToken, {
-      timeMin:      from.toISOString(),
-      timeMax:      until.toISOString(),
-      showDeleted:  'false',
-      singleEvents: 'true',
-      maxResults:   '250',
-      orderBy:      'startTime',
-    });
+    const allUpcoming = [];
+    for (const calId of calendarIds) {
+      const events = await listEvents(accessToken, calId, {
+        timeMin:      from.toISOString(),
+        timeMax:      until.toISOString(),
+        showDeleted:  'false',
+        singleEvents: 'true',
+        maxResults:   '250',
+        orderBy:      'startTime',
+      });
+      allUpcoming.push(...events);
+    }
+    const upcomingEvents = allUpcoming;
 
     const newTodos = [];
     const newImportedIds = [];
