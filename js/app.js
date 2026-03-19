@@ -1140,7 +1140,7 @@ class TodoApp {
         ${renderPlanInboxList(state.todos)}
       </div>
       <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"></div>
-      <div class="plan-week-col">
+      <div class="plan-week-col${(localStorage.getItem('planMode')||'week')==='month'?' plan-month-mode':''}">
         ${this._renderPlanCalendar()}
       </div>
     </div>`;
