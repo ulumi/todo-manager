@@ -77,37 +77,43 @@ export async function deleteUserFirestoreDoc() {
 }
 
 // ── iCal token (stored at users/{uid}/data/ical) ──────────
-// Stored in the 'data' subcollection (same rules as todos) instead of the
-// root 'users/{uid}' doc, which is often not writable by client security rules.
+// Token format: "{uid}_{secret}" — the uid is embedded so the API can do a
+// direct document read (no Firestore query/index needed).
 function userICalRef() {
   const user = getCurrentUser();
   if (!user) throw new Error('sync: no authenticated user');
   return doc(db, 'users', user.uid, 'data', 'ical');
 }
 
-function genToken() {
+function genSecret() {
   return crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 export async function getOrCreateICalToken() {
+  const user = getCurrentUser();
+  const uid = user?.uid;
   const cached = localStorage.getItem('icalToken');
+
+  if (!uid) return cached || null;
 
   try {
     const snap = await getDoc(userICalRef());
-    if (snap.exists() && snap.data().icalToken) {
-      // Firestore is authoritative — sync to localStorage
-      const token = snap.data().icalToken;
+    if (snap.exists() && snap.data().secret) {
+      const token = uid + '_' + snap.data().secret;
       localStorage.setItem('icalToken', token);
       return token;
     }
-    // No token in Firestore — use cached or generate new, then save to Firestore
-    const token = cached || genToken();
+    // No secret in Firestore — generate and save
+    const secret = genSecret();
+    await setDoc(userICalRef(), { secret });
+    const token = uid + '_' + secret;
     localStorage.setItem('icalToken', token);
-    await setDoc(userICalRef(), { icalToken: token });
     return token;
   } catch {
-    // Offline or unauthenticated — use cached or generate locally only
-    const token = cached || genToken();
+    // Offline — reuse cached if it belongs to this user, otherwise generate locally
+    if (cached && cached.startsWith(uid + '_')) return cached;
+    const secret = genSecret();
+    const token = uid + '_' + secret;
     localStorage.setItem('icalToken', token);
     return token;
   }

@@ -27,19 +27,25 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  // Step 1: lookup by ical token (stored at users/{uid}/data/ical)
-  // Uses collectionGroup to avoid needing the uid upfront.
-  let uid;
+  // Token format: "{uid}_{secret}" — uid is embedded so we can do a direct
+  // document read at users/{uid}/data/ical without any query or index.
+  const sepIdx = token.indexOf('_');
+  if (sepIdx < 5) {
+    res.status(401).send('Invalid token format');
+    return;
+  }
+  const uid    = token.slice(0, sepIdx);
+  const secret = token.slice(sepIdx + 1);
+
+  // Step 1: verify secret directly at users/{uid}/data/ical (no query needed)
   try {
-    const q = await db.collectionGroup('data').where('icalToken', '==', token).limit(1).get();
-    if (q.empty) {
-      res.status(404).send('Token not found');
+    const icalSnap = await db.collection('users').doc(uid).collection('data').doc('ical').get();
+    if (!icalSnap.exists || icalSnap.data().secret !== secret) {
+      res.status(401).send('Invalid token');
       return;
     }
-    // Path is users/{uid}/data/ical — parent.parent.id is the uid
-    uid = q.docs[0].ref.parent.parent.id;
   } catch (err) {
-    console.error('Firestore token lookup error:', err);
+    console.error('Firestore token verification error:', err);
     res.status(500).send('Internal error');
     return;
   }
