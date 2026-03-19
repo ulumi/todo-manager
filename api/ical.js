@@ -39,6 +39,7 @@ module.exports = async function handler(req, res) {
 
   // Step 1+2 combined: read data/main — verify icalSecret AND load todos in one shot
   let todos = [];
+  let config = {};
   try {
     const dataSnap = await db.collection('users').doc(uid).collection('data').doc('main').get();
     if (!dataSnap.exists || dataSnap.data().icalSecret !== secret) {
@@ -46,14 +47,14 @@ module.exports = async function handler(req, res) {
       return;
     }
     const d = dataSnap.data();
-    todos = d.calendar || d.todos || [];
+    todos  = d.calendar || d.todos || [];
+    config = d.config || {};
   } catch (err) {
     console.error('Firestore data read error:', err);
     res.status(500).send('Internal error');
     return;
   }
 
-  const config   = d.config || {};
   const tz       = config.timezone || 'America/Montreal';
   const icalHour = config.icalHour || '05:00';
   const [hh, mm] = icalHour.split(':').map(n => String(n).padStart(2, '0'));
