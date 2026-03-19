@@ -42,7 +42,8 @@ async function gcalReq(method, path, accessToken, body) {
   if (res.status === 204 || res.status === 404 || res.status === 410) return null;
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`GCal ${method} ${path} → ${res.status}: ${text}`);
+    console.error(`[gcal] ${method} ${path} → ${res.status}:`, text.slice(0, 500));
+    throw new Error(`GCal ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
   }
   return res.json();
 }
@@ -63,12 +64,12 @@ function todoToEvent(todo, tz, baseMins, idx) {
   const dateStr   = isRec ? (todo.startDate || new Date().toISOString().slice(0, 10)) : todo.date;
 
   const event = {
-    summary:     todo.title || '(sans titre)',
-    description: todo.description || undefined,
+    summary: todo.title || '(sans titre)',
     start: { dateTime: `${dateStr}T${startTime}`, timeZone: tz },
     end:   { dateTime: `${dateStr}T${endTime}`,   timeZone: tz },
-    status: todo.completed ? 'cancelled' : 'confirmed',
+    status: 'confirmed',
   };
+  if (todo.description) event.description = todo.description;
 
   if (isRec) {
     const dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
