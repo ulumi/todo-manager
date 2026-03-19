@@ -620,6 +620,96 @@ main {
   opacity: 0.7;
 }
 
+.day-mini-week {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.day-mini-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.day-mini-week-row + .day-mini-week-row {
+  border-top: 1px solid var(--border);
+}
+
+.day-mini-col {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 4px 8px;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  transition: background 0.12s;
+  min-height: 54px;
+  user-select: none;
+}
+.day-mini-col:last-child {
+  border-right: none;
+}
+.day-mini-col:hover {
+  background: var(--hover-bg);
+}
+.day-mini-col.is-current {
+  background: var(--primary-light);
+}
+.day-mini-col.is-today .day-mini-num {
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+}
+.day-mini-col.past {
+  opacity: 0.5;
+}
+.day-mini-col.drag-over {
+  background: rgba(99, 102, 241, 0.12);
+  outline: 2px dashed var(--primary);
+  outline-offset: -2px;
+}
+
+.day-mini-col-hd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.day-mini-abbr {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.day-mini-num {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-mini-col-body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.day-mini-count {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .day-header-wrapper {
   display: grid;
   grid-template-columns: 36px 52px 1fr 52px 36px;
@@ -4247,6 +4337,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .period-label {
     min-width: 100px;
     font-size: 14px;
+  }
+  .day-mini-week {
+    display: none;
   }
   .day-columns {
     grid-template-columns: 1fr 1fr;

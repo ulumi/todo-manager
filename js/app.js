@@ -905,6 +905,35 @@ class TodoApp {
     });
   }
 
+  initDayMiniWeekDragDrop() {
+    const miniWeek = document.querySelector('.day-mini-week');
+    if (!miniWeek) return;
+
+    const clearHover = () => miniWeek.querySelectorAll('.day-mini-col.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+    miniWeek.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const col = e.target.closest('.day-mini-col[data-date]');
+      clearHover();
+      if (col) col.classList.add('drag-over');
+    });
+
+    miniWeek.addEventListener('dragleave', e => {
+      if (!miniWeek.contains(e.relatedTarget)) clearHover();
+    });
+
+    miniWeek.addEventListener('drop', e => {
+      e.preventDefault();
+      clearHover();
+      const col = e.target.closest('.day-mini-col[data-date]');
+      if (!col) return;
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (!draggedId) return;
+      this.moveTodoToDate(draggedId, col.dataset.date);
+    });
+  }
+
   setQuickAddTarget(target) {
     state.setQuickAddTarget(target);
     const qaToday = document.getElementById('qaToday');
@@ -1084,7 +1113,7 @@ class TodoApp {
         sidebar.innerHTML = '';
       }
     }
-    if (state.view === 'day') this.initDayDragDrop();
+    if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); }
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();

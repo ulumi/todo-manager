@@ -86,6 +86,42 @@ function recLabel(t, dayView = false) {
   return '';
 }
 
+function _renderDayMiniWeek(todos) {
+  const navDate = state.navDate;
+  const todayStr = DS(new Date());
+  const navStr = DS(navDate);
+  const week1Start = startOfWeek(navDate);
+  const week2Start = addDays(week1Start, 7);
+
+  const renderRow = (weekStart) => {
+    let html = '<div class="day-mini-week-row">';
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(weekStart, i);
+      const ds = DS(d);
+      const isToday = ds === todayStr;
+      const isCurrent = ds === navStr;
+      const isPast = ds < todayStr;
+      const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
+      const total = items.length;
+      const done = items.filter(t => isCompleted(t, d)).length;
+      const cls = ['day-mini-col', isToday ? 'is-today' : '', isCurrent ? 'is-current' : '', isPast ? 'past' : ''].filter(Boolean).join(' ');
+      html += `<div class="${cls}" data-date="${ds}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+        <div class="day-mini-col-hd">
+          <span class="day-mini-abbr">${state.DAYS[(d.getDay()+6)%7]}</span>
+          <span class="day-mini-num">${d.getDate()}</span>
+        </div>
+        <div class="day-mini-col-body" data-date="${ds}">
+          ${total > 0 ? `<span class="day-mini-count">${done}/${total}</span>` : ''}
+        </div>
+      </div>`;
+    }
+    html += '</div>';
+    return html;
+  };
+
+  return `<div class="day-mini-week">${renderRow(week1Start)}${renderRow(week2Start)}</div>`;
+}
+
 export function renderDayView(todos) {
   const navDate = state.navDate;
   const dateStr = DS(navDate);
@@ -157,7 +193,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view">${header}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
+  return `<div class="day-view">${header}${_renderDayMiniWeek(todos)}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

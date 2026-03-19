@@ -15,6 +15,12 @@ case "$FILE" in
   *version.js*|*README.md*|"") exit 0 ;;
 esac
 
+# Skip files outside the project repo
+case "$FILE" in
+  /Users/hugues/Projects/todo/todo-manager/*) ;;
+  *) exit 0 ;;
+esac
+
 VERSION_FILE="/Users/hugues/Projects/todo/todo-manager/js/modules/version.js"
 
 CURRENT=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" "$VERSION_FILE" | head -1)
