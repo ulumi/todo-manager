@@ -1226,9 +1226,9 @@ class TodoApp {
     if (mode === 'month') {
       const y = state.navDate.getFullYear(), m = state.navDate.getMonth();
       const label = `${state.MONTHS[m]} ${y}`;
-      const firstDay = firstDayOfMonth(state.navDate);
-      const totalDays = daysInMonth(state.navDate);
-      const startOffset = (firstDay + 6) % 7; // Mon=0
+      const firstDay = firstDayOfMonth(y, m);
+      const totalDays = daysInMonth(y, m);
+      const startOffset = firstDay; // already Mon=0
       const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
       let cells = '';
       for (let i = 0; i < startOffset; i++) cells += `<div class="plan-week-day plan-week-day--empty"></div>`;
