@@ -2009,10 +2009,10 @@ class TodoApp {
     const overlay = document.getElementById('hamburgerOverlay');
     btn.classList.add('open');
     overlay.classList.add('open');
-    gsap.to(menu, { x: 0, duration: 0.36, ease: 'expo.out' });
-    gsap.fromTo(menu.querySelectorAll('.hm-item'),
-      { x: 20, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.28, stagger: 0.06, ease: 'power3.out', delay: 0.1 }
+    gsap.fromTo(menu, { x: '100%' }, { x: 0, duration: 0.28, ease: 'expo.out' });
+    gsap.fromTo(menu.querySelector('.hm-body'),
+      { opacity: 0 },
+      { opacity: 1, duration: 0.18, delay: 0.1, ease: 'power2.out' }
     );
   }
 
