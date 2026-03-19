@@ -124,20 +124,29 @@ export function openEditModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
   state.setEditingId(id);
-  // Inbox mode: task has no date and no recurrence
-  const isInbox = (!t.recurrence || t.recurrence === 'none') && !t.date;
-  state.setInboxMode(isInbox);
+  // Detect schedule mode
+  const isBacklog = (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog;
+  const isInbox   = (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog;
+  const schedMode = isBacklog ? 'backlog' : (isInbox ? 'inbox' : 'date');
+  state.setScheduleMode(schedMode);
   state.setSelectedRecurrence(t.recurrence || 'none');
   state.setSelectedWeekDays(t.recDays ? [...t.recDays] : []);
   document.getElementById('modalTitleEl').textContent = state.T.editTask;
   document.getElementById('saveTask').textContent = state.T.btnModify;
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('taskDescription').value = t.description || '';
+  document.getElementById('taskStartTime').value = t.startTime || '';
+  document.getElementById('taskEndTime').value = t.endTime || '';
+  document.getElementById('taskFlexibleTime').checked = t.flexibleTime || false;
+  document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
+  document.getElementById('taskDurationReal').value = t.durationReal || '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
-  const btn = document.getElementById('inboxModeBtn');
-  if (btn) btn.classList.toggle('active', isInbox);
+
+  // Schedule mode UI
+  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === schedMode));
+  const scheduleModeGroup = document.getElementById('scheduleModeGroup');
 
   // Set recurrence UI
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence));
@@ -145,27 +154,30 @@ export function openEditModal(id, dateStr, todos) {
   const detail = document.getElementById('recDetail');
 
   if (state.selectedRecurrence === 'none') {
-    dateGroup.style.display = '';
-    const dateInputRow2 = document.getElementById('dateInputRow');
-    if (dateInputRow2) dateInputRow2.style.display = isInbox ? 'none' : '';
+    if (scheduleModeGroup) scheduleModeGroup.style.display = '';
+    dateGroup.style.display = schedMode === 'date' ? '' : 'none';
     document.getElementById('taskDate').value = t.date || dateStr || '';
     detail.innerHTML = '';
   } else if (state.selectedRecurrence === 'daily') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     detail.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-top:4px;">${state.T.repeatsEveryDay}</p>`;
   } else if (state.selectedRecurrence === 'weekly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
       ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
         onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
     </div>`;
   } else if (state.selectedRecurrence === 'monthly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     const days = t.recDays ? [...t.recDays] : (t.recDay ? [t.recDay] : [1]);
     state.setSelectedMonthDays(days);
     state.setSelectedMonthLastDay(t.recLastDay || false);
     detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (state.selectedRecurrence === 'yearly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     state.setSelectedYearMonth(t.recMonth !== undefined ? t.recMonth : state.navDate.getMonth());
     state.setSelectedYearDay(t.recDay !== undefined ? t.recDay : state.navDate.getDate());
@@ -196,35 +208,33 @@ export function selectRecurrence(rec) {
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec===rec));
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
-  const inboxBtn = document.getElementById('inboxModeBtn');
+  const scheduleModeGroup = document.getElementById('scheduleModeGroup');
 
   if (rec==='none') {
-    dateGroup.style.display = '';
-    const dateInputRow = document.getElementById('dateInputRow');
-    if (dateInputRow) dateInputRow.style.display = state.inboxMode ? 'none' : '';
-    if (inboxBtn) inboxBtn.style.display = '';
+    if (scheduleModeGroup) scheduleModeGroup.style.display = '';
+    dateGroup.style.display = state.scheduleMode === 'date' ? '' : 'none';
     detail.innerHTML = '';
   } else if (rec==='daily') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    if (inboxBtn) inboxBtn.style.display = 'none';
     detail.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-top:4px;">${state.T.repeatsEveryDay}</p>`;
   } else if (rec==='weekly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedWeekDays([today().getDay()]);
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
       ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
         onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
     </div>`;
   } else if (rec==='monthly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedMonthDays([state.navDate.getDate()]);
     state.setSelectedMonthLastDay(false);
     detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (rec==='yearly') {
+    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    if (inboxBtn) inboxBtn.style.display = 'none';
     state.setSelectedYearMonth(state.navDate.getMonth());
     state.setSelectedYearDay(state.navDate.getDate());
     detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
@@ -438,14 +448,34 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const projectId   = document.getElementById('taskCategory')?.value || '';
-  const priority    = state.selectedPriority || undefined;
-  const description = document.getElementById('taskDescription').value.trim() || undefined;
-  const data = { title, recurrence: state.selectedRecurrence, projectId: projectId || undefined, priority, description };
+  const projectId         = document.getElementById('taskCategory')?.value || '';
+  const priority          = state.selectedPriority || undefined;
+  const description       = document.getElementById('taskDescription').value.trim() || undefined;
+  const startTime         = document.getElementById('taskStartTime')?.value || undefined;
+  const endTime           = document.getElementById('taskEndTime')?.value || undefined;
+  const flexibleTime      = document.getElementById('taskFlexibleTime')?.checked || undefined;
+  const durationEstimated = document.getElementById('taskDurationEstimated')?.value ? parseInt(document.getElementById('taskDurationEstimated').value) : undefined;
+  const durationReal      = document.getElementById('taskDurationReal')?.value ? parseInt(document.getElementById('taskDurationReal').value) : undefined;
+
+  const data = {
+    title,
+    recurrence: state.selectedRecurrence,
+    projectId: projectId || undefined,
+    priority,
+    description,
+    startTime,
+    endTime,
+    flexibleTime: flexibleTime || undefined,
+    durationEstimated,
+    durationReal,
+  };
 
   if (state.selectedRecurrence==='none') {
-    if (state.inboxMode) {
-      data.date = null; // inbox: no date
+    if (state.scheduleMode === 'backlog') {
+      data.date = null;
+      data.backlog = true;
+    } else if (state.scheduleMode === 'inbox') {
+      data.date = null;
     } else {
       data.date = document.getElementById('taskDate').value || DS(state.navDate);
     }
@@ -470,12 +500,20 @@ export function saveTaskLogic(todos) {
       t.title = data.title;
       t.recurrence = data.recurrence;
       delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
+      delete t.backlog; delete t.startTime; delete t.endTime; delete t.flexibleTime;
+      delete t.durationEstimated; delete t.durationReal;
       if (data.date !== undefined) t.date = data.date;
       if (data.recDays !== undefined) t.recDays = data.recDays;
       if (data.recDay !== undefined) t.recDay = data.recDay;
       if (data.recMonth !== undefined) t.recMonth = data.recMonth;
       if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
+      if (data.backlog) t.backlog = true;
+      if (data.startTime) t.startTime = data.startTime;
+      if (data.endTime) t.endTime = data.endTime;
+      if (data.flexibleTime) t.flexibleTime = data.flexibleTime;
+      if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
+      if (data.durationReal) t.durationReal = data.durationReal;
       t.projectId   = data.projectId;
       t.priority    = data.priority;
       t.description = data.description;

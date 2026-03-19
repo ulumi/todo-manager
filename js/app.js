@@ -24,7 +24,7 @@ import {
   selectYearMonth, selectYearDay,
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
   toggleCloudSection, toggleModalRight, selectPriority,
-  toggleNewCatRow, addCategoryInline, toggleInboxMode
+  toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -489,11 +489,15 @@ class TodoApp {
   }
 
   openModalForInbox() {
-    openModal(state.navDate, state.todos, true);
+    openModal(state.navDate, state.todos, 'inbox');
   }
 
-  toggleInboxMode() {
-    toggleInboxMode();
+  selectScheduleMode(mode) {
+    selectScheduleMode(mode);
+  }
+
+  toggleDetailSection(headerEl) {
+    toggleDetailSection(headerEl);
   }
 
   closeModal() {

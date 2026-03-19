@@ -1789,7 +1789,21 @@ main {
     border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 28px;
+    padding-bottom: 0;
     box-shadow: 0 20px 48px rgba(0,0,0,.2);
+    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-two-columns & .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface);
+    margin-top: auto;
+    padding-top: 16px;
+    padding-bottom: 28px;
+    border-top: 1px solid var(--border);
     backdrop-filter: blur(20px);
   }
 }
@@ -4020,7 +4034,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .modal-two-columns { flex-direction: column; gap: 16px; width: 100%; max-width: 100%; }
   .modal-left        { width: 100%; }
   .modal-right       { overflow: visible; }
-  .modal-right-inner { width: 100%; max-height: 180px; margin-top: 0; padding-right: 0; }
+  .modal-right-inner { width: 100%; max-height: 320px; margin-top: 0; padding-right: 0; }
 
   // Week
   .week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -5339,28 +5353,101 @@ body:has(.bottom-panel:not(.hidden))::before {
   line-height:     1;
 }
 
-// Inbox mode button in modal (date label row)
-.inbox-mode-btn {
-  display:       inline-flex;
-  align-items:   center;
-  gap:           4px;
-  padding:       3px 8px;
-  border-radius: 6px;
-  border:        1.5px solid var(--border);
-  background:    var(--surface2);
-  color:         var(--text-muted);
-  font-size:     11px;
-  font-weight:   600;
-  cursor:        pointer;
-  transition:    all .15s;
+// Schedule mode selector (Inbox / Date / Backlog)
+.schedule-mode-options {
+  display: flex;
+  gap: 6px;
+}
 
-  &:hover { border-color: var(--primary); color: var(--primary); }
+.schedule-mode-option {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  color: var(--text-muted);
+  user-select: none;
+  text-align: center;
 
-  &.active {
-    border-color: var(--primary);
-    background:   var(--primary-light);
-    color:        var(--primary);
+  &:hover { background: var(--surface2); color: var(--text); }
+
+  &[data-mode="inbox"].active {
+    border-color: rgba(59,130,246,.4);
+    background: rgba(59,130,246,.08);
+    color: #3b82f6;
   }
+
+  &[data-mode="date"].active {
+    border-color: rgba(91,94,247,.4);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  &[data-mode="backlog"].active {
+    border-color: rgba(107,114,128,.4);
+    background: rgba(107,114,128,.08);
+    color: #6b7280;
+  }
+}
+
+// Modal detail sections (right column collapsibles)
+.modal-detail-section {
+  border-bottom: 1px solid var(--border);
+
+  &:last-of-type { border-bottom: none; }
+
+  &.open .modal-detail-chevron { transform: rotate(90deg); }
+}
+
+.modal-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+
+  &:hover { color: var(--text); }
+}
+
+.modal-detail-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.22s ease;
+  flex-shrink: 0;
+}
+
+.modal-detail-body {
+  overflow: hidden;
+}
+
+// Time/duration row in modal details
+.time-row {
+  display: flex;
+  gap: 8px;
+
+  .form-group { flex: 1; }
+}
+
+// Flexible time checkbox label
+.flex-time-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  margin-bottom: 12px;
+
+  input[type="checkbox"] { accent-color: var(--primary); }
 }
 
 // Inbox view layout
