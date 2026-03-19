@@ -90,8 +90,8 @@ function _renderDayMiniWeek(todos) {
   const navDate = state.navDate;
   const todayStr = DS(new Date());
   const navStr = DS(navDate);
-  const week1Start = navDate;
-  const week2Start = addDays(navDate, 7);
+  const week1Start = startOfWeek(navDate);
+  const week2Start = addDays(week1Start, 7);
 
   const renderRow = (weekStart) => {
     let html = '<div class="day-mini-week-row">';
@@ -193,7 +193,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view">${header}${_renderDayMiniWeek(todos)}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
+  return `<div class="day-view">${_renderDayMiniWeek(todos)}${header}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
