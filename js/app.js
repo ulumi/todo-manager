@@ -169,9 +169,11 @@ class TodoApp {
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',   JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
     if (backup.config) {
-      if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
-      if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
-      if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+      if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
+      if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
+      if (backup.config.lang)     localStorage.setItem('lang',     backup.config.lang);
+      if (backup.config.timezone) localStorage.setItem('timezone', backup.config.timezone);
+      if (backup.config.icalHour) localStorage.setItem('icalHour', backup.config.icalHour);
     }
     localStorage.setItem('todos', JSON.stringify(backup.calendar));
     this.render();
@@ -1012,9 +1014,11 @@ class TodoApp {
       snapshot(state.todos);
       if (data.calendar) state.setTodos(data.calendar);
       if (data.config) {
-        if (data.config.theme) localStorage.setItem('theme', data.config.theme);
-        if (data.config.zoom) localStorage.setItem('zoom', data.config.zoom);
-        if (data.config.lang) localStorage.setItem('lang', data.config.lang);
+        if (data.config.theme)    localStorage.setItem('theme',    data.config.theme);
+        if (data.config.zoom)     localStorage.setItem('zoom',     data.config.zoom);
+        if (data.config.lang)     localStorage.setItem('lang',     data.config.lang);
+        if (data.config.timezone) localStorage.setItem('timezone', data.config.timezone);
+        if (data.config.icalHour) localStorage.setItem('icalHour', data.config.icalHour);
         this.initTheme();
         this.applyLang();
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
@@ -1304,6 +1308,18 @@ class TodoApp {
               </button>
             </div>
             <p class="ical-copy-msg hidden" id="icalCopyMsg" style="font-size:12px;color:var(--success);margin-top:6px;">✓ URL copiée !</p>
+            <div style="display:flex;gap:12px;margin-top:10px;align-items:center;flex-wrap:wrap;">
+              <div style="display:flex;flex-direction:column;gap:3px;flex:1;min-width:160px;">
+                <label style="font-size:11px;color:var(--text-muted);">Fuseau horaire</label>
+                <input id="icalTimezone" class="form-input" style="font-size:12px;" placeholder="America/Montreal"
+                  onchange="window.app.saveICalSettings()">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <label style="font-size:11px;color:var(--text-muted);">Heure des tâches</label>
+                <input id="icalHour" type="time" class="form-input" style="font-size:12px;width:90px;"
+                  onchange="window.app.saveICalSettings()">
+              </div>
+            </div>
           </div>
 
           <div class="profile-section">
@@ -1350,6 +1366,20 @@ class TodoApp {
     if (!token) return;
     const host = window.location.hostname === 'localhost' ? 'todo.hugues.app' : window.location.host;
     input.value = `https://${host}/api/ical?token=${token}`;
+
+    // Init timezone + hour fields
+    const tzInput = document.getElementById('icalTimezone');
+    const hourInput = document.getElementById('icalHour');
+    if (tzInput) tzInput.value = localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (hourInput) hourInput.value = localStorage.getItem('icalHour') || '05:00';
+  }
+
+  saveICalSettings() {
+    const tz   = document.getElementById('icalTimezone')?.value?.trim();
+    const hour = document.getElementById('icalHour')?.value;
+    if (tz)   localStorage.setItem('timezone', tz);
+    if (hour) localStorage.setItem('icalHour', hour);
+    pushToFirestore(getFullBackup(state.todos));
   }
 
   async copyICalLink() {
@@ -1925,9 +1955,11 @@ class TodoApp {
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
     if (backup.config) {
-      if (backup.config.theme) localStorage.setItem('theme', backup.config.theme);
-      if (backup.config.zoom)  localStorage.setItem('zoom',  backup.config.zoom);
-      if (backup.config.lang)  localStorage.setItem('lang',  backup.config.lang);
+      if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
+      if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
+      if (backup.config.lang)     localStorage.setItem('lang',     backup.config.lang);
+      if (backup.config.timezone) localStorage.setItem('timezone', backup.config.timezone);
+      if (backup.config.icalHour) localStorage.setItem('icalHour', backup.config.icalHour);
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));

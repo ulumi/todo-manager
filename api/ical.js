@@ -53,7 +53,17 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const ical = generateICal(todos);
+  const config  = d.config || {};
+  const tz      = config.timezone || 'America/Montreal';
+  const icalHour = config.icalHour || '05:00';
+  const [hh, mm] = icalHour.split(':').map(n => String(n).padStart(2, '0'));
+  const timeStr  = `${hh}${mm}00`; // e.g. "050000"
+
+  // Compute end hour (+1h, wraps at 23→00 but good enough for todos)
+  const endHH = String((parseInt(hh, 10) + 1) % 24).padStart(2, '0');
+  const endTimeStr = `${endHH}${mm}00`;
+
+  const ical = generateICal(todos, tz, timeStr, endTimeStr);
 
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="todo-manager.ics"');
@@ -63,15 +73,16 @@ module.exports = async function handler(req, res) {
 
 // ─── iCal generation ───────────────────────────────────────────────────────
 
-function generateICal(todos) {
+function generateICal(todos, tz, timeStr, endTimeStr) {
   const now = fmtDatetime(new Date());
-  const events = todos.map(t => buildEvent(t, now)).filter(Boolean).join('\r\n');
+  const events = todos.map(t => buildEvent(t, now, tz, timeStr, endTimeStr)).filter(Boolean).join('\r\n');
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//Todo Manager//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
+    `X-WR-TIMEZONE:${tz}`,
     'X-WR-CALNAME:Todo Manager',
     'X-WR-CALDESC:Your tasks from Todo Manager',
     events,
@@ -79,7 +90,7 @@ function generateICal(todos) {
   ].join('\r\n');
 }
 
-function buildEvent(t, now) {
+function buildEvent(t, now, tz, timeStr, endTimeStr) {
   const isRec = t.recurrence && t.recurrence !== 'none';
 
   if (!isRec && !t.date) return null; // inbox task — no date, skip
@@ -89,6 +100,9 @@ function buildEvent(t, now) {
   const desc = t.description ? `DESCRIPTION:${escIcal(t.description)}\r\n` : '';
   const cat = t.projectId ? `CATEGORIES:${escIcal(t.projectId)}\r\n` : '';
   const status = t.completed ? 'STATUS:COMPLETED\r\n' : '';
+
+  const dtStart = (date) => `DTSTART;TZID=${tz}:${date.replace(/-/g, '')}T${timeStr}`;
+  const dtEnd   = (date) => `DTEND;TZID=${tz}:${date.replace(/-/g, '')}T${endTimeStr}`;
 
   if (isRec) {
     const start = t.startDate || fmtDate(new Date());
@@ -110,29 +124,30 @@ function buildEvent(t, now) {
     } else if (t.recurrence === 'yearly') {
       rrule = 'RRULE:FREQ=YEARLY';
     }
-    if (t.endDate) rrule += `;UNTIL=${t.endDate.replace(/-/g, '')}`;
+    if (t.endDate) rrule += `;UNTIL=${t.endDate.replace(/-/g, '')}T${timeStr}`;
 
     // Build EXDATE for excluded occurrences
     const exdates = (t.excludedDates || []).length > 0
-      ? `EXDATE;VALUE=DATE:${t.excludedDates.map(d => d.replace(/-/g, '')).join(',')}\r\n`
+      ? `EXDATE;TZID=${tz}:${t.excludedDates.map(d => d.replace(/-/g, '') + 'T' + timeStr).join(',')}\r\n`
       : '';
 
     return [
       'BEGIN:VEVENT',
       `UID:${uid}-rec`,
       `DTSTAMP:${now}`,
-      `DTSTART;VALUE=DATE:${start.replace(/-/g, '')}`,
+      dtStart(start),
+      dtEnd(start),
       `SUMMARY:${summary}`,
       desc + cat + status + exdates + rrule,
       'END:VEVENT',
     ].join('\r\n');
   } else {
-    const dtstart = t.date.replace(/-/g, '');
     return [
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTAMP:${now}`,
-      `DTSTART;VALUE=DATE:${dtstart}`,
+      dtStart(t.date),
+      dtEnd(t.date),
       `SUMMARY:${summary}`,
       desc + cat + status.trimEnd(),
       'END:VEVENT',

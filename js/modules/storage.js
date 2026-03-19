@@ -74,7 +74,9 @@ export function getAppConfig() {
   return {
     theme: localStorage.getItem('theme'),
     zoom: localStorage.getItem('zoom'),
-    lang: localStorage.getItem('lang')
+    lang: localStorage.getItem('lang'),
+    timezone: localStorage.getItem('timezone'),
+    icalHour: localStorage.getItem('icalHour')
   };
 }
 
