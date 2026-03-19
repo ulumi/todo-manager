@@ -90,8 +90,8 @@ function _renderDayMiniWeek(todos) {
   const navDate = state.navDate;
   const todayStr = DS(new Date());
   const navStr = DS(navDate);
-  const week1Start = startOfWeek(navDate);
-  const week2Start = addDays(week1Start, 7);
+  const week1Start = navDate;
+  const week2Start = addDays(navDate, 7);
 
   const renderRow = (weekStart) => {
     let html = '<div class="day-mini-week-row">';
