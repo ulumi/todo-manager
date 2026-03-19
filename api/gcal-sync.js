@@ -130,6 +130,8 @@ module.exports = async function handler(req, res) {
       return true;
     });
 
+    console.log(`[gcal-sync] todos=${todos.length} toSync=${toSync.length} filters=`, JSON.stringify(f));
+
     let gcalEventIds = data.gcalEventIds || {};
     const calId = 'primary';
     let syncCount = 0;
