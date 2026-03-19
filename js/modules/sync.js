@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import {
-  doc, getDoc, setDoc, deleteDoc, onSnapshot, serverTimestamp,
+  doc, getDoc, setDoc, deleteDoc, onSnapshot, serverTimestamp, deleteField,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
 // Unique ID for this browser session — used to detect own Firestore echoes.
@@ -114,6 +114,21 @@ export async function getOrCreateICalToken() {
     const token = uid + '_' + secret;
     localStorage.setItem('icalToken', token);
     return token;
+  }
+}
+
+// ── Google Calendar disconnect ────────────────────────────
+export async function disconnectGCal() {
+  try {
+    await setDoc(userDocRef(), {
+      gcalConnected:    deleteField(),
+      gcalRefreshToken: deleteField(),
+      gcalEventIds:     deleteField(),
+      gcalLastSync:     deleteField(),
+    }, { merge: true });
+    localStorage.removeItem('gcalConnected');
+  } catch (err) {
+    console.warn('[sync] disconnectGCal failed:', err.message);
   }
 }
 

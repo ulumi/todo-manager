@@ -51,9 +51,9 @@ import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
   upgradeGuestToEmail, signOut, updateUserProfile,
-  signInWithGoogle, signInWithFacebook,
+  signInWithGoogle, signInWithFacebook, getIdToken,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken} from './modules/sync.js';
+import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken, disconnectGCal } from './modules/sync.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -1416,6 +1416,72 @@ class TodoApp {
     }
   }
 
+  // ── Google Calendar ─────────────────────────────────────
+
+  async connectGoogleCalendar() {
+    const token = await getIdToken();
+    if (!token) { alert('Connecte-toi d\'abord à un compte.'); return; }
+    try {
+      const res = await fetch('/api/gcal-auth', { headers: { Authorization: `Bearer ${token}` } });
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err) {
+      alert('Erreur de connexion Google Calendar: ' + err.message);
+    }
+  }
+
+  async disconnectGoogleCalendar() {
+    if (!confirm('Déconnecter Google Calendar ? Les événements existants dans GCal ne seront pas supprimés.')) return;
+    await disconnectGCal();
+    renderAdminICal();
+  }
+
+  async gcalSyncNow() {
+    const msg = document.getElementById('gcalSyncMsg');
+    if (msg) { msg.style.display = 'block'; msg.textContent = 'Synchronisation…'; }
+    try {
+      await this._gcalPush();
+      const pulled = await this._gcalPull();
+      if (msg) {
+        const changes = (pulled?.completedTodoIds?.length || 0) + (pulled?.movedTodos?.length || 0);
+        msg.textContent = changes > 0 ? `✓ Sync OK — ${changes} changement(s) importé(s)` : '✓ Synchronisé';
+        setTimeout(() => { if (msg) msg.style.display = 'none'; }, 3000);
+      }
+    } catch (err) {
+      if (msg) { msg.textContent = 'Erreur: ' + err.message; }
+    }
+  }
+
+  async _gcalPush() {
+    const token = await getIdToken();
+    if (!token) return;
+    const res = await fetch('/api/gcal-sync', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async _gcalPull() {
+    const token = await getIdToken();
+    if (!token) return null;
+    const res = await fetch('/api/gcal-pull', { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) return null;
+    const { completedTodoIds = [], movedTodos = [] } = await res.json();
+    let changed = false;
+    for (const id of completedTodoIds) {
+      const t = state.todos.find(x => x.id === id);
+      if (t && !t.completed) { t.completed = true; changed = true; }
+    }
+    for (const { id, date } of movedTodos) {
+      const t = state.todos.find(x => x.id === id);
+      if (t && t.date !== date && !t.recurrence) { t.date = date; changed = true; }
+    }
+    if (changed) { saveTodos(state.todos); this.render(); }
+    return { completedTodoIds, movedTodos };
+  }
+
   openAvatarEditor()           { openAvatarEditor(); }
   closeAvatarEditor()          { closeAvatarEditor(); }
   handleAvatarFile(input)      { handleAvatarFile(input); }
@@ -1891,6 +1957,18 @@ class TodoApp {
   // FIREBASE — auth & sync
   // ═══════════════════════════════════════════════════
   async _initFirebase() {
+    // Handle Google Calendar OAuth redirect result
+    const urlParams = new URLSearchParams(window.location.search);
+    const gcalResult = urlParams.get('gcal');
+    if (gcalResult === 'connected') {
+      localStorage.setItem('gcalConnected', '1');
+      window.history.replaceState({}, '', '/');
+    } else if (gcalResult === 'error') {
+      const errMsg = urlParams.get('msg') || 'inconnu';
+      console.warn('[gcal] connexion échouée:', errMsg);
+      window.history.replaceState({}, '', '/');
+    }
+
     // 1. Wait for Firebase to restore the previous session (or get null)
     const user = await initAuth();
 
@@ -1904,6 +1982,12 @@ class TodoApp {
 
     // 3. Merge Firestore data into the app (first load)
     await this._syncFirebase();
+
+    // 3b. Sync with Google Calendar if connected (fire-and-forget)
+    if (localStorage.getItem('gcalConnected') === '1') {
+      this._gcalPush().catch(() => {});
+      this._gcalPull().catch(() => {});
+    }
 
     // 4. Listen for realtime updates from other devices (guard against re-init)
     if (this._firestoreUnsub) this._firestoreUnsub();
