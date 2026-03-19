@@ -5686,7 +5686,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
     .plan-week-day {
       min-height: 0;
-      padding:    3px 4px;
+      padding:    3px 4px 6px;
       display:    flex;
       flex-direction: column;
     }

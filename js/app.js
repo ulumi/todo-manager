@@ -2209,10 +2209,6 @@ class TodoApp {
     // Skip our own Firestore echoes using the session ID stamped in every push.
     if (backup._pushedBySession && backup._pushedBySession === SESSION_ID) return;
 
-    // Don't let Firestore overwrite local todos while a push is still pending
-    // (i.e. last push failed or hasn't confirmed yet). This protects the realtime
-    // subscription from clobbering local data before our retry push completes.
-    if (backup.calendar && state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') return;
 
     let changed = false;
 
