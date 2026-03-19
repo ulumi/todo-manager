@@ -534,6 +534,7 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     t.date = dateStr;
+    t.backlog = false;
     saveTodos(state.todos);
     this.render();
   }
@@ -1127,10 +1128,12 @@ class TodoApp {
   }
 
   _renderPlanView() {
+    const leftWidth = localStorage.getItem('planInboxWidth') || '260';
     return `<div class="plan-view">
-      <div class="plan-inbox-col">
+      <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}px">
         ${renderPlanInboxList(state.todos)}
       </div>
+      <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"></div>
       <div class="plan-week-col">
         ${this._renderPlanCalendar()}
       </div>
@@ -1191,7 +1194,10 @@ class TodoApp {
       const items = getTodosForDate(d, state.todos).filter(t => filter[recKey(t)] !== false);
       const taskRows = items.map(t => {
         const done = isCompleted(t, d);
-        return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}">
+        return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
+          draggable="true"
+          ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
+          ondragend="this.classList.remove('dragging')">
           <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
           <span class="week-todo-text">${esc(t.title)}</span>
           <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
@@ -1199,9 +1205,9 @@ class TodoApp {
       }).join('');
       return `<div class="plan-week-day${isT?' is-today':''}" data-date="${ds}"
           ondragover="event.preventDefault();this.classList.add('drag-over')"
-          ondragleave="this.classList.remove('drag-over')"
+          ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
           ondrop="window.app.planDrop(event,'${ds}')">
-        <div class="plan-week-day-header">
+        <div class="plan-week-day-header" onclick="window.app.goToDay('${ds}')" title="Voir le ${d.getDate()}">
           <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
           <span class="plan-week-day-num">${d.getDate()}</span>
         </div>
@@ -1270,10 +1276,77 @@ class TodoApp {
   }
 
   initPlanDragDrop() {
-    // HTML5 drag events are set inline; nothing extra needed here
-    // But we do clean up any stale drag-over classes
-    document.querySelectorAll('.plan-week-day.drag-over')
+    document.querySelectorAll('.plan-week-day.drag-over, .plan-inbox-section.drag-over, .plan-backlog-section.drag-over')
       .forEach(el => el.classList.remove('drag-over'));
+    this.initPlanResizeHandle();
+  }
+
+  initPlanResizeHandle() {
+    const handle = document.getElementById('planResizeHandle');
+    const col    = document.getElementById('planInboxCol');
+    if (!handle || !col) return;
+    let startX, startW;
+    const onMove = (e) => {
+      const w = Math.max(160, Math.min(480, startW + e.clientX - startX));
+      col.style.width = w + 'px';
+    };
+    const onUp = (e) => {
+      const w = Math.max(160, Math.min(480, startW + e.clientX - startX));
+      localStorage.setItem('planInboxWidth', Math.round(w));
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.style.cursor = '';
+      handle.classList.remove('dragging');
+    };
+    handle.addEventListener('mousedown', (e) => {
+      startX = e.clientX;
+      startW = col.offsetWidth;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.style.cursor = 'col-resize';
+      handle.classList.add('dragging');
+      e.preventDefault();
+    });
+  }
+
+  planDropToInbox(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const taskId = event.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const t = state.todos.find(x => x.id === taskId);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = null;
+    t.backlog = false;
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  planDropToBacklog(event) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const taskId = event.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const t = state.todos.find(x => x.id === taskId);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = null;
+    t.backlog = true;
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  goToDay(ds) {
+    state.setNavDate(this.parseDS(ds));
+    state.setView('day');
+    localStorage.setItem('view', 'day');
+    this._pushHistory();
+    this.render();
+  }
+
+  openModalForBacklog() {
+    openModal(state.navDate, state.todos, 'backlog');
   }
 
   _renderProfileView() {

@@ -795,17 +795,20 @@ export function setupTodoItemHoverAnimations() {
 // ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
 
 export function renderPlanInboxList(todos) {
-  const items = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
   const sort = localStorage.getItem('inboxSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
-  const sorted = [...items].sort((a, b) => {
+  const sortFn = (a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
     return b.id.localeCompare(a.id);
-  });
+  };
+
+  const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(sortFn);
+  const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(sortFn);
 
   const cats = getCategories();
-  const rows = sorted.map(t => {
+  const itemRow = (t) => {
     const cat = t.projectId ? cats.find(c => c.id === t.projectId) : null;
     const catDot = cat ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${cat.color};flex-shrink:0;"></span>` : '';
     const prioCfg = {
@@ -824,20 +827,44 @@ export function renderPlanInboxList(todos) {
         <span class="plan-inbox-title">${esc(t.title)}</span>
         <button class="plan-inbox-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Aujourd'hui">→</button>
       </div>`;
-  }).join('');
+  };
 
-  const empty = sorted.length === 0
-    ? `<div class="plan-inbox-empty">Inbox vide !<br><button class="btn btn-primary" style="margin-top:8px;font-size:12px;" onclick="window.app.openModalForInbox()">＋ Capturer</button></div>`
+  const inboxRows   = inboxItems.map(itemRow).join('');
+  const backlogRows = backlogItems.map(itemRow).join('');
+
+  const inboxEmpty = inboxItems.length === 0
+    ? `<div class="plan-inbox-empty">Vide !<br><button class="btn btn-primary" style="margin-top:6px;font-size:11px;" onclick="window.app.openModalForInbox()">＋ Capturer</button></div>`
+    : '';
+
+  const backlogEmpty = backlogItems.length === 0
+    ? `<div class="plan-backlog-empty">Backlog vide</div>`
     : '';
 
   return `
-    <div class="plan-inbox-header">
-      <span class="plan-inbox-header-title">Inbox</span>
-      <span class="plan-inbox-count">${sorted.length}</span>
-      <button class="plan-inbox-add" onclick="window.app.openModalForInbox()" title="Capturer">＋</button>
+    <div class="plan-inbox-section"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
+      ondrop="window.app.planDropToInbox(event)">
+      <div class="plan-inbox-header">
+        <span class="plan-inbox-header-title">Inbox</span>
+        <span class="plan-inbox-count">${inboxItems.length}</span>
+        <button class="plan-inbox-add" onclick="window.app.openModalForInbox()" title="Capturer">＋</button>
+      </div>
+      ${inboxEmpty}
+      ${inboxItems.length > 0 ? `<div class="plan-inbox-list">${inboxRows}</div>` : ''}
     </div>
-    ${empty}
-    ${sorted.length > 0 ? `<div class="plan-inbox-list">${rows}</div>` : ''}`;
+    <div class="plan-backlog-section"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
+      ondrop="window.app.planDropToBacklog(event)">
+      <div class="plan-backlog-header">
+        <span class="plan-backlog-title">Backlog</span>
+        <span class="plan-backlog-count">${backlogItems.length}</span>
+        <button class="plan-backlog-add" onclick="window.app.openModalForBacklog()" title="Ajouter au backlog">＋</button>
+      </div>
+      ${backlogEmpty}
+      ${backlogItems.length > 0 ? `<div class="plan-backlog-list">${backlogRows}</div>` : ''}
+    </div>`;
 }
 
 // ─── Projects View ────────────────────────────────────────────────────────────

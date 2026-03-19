@@ -6082,7 +6082,59 @@ body:has(.bottom-panel:not(.hidden))::before {
   text-align:  center;
   color:       var(--text-muted);
   font-size:   13px;
-  padding:     24px 0;
+  padding:     20px 0;
+}
+
+// Backlog section in plan left panel
+.plan-backlog-section {
+  margin-top: 12px;
+}
+
+.plan-backlog-header {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  margin-bottom:  8px;
+  padding-bottom: 8px;
+  border-top:     1.5px solid var(--border);
+  padding-top:    12px;
+}
+
+.plan-backlog-title {
+  font-size:   13px;
+  font-weight: 700;
+  color:       var(--text);
+}
+
+.plan-backlog-count {
+  font-size:    11px;
+  background:   var(--surface2);
+  color:        var(--text-muted);
+  border:       1.5px solid var(--border);
+  padding:      1px 6px;
+  border-radius: 10px;
+  font-weight:  700;
+}
+
+.plan-backlog-add {
+  margin-left:   auto;
+  background:    none;
+  border:        1.5px dashed var(--border);
+  border-radius: 6px;
+  color:         var(--text-muted);
+  font-size:     16px;
+  width:         26px; height: 26px;
+  cursor:        pointer;
+  transition:    all .15s;
+  &:hover { border-color: var(--primary); color: var(--primary); }
+}
+
+.plan-backlog-empty {
+  text-align:  center;
+  color:       var(--text-muted);
+  font-size:   12px;
+  padding:     12px 0;
+  font-style:  italic;
 }
 
 // ─── 29. iCal URL Row ─────────────────────────────────────────────────────────
