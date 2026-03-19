@@ -709,6 +709,10 @@ export function getInboxCount(todos) {
   return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog).length;
 }
 
+export function getBacklogCount(todos) {
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog).length;
+}
+
 export function renderInboxView(todos) {
   const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
 

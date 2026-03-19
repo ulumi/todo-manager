@@ -29,7 +29,7 @@ import {
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  renderCategoriesView, renderInboxView, getInboxCount,
+  renderCategoriesView, renderInboxView, getInboxCount, getBacklogCount,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
   renderPlanInboxList, renderProjectsView,
@@ -537,6 +537,12 @@ class TodoApp {
       badge.textContent = count;
       badge.classList.toggle('hidden', count === 0);
     }
+    const inboxCount   = getInboxCount(state.todos);
+    const backlogCount = getBacklogCount(state.todos);
+    const planInbox   = document.getElementById('planInboxBadge');
+    const planBacklog = document.getElementById('planBacklogBadge');
+    if (planInbox)   { planInbox.textContent   = inboxCount;   planInbox.classList.toggle('hidden',   inboxCount   === 0); }
+    if (planBacklog) { planBacklog.textContent  = backlogCount; planBacklog.classList.toggle('hidden', backlogCount === 0); }
   }
 
   assignInboxToday(id) {
@@ -1123,7 +1129,22 @@ class TodoApp {
     if (state.view==='inbox')      html = renderInboxView(state.todos);
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
+    const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
+    let _savedPlanScroll = null;
+    if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) _savedPlanScroll = s.scrollTop; }
     document.getElementById('mainContent').innerHTML = html;
+    if (isPlanMonth) {
+      const s = document.getElementById('planMonthScroll');
+      if (s) {
+        if (_savedPlanScroll !== null) {
+          s.scrollTop = _savedPlanScroll;
+        } else {
+          const prevId = DS(addDays(startOfWeek(new Date()), -7));
+          const el = s.querySelector(`[data-week-id="${prevId}"]`);
+          if (el) s.scrollTop = el.offsetTop;
+        }
+      }
+    }
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
       if (state.view === 'day') {
@@ -1237,27 +1258,35 @@ class TodoApp {
     };
 
     if (mode === 'month') {
-      const y = state.navDate.getFullYear(), m = state.navDate.getMonth();
-      const label = `${state.MONTHS[m]} ${y}`;
-      const firstDay = firstDayOfMonth(y, m);
-      const totalDays = daysInMonth(y, m);
-      const startOffset = firstDay; // already Mon=0
       const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
-      let cells = '';
-      for (let i = 0; i < startOffset; i++) cells += `<div class="plan-week-day plan-week-day--empty"></div>`;
-      for (let day = 1; day <= totalDays; day++) {
-        const d = new Date(y, m, day);
-        cells += dayCol(d);
+      const todayWeekStart = startOfWeek(new Date());
+      const scrollStart = addDays(todayWeekStart, -12 * 7);
+      const totalWeeks = 64;
+      let rows = '';
+      let lastMonthKey = '';
+      for (let w = 0; w < totalWeeks; w++) {
+        const wStart = addDays(scrollStart, w * 7);
+        let monthLabel = '';
+        for (let i = 0; i < 7; i++) {
+          const d = addDays(wStart, i);
+          const mk = `${d.getFullYear()}-${d.getMonth()}`;
+          if (mk !== lastMonthKey) {
+            lastMonthKey = mk;
+            monthLabel = `<div class="plan-scroll-month-label">${state.MONTHS[d.getMonth()]} ${d.getFullYear()}</div>`;
+            break;
+          }
+        }
+        const weekId = DS(wStart);
+        const days = [];
+        for (let i = 0; i < 7; i++) days.push(dayCol(addDays(wStart, i)));
+        rows += `${monthLabel}<div class="plan-month-scroll-week" data-week-id="${weekId}">${days.join('')}</div>`;
       }
       return `<div class="plan-week-header">
-        <button class="day-nav-btn" onclick="${navPrev}">${navSvgL}</button>
-        <span>${label}</span>
-        <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
         <div class="plan-mode-btns">${modeBtns}</div>
       </div>
       <div class="plan-rec-toggles">${recTogglesHTML}</div>
       <div class="plan-month-daynames">${dayNames}</div>
-      <div class="plan-week-grid plan-month-grid">${cells}</div>`;
+      <div class="plan-month-scroll" id="planMonthScroll">${rows}</div>`;
     }
 
     const numDays = mode === 'biweek' ? 14 : 7;
