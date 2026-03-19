@@ -706,7 +706,7 @@ export function renderCategoriesView(todos) {
 // ─── Inbox View ────────────────────────────────────────────────────────────
 
 export function getInboxCount(todos) {
-  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date).length;
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog).length;
 }
 
 export function renderInboxView(todos) {

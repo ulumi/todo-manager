@@ -7,6 +7,135 @@ import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 
+// ─── Draft management ─────────────────────────────────────────────────────
+
+const DRAFT_KEY = 'modalDraft';
+let _draftTimer = null;
+let _draftListeners = null;
+
+function _scheduleDraftSave() {
+  clearTimeout(_draftTimer);
+  _draftTimer = setTimeout(_saveDraft, 300);
+}
+
+function _saveDraft() {
+  const title = document.getElementById('taskTitle')?.value || '';
+  const description = document.getElementById('taskDescription')?.value || '';
+  if (!title && !description) { localStorage.removeItem(DRAFT_KEY); return; }
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({
+    title,
+    description,
+    priority: state.selectedPriority || '',
+    scheduleMode: state.scheduleMode,
+    date: document.getElementById('taskDate')?.value || '',
+    startTime: document.getElementById('taskStartTime')?.value || '',
+    endTime: document.getElementById('taskEndTime')?.value || '',
+    flexibleTime: document.getElementById('taskFlexibleTime')?.checked || false,
+    durationEstimated: document.getElementById('taskDurationEstimated')?.value || '',
+    durationReal: document.getElementById('taskDurationReal')?.value || '',
+    categoryId: document.getElementById('taskCategory')?.value || '',
+    recurrence: state.selectedRecurrence,
+    weekDays: [...state.selectedWeekDays],
+    monthDays: [...state.selectedMonthDays],
+    monthLastDay: state.selectedMonthLastDay,
+    yearMonth: state.selectedYearMonth,
+    yearDay: state.selectedYearDay,
+  }));
+}
+
+export function clearDraft() {
+  clearTimeout(_draftTimer);
+  localStorage.removeItem(DRAFT_KEY);
+  const banner = document.getElementById('draftBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+export function discardDraft() {
+  clearDraft();
+  document.getElementById('taskTitle').value = '';
+  document.getElementById('taskDescription').value = '';
+  document.getElementById('taskDate').value = DS(state.navDate);
+  document.getElementById('taskStartTime').value = '';
+  document.getElementById('taskEndTime').value = '';
+  document.getElementById('taskFlexibleTime').checked = false;
+  document.getElementById('taskDurationEstimated').value = '';
+  document.getElementById('taskDurationReal').value = '';
+  selectPriority('');
+  populateCategorySelect('');
+  selectScheduleMode('date');
+  state.setSelectedRecurrence('none');
+  document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
+  document.getElementById('recDetail').innerHTML = '';
+  const scheduleModeGroup = document.getElementById('scheduleModeGroup');
+  if (scheduleModeGroup) scheduleModeGroup.style.display = '';
+  const dateGroup = document.getElementById('dateGroup');
+  if (dateGroup) dateGroup.style.display = '';
+  document.getElementById('taskTitle').focus();
+}
+
+function _tryRestoreDraft() {
+  const raw = localStorage.getItem(DRAFT_KEY);
+  if (!raw) return false;
+  let d;
+  try { d = JSON.parse(raw); } catch { return false; }
+  if (!d.title && !d.description) return false;
+  if (d.title) document.getElementById('taskTitle').value = d.title;
+  if (d.description) document.getElementById('taskDescription').value = d.description;
+  if (d.date) document.getElementById('taskDate').value = d.date;
+  if (d.startTime) document.getElementById('taskStartTime').value = d.startTime;
+  if (d.endTime) document.getElementById('taskEndTime').value = d.endTime;
+  if (d.flexibleTime) document.getElementById('taskFlexibleTime').checked = true;
+  if (d.durationEstimated) document.getElementById('taskDurationEstimated').value = d.durationEstimated;
+  if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
+  if (d.priority !== undefined) selectPriority(d.priority);
+  if (d.categoryId) { const sel = document.getElementById('taskCategory'); if (sel) sel.value = d.categoryId; }
+  if (d.scheduleMode) {
+    state.setScheduleMode(d.scheduleMode);
+    document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === d.scheduleMode));
+    const dg = document.getElementById('dateGroup');
+    if (dg) dg.style.display = d.scheduleMode === 'date' ? '' : 'none';
+  }
+  if (d.recurrence && d.recurrence !== 'none') {
+    if (d.weekDays?.length) state.setSelectedWeekDays(d.weekDays);
+    if (d.monthDays?.length) state.setSelectedMonthDays(d.monthDays);
+    if (d.monthLastDay !== undefined) state.setSelectedMonthLastDay(d.monthLastDay);
+    if (d.yearMonth !== undefined) state.setSelectedYearMonth(d.yearMonth);
+    if (d.yearDay !== undefined) state.setSelectedYearDay(d.yearDay);
+    selectRecurrence(d.recurrence);
+  }
+  return true;
+}
+
+export function cancelModal() {
+  clearDraft();
+  closeModal();
+}
+
+function _initDraftListeners() {
+  _destroyDraftListeners();
+  const listeners = [];
+  [['taskTitle','input'],['taskDescription','input'],['taskDate','change'],
+   ['taskStartTime','change'],['taskEndTime','change'],['taskFlexibleTime','change'],
+   ['taskDurationEstimated','input'],['taskDurationReal','input'],['taskCategory','change']
+  ].forEach(([id, evt]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const fn = () => _scheduleDraftSave();
+    el.addEventListener(evt, fn);
+    listeners.push({ el, evt, fn });
+  });
+  _draftListeners = listeners;
+}
+
+function _destroyDraftListeners() {
+  if (!_draftListeners) return;
+  _draftListeners.forEach(({ el, evt, fn }) => el.removeEventListener(evt, fn));
+  _draftListeners = null;
+  clearTimeout(_draftTimer);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+
 export function selectScheduleMode(mode) {
   state.setScheduleMode(mode);
   document.querySelectorAll('.schedule-mode-option').forEach(o =>
@@ -14,6 +143,7 @@ export function selectScheduleMode(mode) {
   );
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = mode === 'date' ? '' : 'none';
+  _scheduleDraftSave();
 }
 
 function populateCategorySelect(selectedId) {
@@ -55,6 +185,7 @@ export function selectPriority(p) {
   document.querySelectorAll('.priority-option').forEach(o =>
     o.classList.toggle('active', o.dataset.priority === p)
   );
+  _scheduleDraftSave();
 }
 
 export function openModal(date, todos, scheduleMode = 'date') {
@@ -88,6 +219,10 @@ export function openModal(date, todos, scheduleMode = 'date') {
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   populateCategorySelect('');
+  // Restore draft (new tasks only)
+  const draftBanner = document.getElementById('draftBanner');
+  const hadDraft = _tryRestoreDraft();
+  if (draftBanner) draftBanner.style.display = hadDraft ? '' : 'none';
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
   // Reset right column state (open)
@@ -105,11 +240,13 @@ export function openModal(date, todos, scheduleMode = 'date') {
   );
   _initModalSwipe();
   _initCombobox(todos);
+  _initDraftListeners();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
 export function closeModal() {
   _destroyCombobox();
+  _destroyDraftListeners();
   state.setEditingId(null);
   state.setInsertAfterId(null);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
@@ -206,6 +343,7 @@ export function openEditModal(id, dateStr, todos) {
 export function selectRecurrence(rec) {
   state.setSelectedRecurrence(rec);
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec===rec));
+  _scheduleDraftSave();
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
   const scheduleModeGroup = document.getElementById('scheduleModeGroup');
@@ -521,6 +659,7 @@ export function saveTaskLogic(todos) {
   } else {
     addTask(data, todos);
   }
+  clearDraft();
   return false; // no error
 }
 

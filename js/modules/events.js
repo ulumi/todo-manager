@@ -11,7 +11,7 @@ export function setupEventListeners(app) {
   });
 
   // Modal interactions
-  document.getElementById('cancelModal').addEventListener('click', () => app.closeModal());
+  document.getElementById('cancelModal').addEventListener('click', () => app.cancelModal());
   document.getElementById('cancelDeleteModal').addEventListener('click', () => app.closeDeleteModal());
   document.getElementById('deleteModalOverlay').addEventListener('click', e => {
     if(e.target===e.currentTarget) app.closeDeleteModal();

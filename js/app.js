@@ -24,7 +24,8 @@ import {
   selectYearMonth, selectYearDay,
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
   toggleCloudSection, toggleModalRight, selectPriority,
-  toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection
+  toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection,
+  cancelModal, clearDraft, discardDraft
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -504,6 +505,18 @@ class TodoApp {
 
   toggleDetailSection(headerEl) {
     toggleDetailSection(headerEl);
+  }
+
+  cancelModal() {
+    cancelModal();
+  }
+
+  clearDraft() {
+    clearDraft();
+  }
+
+  discardDraft() {
+    discardDraft();
   }
 
   closeModal() {
