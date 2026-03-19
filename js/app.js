@@ -1470,7 +1470,7 @@ class TodoApp {
       return;
     }
     if (!skipConfirm && !confirm(`Supprimer ${gcalTodos.length} événement(s) importé(s) de Google Calendar ?`)) return;
-    state.todos = state.todos.filter(t => !t.id || !t.id.startsWith('gcal_'));
+    state.setTodos(state.todos.filter(t => !t.id || !t.id.startsWith('gcal_')));
     saveTodos(state.todos);
     this.render();
     if (!skipConfirm) {
