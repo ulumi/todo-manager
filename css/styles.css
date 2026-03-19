@@ -6581,14 +6581,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex-wrap: wrap;
   align-items: center;
 }
-.plan-rec-toggles::before {
-  content: "Filtres :";
+
+.plan-rec-label {
   font-size: 10px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-right: 2px;
+  white-space: nowrap;
 }
 
 .plan-rec-btn {
@@ -6662,8 +6663,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-inbox-section, .plan-backlog-section {
   border-radius: 8px;
-  padding: 6px;
-  margin: -6px;
   transition: background 0.15s;
 }
 .plan-inbox-section.drag-over, .plan-backlog-section.drag-over {

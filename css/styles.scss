@@ -5945,16 +5945,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom: 12px;
   flex-wrap:     wrap;
   align-items:   center;
+}
 
-  &::before {
-    content:     'Filtres :';
-    font-size:   10px;
-    font-weight: 600;
-    color:       var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    margin-right: 2px;
-  }
+.plan-rec-label {
+  font-size:      10px;
+  font-weight:    600;
+  color:          var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-right:   2px;
+  white-space:    nowrap;
 }
 
 .plan-rec-btn {
@@ -6028,8 +6028,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Drop zones (inbox + backlog sections)
 .plan-inbox-section, .plan-backlog-section {
   border-radius: 8px;
-  padding:       6px;
-  margin:        -6px;
   transition:    background .15s;
   &.drag-over { background: var(--primary-light); }
 }

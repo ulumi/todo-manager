@@ -253,6 +253,12 @@ class TodoApp {
     if (state.view==='week')  d.setDate(d.getDate()+delta*14);
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
+    if (state.view==='plan') {
+      const planMode = localStorage.getItem('planMode') || 'week';
+      if (planMode === 'month')  d.setMonth(d.getMonth() + delta);
+      else if (planMode === 'biweek') d.setDate(d.getDate() + delta * 14);
+      else                            d.setDate(d.getDate() + delta * 7);
+    }
     state.setNavDate(d);
     this._pushHistory();
     await this._animateViewChange(delta);
@@ -1177,6 +1183,7 @@ class TodoApp {
     ].map(([k, l]) =>
       `<button class="plan-rec-btn${filter[k]?' active':''}" onclick="window.app.togglePlanRecFilter('${k}')" title="${k}">${l}</button>`
     ).join('');
+    const recTogglesHTML = `<span class="plan-rec-label">Filtres</span>${recToggles}`;
 
     const navPrev = `window.app.navigate(-1)`;
     const navNext = `window.app.navigate(1)`;
@@ -1235,7 +1242,7 @@ class TodoApp {
         <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
         <div class="plan-mode-btns">${modeBtns}</div>
       </div>
-      <div class="plan-rec-toggles">${recToggles}</div>
+      <div class="plan-rec-toggles">${recTogglesHTML}</div>
       <div class="plan-month-daynames">${dayNames}</div>
       <div class="plan-week-grid plan-month-grid">${cells}</div>`;
     }
@@ -1252,7 +1259,7 @@ class TodoApp {
       <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
       <div class="plan-mode-btns">${modeBtns}</div>
     </div>
-    <div class="plan-rec-toggles">${recToggles}</div>
+    <div class="plan-rec-toggles">${recTogglesHTML}</div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
 
