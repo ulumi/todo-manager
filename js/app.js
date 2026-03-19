@@ -1934,6 +1934,7 @@ class TodoApp {
       else               localStorage.removeItem('profileAvatar');
       this._updateUserBtn();
     }
+    if (backup.icalSecret) localStorage.setItem('icalSecret', backup.icalSecret);
 
     if (changed && !silent) this.render();
   }

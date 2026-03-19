@@ -37,27 +37,16 @@ module.exports = async function handler(req, res) {
   const uid    = token.slice(0, sepIdx);
   const secret = token.slice(sepIdx + 1);
 
-  // Step 1: verify secret directly at users/{uid}/data/ical (no query needed)
-  try {
-    const icalSnap = await db.collection('users').doc(uid).collection('data').doc('ical').get();
-    if (!icalSnap.exists || icalSnap.data().secret !== secret) {
-      res.status(401).send('Invalid token');
-      return;
-    }
-  } catch (err) {
-    console.error('Firestore token verification error:', err);
-    res.status(500).send('Internal error');
-    return;
-  }
-
-  // Step 2: load todos from users/{uid}/data/main
+  // Step 1+2 combined: read data/main — verify icalSecret AND load todos in one shot
   let todos = [];
   try {
     const dataSnap = await db.collection('users').doc(uid).collection('data').doc('main').get();
-    if (dataSnap.exists) {
-      const d = dataSnap.data();
-      todos = d.calendar || d.todos || [];
+    if (!dataSnap.exists || dataSnap.data().icalSecret !== secret) {
+      res.status(401).send('Invalid token');
+      return;
     }
+    const d = dataSnap.data();
+    todos = d.calendar || d.todos || [];
   } catch (err) {
     console.error('Firestore data read error:', err);
     res.status(500).send('Internal error');

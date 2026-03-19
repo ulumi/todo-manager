@@ -80,7 +80,7 @@ export function getAppConfig() {
 
 export function getFullBackup(todos) {
   const raw = key => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; };
-  return {
+  const backup = {
     calendar: todos,
     config: getAppConfig(),
     categories: raw('projects'),
@@ -90,6 +90,9 @@ export function getFullBackup(todos) {
     avatar: raw('profileAvatar'),
     exportDate: new Date().toISOString()
   };
+  const icalSecret = localStorage.getItem('icalSecret');
+  if (icalSecret) backup.icalSecret = icalSecret;
+  return backup;
 }
 
 export function downloadJSON(obj, filename) {
