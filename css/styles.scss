@@ -1864,6 +1864,32 @@ main {
   &::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  .modal-title { margin-bottom: 0; }
+}
+
+.modal-close-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background .12s, color .12s;
+
+  &:hover { background: var(--surface2); color: var(--text); }
+}
+
 .modal-title {
   font-size: 17px;
   font-weight: 700;

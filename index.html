@@ -102,7 +102,10 @@
 <!-- Delete Recurrence Modal -->
 <div class="modal-overlay hidden" id="deleteModalOverlay">
   <div class="modal" style="max-width:400px">
-    <div class="modal-title" id="deleteModalTitle">Delete recurring task</div>
+    <div class="modal-header">
+      <div class="modal-title" id="deleteModalTitle">Delete recurring task</div>
+      <button class="modal-close-btn" onclick="window.app.closeDeleteModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+    </div>
     <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
       <span id="deleteModalPrompt">How would you like to delete</span> "<strong id="deleteTaskName"></strong>"?
     </p>
@@ -130,7 +133,10 @@
 <div class="modal-overlay hidden" id="modalOverlay">
   <div class="modal modal-two-columns">
     <div class="modal-left">
-      <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
+        <button class="modal-close-btn" onclick="window.app.closeModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+      </div>
 
       <div class="form-group" style="position:relative">
         <input class="form-input" id="taskTitle" placeholder="Quoi faire ?" maxlength="200" autocomplete="off">
@@ -267,20 +273,23 @@
 </div>
 
 <!-- Admin Modal -->
-<div class="modal-overlay hidden" id="adminModalOverlay">
+<div class="modal-overlay hidden" id="adminModalOverlay" onclick="if(event.target===this)window.app.closeAdminModal()">
   <div class="modal">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <div class="modal-title" style="margin: 0;">Administration</div>
-      <button onclick="window.app.closeAdminModal()" style="width:24px;height:24px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;display:flex;align-items:center;justify-content:center;">✕</button>
+    <div class="modal-header">
+      <div class="modal-title">Administration</div>
+      <button class="modal-close-btn" onclick="window.app.closeAdminModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
     </div>
     <div id="adminClouds"></div>
   </div>
 </div>
 
 <!-- Template Picker Modal -->
-<div class="modal-overlay hidden" id="templateModalOverlay">
+<div class="modal-overlay hidden" id="templateModalOverlay" onclick="if(event.target===this)window.app.closeTemplateModal()">
   <div class="modal" style="max-width:460px;">
-    <div class="modal-title">Modèle de journée</div>
+    <div class="modal-header">
+      <div class="modal-title">Modèle de journée</div>
+      <button class="modal-close-btn" onclick="window.app.closeTemplateModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+    </div>
     <div id="templatePickerList" style="margin-top:16px;"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="window.app.closeTemplateModal()">Annuler</button>
@@ -528,9 +537,12 @@
 </div>
 
 <!-- Upgrade prompt (shown to guests at end of session) -->
-<div class="modal-overlay hidden" id="upgradePromptOverlay">
+<div class="modal-overlay hidden" id="upgradePromptOverlay" onclick="if(event.target===this)window.app.upgradeDismiss()">
   <div class="modal auth-modal">
-    <div class="modal-title">Sauvegarder vos tâches ?</div>
+    <div class="modal-header">
+      <div class="modal-title">Sauvegarder vos tâches ?</div>
+      <button class="modal-close-btn" onclick="window.app.upgradeDismiss()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+    </div>
     <p class="auth-upgrade-msg">Créez un compte gratuit pour accéder à vos tâches depuis n'importe quel appareil.</p>
     <button class="btn btn-social btn-google" onclick="window.app.upgradeGoogleSignIn()">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
@@ -558,7 +570,10 @@
 <!-- Leave prompt (shown when guest tries to close tab) -->
 <div class="modal-overlay hidden" id="leavePromptOverlay">
   <div class="modal auth-modal">
-    <div class="modal-title">Avant de partir…</div>
+    <div class="modal-header">
+      <div class="modal-title">Avant de partir…</div>
+      <button class="modal-close-btn" onclick="window.app.closeLeavePrompt()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+    </div>
     <p class="auth-upgrade-msg">Tes tâches sont sauvegardées pour ta prochaine visite sur cet appareil. Crée un compte pour y accéder partout.</p>
     <button class="btn btn-primary" style="width:100%;margin-bottom:8px" onclick="window.app.showAuthRegister(); window.app.closeLeavePrompt();">Créer un compte</button>
     <button class="btn btn-ghost" style="width:100%;margin-bottom:8px" onclick="window.app.leaveKeepData()">Garder pour la prochaine visite</button>
@@ -597,8 +612,9 @@
 </div>
 
 <!-- Guest Name Prompt -->
-<div class="modal-overlay hidden" id="guestNameOverlay">
+<div class="modal-overlay hidden" id="guestNameOverlay" onclick="if(event.target===this)window.app.skipGuestName()">
   <div class="modal" style="max-width:360px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;">
+    <button class="modal-close-btn" onclick="window.app.skipGuestName()" title="Fermer" aria-label="Fermer" style="align-self:flex-end;margin-bottom:-8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
     <div style="text-align:center;">
       <div style="font-size:24px;margin-bottom:6px;">👋</div>
       <div style="font-weight:600;font-size:15px;margin-bottom:4px;">Bienvenue !</div>

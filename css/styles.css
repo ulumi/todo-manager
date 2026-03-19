@@ -2021,6 +2021,35 @@ main {
   background: var(--text-muted);
 }
 
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-header .modal-title {
+  margin-bottom: 0;
+}
+
+.modal-close-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+.modal-close-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
 .modal-title {
   font-size: 17px;
   font-weight: 700;

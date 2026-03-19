@@ -37,7 +37,6 @@ export function setupEventListeners(app) {
   // Task title keyboard
   document.getElementById('taskTitle').addEventListener('keydown', e => {
     if (e.key==='Enter') app.saveTask();
-    if (e.key==='Escape') app.closeModal();
   });
 
   // Quick add
@@ -90,6 +89,21 @@ export function setupEventListeners(app) {
     setTimeout(() => { wheelCooldown = false; }, 600);
     app.navigate(e.deltaY > 0 ? 1 : -1);
   }, { passive: false });
+
+  // Global Escape — close whichever modal is open
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const visible = id => !document.getElementById(id)?.classList.contains('hidden');
+    if (visible('modalOverlay'))         { app.closeModal();         return; }
+    if (visible('deleteModalOverlay'))   { app.closeDeleteModal();   return; }
+    if (visible('adminModalOverlay'))    { app.closeAdminModal();    return; }
+    if (visible('templateModalOverlay')) { app.closeTemplateModal(); return; }
+    if (visible('authModalOverlay'))     { app.closeAuthModal();     return; }
+    if (visible('upgradePromptOverlay')) { app.upgradeDismiss();     return; }
+    if (visible('leavePromptOverlay'))   { app.closeLeavePrompt();   return; }
+    if (visible('avatarEditorOverlay'))  { app.closeAvatarEditor();  return; }
+    if (visible('guestNameOverlay'))     { app.skipGuestName();      return; }
+  });
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
