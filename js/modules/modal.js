@@ -7,17 +7,13 @@ import { getTodosForDate, addTask } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 
-export function toggleInboxMode() {
-  state.setInboxMode(!state.inboxMode);
-  const dateInputRow = document.getElementById('dateInputRow');
-  const btn = document.getElementById('inboxModeBtn');
-  if (state.inboxMode) {
-    if (dateInputRow) dateInputRow.style.display = 'none';
-    if (btn) { btn.classList.add('active'); btn.title = 'Cliquer pour assigner une date'; }
-  } else {
-    if (dateInputRow) dateInputRow.style.display = '';
-    if (btn) { btn.classList.remove('active'); btn.title = 'Sauvegarder sans date dans l\'inbox'; }
-  }
+export function selectScheduleMode(mode) {
+  state.setScheduleMode(mode);
+  document.querySelectorAll('.schedule-mode-option').forEach(o =>
+    o.classList.toggle('active', o.dataset.mode === mode)
+  );
+  const dateGroup = document.getElementById('dateGroup');
+  if (dateGroup) dateGroup.style.display = mode === 'date' ? '' : 'none';
 }
 
 function populateCategorySelect(selectedId) {
@@ -61,10 +57,10 @@ export function selectPriority(p) {
   );
 }
 
-export function openModal(date, todos, forInbox = false) {
+export function openModal(date, todos, scheduleMode = 'date') {
   date = date || state.navDate;
   state.setEditingId(null);
-  state.setInboxMode(forInbox);
+  state.setScheduleMode(scheduleMode);
   state.setSelectedRecurrence('none');
   state.setSelectedWeekDays([]);
   state.setSelectedMonthDays([]);
@@ -77,16 +73,21 @@ export function openModal(date, todos, forInbox = false) {
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskDescription').value = '';
   document.getElementById('taskDate').value = DS(date);
+  document.getElementById('taskStartTime').value = '';
+  document.getElementById('taskEndTime').value = '';
+  document.getElementById('taskFlexibleTime').checked = false;
+  document.getElementById('taskDurationEstimated').value = '';
+  document.getElementById('taskDurationReal').value = '';
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec==='none'));
   document.getElementById('recDetail').innerHTML = '';
-  document.getElementById('dateGroup').style.display = '';
-  const dateInputRow = document.getElementById('dateInputRow');
-  if (dateInputRow) dateInputRow.style.display = forInbox ? 'none' : '';
+  // Schedule mode UI
+  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === scheduleMode));
+  const scheduleModeGroup = document.getElementById('scheduleModeGroup');
+  if (scheduleModeGroup) scheduleModeGroup.style.display = '';
+  const dateGroup = document.getElementById('dateGroup');
+  if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   populateCategorySelect('');
-  // Sync inbox button state
-  const btn = document.getElementById('inboxModeBtn');
-  if (btn) btn.classList.toggle('active', forInbox);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   modalBox.classList.add('modal-two-columns');
   // Reset right column state (open)
@@ -331,6 +332,21 @@ export function toggleCloudSection(headerEl) {
   const section = headerEl.closest('.clouds-section');
   if (!section) return;
   const body = section.querySelector('.clouds-section-body');
+  if (!body) return;
+  const isOpen = section.classList.contains('open');
+  if (isOpen) {
+    section.classList.remove('open');
+    gsap.to(body, { height: 0, duration: 0.22, ease: 'power2.inOut', overwrite: 'auto' });
+  } else {
+    section.classList.add('open');
+    gsap.to(body, { height: 'auto', duration: 0.28, ease: 'power2.out', overwrite: 'auto' });
+  }
+}
+
+export function toggleDetailSection(headerEl) {
+  const section = headerEl.closest('.modal-detail-section');
+  if (!section) return;
+  const body = section.querySelector('.modal-detail-body');
   if (!body) return;
   const isOpen = section.classList.contains('open');
   if (isOpen) {

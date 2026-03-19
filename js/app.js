@@ -1459,8 +1459,49 @@ class TodoApp {
     }
   }
 
+  async cleanGcalTodos(skipConfirm = false) {
+    const gcalTodos = state.todos.filter(t => t.id && t.id.startsWith('gcal_'));
+    if (gcalTodos.length === 0) {
+      if (!skipConfirm) alert('Aucun événement Google Calendar importé à supprimer.');
+      return;
+    }
+    if (!skipConfirm && !confirm(`Supprimer ${gcalTodos.length} événement(s) importé(s) de Google Calendar ?`)) return;
+    state.todos = state.todos.filter(t => !t.id || !t.id.startsWith('gcal_'));
+    saveTodos(state.todos);
+    this.render();
+    if (!skipConfirm) {
+      const msg = document.getElementById('gcalSyncMsg');
+      if (msg) { msg.style.display = 'block'; msg.textContent = `✓ ${gcalTodos.length} événement(s) supprimé(s).`; setTimeout(() => { msg.style.display = 'none'; }, 4000); }
+    }
+  }
+
+  _gcalDisconnectDialog() {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML = `
+        <div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          <h3 style="margin:0 0 8px;font-size:16px;">Déconnecter Google Calendar</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px;">Que faire des événements importés depuis Google Calendar ?</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button id="gcalDlgKeep"   class="btn btn-ghost" style="text-align:left;">Déconnecter uniquement — garder les événements</button>
+            <button id="gcalDlgClean"  class="btn btn-ghost" style="text-align:left;color:var(--danger);border-color:var(--danger);">Déconnecter et supprimer les événements importés</button>
+            <button id="gcalDlgCancel" class="btn btn-ghost" style="text-align:left;margin-top:4px;">Annuler</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      const done = (val) => { overlay.remove(); resolve(val); };
+      overlay.querySelector('#gcalDlgKeep').onclick   = () => done('keep');
+      overlay.querySelector('#gcalDlgClean').onclick  = () => done('clean');
+      overlay.querySelector('#gcalDlgCancel').onclick = () => done(null);
+      overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+    });
+  }
+
   async disconnectGoogleCalendar() {
-    if (!confirm('Déconnecter Google Calendar ? Les événements existants dans GCal ne seront pas supprimés.')) return;
+    const choice = await this._gcalDisconnectDialog();
+    if (!choice) return;
+    if (choice === 'clean') await this.cleanGcalTodos(true);
     await disconnectGCal();
     renderAdminICal();
   }

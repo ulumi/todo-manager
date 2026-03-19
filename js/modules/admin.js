@@ -380,7 +380,10 @@ export function renderAdminICal() {
        <div style="display:flex;gap:8px;flex-wrap:wrap;">
          <button class="btn btn-primary" onclick="window.app.gcalSyncNow()" style="flex:1;">Synchroniser maintenant</button>
          <button class="btn btn-ghost" onclick="window.app.gcalSyncNow(true)" title="Réimporte tous les événements GCal même déjà vus">Forcer</button>
-         <button class="btn btn-ghost" onclick="window.app.disconnectGoogleCalendar()" style="color:var(--danger);border-color:var(--danger);">Déconnecter</button>
+       </div>
+       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+         <button class="btn btn-ghost" onclick="window.app.cleanGcalTodos()" style="flex:1;font-size:12px;" title="Supprime les tâches importées depuis Google Calendar">🗑 Nettoyer les événements importés</button>
+         <button class="btn btn-ghost" onclick="window.app.disconnectGoogleCalendar()" style="color:var(--danger);border-color:var(--danger);font-size:12px;">Déconnecter</button>
        </div>
        <p id="gcalSyncMsg" style="font-size:12px;color:var(--text-muted);margin-top:6px;display:none;"></p>`
     : `<p style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Synchronise tes tâches en temps réel avec Google Calendar (bidirectionnel).</p>

@@ -133,52 +133,32 @@
       <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
 
       <div class="form-group" style="position:relative">
-        <label class="form-label" data-i18n="task">Task</label>
-        <input class="form-input" id="taskTitle" placeholder="What needs to be done?" maxlength="200" autocomplete="off">
+        <input class="form-input" id="taskTitle" placeholder="Quoi faire ?" maxlength="200" autocomplete="off">
         <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea class="form-input" id="taskDescription" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:62px;font-family:inherit"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Priorité</label>
         <div class="priority-options">
-          <div class="priority-option active" data-priority="">Aucune</div>
+          <div class="priority-option active" data-priority="">—</div>
           <div class="priority-option priority-low" data-priority="low">▾ Basse</div>
           <div class="priority-option priority-medium" data-priority="medium">▸ Moy.</div>
           <div class="priority-option priority-high" data-priority="high">▲ Haute</div>
         </div>
       </div>
 
+      <div class="form-group" id="scheduleModeGroup">
+        <div class="schedule-mode-options">
+          <div class="schedule-mode-option" data-mode="inbox" onclick="window.app.selectScheduleMode('inbox')">Inbox</div>
+          <div class="schedule-mode-option active" data-mode="date" onclick="window.app.selectScheduleMode('date')">Date</div>
+          <div class="schedule-mode-option" data-mode="backlog" onclick="window.app.selectScheduleMode('backlog')">Backlog</div>
+        </div>
+      </div>
+
       <div class="form-group" id="dateGroup">
-        <label class="form-label" style="display:flex;align-items:center;gap:8px;">
-          <span data-i18n="date">Date</span>
-          <button type="button" id="inboxModeBtn" class="inbox-mode-btn" onclick="window.app.toggleInboxMode()" title="Sauvegarder sans date dans l'inbox">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-            Inbox
-          </button>
-        </label>
         <div class="date-row" id="dateInputRow">
           <input class="form-input" type="date" id="taskDate" onclick="this.showPicker()">
           <button type="button" class="today-btn" data-i18n="today" onclick="window.app.setTaskDateToday()">Aujourd'hui</button>
           <button type="button" class="today-btn" data-i18n="tomorrow" onclick="window.app.setTaskDateTomorrow()">Demain</button>
-        </div>
-      </div>
-
-      <div class="form-group" id="categoryGroup">
-        <label class="form-label">Catégorie</label>
-        <div class="category-select-row">
-          <select class="form-input" id="taskCategory">
-            <option value="">— Aucune catégorie —</option>
-          </select>
-          <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
-        </div>
-        <div id="newCatRow" style="display:none">
-          <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
-            onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
         </div>
       </div>
 
@@ -195,12 +175,12 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancelModal" data-i18n="cancel">Cancel</button>
-        <button class="btn btn-primary" id="saveTask" data-i18n="saveTask">Save Task</button>
+        <button class="btn btn-ghost" id="cancelModal" data-i18n="cancel">Annuler</button>
+        <button class="btn btn-primary" id="saveTask" data-i18n="saveTask">Ajouter</button>
       </div>
     </div>
 
-    <button class="modal-col-toggle" id="modalColToggle" onclick="window.app.toggleModalRight()" title="Suggestions">
+    <button class="modal-col-toggle" id="modalColToggle" onclick="window.app.toggleModalRight()" title="Détails">
       <svg viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="2 2 8 8 2 14"/>
       </svg>
@@ -208,7 +188,79 @@
 
     <div class="modal-right" id="modalRight">
       <div class="modal-right-inner" id="modalRightInner">
-        <div id="modalClouds"></div>
+
+        <!-- Détails: Category + Description -->
+        <div class="modal-detail-section open">
+          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
+            <span>Détails</span>
+            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="modal-detail-body" style="height:auto;overflow:hidden">
+            <div class="form-group">
+              <label class="form-label">Catégorie</label>
+              <div class="category-select-row">
+                <select class="form-input" id="taskCategory">
+                  <option value="">— Aucune catégorie —</option>
+                </select>
+                <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
+              </div>
+              <div id="newCatRow" style="display:none">
+                <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
+                  onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
+              </div>
+            </div>
+            <div class="form-group" style="margin-bottom:4px">
+              <label class="form-label">Description</label>
+              <textarea class="form-input" id="taskDescription" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:62px;font-family:inherit"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horaire -->
+        <div class="modal-detail-section">
+          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
+            <span>Horaire</span>
+            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="modal-detail-body" style="height:0;overflow:hidden">
+            <div class="time-row">
+              <div class="form-group">
+                <label class="form-label">Début</label>
+                <input type="time" class="form-input" id="taskStartTime">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Fin</label>
+                <input type="time" class="form-input" id="taskEndTime">
+              </div>
+            </div>
+            <label class="flex-time-label">
+              <input type="checkbox" id="taskFlexibleTime">
+              <span>Heure flexible</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Durée -->
+        <div class="modal-detail-section">
+          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
+            <span>Durée</span>
+            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+          <div class="modal-detail-body" style="height:0;overflow:hidden">
+            <div class="time-row">
+              <div class="form-group">
+                <label class="form-label">Estimée (min)</label>
+                <input type="number" class="form-input" id="taskDurationEstimated" min="0" placeholder="—">
+              </div>
+              <div class="form-group" style="margin-bottom:4px">
+                <label class="form-label">Réelle (min)</label>
+                <input type="number" class="form-input" id="taskDurationReal" min="0" placeholder="—">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="modalClouds" style="margin-top:8px"></div>
       </div>
     </div>
   </div>
