@@ -2990,10 +2990,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   position: fixed;
   top: 0;
   right: 0;
+  bottom: 0;
   width: 340px;
   max-width: 92vw;
-  height: 100vh;
-  height: 100dvh;
   background: var(--surface);
   border-left: 1.5px solid var(--border);
   box-shadow: -20px 0 60px rgba(0,0,0,.24);
