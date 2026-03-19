@@ -51,10 +51,19 @@ export async function saveBackupToServer(backup) {
 }
 
 export function saveTodos(todos) {
-  localStorage.setItem('todos', JSON.stringify(todos));
+  const json = JSON.stringify(todos);
+  localStorage.setItem('todos', json);
   localStorage.setItem('_localWriteTime', Date.now().toString());
+  // Mark as pending until Firestore confirms receipt
+  localStorage.setItem('_pendingSync', '1');
+  // Safety backup: last known good state, never touched by sync
+  if (todos.length > 0) {
+    localStorage.setItem('_todosSafetyBackup', JSON.stringify({ todos, ts: Date.now() }));
+  }
   serverPost('/todos', todos);
-  pushToFirestore(getFullBackup(todos)); // fire-and-forget
+  pushToFirestore(getFullBackup(todos))
+    .then(() => localStorage.removeItem('_pendingSync'))
+    .catch(() => {}); // stays pending if push fails — protects local data on next load
 }
 
 export function loadTodos() {

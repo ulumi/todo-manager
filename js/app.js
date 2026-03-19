@@ -2179,19 +2179,23 @@ class TodoApp {
   async _syncFirebase() {
     const backup = await loadFromFirestore();
     if (!backup) {
-      // Nothing in Firestore yet → push current localStorage data up
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
 
-    // Compare timestamps to decide which source is newer.
-    // _localWriteTime is a client clock; _firestoreUpdatedAt is a Firestore server clock.
-    // A 30-second tolerance absorbs typical clock drift between devices.
-    // This ensures offline edits (where Firestore push failed) still win over stale server data.
+    // Primary guard: if local has todos AND a push is pending (last push failed or
+    // page reloaded before push completed), always keep local and retry the push.
+    // This is the main protection against sync overwriting local data.
+    if (state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') {
+      await pushToFirestore(getFullBackup(state.todos));
+      return;
+    }
+
+    // Secondary guard: compare timestamps. Local wins if it's strictly newer than
+    // Firestore by more than 5s (tolerates clock drift between client and server).
     const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
     const firestoreTime  = backup._firestoreUpdatedAt || 0;
-    const localIsNewer   = localWriteTime > 0 && firestoreTime > 0 && (localWriteTime - firestoreTime > 30000);
-    if (localIsNewer) {
+    if (localWriteTime > 0 && firestoreTime > 0 && localWriteTime > firestoreTime + 5000) {
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
@@ -2203,8 +2207,12 @@ class TodoApp {
   // Merge a backup object into the app state (from Firestore or server)
   _applyBackup(backup, { silent }) {
     // Skip our own Firestore echoes using the session ID stamped in every push.
-    // This is clock-independent and works even across rapid saves.
     if (backup._pushedBySession && backup._pushedBySession === SESSION_ID) return;
+
+    // Don't let Firestore overwrite local todos while a push is still pending
+    // (i.e. last push failed or hasn't confirmed yet). This protects the realtime
+    // subscription from clobbering local data before our retry push completes.
+    if (backup.calendar && state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') return;
 
     let changed = false;
 
