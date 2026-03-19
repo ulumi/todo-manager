@@ -223,7 +223,7 @@ export function openAdminModal() {
         <button class="admin-sidenav-link active" onclick="window.app.showAdminSection('taches')">📋 Tâches</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('categories')">📁 Catégories</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
-        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('ical')">📅 iCal</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('ical')">📅 Calendrier</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
       </nav>
       <div class="admin-content">
@@ -273,8 +273,16 @@ export function openAdminModal() {
         </section>
 
         <section id="section-ical" class="admin-page-section" style="display:none">
-          <h2 class="admin-section-title">Export iCal</h2>
+          <h2 class="admin-section-title">Calendrier</h2>
           <div class="admin-form">
+            <div class="admin-section">
+              <h3>Abonnement iCal</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Abonne-toi à ce lien depuis Apple Calendar, Outlook, etc. pour voir tes tâches en lecture seule.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="window.app.setView('profile');window.app.closeAdminModal();" style="flex:1;">Voir le lien d'abonnement →</button>
+                <button class="btn btn-ghost" onclick="window.app.downloadICalFile();">Télécharger .ics</button>
+              </div>
+            </div>
             <div class="admin-section">
               <h3>Paramètres d'affichage</h3>
               <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
@@ -325,13 +333,6 @@ export function openAdminModal() {
                 <button class="btn btn-primary" onclick="window.app.exportAllData()" style="width:100%;">Export complet</button>
                 <button class="btn btn-ghost" onclick="window.app.exportCalendarOnly()" style="width:100%;">Calendrier seulement</button>
                 <button class="btn btn-ghost" onclick="window.app.exportConfigOnly()" style="width:100%;">Paramètres seulement</button>
-              </div>
-            </div>
-            <div class="admin-section">
-              <h3>iCal</h3>
-              <div class="admin-data-grid">
-                <button class="btn btn-primary" onclick="window.app.downloadICalFile()" style="width:100%;">Télécharger .ics</button>
-                <button class="btn btn-ghost" onclick="window.app.setView('profile')" style="width:100%;">Lien d'abonnement →</button>
               </div>
             </div>
             <div class="admin-section">

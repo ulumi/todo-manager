@@ -1497,7 +1497,7 @@ class TodoApp {
     if (!token) return null;
     const res = await fetch('/api/gcal-pull', { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) return null;
-    const { completedTodoIds = [], movedTodos = [] } = await res.json();
+    const { completedTodoIds = [], movedTodos = [], newTodos = [] } = await res.json();
     let changed = false;
     for (const id of completedTodoIds) {
       const t = state.todos.find(x => x.id === id);
@@ -1507,8 +1507,14 @@ class TodoApp {
       const t = state.todos.find(x => x.id === id);
       if (t && t.date !== date && !t.recurrence) { t.date = date; changed = true; }
     }
+    for (const todo of newTodos) {
+      if (!state.todos.find(x => x.id === todo.id)) {
+        state.todos.push(todo);
+        changed = true;
+      }
+    }
     if (changed) { saveTodos(state.todos); this.render(); }
-    return { completedTodoIds, movedTodos };
+    return { completedTodoIds, movedTodos, newTodos };
   }
 
   openAvatarEditor()           { openAvatarEditor(); }
