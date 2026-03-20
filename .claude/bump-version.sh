@@ -1,25 +1,13 @@
 #!/bin/bash
 # PostToolUse hook: bumps patch version on every project file edit
-# Receives JSON on stdin: { tool_name, tool_input, tool_response }
 
 INPUT=$(cat)
 
-FILE=$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('tool_input', {}).get('file_path', ''))
-" 2>/dev/null)
+# Skip if editing version.js itself (avoid loop)
+echo "$INPUT" | grep -q "version.js" && exit 0
 
-# Skip non-project files, version.js itself, and README.md (avoids loops/noise)
-case "$FILE" in
-  *version.js*|*README.md*|"") exit 0 ;;
-esac
-
-# Skip files outside the project repo
-case "$FILE" in
-  /Users/hugues/Projects/todo/todo-manager/*) ;;
-  *) exit 0 ;;
-esac
+# Skip if not a todo-manager project file
+echo "$INPUT" | grep -q "/Users/hugues/Projects/todo/todo-manager/" || exit 0
 
 VERSION_FILE="/Users/hugues/Projects/todo/todo-manager/js/modules/version.js"
 
@@ -32,4 +20,4 @@ PATCH=$(echo "$CURRENT" | cut -d. -f3)
 NEW="$MAJOR.$MINOR.$((PATCH + 1))"
 
 sed -i '' "s/'$CURRENT'/'$NEW'/" "$VERSION_FILE"
-echo "Version bumped: $CURRENT → $NEW (file: $(basename $FILE))"
+echo "Version bumped: $CURRENT → $NEW"

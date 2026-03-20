@@ -341,7 +341,8 @@ class TodoApp {
       y: 0,
       duration: (isDay || isMonth) && delta ? 0.28 : 0.25,
       delay: 0.02,
-      ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out'
+      ease: (isDay || isMonth) && delta ? 'expo.out' : 'power2.out',
+      onComplete: () => gsap.set(main, { clearProps: 'x,y,opacity,transform' })
     });
 
     // 5. Stagger blocks — total spread capped at 120ms regardless of count
@@ -1130,32 +1131,25 @@ class TodoApp {
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
     const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
-    let _savedPlanScroll = null;
-    if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) _savedPlanScroll = s.scrollTop; }
+    if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
+    if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
     document.getElementById('mainContent').innerHTML = html;
-    if (isPlanMonth) {
-      const s = document.getElementById('planMonthScroll');
-      if (s) {
-        if (_savedPlanScroll !== null) {
-          s.scrollTop = _savedPlanScroll;
-        } else {
-          const prevId = DS(addDays(startOfWeek(new Date()), -7));
-          const el = s.querySelector(`[data-week-id="${prevId}"]`);
-          if (el) s.scrollTop = el.offsetTop;
-        }
-      }
-    }
+    if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      if (state.view === 'day') {
-        sidebar.style.display = '';
-        sidebar.innerHTML = renderSidebar(state.todos);
-      } else if (state.view === 'year') {
-        sidebar.style.display = '';
-        sidebar.innerHTML = renderYearSidebar();
-      } else {
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'profile'];
+      if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
+      } else {
+        sidebar.style.display = '';
+        if (state.view === 'week' || state.view === 'biweek') {
+          sidebar.innerHTML = renderWeekSidebar(state.todos);
+        } else if (state.view === 'year') {
+          sidebar.innerHTML = renderYearSidebar();
+        } else {
+          sidebar.innerHTML = renderSidebar(state.todos);
+        }
       }
     }
     if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); }
@@ -1209,105 +1203,245 @@ class TodoApp {
     ).join('');
 
     const recToggles = [
-      ['none',    'Ponct.'],
-      ['daily',   'Quot.'],
-      ['weekly',  'Hebd.'],
-      ['monthly', 'Mens.'],
-      ['yearly',  'Ann.'],
+      ['none',    'Ponctuel'],
+      ['daily',   'Quotidien'],
+      ['weekly',  'Hebdomadaire'],
+      ['monthly', 'Mensuel'],
+      ['yearly',  'Annuel'],
     ].map(([k, l]) =>
       `<button class="plan-rec-btn${filter[k]?' active':''}" onclick="window.app.togglePlanRecFilter('${k}')" title="${k}">${l}</button>`
     ).join('');
-    const recTogglesHTML = `<span class="plan-rec-label">Filtres</span>${recToggles}`;
 
-    const navPrev = `window.app.navigate(-1)`;
-    const navNext = `window.app.navigate(1)`;
+    const todayBtn = `<button class="plan-today-btn" onclick="window.app.planScrollToToday()">Aujourd'hui</button>`;
     const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-    const recKey = (t) => {
-      if (!t.recurrence || t.recurrence === 'none') return 'none';
-      return t.recurrence; // 'daily' | 'weekly' | 'monthly' | 'yearly'
-    };
-
-    const dayCol = (d) => {
-      const ds = DS(d);
-      const isT = ds === todayStr;
-      const items = getTodosForDate(d, state.todos).filter(t => filter[recKey(t)] !== false);
-      const taskRows = items.map(t => {
-        const done = isCompleted(t, d);
-        return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
-          draggable="true"
-          ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
-          ondragend="this.classList.remove('dragging')">
-          <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
-          <span class="week-todo-text">${esc(t.title)}</span>
-          <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
-        </div>`;
-      }).join('');
-      return `<div class="plan-week-day${isT?' is-today':''}" data-date="${ds}"
-          ondragover="event.preventDefault();this.classList.add('drag-over')"
-          ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
-          ondrop="window.app.planDrop(event,'${ds}')">
-        <div class="plan-week-day-header" onclick="window.app.goToDay('${ds}')" title="Voir le ${d.getDate()}">
-          <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
-          <span class="plan-week-day-num">${d.getDate()}</span>
-        </div>
-        <div class="plan-week-day-tasks">${taskRows}</div>
-        <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
-      </div>`;
-    };
-
     if (mode === 'month') {
       const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
-      const todayWeekStart = startOfWeek(new Date());
-      const scrollStart = addDays(todayWeekStart, -12 * 7);
-      const totalWeeks = 64;
-      let rows = '';
-      let lastMonthKey = '';
-      for (let w = 0; w < totalWeeks; w++) {
-        const wStart = addDays(scrollStart, w * 7);
-        let monthLabel = '';
-        for (let i = 0; i < 7; i++) {
-          const d = addDays(wStart, i);
-          const mk = `${d.getFullYear()}-${d.getMonth()}`;
-          if (mk !== lastMonthKey) {
-            lastMonthKey = mk;
-            monthLabel = `<div class="plan-scroll-month-label">${state.MONTHS[d.getMonth()]} ${d.getFullYear()}</div>`;
-            break;
-          }
-        }
-        const weekId = DS(wStart);
-        const days = [];
-        for (let i = 0; i < 7; i++) days.push(dayCol(addDays(wStart, i)));
-        rows += `${monthLabel}<div class="plan-month-scroll-week" data-week-id="${weekId}">${days.join('')}</div>`;
-      }
-      return `<div class="plan-week-header">
+      return `<div class="plan-toolbar">
+        ${todayBtn}
         <div class="plan-mode-btns">${modeBtns}</div>
+        <div class="plan-toolbar-sep"></div>
+        <div class="plan-rec-pills">${recToggles}</div>
       </div>
-      <div class="plan-rec-toggles">${recTogglesHTML}</div>
       <div class="plan-month-daynames">${dayNames}</div>
-      <div class="plan-month-scroll" id="planMonthScroll">${rows}</div>`;
+      <div class="plan-month-scroll" id="planMonthScroll">
+        <div id="planMonthTop" style="height:1px;flex-shrink:0"></div>
+        <div id="planMonthBot" style="height:1px;flex-shrink:0"></div>
+      </div>`;
     }
 
     const numDays = mode === 'biweek' ? 14 : 7;
     const weekStart = startOfWeek(state.navDate);
     const days = [];
-    for (let i = 0; i < numDays; i++) days.push(dayCol(addDays(weekStart, i)));
+    for (let i = 0; i < numDays; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr));
     const weekEnd = addDays(weekStart, numDays - 1);
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
-    return `<div class="plan-week-header">
-      <button class="day-nav-btn" onclick="${navPrev}">${navSvgL}</button>
-      <span>${label}</span>
-      <button class="day-nav-btn" onclick="${navNext}">${navSvgR}</button>
+    return `<div class="plan-toolbar">
+      <button class="day-nav-btn" onclick="window.app.navigate(-1)">${navSvgL}</button>
+      <span class="plan-toolbar-label">${label}</span>
+      <button class="day-nav-btn" onclick="window.app.navigate(1)">${navSvgR}</button>
+      ${todayBtn}
       <div class="plan-mode-btns">${modeBtns}</div>
+      <div class="plan-toolbar-sep"></div>
+      <div class="plan-rec-pills">${recToggles}</div>
     </div>
-    <div class="plan-rec-toggles">${recTogglesHTML}</div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
 
+  planScrollToToday() {
+    const mode = localStorage.getItem('planMode') || 'week';
+    if (mode !== 'month') {
+      state.navDate = new Date();
+      this.render();
+      return;
+    }
+    const container = document.getElementById('planMonthScroll');
+    if (!container) return;
+    const todayWeekId = DS(startOfWeek(new Date()));
+    const el = container.querySelector(`[data-week-id="${todayWeekId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Today's week was pruned — re-init around today
+      if (this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
+      this._planMonthFrom = null;
+      this._planMonthScrollSaved = null;
+      container.innerHTML = '<div id="planMonthTop" style="height:1px;flex-shrink:0"></div><div id="planMonthBot" style="height:1px;flex-shrink:0"></div>';
+      this._setupPlanMonth();
+    }
+  }
+
   setPlanMode(mode) {
+    if (mode !== 'month') this._planMonthFrom = null;
+    if (this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
     localStorage.setItem('planMode', mode);
     this.render();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // PLAN MONTH INFINITE SCROLL
+  // ═══════════════════════════════════════════════════
+
+  _planMonthDayHTML(d, filter, todayStr) {
+    const recKey = (t) => (!t.recurrence || t.recurrence === 'none') ? 'none' : t.recurrence;
+    const ds = DS(d);
+    const isT = ds === todayStr;
+    const items = getTodosForDate(d, state.todos).filter(t => filter[recKey(t)] !== false);
+    const taskRows = items.map(t => {
+      const done = isCompleted(t, d);
+      return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
+        draggable="true"
+        ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
+        ondragend="this.classList.remove('dragging')">
+        <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+        <span class="week-todo-text">${esc(t.title)}</span>
+        <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
+      </div>`;
+    }).join('');
+    return `<div class="plan-week-day${isT?' is-today':''}" data-date="${ds}"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
+        ondrop="window.app.planDrop(event,'${ds}')">
+      <div class="plan-week-day-header" onclick="window.app.goToDay('${ds}')" title="Voir le ${d.getDate()}">
+        <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
+        <span class="plan-week-day-num">${d.getDate()}</span>
+      </div>
+      <div class="plan-week-day-tasks">${taskRows}</div>
+      <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
+    </div>`;
+  }
+
+  _planMonthGenWeeks(fromDate, count, filter, startMonthKey) {
+    const todayStr = DS(new Date());
+    if (startMonthKey === undefined) {
+      const db = addDays(fromDate, -1);
+      startMonthKey = `${db.getFullYear()}-${db.getMonth()}`;
+    }
+    let lastMonthKey = startMonthKey;
+    let html = '';
+    for (let w = 0; w < count; w++) {
+      const wStart = addDays(fromDate, w * 7);
+      let monthLabel = '';
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(wStart, i);
+        const mk = `${d.getFullYear()}-${d.getMonth()}`;
+        if (mk !== lastMonthKey) {
+          lastMonthKey = mk;
+          monthLabel = `<div class="plan-scroll-month-label">${state.MONTHS[d.getMonth()]} ${d.getFullYear()}</div>`;
+          break;
+        }
+      }
+      const days = [];
+      for (let i = 0; i < 7; i++) days.push(this._planMonthDayHTML(addDays(wStart, i), filter, todayStr));
+      html += `${monthLabel}<div class="plan-month-scroll-week" data-week-id="${DS(wStart)}">${days.join('')}</div>`;
+    }
+    return html;
+  }
+
+  _setupPlanMonth() {
+    const container = document.getElementById('planMonthScroll');
+    const top = document.getElementById('planMonthTop');
+    const bot = document.getElementById('planMonthBot');
+    if (!container || !top || !bot) return;
+
+    if (!this._planMonthFrom) {
+      this._planMonthFrom = addDays(startOfWeek(new Date()), -4 * 7);
+    }
+
+    const filter = this._getPlanRecFilter();
+    const html = this._planMonthGenWeeks(this._planMonthFrom, 20, filter);
+    bot.insertAdjacentHTML('beforebegin', html);
+
+    if (this._planMonthScrollSaved != null) {
+      container.scrollTop = this._planMonthScrollSaved;
+      this._planMonthScrollSaved = null;
+    } else {
+      const prevId = DS(addDays(startOfWeek(new Date()), -7));
+      const el = container.querySelector(`[data-week-id="${prevId}"]`);
+      if (el) container.scrollTop = el.offsetTop;
+    }
+    this._initPlanMonthIO();
+  }
+
+  _initPlanMonthIO() {
+    const container = document.getElementById('planMonthScroll');
+    if (!container) return;
+    if (this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
+    const BATCH = 6;
+    const MAX_WEEKS = 26;
+    let busy = false;
+
+    const removeWeekTop = () => {
+      const week = container.querySelector('.plan-month-scroll-week');
+      if (!week) return;
+      const prev = week.previousElementSibling;
+      if (prev && prev.classList.contains('plan-scroll-month-label')) prev.remove();
+      this._planMonthFrom = addDays(parseDS(week.dataset.weekId), 7);
+      week.remove();
+    };
+
+    const removeWeekBottom = () => {
+      const week = container.querySelector('.plan-month-scroll-week:last-of-type');
+      if (!week) return;
+      week.remove();
+      // Remove orphaned month label at end
+      const bot = document.getElementById('planMonthBot');
+      const prev = bot ? bot.previousElementSibling : null;
+      if (prev && prev.classList.contains('plan-scroll-month-label')) prev.remove();
+    };
+
+    const append = () => {
+      if (busy) return;
+      busy = true;
+      const last = container.querySelector('.plan-month-scroll-week:last-of-type');
+      if (!last) { busy = false; return; }
+      const lastDate = addDays(parseDS(last.dataset.weekId), 7);
+      const html = this._planMonthGenWeeks(lastDate, BATCH, this._getPlanRecFilter());
+      document.getElementById('planMonthBot').insertAdjacentHTML('beforebegin', html);
+      // Prune top if over limit
+      const total = container.querySelectorAll('.plan-month-scroll-week').length;
+      if (total > MAX_WEEKS) {
+        const prevH = container.scrollHeight;
+        const prevTop = container.scrollTop;
+        for (let i = 0; i < total - MAX_WEEKS; i++) removeWeekTop();
+        container.scrollTop = prevTop - (prevH - container.scrollHeight);
+      }
+      busy = false;
+    };
+
+    const prepend = () => {
+      if (busy) return;
+      busy = true;
+      const first = container.querySelector('.plan-month-scroll-week');
+      if (!first) { busy = false; return; }
+      const newFrom = addDays(parseDS(first.dataset.weekId), -BATCH * 7);
+      const html = this._planMonthGenWeeks(newFrom, BATCH, this._getPlanRecFilter());
+      // overflow-anchor:none — manual scroll compensation
+      const prevH = container.scrollHeight;
+      const prevTop = container.scrollTop;
+      document.getElementById('planMonthTop').insertAdjacentHTML('afterend', html);
+      container.scrollTop = prevTop + (container.scrollHeight - prevH);
+      this._planMonthFrom = newFrom;
+      // Prune bottom if over limit
+      const total = container.querySelectorAll('.plan-month-scroll-week').length;
+      for (let i = 0; i < total - MAX_WEEKS; i++) removeWeekBottom();
+      busy = false;
+    };
+
+    // Delay first observation to avoid immediate fire on mount
+    setTimeout(() => {
+      if (!document.getElementById('planMonthTop')) return;
+      this._planMonthIO = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          if (e.target.id === 'planMonthBot') append();
+          if (e.target.id === 'planMonthTop') prepend();
+        }
+      }, { root: container, rootMargin: '300px 0px' });
+      this._planMonthIO.observe(document.getElementById('planMonthTop'));
+      this._planMonthIO.observe(document.getElementById('planMonthBot'));
+    }, 100);
   }
 
   // Plan drag-drop

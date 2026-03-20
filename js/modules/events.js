@@ -64,31 +64,6 @@ export function setupEventListeners(app) {
     document.getElementById('modalClouds').innerHTML = app.getCloudsHTML(d);
   });
 
-  // Scroll to navigate between periods
-  let wheelCooldown = false;
-  document.getElementById('appWrapper').addEventListener('wheel', e => {
-    const goingDown = e.deltaY > 0;
-    const goingUp   = e.deltaY < 0;
-
-    // Year view: scroll inside .year-view first, navigate at limits
-    const yearView = document.querySelector('.year-view');
-    if (yearView) {
-      const atTop    = yearView.scrollTop <= 0;
-      const atBottom = yearView.scrollTop + yearView.clientHeight >= yearView.scrollHeight - 1;
-      if ((goingDown && !atBottom) || (goingUp && !atTop)) return;
-    } else {
-      // All other views: let page scroll first, only navigate at scroll limits
-      const atTop    = window.scrollY <= 0;
-      const atBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 1;
-      if ((goingDown && !atBottom) || (goingUp && !atTop)) return;
-    }
-
-    if (wheelCooldown) return;
-    e.preventDefault();
-    wheelCooldown = true;
-    setTimeout(() => { wheelCooldown = false; }, 600);
-    app.navigate(e.deltaY > 0 ? 1 : -1);
-  }, { passive: false });
 
   // Global Escape — close whichever modal is open
   document.addEventListener('keydown', e => {
@@ -109,8 +84,10 @@ export function setupEventListeners(app) {
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); app.undoAction(); return; }
     if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA') return;
-    if (e.key==='ArrowLeft')  app.navigate(-1);
-    if (e.key==='ArrowRight') app.navigate(1);
+    if (!document.getElementById('planMonthScroll')) {
+      if (e.key==='ArrowLeft')  app.navigate(-1);
+      if (e.key==='ArrowRight') app.navigate(1);
+    }
     if (e.key==='d') app.setView('day');
     if (e.key==='w') app.setView('week');
     if (e.key==='m') app.setView('month');

@@ -4,11 +4,14 @@
 //  App  → http://localhost:3000
 // ════════════════════════════════════════════════════════
 
-const http  = require('http');
-const fs    = require('fs');
-const path  = require('path');
-const os    = require('os');
-const admin = require('firebase-admin');
+import http  from 'http';
+import fs    from 'fs';
+import path  from 'path';
+import os    from 'os';
+import admin from 'firebase-admin';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
 
 // ── Load .env ────────────────────────────────────────────
 const envPath = path.join(__dirname, '.env');

@@ -90,31 +90,26 @@ function _renderDayMiniWeek() {
   const navDate = state.navDate;
   const todayStr = DS(new Date());
   const navStr = DS(navDate);
-  const week1Start = startOfWeek(navDate);
-  const week2Start = addDays(week1Start, 7);
+  const startDate = new Date(); startDate.setHours(0, 0, 0, 0);
 
-  const renderRow = (weekStart) => {
-    let html = '<div class="day-mini-week-row">';
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(weekStart, i);
-      const ds = DS(d);
-      const isToday = ds === todayStr;
-      const isCurrent = ds === navStr;
-      const isPast = ds < todayStr;
-      const cls = ['day-mini-col', isToday ? 'is-today' : '', isCurrent ? 'is-current' : '', isPast ? 'past' : ''].filter(Boolean).join(' ');
-      html += `<div class="${cls}" data-date="${ds}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
-        <div class="day-mini-col-hd">
-          <span class="day-mini-abbr">${state.DAYS[(d.getDay()+6)%7]}</span>
-          <span class="day-mini-num">${d.getDate()}</span>
-        </div>
-        <div class="day-mini-col-body" data-date="${ds}"></div>
-      </div>`;
-    }
-    html += '</div>';
-    return html;
-  };
-
-  return `<div class="day-mini-week">${renderRow(week1Start)}${renderRow(week2Start)}</div>`;
+  let html = '<div class="day-mini-week"><div class="day-mini-week-row">';
+  for (let i = 0; i < 14; i++) {
+    const d = addDays(startDate, i);
+    const ds = DS(d);
+    const isToday = ds === todayStr;
+    const isCurrent = ds === navStr;
+    const isPast = ds < todayStr;
+    const cls = ['day-mini-col', isToday ? 'is-today' : '', isCurrent ? 'is-current' : '', isPast ? 'past' : '', i === 6 ? 'week-end' : ''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" data-date="${ds}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+      <div class="day-mini-col-hd">
+        <span class="day-mini-abbr">${state.DAYS[(d.getDay()+6)%7]}</span>
+        <span class="day-mini-num">${d.getDate()}</span>
+      </div>
+      <div class="day-mini-col-body" data-date="${ds}"></div>
+    </div>`;
+  }
+  html += '</div></div>';
+  return html;
 }
 
 export function renderDayView(todos) {
@@ -188,7 +183,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view">${_renderDayMiniWeek()}${header}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
+  return `<div class="day-view"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
@@ -197,13 +192,13 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
   const svgPrevBig  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 18 12 12 18 6"/><polyline points="12 18 6 12 12 6"/></svg>`;
   const svgNextBig  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 18 12 12 6 6"/><polyline points="12 18 18 12 12 6"/></svg>`;
   const cols = prevBigAction ? '36px 52px 1fr 52px 36px' : '52px 1fr 52px';
-  return `<div class="day-header-wrapper" style="grid-template-columns:${cols}">
+  return `<div class="sticky-header-wrap"><div class="day-header-wrapper" style="grid-template-columns:${cols}">
     ${prevBigAction ? `<button class="day-nav-btn day-nav-btn--prev-month" onclick="${prevBigAction}">${svgPrevBig}</button>` : ''}
     <button class="day-nav-btn day-nav-btn--prev" onclick="${prevAction}">${svgPrev}</button>
     <div class="day-header"><div class="day-title-line">${title}</div></div>
     <button class="day-nav-btn day-nav-btn--next" onclick="${nextAction}">${svgNext}</button>
     ${nextBigAction ? `<button class="day-nav-btn day-nav-btn--next-month" onclick="${nextBigAction}">${svgNextBig}</button>` : ''}
-  </div>`;
+  </div></div>`;
 }
 
 function _renderWeekBlock(todos, weekStart, todayStr) {
@@ -314,15 +309,8 @@ export function renderMonthView(todos) {
   grid += '</div>';
 
   return `<div class="month-view">
-    <div class="month-main">
-      ${viewNavHeader(`${state.MONTHS[m]} ${y}`, `window.app.navigate(-1)`, `window.app.navigate(1)`, `window.app.navigate(-12)`, `window.app.navigate(12)`)}
-      ${grid}
-    </div>
-    <div class="month-year-panel">
-      ${monthMiniCal(y, m - 1, todayDS)}
-      ${monthMiniCal(y, m, todayDS)}
-      ${monthMiniCal(y, m + 1, todayDS)}
-    </div>
+    ${viewNavHeader(`${state.MONTHS[m]} ${y}`, `window.app.navigate(-1)`, `window.app.navigate(1)`, `window.app.navigate(-12)`, `window.app.navigate(12)`)}
+    ${grid}
   </div>`;
 }
 
