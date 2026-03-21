@@ -617,7 +617,12 @@ export function saveTaskLogic(todos) {
     } else {
       data.date = document.getElementById('taskDate').value || DS(state.navDate);
     }
-  } else if (state.selectedRecurrence==='weekly') {
+  } else {
+    // For all recurring types, capture the navDate as the intended start date
+    data.date = document.getElementById('taskDate').value || DS(state.navDate);
+  }
+
+  if (state.selectedRecurrence==='weekly') {
     if (state.selectedWeekDays.length===0) { alert(state.T.selectWeekdayError); return true; }
     data.recDays = [...state.selectedWeekDays];
   } else if (state.selectedRecurrence==='monthly') {

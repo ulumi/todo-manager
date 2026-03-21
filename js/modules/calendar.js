@@ -11,7 +11,8 @@ export function getTodosForDate(d, todos) {
   const mon = d.getMonth();
   return todos.filter(t => {
     if (!t.recurrence || t.recurrence === 'none') return t.date === ds;
-    if (t.startDate && ds < t.startDate) return false;
+    const effectiveStart = t.startDate || DS(new Date(parseInt(t.id)));
+    if (ds < effectiveStart) return false;
     if (t.endDate && ds > t.endDate) return false;
     if ((t.excludedDates || []).includes(ds)) return false;
     switch(t.recurrence) {
@@ -70,7 +71,7 @@ export function deleteFutureOccurrences(id, date, todos) {
 }
 
 export function addTask(data, todos) {
-  const startDate = (data.recurrence && data.recurrence !== 'none') ? DS(today()) : undefined;
+  const startDate = (data.recurrence && data.recurrence !== 'none') ? (data.date || DS(today())) : undefined;
   todos.push({
     id: Date.now().toString(),
     ...data,
