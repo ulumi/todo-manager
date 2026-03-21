@@ -680,6 +680,13 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     const clone = { ...JSON.parse(JSON.stringify(t)), id: Date.now().toString(), completed: false, completedDates: [] };
+    if (clone.recurrence && clone.recurrence !== 'none') {
+      clone.startDate = ds;
+      delete clone.endDate;
+      delete clone.excludedDates;
+    } else {
+      clone.date = ds;
+    }
     const idx = state.todos.findIndex(x => x.id === id);
     state.todos.splice(idx + 1, 0, clone);
     saveTodos(state.todos);
@@ -1279,10 +1286,27 @@ class TodoApp {
     this.render();
   }
 
+  setStatsViz(viz) {
+    state.setStatsViz(viz);
+    this.render();
+  }
+
   togglePastDisplay() {
     const newMode = state.pastDisplayMode === 'normal' ? 'stats' : 'normal';
     state.setPastDisplayMode(newMode);
-    this.render();
+    // Lock main height before toggling to prevent sidebar shift
+    const main = document.getElementById('mainContent');
+    if (main) main.style.minHeight = main.offsetHeight + 'px';
+    const dayView = document.querySelector('.day-view');
+    if (dayView) {
+      dayView.classList.toggle('stats-mode', newMode === 'stats');
+      const toggle = document.querySelector('.cal-sid-toggle input');
+      if (toggle) toggle.checked = newMode === 'stats';
+      const stateEl = document.querySelector('.cal-sid-toggle-state');
+      if (stateEl) stateEl.textContent = newMode === 'stats' ? stateEl.dataset.on : stateEl.dataset.off;
+    } else {
+      this.render();
+    }
   }
 
   // ═══════════════════════════════════════════════════
