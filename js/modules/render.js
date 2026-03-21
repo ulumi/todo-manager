@@ -213,16 +213,9 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
     const ratio = totalCount > 0 ? doneCount / totalCount : 0;
     const showStats = isPast && !isT && state.pastDisplayMode === 'stats';
-    const displayItems = (isPast || isT) ? allItems.filter(t => t.recurrence !== 'daily' && !isCompleted(t, d)) : allItems.filter(t => t.recurrence !== 'daily');
+    const nonDaily = allItems.filter(t => t.recurrence !== 'daily');
+    const displayItems = showStats ? [] : nonDaily;
     let scoreHTML = '';
-    if ((isPast || isT) && doneCount > 0 && !showStats) {
-      let cls, label;
-      if (ratio === 1)        { cls = 'perfect'; label = `\u{1F525} ${doneCount}/${totalCount}`; }
-      else if (ratio >= 0.75) { cls = 'great';   label = `\u{1F4AA} ${doneCount}/${totalCount}`; }
-      else if (ratio >= 0.5)  { cls = 'ok';      label = `\u{1F440} ${doneCount}/${totalCount}`; }
-      else                    { cls = 'low';      label = `\u{1F634} ${doneCount}/${totalCount}`; }
-      scoreHTML = `<div class="week-done-count week-done-count--${cls}">${label}</div>`;
-    }
     let weekStatsHTML = '';
     if (showStats && totalCount > 0) {
       const pct = Math.round(ratio * 100);
@@ -231,14 +224,14 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
         <div class="week-stats-label">${doneCount}/${totalCount}</div>
       </div>`;
     }
-    const noExpand = (isPast && !showStats) || (displayItems.length === 0 && !scoreHTML && !weekStatsHTML);
+    const noExpand = (showStats && !weekStatsHTML) || (!showStats && displayItems.length === 0);
     html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
       <div class="week-day-todos" data-date="${ds}">
-        ${showStats ? weekStatsHTML : `${displayItems.map(t => {
+        ${showStats ? weekStatsHTML : displayItems.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
           return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
@@ -248,7 +241,6 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
           </div>`;
         }).join('')}
-        ${scoreHTML}`}
         <button class="week-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
       </div>
     </div>`;
@@ -445,7 +437,9 @@ function renderSidebarOptions() {
   const isStats = state.pastDisplayMode === 'stats';
   const labelNormal = state.lang === 'fr' ? 'Normal' : 'Normal';
   const labelStats  = state.lang === 'fr' ? 'Statistiques' : 'Statistics';
+  const title = state.lang === 'fr' ? 'Éléments complétés' : 'Completed items';
   return `<div class="cal-sid-options">
+    <div class="cal-sid-options-title">${title}</div>
     <div class="cal-sid-toggle-row">
       <span class="cal-sid-toggle-label">${isStats ? labelStats : labelNormal}</span>
       <label class="cal-sid-toggle">

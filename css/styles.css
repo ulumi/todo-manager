@@ -538,6 +538,15 @@ main {
   box-shadow: var(--shadow-md);
 }
 
+.cal-sid-options-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
 .cal-sid-toggle-row {
   display: flex;
   align-items: center;
