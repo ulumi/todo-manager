@@ -2003,6 +2003,7 @@ main {
 .year-view {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  align-content: start;
   gap: 16px;
   flex: 1;
   min-height: 0;
