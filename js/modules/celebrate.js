@@ -449,7 +449,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
   thumbsBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     banQuote(quote);
-    dismiss(isSlideshow ? opts.onClose : undefined);
+    dismiss();
   });
   ov.appendChild(thumbsBtn);
 

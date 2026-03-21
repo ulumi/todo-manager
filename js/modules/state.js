@@ -29,7 +29,6 @@ export let _sugg = []; // safe ref for inline onclick
 export let inboxMode = false; // true when modal opened without a date (inbox capture)
 export let scheduleMode = 'date'; // 'date' | 'inbox' | 'backlog'
 export let pastDisplayMode = localStorage.getItem('pastDisplayMode') || 'normal'; // 'normal' | 'stats'
-export let statsViz = localStorage.getItem('statsViz') || 'bars'; // 'bars' | 'rings' | 'stamp'
 
 export let lang = localStorage.getItem('lang') || (navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en');
 export let T = TRANSLATIONS[lang] || TRANSLATIONS.en;
@@ -108,11 +107,6 @@ export function setScheduleMode(mode) {
 export function setPastDisplayMode(mode) {
   pastDisplayMode = mode;
   localStorage.setItem('pastDisplayMode', mode);
-}
-
-export function setStatsViz(viz) {
-  statsViz = viz;
-  localStorage.setItem('statsViz', viz);
 }
 
 export function setLang(newLang) {

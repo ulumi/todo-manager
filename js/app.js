@@ -379,8 +379,7 @@ class TodoApp {
     }
 
     // 3. Scroll to top before entering new view
-    const aw = document.getElementById('appWrapper');
-    if (aw) aw.scrollTop = 0;
+    window.scrollTo(0, 0);
 
     // 4. Enter
     gsap.set(main, { x: slideX, y: slideY });
