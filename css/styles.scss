@@ -525,6 +525,10 @@ main {
   border-radius: 12px;
   padding: 10px 12px;
   box-shadow: var(--shadow-md);
+  min-height: 66px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .cal-sid-options-title {
@@ -533,13 +537,15 @@ main {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .04em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  line-height: 1;
 }
 
 .cal-sid-toggle-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin: 0;
 }
 
 .cal-sid-toggle-label {
