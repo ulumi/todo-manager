@@ -184,7 +184,12 @@ const MASCOTS = [
   '🦣','🦤','🐲','🧨','💎','🏆','🎆','🎪','⚡','🌈',
 ];
 
-const PARTICLES = ['⭐','✨','💫','🌟','🎉','🎊','💥','💎','🔥','💜','💛','💚','🏆','⚡'];
+const PARTICLES = [
+  '⭐','✨','💫','🌟','🎉','🎊','💥','💎','🔥','💜','💛','💚','🏆','⚡',
+  '🌈','🎵','🪄','🧨','🎆','🎇','🌸','🦋','🍀','🎯','🥇','🌺','🪅',
+  '💝','🎀','🍾','🥂','☄️','🌀','🎭','🎪','🦚','🦜','🐉','🦄',
+  '🌻','🌙','☀️','🌠','🏅','🎸','🔮','🪩','🎲','🃏','🌊','🦩',
+];
 const RAINBOW   = ['#ff0055','#ff6600','#ffcc00','#00cc44','#0099ff','#cc00ff'];
 
 // ── Completion tracking for stats ──────────────────────
@@ -573,28 +578,47 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
 // ── Particle burst ─────────────────────────────────────
 function burstParticles(parent, topPct) {
-  for (let i = 0; i < 22; i++) {
-    const angle = (i / 22) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-    const dist  = 150 + Math.random() * 230;
+  const COUNT = 32;
+  for (let i = 0; i < COUNT; i++) {
+    const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const dist  = 140 + Math.random() * 260;
+    const size  = 16 + Math.random() * 30;
     const p = el('div', `
       position:absolute;top:${topPct};left:50%;
-      font-size:${18 + Math.random() * 28}px;
+      font-size:${size}px;
       z-index:9994;pointer-events:none;opacity:0;
     `);
     p.textContent = PARTICLES[Math.floor(Math.random() * PARTICLES.length)];
     parent.appendChild(p);
 
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist;
+    const hangTime = 0.55 + Math.random() * 0.65; // 0.55–1.2s suspension
+
     gsap.fromTo(p,
       { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 0, opacity: 0, rotation: -40 },
       {
-        x: Math.cos(angle) * dist, y: Math.sin(angle) * dist,
+        x: tx, y: ty,
         scale: 1, opacity: 1, rotation: 20 + Math.random() * 80,
-        duration: 0.55 + Math.random() * 0.25, ease: 'power2.out',
-        onComplete: () => gsap.to(p, {
-          opacity: 0, y: '+=35', duration: 0.35,
-          delay: 0.25 + Math.random() * 0.3,
-          onComplete: () => p.remove(),
-        }),
+        duration: 0.5 + Math.random() * 0.3, ease: 'power2.out',
+        onComplete: () => {
+          // Gentle float while suspended in air
+          gsap.to(p, {
+            y: ty - 10 - Math.random() * 8,
+            duration: hangTime * 0.5,
+            ease: 'sine.inOut',
+            yoyo: true, repeat: 1,
+          });
+          // Then explode towards viewer (scale up + vanish)
+          gsap.to(p, {
+            scale: 3.5 + Math.random() * 2.5,
+            opacity: 0,
+            duration: 0.18 + Math.random() * 0.1,
+            delay: hangTime,
+            ease: 'power3.in',
+            onComplete: () => p.remove(),
+          });
+        },
       }
     );
   }
