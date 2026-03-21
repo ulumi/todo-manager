@@ -141,6 +141,8 @@ export function renderDayView(todos) {
       </button>
     </div>`;
 
+  const isStatsMode = state.pastDisplayMode === 'stats';
+
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
   const monthlyItems = allItems.filter(t => t.recurrence === 'monthly');
@@ -162,16 +164,33 @@ export function renderDayView(todos) {
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
   const sortedPunctual = sortByOrder(punctualItems, dayOrd);
 
-  let leftCol = '';
-  if (sortedDaily.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${sortedDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-  if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
-  if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
-  if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
-  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
+  // Stats mode: filter completed + build stats summary
+  const filterStats = (items) => isStatsMode ? items.filter(t => !isCompleted(t, navDate)) : items;
+  const statsLine = (total, done) => {
+    if (!isStatsMode || total === 0) return '';
+    const pct = Math.round((done / total) * 100);
+    return `<div class="day-stats-summary">
+      <div class="day-stats-bar"><div class="day-stats-fill" style="width:${pct}%"></div></div>
+      <span class="day-stats-label">${done}/${total} ✓</span>
+    </div>`;
+  };
 
-  const rightCol = sortedPunctual.length
-    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`
-    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+  const recAllItems = [...dailyItems, ...weeklyItems, ...monthlyItems, ...yearlyItems];
+  const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
+  const punctDone = punctualItems.filter(t => isCompleted(t, navDate)).length;
+
+  let leftCol = '';
+  if (filterStats(sortedDaily).length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${filterStats(sortedDaily).map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+  if (filterStats(sortedWeekly).length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${filterStats(sortedWeekly).map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
+  if (filterStats(sortedMonthly).length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${filterStats(sortedMonthly).map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
+  if (filterStats(sortedYearly).length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${filterStats(sortedYearly).map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
+  leftCol += statsLine(recAllItems.length, recDone);
+  if (!leftCol || leftCol === statsLine(recAllItems.length, recDone)) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>` + statsLine(recAllItems.length, recDone);
+
+  const filteredPunctual = filterStats(sortedPunctual);
+  const rightCol = filteredPunctual.length
+    ? `<div class="todo-list" data-group="punctual">${filteredPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>${statsLine(punctualItems.length, punctDone)}`
+    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>${statsLine(punctualItems.length, punctDone)}`;
 
   const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
 
