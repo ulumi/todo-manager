@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Low-poly BG — Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111; display: flex; flex-direction: column; align-items: center; padding: 32px 24px; gap: 40px; }
+
+    h1 { color: #fff; font-size: 18px; font-weight: 600; letter-spacing: .02em; opacity: .8; }
+
+    .demos { display: flex; gap: 24px; width: 100%; max-width: 1100px; flex-wrap: wrap; justify-content: center; }
+
+    .demo-card {
+      flex: 1;
+      min-width: 340px;
+      max-width: 520px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      position: relative;
+    }
+    .demo-canvas { display: block; width: 100%; height: 280px; }
+
+    /* Fake app UI on top */
+    .fake-app {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .fake-header {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .fake-logo {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: #5b5ef7;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 13px; font-weight: 700;
+    }
+    .fake-title { font-size: 14px; font-weight: 700; color: #1a1d27; }
+    .fake-tabs { display: flex; gap: 4px; margin-left: auto; }
+    .fake-tab {
+      font-size: 11px; padding: 4px 10px; border-radius: 6px;
+      background: rgba(91,94,247,.1); color: #5b5ef7; font-weight: 600;
+    }
+    .fake-tab.active { background: #5b5ef7; color: #fff; }
+
+    .fake-body { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+    .fake-card {
+      background: rgba(255,255,255,.90);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    }
+    .fake-check {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid #d1d5db; flex-shrink: 0;
+    }
+    .fake-check.done { background: #5b5ef7; border-color: #5b5ef7; }
+    .fake-task { font-size: 12px; color: #374151; }
+    .fake-task.done { text-decoration: line-through; color: #9ca3af; }
+    .fake-tag {
+      margin-left: auto; font-size: 10px; padding: 2px 7px;
+      border-radius: 4px; font-weight: 600;
+    }
+
+    /* Palette label */
+    .palette-label {
+      position: absolute;
+      bottom: 12px; left: 16px;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      letter-spacing: .04em;
+    }
+
+    .desc { color: rgba(255,255,255,.5); font-size: 13px; text-align: center; max-width: 700px; line-height: 1.6; }
+
+    /* Dark mode demo */
+    .dark-row { display: flex; gap: 24px; width: 100%; max-width: 1100px; flex-wrap: wrap; justify-content: center; }
+    .dark-label { color: rgba(255,255,255,.4); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; width: 100%; max-width: 1100px; text-align: left; }
+
+    .fake-header.dark {
+      background: rgba(26,29,39,.92);
+      border-bottom-color: rgba(255,255,255,.06);
+    }
+    .fake-title.dark { color: #e8e9f0; }
+    .fake-card.dark {
+      background: rgba(26,29,39,.88);
+    }
+    .fake-task.dark { color: #c8cad8; }
+    .fake-task.dark.done { color: #555870; }
+  </style>
+</head>
+<body>
+  <h1>Low-poly background — 2 palettes</h1>
+  <p class="desc">Les surfaces restent opaques (blanc/sombre). Le fond low-poly est visible derrière l'app dans les zones sans contenu.</p>
+
+  <!-- Light mode -->
+  <div class="dark-label">☀️ Mode clair</div>
+  <div class="demos">
+    <div class="demo-card">
+      <canvas class="demo-canvas" id="c1"></canvas>
+      <div class="fake-app">
+        <div class="fake-header">
+          <div class="fake-logo">✓</div>
+          <div class="fake-title">2FŨKOI</div>
+          <div class="fake-tabs">
+            <div class="fake-tab active">Today</div>
+            <div class="fake-tab">Week</div>
+            <div class="fake-tab">Month</div>
+          </div>
+        </div>
+        <div class="fake-body">
+          <div class="fake-card">
+            <div class="fake-check done"></div>
+            <div class="fake-task done">Appeler le médecin</div>
+            <div class="fake-tag" style="background:#ecfdf5;color:#059669">Santé</div>
+          </div>
+          <div class="fake-card">
+            <div class="fake-check"></div>
+            <div class="fake-task">Finir le rapport Q1</div>
+            <div class="fake-tag" style="background:#eff6ff;color:#2563eb">Travail</div>
+          </div>
+          <div class="fake-card">
+            <div class="fake-check"></div>
+            <div class="fake-task">Acheter des légumes</div>
+            <div class="fake-tag" style="background:#fff7ed;color:#ea580c">Courses</div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-label">🌋 Géo Chaud</div>
+    </div>
+
+    <div class="demo-card">
+      <canvas class="demo-canvas" id="c2"></canvas>
+      <div class="fake-app">
+        <div class="fake-header">
+          <div class="fake-logo">✓</div>
+          <div class="fake-title">2FŨKOI</div>
+          <div class="fake-tabs">
+            <div class="fake-tab active">Today</div>
+            <div class="fake-tab">Week</div>
+            <div class="fake-tab">Month</div>
+          </div>
+        </div>
+        <div class="fake-body">
+          <div class="fake-card">
+            <div class="fake-check done"></div>
+            <div class="fake-task done">Appeler le médecin</div>
+            <div class="fake-tag" style="background:#ecfdf5;color:#059669">Santé</div>
+          </div>
+          <div class="fake-card">
+            <div class="fake-check"></div>
+            <div class="fake-task">Finir le rapport Q1</div>
+            <div class="fake-tag" style="background:#eff6ff;color:#2563eb">Travail</div>
+          </div>
+          <div class="fake-card">
+            <div class="fake-check"></div>
+            <div class="fake-task">Acheter des légumes</div>
+            <div class="fake-tag" style="background:#fff7ed;color:#ea580c">Courses</div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-label">🌊 Aurore Boréale</div>
+    </div>
+  </div>
+
+  <!-- Dark mode -->
+  <div class="dark-label">🌙 Mode sombre (même palette, tons adaptés)</div>
+  <div class="dark-row">
+    <div class="demo-card">
+      <canvas class="demo-canvas" id="c3"></canvas>
+      <div class="fake-app">
+        <div class="fake-header dark">
+          <div class="fake-logo">✓</div>
+          <div class="fake-title dark">2FŨKOI</div>
+          <div class="fake-tabs">
+            <div class="fake-tab active">Today</div>
+            <div class="fake-tab">Week</div>
+          </div>
+        </div>
+        <div class="fake-body">
+          <div class="fake-card dark">
+            <div class="fake-check done"></div>
+            <div class="fake-task dark done">Appeler le médecin</div>
+          </div>
+          <div class="fake-card dark">
+            <div class="fake-check"></div>
+            <div class="fake-task dark">Finir le rapport Q1</div>
+          </div>
+          <div class="fake-card dark">
+            <div class="fake-check"></div>
+            <div class="fake-task dark">Acheter des légumes</div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-label">🌋 Géo Chaud — dark</div>
+    </div>
+
+    <div class="demo-card">
+      <canvas class="demo-canvas" id="c4"></canvas>
+      <div class="fake-app">
+        <div class="fake-header dark">
+          <div class="fake-logo">✓</div>
+          <div class="fake-title dark">2FŨKOI</div>
+          <div class="fake-tabs">
+            <div class="fake-tab active">Today</div>
+            <div class="fake-tab">Week</div>
+          </div>
+        </div>
+        <div class="fake-body">
+          <div class="fake-card dark">
+            <div class="fake-check done"></div>
+            <div class="fake-task dark done">Appeler le médecin</div>
+          </div>
+          <div class="fake-card dark">
+            <div class="fake-check"></div>
+            <div class="fake-task dark">Finir le rapport Q1</div>
+          </div>
+          <div class="fake-card dark">
+            <div class="fake-check"></div>
+            <div class="fake-task dark">Acheter des légumes</div>
+          </div>
+        </div>
+      </div>
+      <div class="palette-label">🌊 Aurore Boréale — dark</div>
+    </div>
+  </div>
+
+  <script>
+    const PALETTES = {
+      // Géo Chaud — inspiré de l'image (rouges chauds → verts)
+      geo_light: [
+        { x: 0.0, y: 0.0, r: 196, g: 55,  b: 38  },
+        { x: 0.4, y: 0.0, r: 110, g: 22,  b: 38  },
+        { x: 1.0, y: 0.0, r: 42,  g: 105, b: 42  },
+        { x: 0.0, y: 0.5, r: 215, g: 88,  b: 28  },
+        { x: 0.5, y: 0.4, r: 148, g: 44,  b: 36  },
+        { x: 1.0, y: 0.5, r: 55,  g: 138, b: 55  },
+        { x: 0.0, y: 1.0, r: 222, g: 148, b: 25  },
+        { x: 0.5, y: 1.0, r: 195, g: 108, b: 38  },
+        { x: 1.0, y: 1.0, r: 65,  g: 162, b: 65  },
+      ],
+      geo_dark: [
+        { x: 0.0, y: 0.0, r: 80,  g: 20,  b: 14  },
+        { x: 0.4, y: 0.0, r: 45,  g: 8,   b: 16  },
+        { x: 1.0, y: 0.0, r: 14,  g: 44,  b: 16  },
+        { x: 0.0, y: 0.5, r: 88,  g: 34,  b: 10  },
+        { x: 0.5, y: 0.4, r: 60,  g: 16,  b: 12  },
+        { x: 1.0, y: 0.5, r: 18,  g: 58,  b: 20  },
+        { x: 0.0, y: 1.0, r: 90,  g: 60,  b: 8   },
+        { x: 0.5, y: 1.0, r: 78,  g: 42,  b: 14  },
+        { x: 1.0, y: 1.0, r: 22,  g: 68,  b: 24  },
+      ],
+
+      // Aurore Boréale — violet/bleu → cyan/vert
+      aurora_light: [
+        { x: 0.0, y: 0.0, r: 80,  g: 30,  b: 155 },
+        { x: 0.5, y: 0.0, r: 30,  g: 55,  b: 175 },
+        { x: 1.0, y: 0.0, r: 20,  g: 130, b: 155 },
+        { x: 0.0, y: 0.5, r: 115, g: 30,  b: 160 },
+        { x: 0.5, y: 0.5, r: 55,  g: 45,  b: 168 },
+        { x: 1.0, y: 0.5, r: 25,  g: 148, b: 130 },
+        { x: 0.0, y: 1.0, r: 145, g: 50,  b: 120 },
+        { x: 0.5, y: 1.0, r: 75,  g: 65,  b: 178 },
+        { x: 1.0, y: 1.0, r: 35,  g: 168, b: 108 },
+      ],
+      aurora_dark: [
+        { x: 0.0, y: 0.0, r: 28,  g: 10,  b: 60  },
+        { x: 0.5, y: 0.0, r: 10,  g: 18,  b: 68  },
+        { x: 1.0, y: 0.0, r: 8,   g: 50,  b: 62  },
+        { x: 0.0, y: 0.5, r: 44,  g: 10,  b: 65  },
+        { x: 0.5, y: 0.5, r: 20,  g: 15,  b: 65  },
+        { x: 1.0, y: 0.5, r: 10,  g: 58,  b: 52  },
+        { x: 0.0, y: 1.0, r: 58,  g: 18,  b: 48  },
+        { x: 0.5, y: 1.0, r: 28,  g: 24,  b: 72  },
+        { x: 1.0, y: 1.0, r: 14,  g: 65,  b: 42  },
+      ],
+    };
+
+    function interpolateColor(tx, ty, palette) {
+      let r = 0, g = 0, b = 0, totalW = 0;
+      for (const s of palette) {
+        const dx = tx - s.x, dy = ty - s.y;
+        const w = 1 / (dx * dx + dy * dy + 0.0001);
+        r += s.r * w; g += s.g * w; b += s.b * w;
+        totalW += w;
+      }
+      return [r / totalW, g / totalW, b / totalW];
+    }
+
+    function drawLowPoly(canvas, palette, seed) {
+      // simple seeded pseudo-random for reproducibility in demo
+      let s = seed;
+      const rng = () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+
+      const W = canvas.width, H = canvas.height;
+      const ctx = canvas.getContext('2d');
+      const cols = 10, rows = 8;
+      const cellW = W / cols, cellH = H / rows;
+      const jitter = 0.42;
+
+      const pts = [];
+      for (let r = 0; r <= rows; r++) {
+        for (let c = 0; c <= cols; c++) {
+          let x = c * cellW, y = r * cellH;
+          if (c > 0 && c < cols) x += (rng() - 0.5) * cellW * jitter;
+          if (r > 0 && r < rows) y += (rng() - 0.5) * cellH * jitter;
+          pts.push([x, y]);
+        }
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const tl = pts[r * (cols + 1) + c];
+          const tr = pts[r * (cols + 1) + c + 1];
+          const bl = pts[(r + 1) * (cols + 1) + c];
+          const br = pts[(r + 1) * (cols + 1) + c + 1];
+          drawTri(ctx, tl, tr, bl, W, H, palette, rng);
+          drawTri(ctx, tr, br, bl, W, H, palette, rng);
+        }
+      }
+    }
+
+    function drawTri(ctx, p1, p2, p3, W, H, palette, rng) {
+      const cx = (p1[0] + p2[0] + p3[0]) / 3 / W;
+      const cy = (p1[1] + p2[1] + p3[1]) / 3 / H;
+      let [r, g, b] = interpolateColor(cx, cy, palette);
+      const v = (rng() - 0.5) * 28;
+      r = Math.max(0, Math.min(255, r + v));
+      g = Math.max(0, Math.min(255, g + v));
+      b = Math.max(0, Math.min(255, b + v));
+
+      ctx.beginPath();
+      ctx.moveTo(p1[0], p1[1]);
+      ctx.lineTo(p2[0], p2[1]);
+      ctx.lineTo(p3[0], p3[1]);
+      ctx.closePath();
+      ctx.fillStyle = `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+    }
+
+    function renderAll() {
+      const dpr = window.devicePixelRatio || 1;
+
+      const configs = [
+        { id: 'c1', palette: PALETTES.geo_light,    seed: 42   },
+        { id: 'c2', palette: PALETTES.aurora_light,  seed: 137  },
+        { id: 'c3', palette: PALETTES.geo_dark,      seed: 42   },
+        { id: 'c4', palette: PALETTES.aurora_dark,   seed: 137  },
+      ];
+
+      for (const { id, palette, seed } of configs) {
+        const el = document.getElementById(id);
+        const rect = el.getBoundingClientRect();
+        el.width  = rect.width  * dpr;
+        el.height = rect.height * dpr;
+        const ctx = el.getContext('2d');
+        ctx.scale(dpr, dpr);
+        // We pass logical dimensions to drawLowPoly
+        const logicalCanvas = { width: rect.width, height: rect.height, getContext: () => ctx };
+        drawLowPoly(logicalCanvas, palette, seed);
+      }
+    }
+
+    window.addEventListener('load', renderAll);
+    window.addEventListener('resize', renderAll);
+  </script>
+</body>
+</html>
