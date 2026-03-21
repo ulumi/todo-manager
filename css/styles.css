@@ -6974,6 +6974,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding: 2px 5px;
   flex-shrink: 0;
 }
+.sa-quote-tag--default {
+  background: var(--hover);
+  color: var(--text-muted);
+}
 
 .sa-quote-lang--fr {
   background: rgba(59, 130, 246, 0.12);

@@ -35,7 +35,7 @@ import {
   renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
+import { celebrate, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -169,6 +169,9 @@ class TodoApp {
 
     // Register auto-save: any quote mutation pushes to server
     onQuoteSave(() => saveBackupToServer(getFullBackup(state.todos)));
+
+    // Load global (shared) quotes from server — affects celebrate pool for all users
+    this._loadGlobalQuotes();
 
     const localHasData = state.todos.length > 0;
 
@@ -1721,29 +1724,62 @@ class TodoApp {
   }
 
   // ── Superadmin view ──────────────────────────────────
-  _saTab    = 'all';   // 'all' | 'custom' | 'banned' | 'generate'
-  _saLang   = 'fr';
-  _saGenerated = [];   // quotes from last AI generation
+  _saTab       = 'all';   // 'all' | 'custom' | 'banned' | 'generate'
+  _saLang      = 'fr';
+  _saGenerated = [];      // quotes from last AI generation
+
+  async _loadGlobalQuotes() {
+    try {
+      const token = await getIdToken();
+      const res = await fetch('http://localhost:3333/global-quotes', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: AbortSignal.timeout(2000),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setGlobalQuotes(data);
+    } catch (_) {}
+  }
+
+  async _saveGlobalQuotes(updated) {
+    setGlobalQuotes(updated);
+    this._saRefresh();
+    try {
+      const token = await getIdToken();
+      await fetch('http://localhost:3333/global-quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(updated),
+        signal: AbortSignal.timeout(3000),
+      });
+    } catch (_) {}
+  }
 
   _renderSuperadminView() {
     return `<div class="superadmin-view">${this._renderSuperadminInner()}</div>`;
   }
 
   _renderSuperadminInner() {
-    const tab      = this._saTab;
-    const lang     = this._saLang;
-    const banned   = getBannedQuotes();
-    const customFR = getCustomQuotes('fr');
-    const customEN = getCustomQuotes('en');
+    const tab         = this._saTab;
+    const lang        = this._saLang;
+    const globalQ     = getGlobalQuotes();
+    const globalBanned = globalQ.banned || [];
+    const customFR    = getCustomQuotes('fr');
+    const customEN    = getCustomQuotes('en');
     const customAll = [
       ...customFR.map((q, i) => ({ q, l: 'fr', i })),
       ...customEN.map((q, i) => ({ q, l: 'en', i })),
     ];
+    const globalCustomAll = [
+      ...(globalQ.customFR || []).map((q, i) => ({ q, l: 'fr', i })),
+      ...(globalQ.customEN || []).map((q, i) => ({ q, l: 'en', i })),
+    ];
+    const totalCount = DEFAULT_QUOTES_FR.length + DEFAULT_QUOTES_EN.length + globalCustomAll.length + customAll.length;
 
     const tabs = [
-      { id: 'all',      label: 'Toutes',    count: DEFAULT_QUOTES_FR.length + DEFAULT_QUOTES_EN.length + customAll.length },
+      { id: 'all',      label: 'Toutes',    count: totalCount },
       { id: 'custom',   label: 'Perso',     count: customAll.length },
-      { id: 'banned',   label: 'Bannis',    count: banned.length },
+      { id: 'banned',   label: 'Bannis',    count: globalBanned.length },
       { id: 'generate', label: '✨ Générer', count: null },
     ];
 
@@ -1759,12 +1795,15 @@ class TodoApp {
     // ── Tab: Toutes ──────────────────────────────────────
     let content = '';
     if (tab === 'all') {
-      const defaultFR = DEFAULT_QUOTES_FR.map(q => ({ q, l: 'fr', src: 'default' }));
-      const defaultEN = DEFAULT_QUOTES_EN.map(q => ({ q, l: 'en', src: 'default' }));
-      const customs   = customAll.map(({ q, l, i }) => ({ q, l, src: 'custom', i }));
-      const all = [...defaultFR, ...defaultEN, ...customs];
-      const filtered = all.filter(({ l }) => lang === 'all' || l === lang);
-      this._saAllList = filtered;
+      const defaultFR    = DEFAULT_QUOTES_FR.map(q => ({ q, l: 'fr', src: 'default' }));
+      const defaultEN    = DEFAULT_QUOTES_EN.map(q => ({ q, l: 'en', src: 'default' }));
+      const globalFR     = (globalQ.customFR || []).map((q, i) => ({ q, l: 'fr', src: 'global', i }));
+      const globalEN     = (globalQ.customEN || []).map((q, i) => ({ q, l: 'en', src: 'global', i }));
+      const customs      = customAll.map(({ q, l, i }) => ({ q, l, src: 'custom', i }));
+      const all          = [...defaultFR, ...defaultEN, ...globalFR, ...globalEN, ...customs];
+      const filtered     = all.filter(({ l }) => lang === 'all' || l === lang);
+      this._saAllList    = filtered;
+      const editing      = this._saEditing;
       content = `
         <div class="sa-search-row">
           <input id="saSearch" class="form-input" placeholder="Rechercher…"
@@ -1778,16 +1817,27 @@ class TodoApp {
         </div>
         <div class="sa-quotes-list" id="saAllList">
           ${filtered.map(({ q, l, src, i }, idx) => {
-            const isBanned = banned.includes(q);
+            const isBanned = globalBanned.includes(q);
+            const isEditing = editing && editing.q === q && editing.lang === l;
+            if (isEditing) {
+              return `<div class="sa-quote-row sa-quote-row--editing" data-text="${esc(q).toLowerCase()}">
+                <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
+                <input id="saEditInput" class="form-input sa-edit-input" value="${esc(q)}" maxlength="140"
+                  onkeydown="if(event.key==='Enter')window.app.superadminSaveEdit();if(event.key==='Escape')window.app.superadminCancelEdit()">
+                <button class="btn btn-primary btn-sm" onclick="window.app.superadminSaveEdit()">✓</button>
+                <button class="btn btn-ghost btn-sm" onclick="window.app.superadminCancelEdit()">✕</button>
+              </div>`;
+            }
             return `<div class="sa-quote-row${isBanned ? ' sa-quote-row--banned' : ''}" data-text="${esc(q).toLowerCase()}">
               <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
-              ${src === 'custom' ? '<span class="sa-quote-tag">perso</span>' : ''}
+              <span class="sa-quote-tag${src === 'custom' ? '' : ' sa-quote-tag--default'}">${src === 'custom' ? 'perso' : 'défaut'}</span>
               <span class="sa-quote-text">${esc(q)}</span>
               ${isBanned
                 ? `<button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminToggleBanByIdx(${idx})">↺</button>`
                 : `<button class="sa-quote-action sa-quote-ban" onclick="window.app.superadminToggleBanByIdx(${idx})">🚫</button>`
               }
-              ${src === 'custom' ? `<button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEdit('${l}',${i})" title="Modifier">✏</button><button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>` : ''}
+              <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEditByIdx(${idx})" title="Modifier">✏</button>
+              ${src === 'custom' ? `<button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>` : ''}
             </div>`;
           }).join('')}
         </div>`;
@@ -1814,20 +1864,21 @@ class TodoApp {
           <h3 class="superadmin-section-title">Mes messages (${customAll.length})</h3>
           <div class="sa-quotes-list">
             ${customAll.map(({ q, l, i }) => {
-              const isEditing = editing && editing.lang === l && editing.i === i;
+              const isEditing = editing && editing.type === 'custom' && editing.lang === l && editing.i === i;
               if (isEditing) {
                 return `<div class="sa-quote-row sa-quote-row--editing">
                   <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
                   <input id="saEditInput" class="form-input sa-edit-input" value="${esc(q)}" maxlength="140"
-                    onkeydown="if(event.key==='Enter')window.app.superadminSaveEdit('${l}',${i});if(event.key==='Escape')window.app.superadminCancelEdit()">
-                  <button class="btn btn-primary btn-sm" onclick="window.app.superadminSaveEdit('${l}',${i})">✓</button>
+                    onkeydown="if(event.key==='Enter')window.app.superadminSaveEdit();if(event.key==='Escape')window.app.superadminCancelEdit()">
+                  <button class="btn btn-primary btn-sm" onclick="window.app.superadminSaveEdit()">✓</button>
                   <button class="btn btn-ghost btn-sm" onclick="window.app.superadminCancelEdit()">✕</button>
                 </div>`;
               }
               return `<div class="sa-quote-row">
                 <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
+                <span class="sa-quote-tag">perso</span>
                 <span class="sa-quote-text">${esc(q)}</span>
-                <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEdit('${l}',${i})" title="Modifier">✏</button>
+                <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEditCustom('${l}',${i})" title="Modifier">✏</button>
                 <button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>
               </div>`;
             }).join('')}
@@ -1837,19 +1888,19 @@ class TodoApp {
 
     // ── Tab: Bannis ──────────────────────────────────────
     if (tab === 'banned') {
-      content = banned.length ? `
-        <p class="superadmin-hint" style="padding:0 4px;margin-bottom:12px">Ces messages n'apparaîtront plus dans les célébrations. Clique ↺ pour les restaurer.</p>
+      content = globalBanned.length ? `
+        <p class="superadmin-hint" style="padding:0 4px;margin-bottom:12px">Ces messages ne s'afficheront plus pour personne. Clique ↺ pour les restaurer.</p>
         <div class="superadmin-section">
           <div class="sa-quotes-list">
-            ${banned.map((q, i) => `
+            ${globalBanned.map((q, i) => `
               <div class="sa-quote-row sa-quote-row--banned">
                 <span class="sa-quote-text">${esc(q)}</span>
-                <button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminUnban(${i})">↺ Restaurer</button>
+                <button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminUnbanGlobal(${i})">↺ Restaurer</button>
               </div>
             `).join('')}
           </div>
         </div>` :
-        `<div class="superadmin-section"><p class="superadmin-hint">Aucun message banni. Pendant la célébration, clique 👎 pour en bannir un.</p></div>`;
+        `<div class="superadmin-section"><p class="superadmin-hint">Aucun message banni globalement. Clique 🚫 sur une quote pour la bannir pour tous.</p></div>`;
     }
 
     // ── Tab: Générer ─────────────────────────────────────
@@ -1940,33 +1991,66 @@ class TodoApp {
   }
 
   superadminUnban(i) {
+    // legacy: personal ban (not used in current superadmin UI but kept for safety)
     const banned = getBannedQuotes();
     if (banned[i] !== undefined) { unbanQuote(banned[i]); this._saRefresh(); }
+  }
+
+  superadminUnbanGlobal(i) {
+    const gq = getGlobalQuotes();
+    const updated = { ...gq, banned: gq.banned.filter((_, idx) => idx !== i) };
+    this._saveGlobalQuotes(updated);
   }
 
   superadminToggleBanByIdx(idx) {
     const item = this._saAllList?.[idx];
     if (!item) return;
-    if (getBannedQuotes().includes(item.q)) {
-      unbanQuote(item.q);
-    } else {
-      banQuote(item.q);
-    }
-    this._saRefresh();
+    const gq = getGlobalQuotes();
+    const isBanned = (gq.banned || []).includes(item.q);
+    const updated = {
+      ...gq,
+      banned: isBanned
+        ? gq.banned.filter(q => q !== item.q)
+        : [...(gq.banned || []), item.q],
+    };
+    this._saveGlobalQuotes(updated);
   }
 
-  superadminStartEdit(lang, i) {
-    this._saEditing = { lang, i };
-    this._saTab = 'custom';
+  superadminStartEditByIdx(idx) {
+    const item = this._saAllList?.[idx];
+    if (!item) return;
+    this._saEditing = { type: item.src, lang: item.l, i: item.i, q: item.q };
     this._saRefresh();
     setTimeout(() => document.getElementById('saEditInput')?.focus(), 50);
   }
 
-  superadminSaveEdit(lang, i) {
-    const val = document.getElementById('saEditInput')?.value?.trim().toUpperCase();
-    if (val) updateCustomQuote(lang, i, val);
-    this._saEditing = null;
+  superadminStartEditCustom(lang, i) {
+    const quotes = getCustomQuotes(lang);
+    this._saEditing = { type: 'custom', lang, i, q: quotes[i] || '' };
     this._saRefresh();
+    setTimeout(() => document.getElementById('saEditInput')?.focus(), 50);
+  }
+
+  superadminSaveEdit() {
+    const val = document.getElementById('saEditInput')?.value?.trim().toUpperCase();
+    const editing = this._saEditing;
+    this._saEditing = null;
+    if (!editing || !val) { this._saRefresh(); return; }
+
+    if (editing.type === 'custom') {
+      updateCustomQuote(editing.lang, editing.i, val);
+      this._saRefresh();
+    } else {
+      // default or global: ban original globally, add edited as global custom
+      const gq = getGlobalQuotes();
+      const key = editing.lang === 'fr' ? 'customFR' : 'customEN';
+      const updated = {
+        ...gq,
+        banned: [...(gq.banned || []), ...(editing.q ? [editing.q] : [])],
+        [key]: [...(gq[key] || []), val],
+      };
+      this._saveGlobalQuotes(updated);
+    }
   }
 
   superadminCancelEdit() {
@@ -2007,16 +2091,25 @@ class TodoApp {
   }
 
   superadminGenSave() {
-    const lang = this._saLang === 'en' ? 'en' : 'fr';
+    const lang   = this._saLang === 'en' ? 'en' : 'fr';
+    const key    = lang === 'fr' ? 'customFR' : 'customEN';
     const checks = document.querySelectorAll('.sa-gen-check:checked');
+    const toAdd  = [];
     checks.forEach(cb => {
-      const i = parseInt(cb.dataset.i, 10);
-      const q = this._saGenerated[i];
-      if (q) addCustomQuote(lang, q);
+      const q = this._saGenerated[parseInt(cb.dataset.i, 10)];
+      if (q) toAdd.push(q);
     });
-    this._saGenerated = [];
-    this._saTab = 'custom';
-    this._saRefresh();
+    if (toAdd.length) {
+      const gq = getGlobalQuotes();
+      const updated = { ...gq, [key]: [...(gq[key] || []), ...toAdd] };
+      this._saGenerated = [];
+      this._saTab = 'all';
+      this._saveGlobalQuotes(updated);
+    } else {
+      this._saGenerated = [];
+      this._saTab = 'all';
+      this._saRefresh();
+    }
   }
 
   async saveDisplayName() {

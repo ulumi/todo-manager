@@ -6311,6 +6311,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-radius: 3px;
   padding:       2px 5px;
   flex-shrink:   0;
+
+  &--default {
+    background: var(--hover);
+    color:      var(--text-muted);
+  }
 }
 
 .sa-quote-lang {

@@ -2,7 +2,43 @@
 //  CELEBRATION EFFECTS
 // ════════════════════════════════════════════════════════
 
-const QUOTES_EN = [
+// ── Quote management (localStorage + server sync) ─────
+let _onSave = null;
+export function onQuoteSave(fn) { _onSave = fn; }
+function _persist() { if (_onSave) _onSave(); }
+
+export function getBannedQuotes() {
+  try { return JSON.parse(localStorage.getItem('bannedQuotes') || '[]'); } catch { return []; }
+}
+export function banQuote(q) {
+  const banned = getBannedQuotes();
+  if (!banned.includes(q)) { banned.push(q); localStorage.setItem('bannedQuotes', JSON.stringify(banned)); _persist(); }
+}
+export function unbanQuote(q) {
+  const arr = getBannedQuotes().filter(b => b !== q);
+  localStorage.setItem('bannedQuotes', JSON.stringify(arr)); _persist();
+}
+export function getCustomQuotes(lang) {
+  const key = lang === 'fr' ? 'customQuotesFR' : 'customQuotesEN';
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+}
+export function addCustomQuote(lang, text) {
+  const key = lang === 'fr' ? 'customQuotesFR' : 'customQuotesEN';
+  const arr = getCustomQuotes(lang);
+  if (text && !arr.includes(text)) { arr.push(text); localStorage.setItem(key, JSON.stringify(arr)); _persist(); }
+}
+export function updateCustomQuote(lang, i, text) {
+  const key = lang === 'fr' ? 'customQuotesFR' : 'customQuotesEN';
+  const arr = getCustomQuotes(lang);
+  if (arr[i] !== undefined) { arr[i] = text; localStorage.setItem(key, JSON.stringify(arr)); _persist(); }
+}
+export function removeCustomQuote(lang, text) {
+  const key = lang === 'fr' ? 'customQuotesFR' : 'customQuotesEN';
+  const arr = getCustomQuotes(lang).filter(q => q !== text);
+  localStorage.setItem(key, JSON.stringify(arr)); _persist();
+}
+
+export const DEFAULT_QUOTES_EN = [
   // classics
   "LET'S GOOO! 🔥", "ABSOLUTELY CRUSHING IT!", "UNSTOPPABLE! ⚡",
   "BOOM. DONE. 💥", "YOU'RE ON FIRE! 🔥", "TASK DESTROYED! 💀",
@@ -44,8 +80,34 @@ const QUOTES_EN = [
   "REMOTE, HYBRID, OR OFFICE — DOESN'T MATTER. YOU'RE UNMATCHED. 🏢",
   "TASK ANNIHILATED. THE ALGORITHM DIDN'T PREDICT THIS. 📡",
   "YOU DID MORE THAN MOST APPS DO IN A FULL RELEASE CYCLE. 🛸",
+  // Chuck Norris
+  "CHUCK NORRIS WRITES HIS TODO LIST AFTER IT'S ALREADY DONE.",
+  "CHUCK NORRIS DOESN'T MARK TASKS COMPLETE. TASKS SURRENDER.",
+  "CHUCK NORRIS ONCE PROCRASTINATED. THE UNIVERSE REBOOTED.",
+  "THIS TASK FEARED YOU BEFORE THE APP EVEN OPENED. 😤",
+  "TASKS DON'T GET COMPLETED HERE. THEY GET DEFEATED. 🥊",
+  "CHUCK NORRIS STARED AT A BLANK TODO LIST. IT FILLED ITSELF.",
+  "CHUCK NORRIS DOESN'T USE REMINDERS. DEADLINES REMIND HIM.",
+  "THE TASK DIDN'T WANT TO DIE. IT HAD NO CHOICE.",
+  // absurd / thoughtful
+  "THE TASK IS DONE. THE TASK WAS ALWAYS DONE. TIME IS AN ILLUSION.",
+  "SISYPHUS WOULD HAVE KILLED FOR A CHECKBOX LIKE THAT.",
+  "THE VOID STARED BACK. YOU CROSSED IT OFF ANYWAY.",
+  "IF A TASK IS CHECKED AND NO ONE SEES IT — YOU STILL FEEL IT. 🧘",
+  "SOMEWHERE A PHILOSOPHER IS WRITING A THESIS ON THIS MOMENT.",
+  "SUN TZU WROTE 'THE ART OF WAR'. YOU WROTE 'THE ART OF DONE'.",
+  "COGITO ERGO COMPLETO. I THINK, THEREFORE I SHIP.",
+  "DOPAMINE IS TEMPORARY. THE CHECKMARK IS FOREVER.",
+  "OTHER TASKS WATCH. AND TREMBLE.",
+  "THE UNIVERSE DIDN'T ASK FOR YOUR EFFICIENCY. IT GOT IT ANYWAY.",
+  "SOMEWHERE, A TASK IS CRYING. YOU DID THAT.",
+  "NIETZSCHE SAID: BECOME WHO YOU ARE. THIS IS IT.",
+  "EXISTENCE IS A LOOP. YOU JUST BROKE IT.",
+  "A TASK COMPLETED IS A SMALL ACT OF REBELLION AGAINST ENTROPY.",
+  "THE GREEKS HAD A WORD FOR THIS. IT WAS PROBABLY NICE.",
+  "THIS IS NOT PRODUCTIVITY. THIS IS ART.",
 ];
-const QUOTES_FR = [
+export const DEFAULT_QUOTES_FR = [
   // classics
   "TROP FORT(E)! 🔥", "C'EST DANS LA BOÎTE! 💥", "INARRÊTABLE! ⚡",
   "BOOM. FAIT. 💀", "TU DÉCHIRES! 🔥", "TÂCHE ATOMISÉE! 💥",
@@ -87,6 +149,31 @@ const QUOTES_FR = [
   "LA PROCRASTINATION T'A RATÉ. DOMMAGE POUR ELLE. 😤",
   "EN AVANCE SUR L'IA. POUR L'INSTANT. 🤖",
   "AUCUNE SLIDE POWERPOINT NÉCESSAIRE POUR VALIDER ÇA. 🖥️",
+  // Chuck Norris
+  "CHUCK NORRIS RÉDIGE SA LISTE APRÈS L'AVOIR FINIE.",
+  "CHUCK NORRIS NE COCHE PAS. LES TÂCHES SE RENDENT.",
+  "CHUCK NORRIS A PROCRASTINÉ UNE FOIS. L'UNIVERS S'EN REMET ENCORE.",
+  "CETTE TÂCHE TE CRAIGNAIT AVANT MÊME QUE TU OUVRES L'APP. 😤",
+  "LES TÂCHES NE SONT PAS COMPLÉTÉES ICI. ELLES SONT VAINCUES. 🥊",
+  "CHUCK NORRIS FIXE UNE LISTE VIDE. ELLE SE REMPLIT D'ELLE-MÊME.",
+  "CHUCK NORRIS N'A PAS DE RAPPELS. LES DEADLINES SE RAPPELLENT À LUI.",
+  "LA TÂCHE NE VOULAIT PAS MOURIR. ELLE N'AVAIT PAS LE CHOIX.",
+  // absurde / réfléchi
+  "LA TÂCHE EST FAITE. ELLE L'A TOUJOURS ÉTÉ. LE TEMPS EST UNE ILLUSION.",
+  "SISYPHE AURAIT TOUT DONNÉ POUR UNE CASE À COCHER COMME ÇA.",
+  "LE NÉANT T'A REGARDÉ. T'AS COCHÉ QUAND MÊME.",
+  "LA DOPAMINE EST TEMPORAIRE. LA COCHE EST ÉTERNELLE.",
+  "D'AUTRES TÂCHES REGARDENT. ET TREMBLENT.",
+  "SUN TZU A ÉCRIT L'ART DE LA GUERRE. TOI TU MAÎTRISES L'ART DU FAIT.",
+  "COGITO ERGO COMPLETO. JE PENSE, DONC JE LIVRE.",
+  "QUELQUE PART UN PHILOSOPHE ÉCRIT UNE THÈSE SUR CE MOMENT.",
+  "L'UNIVERS N'AVAIT PAS DEMANDÉ TON EFFICACITÉ. IL L'A EU QUAND MÊME.",
+  "NIETZSCHE DISAIT: DEVIENS CE QUE TU ES. C'EST FAIT.",
+  "L'EXISTENCE EST UNE BOUCLE. TU VIENS DE LA BRISER.",
+  "QUELQUE PART, UNE TÂCHE PLEURE. T'AS FAIT ÇA.",
+  "UNE TÂCHE COCHÉE EST UN PETIT ACTE DE RÉBELLION CONTRE L'ENTROPIE.",
+  "LES GRECS AVAIENT UN MOT POUR ÇA. IL ÉTAIT SÛREMENT BEAU.",
+  "CE N'EST PAS DE LA PRODUCTIVITÉ. C'EST DE L'ART.",
 ];
 
 const MASCOTS = [
@@ -219,13 +306,28 @@ function buildStats(lang) {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+// ── Global quotes (set by superadmin, shared across all users) ─
+let _globalQuotes = { customFR: [], customEN: [], banned: [] };
+export function setGlobalQuotes(g) {
+  _globalQuotes = { customFR: [], customEN: [], banned: [], ...g };
+}
+export function getGlobalQuotes() { return _globalQuotes; }
+
 // ── Public entry point ─────────────────────────────────
 export function celebrate(lang = 'en') {
   recordCompletion();
-  const quotes  = lang === 'fr' ? QUOTES_FR : QUOTES_EN;
-  const quote   = quotes[Math.floor(Math.random() * quotes.length)];
-  const stats   = buildStats(lang);
-  const mascot  = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
+  const personalBanned = getBannedQuotes();
+  const globalBanned   = _globalQuotes.banned;
+  const banned         = [...new Set([...personalBanned, ...globalBanned])];
+  const base           = lang === 'fr' ? DEFAULT_QUOTES_FR : DEFAULT_QUOTES_EN;
+  const globalCustom   = lang === 'fr' ? (_globalQuotes.customFR || []) : (_globalQuotes.customEN || []);
+  const custom         = getCustomQuotes(lang);
+  const all            = [...base, ...globalCustom, ...custom];
+  const available      = all.filter(q => !banned.includes(q));
+  const pool           = available.length > 0 ? available : all; // fallback if all banned
+  const quote     = pool[Math.floor(Math.random() * pool.length)];
+  const stats     = buildStats(lang);
+  const mascot    = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
   buildScene(quote, stats, mascot);
 }
 
@@ -309,6 +411,26 @@ function buildScene(quote, stats, mascot) {
   `) : null;
   if (statsEl) { statsEl.textContent = stats; textBlock.appendChild(statsEl); }
 
+  // Thumbs down button — ban this quote
+  const thumbsBtn = el('button', `
+    position:fixed;bottom:32px;right:36px;
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:50%;width:52px;height:52px;
+    font-size:24px;cursor:pointer;z-index:9999;opacity:0;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(6px);transition:background 0.2s,transform 0.15s;
+  `);
+  thumbsBtn.textContent = '👎';
+  thumbsBtn.title = 'Ne plus afficher ce message';
+  thumbsBtn.addEventListener('mouseenter', () => { thumbsBtn.style.background = 'rgba(220,50,50,0.45)'; thumbsBtn.style.transform = 'scale(1.1)'; });
+  thumbsBtn.addEventListener('mouseleave', () => { thumbsBtn.style.background = 'rgba(255,255,255,0.1)'; thumbsBtn.style.transform = 'scale(1)'; });
+  thumbsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    banQuote(quote);
+    dismiss();
+  });
+  ov.appendChild(thumbsBtn);
+
   // ── Timeline ──────────────────────────────────────────
   const tl = gsap.timeline();
 
@@ -349,6 +471,9 @@ function buildScene(quote, stats, mascot) {
   // Unicorn happy dance — longer, more bounces
   tl.to(unicornWrap, { y: -28, duration: 0.22, ease: 'power2.out', yoyo: true, repeat: 9 }, '-=0.6');
 
+  // Thumbs button fades in after quote is readable
+  tl.to(thumbsBtn, { opacity: 1, duration: 0.3, ease: 'power2.out' }, '-=1.5');
+
   // Auto-dismiss after quote has been readable
   tl.call(() => dismiss(), [], '+=3.0');
 
@@ -364,6 +489,7 @@ function buildScene(quote, stats, mascot) {
     gsap.to(quoteEl, { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
     if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
     gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
+    gsap.to(thumbsBtn,   { opacity: 0, duration: 0.2, ease: 'power2.in' });
     // Fill to solid black first, then fade the overlay out — avoids page content bleeding through
     gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
     gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });

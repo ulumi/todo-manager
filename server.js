@@ -62,6 +62,16 @@ function writeData(uid, data) {
   fs.writeFileSync(dataFile(uid), JSON.stringify(data, null, 2), 'utf8');
 }
 
+const GLOBAL_QUOTES_FILE = path.join(DATA_DIR, 'global-quotes.json');
+function readGlobalQuotes() {
+  if (!fs.existsSync(GLOBAL_QUOTES_FILE)) return { customFR: [], customEN: [], banned: [] };
+  try { return JSON.parse(fs.readFileSync(GLOBAL_QUOTES_FILE, 'utf8')); }
+  catch { return { customFR: [], customEN: [], banned: [] }; }
+}
+function writeGlobalQuotes(data) {
+  fs.writeFileSync(GLOBAL_QUOTES_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let s = '';
@@ -272,6 +282,18 @@ http.createServer(async (req, res) => {
       const data  = readData(uid);
       data.calendar = todos;
       writeData(uid, data);
+      res.writeHead(200);
+      res.end(JSON.stringify({ ok: true }));
+
+    // GET /global-quotes — public read (all authenticated users)
+    } else if (req.method === 'GET' && req.url === '/global-quotes') {
+      res.writeHead(200);
+      res.end(JSON.stringify(readGlobalQuotes()));
+
+    // POST /global-quotes — superadmin write only
+    } else if (req.method === 'POST' && req.url === '/global-quotes') {
+      if (!ADMIN_UIDS.includes(uid)) { res.writeHead(403); res.end(JSON.stringify({ error: 'Forbidden' })); return; }
+      writeGlobalQuotes(await readBody(req));
       res.writeHead(200);
       res.end(JSON.stringify({ ok: true }));
 
