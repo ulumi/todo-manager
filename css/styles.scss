@@ -886,19 +886,10 @@ main {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: var(--bg);
+  background: transparent;
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -10px;
-    height: 10px;
-    background: linear-gradient(var(--bg), var(--bg-clear));
-    pointer-events: none;
-  }
 
   .day-header-wrapper {
     position: static;
@@ -1050,19 +1041,10 @@ main {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: var(--bg);
+  background: transparent;
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
-
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: -10px;
-    height: 10px;
-    background: linear-gradient(var(--bg), var(--bg-clear));
-    pointer-events: none;
-  }
 }
 
 .day-header-wrapper {
@@ -2692,7 +2674,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding: 12px 0 16px;
   position: sticky;
   bottom: 0;
-  background: var(--bg);
+  background: transparent;
 }
 
 .day-action-btn {
