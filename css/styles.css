@@ -54,15 +54,7 @@
 #lowpoly-bg {
   position: fixed;
   inset: 0;
-  z-index: -2;
-  pointer-events: none;
-}
-
-#pageBg {
-  position: fixed;
-  inset: 0;
   z-index: -1;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
   pointer-events: none;
 }
 
@@ -496,6 +488,11 @@ main {
   gap: 8px;
   max-height: 100vh;
   overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 8px 20px 8px 8px;
 }
 
 .cal-sid-month {
@@ -934,7 +931,9 @@ input:checked + .cal-sid-toggle-track::after {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: transparent;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
