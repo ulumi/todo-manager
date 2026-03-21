@@ -1726,7 +1726,9 @@ class TodoApp {
   // ── Superadmin view ──────────────────────────────────
   _saTab       = 'all';   // 'all' | 'custom' | 'banned' | 'generate'
   _saLang      = 'fr';
-  _saGenerated = [];      // quotes from last AI generation
+  _saGenerated = [];      // accumulated quotes from all generations
+  _saPrompt    = '';      // persisted prompt between renders
+  _saUnchecked = new Set(); // quote texts the user has unchecked
 
   async _loadGlobalQuotes() {
     try {
@@ -1837,7 +1839,12 @@ class TodoApp {
                 : `<button class="sa-quote-action sa-quote-ban" onclick="window.app.superadminToggleBanByIdx(${idx})">🚫</button>`
               }
               <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEditByIdx(${idx})" title="Modifier">✏</button>
-              ${src === 'custom' ? `<button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>` : ''}
+              ${src === 'custom'
+                ? `<button class="sa-quote-action sa-quote-promote" onclick="window.app.superadminPromoteToGlobal('${l}',${i})" title="Promouvoir en Défaut">↑ Défaut</button><button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>`
+                : src === 'global'
+                  ? `<button class="sa-quote-action sa-quote-demote" onclick="window.app.superadminDemoteToPersonal('${l}',${i})" title="Déplacer en Perso">↓ Perso</button><button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveGlobal('${l}',${i})" title="Supprimer">✕</button>`
+                  : ''
+              }
             </div>`;
           }).join('')}
         </div>`;
@@ -1879,6 +1886,7 @@ class TodoApp {
                 <span class="sa-quote-tag">perso</span>
                 <span class="sa-quote-text">${esc(q)}</span>
                 <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEditCustom('${l}',${i})" title="Modifier">✏</button>
+                <button class="sa-quote-action sa-quote-promote" onclick="window.app.superadminPromoteToGlobal('${l}',${i})" title="Promouvoir en Défaut">↑ Défaut</button>
                 <button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>
               </div>`;
             }).join('')}
@@ -1910,7 +1918,8 @@ class TodoApp {
         <div class="superadmin-section">
           <h3 class="superadmin-section-title">Prompt de génération</h3>
           <textarea id="saGenPrompt" class="form-input sa-gen-textarea"
-            placeholder="Décris le style ou thème voulu&#10;Ex: Chuck Norris, humour absurde, philosophie stoïcienne, citations de films…"></textarea>
+            placeholder="Décris le style ou thème voulu&#10;Ex: Chuck Norris, humour absurde, philosophie stoïcienne, citations de films…"
+            oninput="window.app._saPrompt=this.value">${esc(this._saPrompt)}</textarea>
           <div class="sa-gen-options">
             <div class="sa-gen-count-row">
               <label class="sa-gen-label">Nombre</label>
@@ -1925,11 +1934,16 @@ class TodoApp {
         </div>
         ${generated.length ? `
         <div class="superadmin-section">
-          <h3 class="superadmin-section-title">Résultats (${generated.length}) — coche ceux à garder</h3>
+          <h3 class="superadmin-section-title">
+            ${generated.length} résultat${generated.length > 1 ? 's' : ''} — coche ceux à garder
+            <span class="sa-gen-hint">→ Perso</span>
+          </h3>
           <div class="sa-gen-list" id="saGenList">
             ${generated.map((q, i) => `
               <label class="sa-gen-item">
-                <input type="checkbox" class="sa-gen-check" data-i="${i}" checked>
+                <input type="checkbox" class="sa-gen-check" data-i="${i}"
+                  onchange="window.app.superadminGenToggle(${i})"
+                  ${this._saUnchecked.has(i) ? '' : 'checked'}>
                 <span class="sa-quote-text">${esc(q)}</span>
               </label>
             `).join('')}
@@ -1937,7 +1951,8 @@ class TodoApp {
           <div class="sa-gen-save-row">
             <button class="btn btn-ghost btn-sm" onclick="window.app.superadminGenSelectAll(false)">Tout décocher</button>
             <button class="btn btn-ghost btn-sm" onclick="window.app.superadminGenSelectAll(true)">Tout cocher</button>
-            <button class="btn btn-primary" onclick="window.app.superadminGenSave()">💾 Sauvegarder les cochés</button>
+            <button class="btn btn-ghost btn-sm sa-gen-clear" onclick="window.app.superadminGenClear()">🗑 Vider</button>
+            <button class="btn btn-primary" onclick="window.app.superadminGenSave()">💾 Sauvegarder → Perso</button>
           </div>
         </div>` : ''}`;
     }
@@ -2059,7 +2074,13 @@ class TodoApp {
   }
 
   async superadminGenerate() {
-    const prompt = document.getElementById('saGenPrompt')?.value?.trim() || '';
+    // Snapshot current checked state before re-render (by index, since we prepend)
+    document.querySelectorAll('.sa-gen-check').forEach(cb => {
+      const i = parseInt(cb.dataset.i, 10);
+      if (cb.checked) this._saUnchecked.delete(i); else this._saUnchecked.add(i);
+    });
+    // Shift existing indices up by the number of new results (prepend means old idx += newCount)
+    const prompt = this._saPrompt || document.getElementById('saGenPrompt')?.value?.trim() || '';
     const count  = parseInt(document.getElementById('saGenCount')?.value || '5', 10);
     const lang   = this._saLang === 'en' ? 'en' : 'fr';
     const btn    = document.getElementById('saGenBtn');
@@ -2077,7 +2098,11 @@ class TodoApp {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur serveur');
-      this._saGenerated = data.quotes || [];
+      const newQuotes = data.quotes || [];
+      // Shift old unchecked indices up by newQuotes.length (prepend shifts indices)
+      const shifted = new Set([...this._saUnchecked].map(i => i + newQuotes.length));
+      this._saUnchecked = shifted;
+      this._saGenerated = [...newQuotes, ...this._saGenerated];
       this._saTab = 'generate';
       this._saRefresh();
     } catch (err) {
@@ -2086,30 +2111,60 @@ class TodoApp {
     }
   }
 
+  superadminGenToggle(i) {
+    if (this._saUnchecked.has(i)) this._saUnchecked.delete(i);
+    else this._saUnchecked.add(i);
+  }
+
   superadminGenSelectAll(checked) {
+    if (checked) {
+      this._saUnchecked.clear();
+    } else {
+      this._saGenerated.forEach((_, i) => this._saUnchecked.add(i));
+    }
     document.querySelectorAll('.sa-gen-check').forEach(cb => { cb.checked = checked; });
   }
 
+  superadminGenClear() {
+    this._saGenerated = [];
+    this._saUnchecked.clear();
+    this._saRefresh();
+  }
+
   superadminGenSave() {
-    const lang   = this._saLang === 'en' ? 'en' : 'fr';
-    const key    = lang === 'fr' ? 'customFR' : 'customEN';
-    const checks = document.querySelectorAll('.sa-gen-check:checked');
-    const toAdd  = [];
-    checks.forEach(cb => {
-      const q = this._saGenerated[parseInt(cb.dataset.i, 10)];
-      if (q) toAdd.push(q);
-    });
-    if (toAdd.length) {
-      const gq = getGlobalQuotes();
-      const updated = { ...gq, [key]: [...(gq[key] || []), ...toAdd] };
-      this._saGenerated = [];
-      this._saTab = 'all';
-      this._saveGlobalQuotes(updated);
-    } else {
-      this._saGenerated = [];
-      this._saTab = 'all';
-      this._saRefresh();
-    }
+    const lang  = this._saLang === 'en' ? 'en' : 'fr';
+    const toAdd = this._saGenerated.filter((_, i) => !this._saUnchecked.has(i));
+    toAdd.forEach(q => addCustomQuote(lang, q));
+    this._saGenerated = [];
+    this._saUnchecked.clear();
+    this._saTab = 'custom';
+    this._saRefresh();
+  }
+
+  superadminPromoteToGlobal(lang, i) {
+    const q = getCustomQuotes(lang)[i];
+    if (!q) return;
+    const gq  = getGlobalQuotes();
+    const key = lang === 'fr' ? 'customFR' : 'customEN';
+    removeCustomQuote(lang, q);
+    this._saveGlobalQuotes({ ...gq, [key]: [...(gq[key] || []), q] });
+  }
+
+  superadminDemoteToPersonal(lang, i) {
+    const gq  = getGlobalQuotes();
+    const key = lang === 'fr' ? 'customFR' : 'customEN';
+    const arr = gq[key] || [];
+    const q   = arr[i];
+    if (!q) return;
+    addCustomQuote(lang, q);
+    this._saveGlobalQuotes({ ...gq, [key]: arr.filter((_, idx) => idx !== i) });
+  }
+
+  superadminRemoveGlobal(lang, i) {
+    const gq  = getGlobalQuotes();
+    const key = lang === 'fr' ? 'customFR' : 'customEN';
+    const arr = gq[key] || [];
+    this._saveGlobalQuotes({ ...gq, [key]: arr.filter((_, idx) => idx !== i) });
   }
 
   async saveDisplayName() {

@@ -6225,10 +6225,21 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:hover { background: var(--hover); color: var(--text); }
 }
 
-.sa-quote-del:hover   { color: var(--danger) !important; }
-.sa-quote-ban:hover   { opacity: .7; }
-.sa-quote-edit:hover  { color: var(--primary) !important; }
-.sa-quote-restore     { font-weight: 600; }
+.sa-quote-del:hover     { color: var(--danger) !important; }
+.sa-quote-ban:hover     { opacity: .7; }
+.sa-quote-edit:hover    { color: var(--primary) !important; }
+.sa-quote-promote:hover { color: #10b981 !important; }
+.sa-quote-demote:hover  { color: var(--primary) !important; }
+.sa-quote-restore       { font-weight: 600; }
+
+.sa-gen-hint {
+  font-size:   11px;
+  font-weight: 400;
+  color:       var(--text-muted);
+  margin-left: 8px;
+}
+
+.sa-gen-clear:hover { color: var(--danger) !important; }
 
 .sa-quote-row--editing {
   gap:        8px;
