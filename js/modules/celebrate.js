@@ -344,7 +344,9 @@ export function celebrate(lang = 'en') {
 }
 
 // ── Scene builder ──────────────────────────────────────
-function buildScene(quote, stats, mascot) {
+// opts: { onNext, onPrev, onClose, counter } — when set, enables slideshow nav mode
+function buildScene(quote, stats, mascot, opts = {}) {
+  const isSlideshow = !!(opts.onNext || opts.onPrev);
   const ov = el('div', `
     position:fixed;inset:0;z-index:9990;overflow:hidden;cursor:pointer;
     background:rgba(8,4,18,0);
@@ -483,48 +485,90 @@ function buildScene(quote, stats, mascot) {
   // Unicorn happy dance — longer, more bounces
   tl.to(unicornWrap, { y: -28, duration: 0.22, ease: 'power2.out', yoyo: true, repeat: 9 }, '-=0.6');
 
+  // ── Slideshow nav buttons ─────────────────────────────
+  const navBtnBase = `
+    position:fixed;bottom:32px;
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:999px;padding:10px 24px;font-size:20px;font-weight:700;
+    cursor:pointer;color:#fff;z-index:9999;opacity:0;
+    backdrop-filter:blur(6px);transition:background 0.15s,transform 0.1s;
+  `;
+  const prevBtn = isSlideshow ? el('button', navBtnBase + 'left:36px;') : null;
+  const nextBtn = isSlideshow ? el('button', navBtnBase + 'left:110px;') : null;
+  const counterEl = isSlideshow && opts.counter ? el('div', `
+    position:fixed;bottom:42px;left:50%;transform:translateX(-50%);
+    color:rgba(255,255,255,0.4);font-size:13px;font-weight:600;letter-spacing:.06em;z-index:9999;opacity:0;
+  `) : null;
+  if (prevBtn) { prevBtn.textContent = '←'; prevBtn.title = 'Précédent (←)'; ov.appendChild(prevBtn); }
+  if (nextBtn) { nextBtn.textContent = '→'; nextBtn.title = 'Suivant (→)'; ov.appendChild(nextBtn); }
+  if (counterEl) { counterEl.textContent = opts.counter; ov.appendChild(counterEl); }
+  [prevBtn, nextBtn].forEach(b => b && (
+    b.addEventListener('mouseenter', () => { b.style.background = 'rgba(255,255,255,0.22)'; b.style.transform = 'scale(1.08)'; }),
+    b.addEventListener('mouseleave', () => { b.style.background = 'rgba(255,255,255,0.1)';  b.style.transform = 'scale(1)'; })
+  ));
+
   // Thumbs button fades in after quote is readable
   tl.to(thumbsBtn, { opacity: 1, duration: 0.3, ease: 'power2.out' }, '-=1.5');
 
-  // Auto-dismiss after quote has been readable
-  tl.call(() => dismiss(), [], '+=3.0');
+  // Slideshow nav fades in with thumbs
+  if (prevBtn)   tl.to(prevBtn,   { opacity: 1, duration: 0.3 }, '<');
+  if (nextBtn)   tl.to(nextBtn,   { opacity: 1, duration: 0.3 }, '<');
+  if (counterEl) tl.to(counterEl, { opacity: 1, duration: 0.3 }, '<');
+
+  // Auto-dismiss only in non-slideshow mode
+  if (!isSlideshow) tl.call(() => dismiss(), [], '+=3.0');
 
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;
-  const dismiss = () => {
+  const dismiss = (callback) => {
     if (dismissed) return;
     dismissed = true;
     tl.kill();
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('keydown',   onKeyDown);
 
-    gsap.to(quoteEl, { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
-    if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
-    gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
-    gsap.to(thumbsBtn,   { opacity: 0, duration: 0.2, ease: 'power2.in' });
-    // Fill to solid black first, then fade the overlay out — avoids page content bleeding through
-    gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
-    gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
+    if (callback) {
+      // Fast exit for slideshow nav — no black flash
+      gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
+    } else {
+      gsap.to(quoteEl,    { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
+      if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
+      gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
+      gsap.to(thumbsBtn,   { opacity: 0, duration: 0.2, ease: 'power2.in' });
+      gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
+      gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
+    }
   };
 
+  if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(opts.onPrev); });
+  if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(opts.onNext); });
+
   // Dismiss on mousemove (with distance threshold) or keydown
-  // — only after minimum 3.5s so the animation is fully visible
   let acceptInput = false;
   let moveOrigin = null;
-  const MOVE_THRESHOLD = 80; // px before mousemove dismisses
+  const MOVE_THRESHOLD = 80;
   setTimeout(() => { acceptInput = true; }, 3500);
   const onMouseMove = (e) => {
-    if (!acceptInput) return;
+    if (!acceptInput || isSlideshow) return;
     if (!moveOrigin) { moveOrigin = { x: e.clientX, y: e.clientY }; return; }
     const dx = e.clientX - moveOrigin.x;
     const dy = e.clientY - moveOrigin.y;
     if (Math.sqrt(dx * dx + dy * dy) >= MOVE_THRESHOLD) dismiss();
   };
-  const onKeyDown  = () => { if (acceptInput) dismiss(); };
+  const onKeyDown = (e) => {
+    if (isSlideshow) {
+      if (e.key === 'ArrowRight') { e.preventDefault(); dismiss(opts.onNext); return; }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); dismiss(opts.onPrev); return; }
+      if (e.key === 'Escape') { dismiss(opts.onClose); return; }
+      return;
+    }
+    if (acceptInput) dismiss();
+  };
 
   window.addEventListener('mousemove', onMouseMove);
   window.addEventListener('keydown',   onKeyDown);
-  ov.addEventListener('click', dismiss);
+  // In slideshow: click = next
+  ov.addEventListener('click', isSlideshow ? () => dismiss(opts.onNext) : dismiss);
 }
 
 // ── Particle burst ─────────────────────────────────────
@@ -559,117 +603,15 @@ function burstParticles(parent, topPct) {
 // ── Slideshow scene ────────────────────────────────────
 function buildSlideshowScene(quotes, lang, startIdx) {
   let idx = ((startIdx % quotes.length) + quotes.length) % quotes.length;
-
-  const ov = el('div', `
-    position:fixed;inset:0;z-index:9990;overflow:hidden;
-    background:rgba(8,4,18,0.96);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
-    cursor:default;
-  `);
-  document.body.appendChild(ov);
-
-  const mascotEl = el('div', `font-size:100px;line-height:1;`);
-  ov.appendChild(mascotEl);
-
-  const quoteEl = el('div', `
-    font-size:clamp(22px,4.5vw,54px);font-weight:900;color:#fff;text-align:center;
-    max-width:80vw;line-height:1.2;letter-spacing:0.04em;
-    text-shadow:0 0 60px rgba(255,180,255,0.8),0 2px 20px rgba(0,0,0,0.9);
-    font-family:system-ui,sans-serif;
-  `);
-  ov.appendChild(quoteEl);
-
-  const counterEl = el('div', `
-    font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:.06em;
-  `);
-  ov.appendChild(counterEl);
-
-  // Nav row
-  const navRow = el('div', `display:flex;gap:12px;align-items:center;margin-top:8px;`);
-  ov.appendChild(navRow);
-
-  const btnStyle = `
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    border-radius:999px;padding:10px 28px;font-size:20px;cursor:pointer;color:#fff;
-    backdrop-filter:blur(6px);transition:background 0.15s,transform 0.1s;
-  `;
-  const prevBtn = el('button', btnStyle); prevBtn.textContent = '← Préc';
-  const nextBtn = el('button', btnStyle); nextBtn.textContent = 'Suiv →';
-  navRow.appendChild(prevBtn);
-  navRow.appendChild(nextBtn);
-
-  [prevBtn, nextBtn].forEach(b => {
-    b.addEventListener('mouseenter', () => { b.style.background = 'rgba(255,255,255,0.2)'; b.style.transform = 'scale(1.05)'; });
-    b.addEventListener('mouseleave', () => { b.style.background = 'rgba(255,255,255,0.1)'; b.style.transform = 'scale(1)'; });
-  });
-
-  // Ban + Close buttons
-  const banBtn = el('button', `
-    background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);
-    border-radius:999px;padding:7px 20px;font-size:13px;cursor:pointer;color:rgba(255,120,120,0.9);
-    backdrop-filter:blur(6px);transition:background 0.15s;margin-top:4px;
-  `);
-  banBtn.textContent = '👎 Bannir cette quote';
-  banBtn.addEventListener('mouseenter', () => { banBtn.style.background = 'rgba(220,50,50,0.35)'; });
-  banBtn.addEventListener('mouseleave', () => { banBtn.style.background = 'rgba(220,50,50,0.15)'; });
-  ov.appendChild(banBtn);
-
-  const closeBtn = el('button', `
-    position:fixed;top:20px;right:24px;
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;color:#fff;
-    display:flex;align-items:center;justify-content:center;
-    backdrop-filter:blur(6px);transition:background 0.15s;
-  `);
-  closeBtn.textContent = '✕';
-  closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = 'rgba(255,255,255,0.2)'; });
-  closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = 'rgba(255,255,255,0.1)'; });
-  ov.appendChild(closeBtn);
-
-  const update = (newIdx, dir = 1) => {
-    idx = ((newIdx % quotes.length) + quotes.length) % quotes.length;
-    const q = quotes[idx];
-    mascotEl.textContent = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
-    counterEl.textContent = `${idx + 1} / ${quotes.length}`;
-    banBtn.dataset.q = q;
-    gsap.to([quoteEl, mascotEl], { opacity: 0, x: dir * -40, duration: 0.15, ease: 'power2.in', onComplete: () => {
-      quoteEl.textContent = q;
-      gsap.fromTo([quoteEl, mascotEl],
-        { opacity: 0, x: dir * 40 },
-        { opacity: 1, x: 0, duration: 0.22, ease: 'power2.out' }
-      );
-    }});
+  const show = () => {
+    const mascot = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
+    buildScene(quotes[idx], null, mascot, {
+      onNext: () => { idx = (idx + 1) % quotes.length; show(); },
+      onPrev: () => { idx = ((idx - 1) + quotes.length) % quotes.length; show(); },
+      counter: `${idx + 1} / ${quotes.length}`,
+    });
   };
-
-  // Initial display (no animation)
-  quoteEl.textContent = quotes[idx];
-  mascotEl.textContent = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
-  counterEl.textContent = `${idx + 1} / ${quotes.length}`;
-  banBtn.dataset.q = quotes[idx];
-  gsap.fromTo(ov, { opacity: 0 }, { opacity: 1, duration: 0.25 });
-
-  prevBtn.addEventListener('click', (e) => { e.stopPropagation(); update(idx - 1, -1); });
-  nextBtn.addEventListener('click', (e) => { e.stopPropagation(); update(idx + 1,  1); });
-
-  banBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    banQuote(banBtn.dataset.q);
-    banBtn.textContent = '✓ Banni';
-    banBtn.disabled = true;
-  });
-
-  const dismiss = () => {
-    window.removeEventListener('keydown', onKey);
-    gsap.to(ov, { opacity: 0, duration: 0.3, onComplete: () => ov.remove() });
-  };
-
-  const onKey = (e) => {
-    if (e.key === 'ArrowRight') { e.preventDefault(); update(idx + 1, 1); }
-    if (e.key === 'ArrowLeft')  { e.preventDefault(); update(idx - 1, -1); }
-    if (e.key === 'Escape') dismiss();
-  };
-  window.addEventListener('keydown', onKey);
-  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(); });
+  show();
 }
 
 function el(tag, css) {

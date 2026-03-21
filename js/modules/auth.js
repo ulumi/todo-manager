@@ -28,7 +28,12 @@ let _onUserChange = null; // callback(user)
 // Call once at boot. Resolves when the first auth state is known.
 export function initAuth() {
   return new Promise(resolve => {
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
+      // Firebase keeps isAnonymous=true after linkWithPopup — reload to fix
+      if (user?.isAnonymous && user.providerData.length > 0) {
+        await user.reload();
+        user = auth.currentUser;
+      }
       _currentUser = user;
       if (_onUserChange) _onUserChange(user);
       resolve(user);
@@ -80,6 +85,7 @@ export async function registerWithEmail(email, password) {
 export async function upgradeGuestToEmail(email, password) {
   const credential = EmailAuthProvider.credential(email, password);
   const { user } = await linkWithCredential(_currentUser, credential);
+  await user.reload();
   return user;
 }
 
@@ -90,6 +96,7 @@ export async function signInWithGoogle() {
   const provider = new GoogleAuthProvider();
   if (_currentUser?.isAnonymous) {
     const { user } = await linkWithPopup(_currentUser, provider, browserPopupRedirectResolver);
+    await user.reload();
     return user;
   }
   const { user } = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
@@ -100,6 +107,7 @@ export async function signInWithFacebook() {
   const provider = new FacebookAuthProvider();
   if (_currentUser?.isAnonymous) {
     const { user } = await linkWithPopup(_currentUser, provider, browserPopupRedirectResolver);
+    await user.reload();
     return user;
   }
   const { user } = await signInWithPopup(auth, provider, browserPopupRedirectResolver);
