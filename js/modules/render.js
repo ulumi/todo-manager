@@ -212,10 +212,11 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const totalCount = allItems.length;
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
     const ratio = totalCount > 0 ? doneCount / totalCount : 0;
-    const showStats = isPast && !isT && state.pastDisplayMode === 'stats';
+    const isStatsMode = state.pastDisplayMode === 'stats';
+    const showStats = isPast && !isT && isStatsMode;
+    const todayStats = isT && isStatsMode;
     const nonDaily = allItems.filter(t => t.recurrence !== 'daily');
-    const displayItems = showStats ? [] : nonDaily;
-    let scoreHTML = '';
+    const displayItems = showStats ? [] : todayStats ? nonDaily.filter(t => !isCompleted(t, d)) : nonDaily;
     let weekStatsHTML = '';
     if (showStats && totalCount > 0) {
       const pct = Math.round(ratio * 100);
@@ -224,13 +225,18 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
         <div class="week-stats-label">${doneCount}/${totalCount}</div>
       </div>`;
     }
-    const noExpand = (showStats && !weekStatsHTML) || (!showStats && displayItems.length === 0);
+    let todayScoreHTML = '';
+    if (todayStats && doneCount > 0) {
+      todayScoreHTML = `<div class="week-today-score">${doneCount}/${totalCount} ✓</div>`;
+    }
+    const noExpand = (showStats && !weekStatsHTML) || (!showStats && !todayStats && displayItems.length === 0);
     html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
       <div class="week-day-todos" data-date="${ds}">
+        ${todayScoreHTML}
         ${showStats ? weekStatsHTML : displayItems.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
@@ -357,18 +363,26 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const ds = DS(date);
   const isT = ds===todayDS;
   const isPast = ds < todayDS;
-  const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
-  const showStats = isPast && !isT && state.pastDisplayMode === 'stats' && items.length > 0;
+  const allItems = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
+  const isStatsMode = state.pastDisplayMode === 'stats';
+  const showStats = isPast && !isT && isStatsMode && allItems.length > 0;
+  const todayStats = isT && isStatsMode;
+  const items = todayStats ? allItems.filter(t => !isCompleted(t, date)) : allItems;
+  const doneCount = allItems.filter(t => isCompleted(t, date)).length;
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
-  const doneCount = items.filter(t => isCompleted(t, date)).length;
+  let todayScoreHTML = '';
+  if (todayStats && doneCount > 0) {
+    todayScoreHTML = `<div class="month-today-score">${doneCount}/${allItems.length} ✓</div>`;
+  }
   return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>
+      ${todayScoreHTML}
       <button class="month-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))">+</button>
     </div>
-    ${showStats ? monthCellStats(date, ds, items.length, doneCount) : `${visible.map(t => {
+    ${showStats ? monthCellStats(date, ds, allItems.length, doneCount) : `${visible.map(t => {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
