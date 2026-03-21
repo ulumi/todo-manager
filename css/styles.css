@@ -413,6 +413,7 @@ header.scrolled {
 main {
   flex: 1;
   min-width: 0;
+  min-height: calc(100vh - var(--header-h));
   padding: 24px;
 }
 
