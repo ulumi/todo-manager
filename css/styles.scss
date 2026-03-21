@@ -415,9 +415,9 @@ main {
   width: 218px;
   flex-shrink: 0;
   position: sticky;
-  top: var(--header-h);
+  top: calc(var(--header-h) + 32px);
   z-index: 1;
-  padding: 20px 20px 20px 0;
+  padding: 0 20px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -555,13 +555,13 @@ main {
   background: var(--bg);
   margin-top: -32px;
   padding-top: 32px;
-  padding-bottom: 40px;
+  padding-bottom: 4px;
 
   &::after {
     content: '';
     position: absolute;
-    left: 0; right: 0; bottom: -32px;
-    height: 32px;
+    left: 0; right: 0; bottom: -10px;
+    height: 10px;
     background: linear-gradient(var(--bg), transparent);
     pointer-events: none;
   }
@@ -576,7 +576,7 @@ main {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 28px;
-  margin-top: 4px;
+  margin-top: 14px;
 
   &--three { grid-template-columns: 1fr 1fr 1fr; }
 }
@@ -719,13 +719,13 @@ main {
   background: var(--bg);
   margin-top: -32px;
   padding-top: 32px;
-  padding-bottom: 40px;
+  padding-bottom: 4px;
 
   &::after {
     content: '';
     position: absolute;
-    left: 0; right: 0; bottom: -32px;
-    height: 32px;
+    left: 0; right: 0; bottom: -10px;
+    height: 10px;
     background: linear-gradient(var(--bg), transparent);
     pointer-events: none;
   }
@@ -1140,14 +1140,9 @@ main {
 
 
 .week-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   gap: 12px;
-}
-
-.week-view * {
-  transition: none !important;
-  animation: none !important;
+  margin-top: 14px;
 }
 
 .week-view .week-container {
@@ -1164,12 +1159,14 @@ main {
   overflow: hidden;
   box-shadow: var(--shadow);
   cursor: pointer;
-  transition: flex .18s cubic-bezier(.4,0,.2,1), border-color .15s, box-shadow .15s;
+  // Phase 1: siblings shrink fast, phase 2: hovered grows with overshoot
+  transition: flex .32s cubic-bezier(.22, 1, .36, 1), border-color .15s, box-shadow .15s;
 
   &:hover, &:active {
-    flex: 1.8;
+    flex: 1.6;
     border-color: var(--primary);
     box-shadow: var(--shadow-md);
+    transition: flex .28s cubic-bezier(.34, 1.4, .64, 1), border-color .15s, box-shadow .15s;
 
     .week-add-btn { opacity: 1; transform: scale(1); pointer-events: auto; }
   }
@@ -1179,11 +1176,13 @@ main {
     border-color: var(--today-border);
     background: var(--today);
 
-    &:hover, &:active { flex: 2.4; border-color: var(--today-border); }
+    &:hover, &:active { flex: 2; border-color: var(--today-border); }
 
     .week-day-header { background: rgba(245,158,11,.12); }
     .week-day-num    { color: var(--today-border); }
   }
+
+  &.empty:hover { flex: 1; border-color: var(--border); box-shadow: var(--shadow); }
 
   &.past { opacity: .55; }
 
@@ -1345,6 +1344,18 @@ main {
   &:hover { color: var(--primary); background: var(--primary-light); }
 }
 
+.week-done-count {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 4px 0;
+  text-align: center;
+
+  &--perfect { color: var(--success); }
+  &--great   { color: var(--success); opacity: .8; }
+  &--ok      { color: var(--text-muted); }
+  &--low     { color: var(--danger, #ef4444); opacity: .6; }
+}
+
 .week-add-btn {
   width: 28px;
   height: 28px;
@@ -1441,6 +1452,7 @@ main {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  margin-top: 14px;
   margin-bottom: 8px;
 }
 
@@ -4066,7 +4078,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Year / week
   .month-year-panel { display: none; }
   .year-view        { grid-template-columns: repeat(3, 1fr); }
-  .week-grid        { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .week-grid        { flex-wrap: wrap; }
+  .week-grid .week-day-col { flex: 1 1 calc(25% - 12px); min-width: calc(25% - 12px); }
 
   // Prevent iOS auto-zoom on focus (font-size must be ≥ 16px)
   input, textarea, select { font-size: 16px !important; }
@@ -4124,7 +4137,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   .modal-right-inner { width: 100%; max-height: 320px; margin-top: 0; padding-right: 0; }
 
   // Week
-  .week-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .week-grid { flex-wrap: wrap; }
+  .week-grid .week-day-col { flex: 1 1 calc(50% - 12px); min-width: calc(50% - 12px); }
 
   // Todo items: larger tap targets
   .todo-check { width: 28px; height: 28px; }
@@ -4156,7 +4170,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     max-width: none;
   }
 
-  .week-view  { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .week-grid  { flex-wrap: wrap; gap: 6px; }
+  .week-grid .week-day-col { flex: 1 1 calc(25% - 6px); min-width: calc(25% - 6px); }
   .month-view { gap: 4px; }
   .year-view  { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 

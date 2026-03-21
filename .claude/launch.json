@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Todo Server (API + Static)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "port": 3000
+    },
+    {
+      "name": "SCSS Watcher",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["sass", "--watch", "css/styles.scss:css/styles.css", "--style=expanded", "--no-source-map"],
+      "port": 0
+    }
+  ]
+}

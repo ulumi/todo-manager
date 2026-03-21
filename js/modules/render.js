@@ -202,26 +202,34 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
 }
 
 function _renderWeekBlock(todos, weekStart, todayStr) {
-  const weekEnd = addDays(weekStart, 6);
-  const weekNum = getWeekNumber(weekStart);
-  const totalWeeks = getTotalWeeks(weekEnd.getFullYear());
-  const startStr = weekStart.getDate() + ' ' + state.MONTHS[weekStart.getMonth()];
-  const endStr   = weekEnd.getDate() + ' ' + state.MONTHS[weekEnd.getMonth()] + ' ' + weekEnd.getFullYear();
-  let html = `<div class="week-block-label">${startStr} – ${endStr} <span style="font-size:.7em;opacity:.5;font-weight:600;margin-left:.4em">${state.T.week} ${weekNum}/${totalWeeks}</span></div>`;
-  html += `<div class="week-grid">`;
+  let html = `<div class="week-grid">`;
   for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
     const ds = DS(d);
     const isT = ds === todayStr;
     const isPast = ds < todayStr;
-    const items = getTodosForDate(d, todos).filter(t => t.recurrence !== 'daily');
-    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+    const allItems = getTodosForDate(d, todos);
+    const totalCount = allItems.length;
+    const doneCount = allItems.filter(t => isCompleted(t, d)).length;
+    const ratio = totalCount > 0 ? doneCount / totalCount : 0;
+    const displayItems = (isPast || isT) ? allItems.filter(t => t.recurrence !== 'daily' && !isCompleted(t, d)) : allItems.filter(t => t.recurrence !== 'daily');
+    let scoreHTML = '';
+    if ((isPast || isT) && doneCount > 0) {
+      let cls, label;
+      if (ratio === 1)        { cls = 'perfect'; label = `\u{1F525} ${doneCount}/${totalCount}`; }
+      else if (ratio >= 0.75) { cls = 'great';   label = `\u{1F4AA} ${doneCount}/${totalCount}`; }
+      else if (ratio >= 0.5)  { cls = 'ok';      label = `\u{1F440} ${doneCount}/${totalCount}`; }
+      else                    { cls = 'low';      label = `\u{1F634} ${doneCount}/${totalCount}`; }
+      scoreHTML = `<div class="week-done-count week-done-count--${cls}">${label}</div>`;
+    }
+    const noExpand = isPast || (displayItems.length === 0 && !scoreHTML);
+    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
       <div class="week-day-todos" data-date="${ds}">
-        ${items.map(t => {
+        ${displayItems.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
           return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
@@ -231,6 +239,7 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
           </div>`;
         }).join('')}
+        ${scoreHTML}
         <button class="week-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
       </div>
     </div>`;
@@ -432,19 +441,17 @@ export function renderSidebar(todos) {
 export function renderWeekSidebar(todos) {
   const MONTH_H = 185;
   const headerH = document.querySelector('header')?.offsetHeight ?? 65;
-  const availH = window.innerHeight - headerH - 48;
+  const availH = window.innerHeight - headerH - 36;
   const maxMonths = Math.max(1, Math.floor(availH / MONTH_H));
 
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
-  const navDate = state.navDate;
-  const weekStart = startOfWeek(navDate);
-  const weekEndDS = DS(addDays(weekStart, 6));
-  const weekStartDS = DS(weekStart);
+  const y = todayDate.getFullYear();
+  const m = todayDate.getMonth();
 
   let html = '';
   for (let i = 0; i < maxMonths; i++) {
-    const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() - 1 + i, 1);
-    html += renderSideMonthWeek(monthDate, todayDate, weekStartDS, weekEndDS, todos);
+    const monthDate = new Date(y, m + i, 1);
+    html += renderSideMonth(monthDate, todayDate, state.navDate, todos);
   }
   return html;
 }
