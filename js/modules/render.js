@@ -212,9 +212,10 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const totalCount = allItems.length;
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
     const ratio = totalCount > 0 ? doneCount / totalCount : 0;
+    const showStats = isPast && !isT && state.pastDisplayMode === 'stats';
     const displayItems = (isPast || isT) ? allItems.filter(t => t.recurrence !== 'daily' && !isCompleted(t, d)) : allItems.filter(t => t.recurrence !== 'daily');
     let scoreHTML = '';
-    if ((isPast || isT) && doneCount > 0) {
+    if ((isPast || isT) && doneCount > 0 && !showStats) {
       let cls, label;
       if (ratio === 1)        { cls = 'perfect'; label = `\u{1F525} ${doneCount}/${totalCount}`; }
       else if (ratio >= 0.75) { cls = 'great';   label = `\u{1F4AA} ${doneCount}/${totalCount}`; }
@@ -222,14 +223,22 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
       else                    { cls = 'low';      label = `\u{1F634} ${doneCount}/${totalCount}`; }
       scoreHTML = `<div class="week-done-count week-done-count--${cls}">${label}</div>`;
     }
-    const noExpand = isPast || (displayItems.length === 0 && !scoreHTML);
+    let weekStatsHTML = '';
+    if (showStats && totalCount > 0) {
+      const pct = Math.round(ratio * 100);
+      weekStatsHTML = `<div class="week-cell-stats">
+        <div class="week-stats-bar"><div class="week-stats-fill" style="height:${pct}%"></div></div>
+        <div class="week-stats-label">${doneCount}/${totalCount}</div>
+      </div>`;
+    }
+    const noExpand = (isPast && !showStats) || (displayItems.length === 0 && !scoreHTML && !weekStatsHTML);
     html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
       </div>
       <div class="week-day-todos" data-date="${ds}">
-        ${displayItems.map(t => {
+        ${showStats ? weekStatsHTML : `${displayItems.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
           return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
@@ -239,7 +248,7 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
           </div>`;
         }).join('')}
-        ${scoreHTML}
+        ${scoreHTML}`}
         <button class="week-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))" title="${state.T.addMore}">+</button>
       </div>
     </div>`;
@@ -343,20 +352,31 @@ function monthMiniCal(y, m, todayDS) {
   </div>`;
 }
 
+function monthCellStats(date, ds, total, done) {
+  const ratio = total > 0 ? done / total : 0;
+  const pct = Math.round(ratio * 100);
+  return `<div class="month-cell-stats">
+    <div class="month-stats-bar"><div class="month-stats-fill" style="width:${pct}%"></div></div>
+    <div class="month-stats-label">${done}/${total}</div>
+  </div>`;
+}
+
 function monthCell(date, otherMonth, todayDS, todos) {
   const ds = DS(date);
   const isT = ds===todayDS;
   const isPast = ds < todayDS;
   const items = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
+  const showStats = isPast && !isT && state.pastDisplayMode === 'stats' && items.length > 0;
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
+  const doneCount = items.filter(t => isCompleted(t, date)).length;
   return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>
       <button class="month-add-btn" onclick="event.stopPropagation();window.app.openModal(window.app.parseDS('${ds}'))">+</button>
     </div>
-    ${visible.map(t => {
+    ${showStats ? monthCellStats(date, ds, items.length, doneCount) : `${visible.map(t => {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
@@ -367,7 +387,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
         <button class="month-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
       </div>`;
     }).join('')}
-    ${more>0 ? `<div class="month-more">${state.T.moreTasksCount.replace('{more}', more)}</div>` : ''}
+    ${more>0 ? `<div class="month-more">${state.T.moreTasksCount.replace('{more}', more)}</div>` : ''}`}
   </div>`;
 }
 
@@ -421,6 +441,21 @@ export function renderYearView(todos) {
   return html;
 }
 
+function renderSidebarOptions() {
+  const isStats = state.pastDisplayMode === 'stats';
+  const labelNormal = state.lang === 'fr' ? 'Normal' : 'Normal';
+  const labelStats  = state.lang === 'fr' ? 'Statistiques' : 'Statistics';
+  return `<div class="cal-sid-options">
+    <div class="cal-sid-toggle-row">
+      <span class="cal-sid-toggle-label">${isStats ? labelStats : labelNormal}</span>
+      <label class="cal-sid-toggle">
+        <input type="checkbox" ${isStats ? 'checked' : ''} onchange="window.app.togglePastDisplay()">
+        <span class="cal-sid-toggle-track"></span>
+      </label>
+    </div>
+  </div>`;
+}
+
 export function renderSidebar(todos) {
   const MONTH_H = 185;
   const headerH = document.querySelector('header')?.offsetHeight ?? 65;
@@ -430,7 +465,7 @@ export function renderSidebar(todos) {
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
   const navDate = state.navDate;
 
-  let html = '';
+  let html = renderSidebarOptions();
   for (let i = 0; i < maxMonths; i++) {
     const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() + i, 1);
     html += renderSideMonth(monthDate, todayDate, navDate, todos);
@@ -448,7 +483,7 @@ export function renderWeekSidebar(todos) {
   const y = todayDate.getFullYear();
   const m = todayDate.getMonth();
 
-  let html = '';
+  let html = renderSidebarOptions();
   for (let i = 0; i < maxMonths; i++) {
     const monthDate = new Date(y, m + i, 1);
     html += renderSideMonth(monthDate, todayDate, state.navDate, todos);

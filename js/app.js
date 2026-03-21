@@ -1279,6 +1279,12 @@ class TodoApp {
     this.render();
   }
 
+  togglePastDisplay() {
+    const newMode = state.pastDisplayMode === 'normal' ? 'stats' : 'normal';
+    state.setPastDisplayMode(newMode);
+    this.render();
+  }
+
   // ═══════════════════════════════════════════════════
   // PLAN MONTH INFINITE SCROLL
   // ═══════════════════════════════════════════════════

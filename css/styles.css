@@ -531,6 +531,134 @@ main {
   opacity: 0.6;
 }
 
+.cal-sid-options {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-md);
+}
+
+.cal-sid-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cal-sid-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cal-sid-toggle {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  cursor: pointer;
+}
+.cal-sid-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.cal-sid-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 9px;
+  transition: background 0.2s;
+}
+.cal-sid-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s;
+}
+input:checked + .cal-sid-toggle-track {
+  background: var(--text-muted);
+}
+input:checked + .cal-sid-toggle-track::after {
+  transform: translateX(14px);
+}
+
+.month-cell-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.month-stats-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.month-stats-fill {
+  height: 100%;
+  background: var(--text-muted);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.month-stats-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.week-cell-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  gap: 6px;
+  padding: 8px 0;
+}
+
+.week-stats-bar {
+  width: 6px;
+  height: 48px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.week-stats-fill {
+  width: 100%;
+  background: var(--text-muted);
+  border-radius: 3px;
+  transition: height 0.3s ease;
+}
+
+.week-stats-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
 .year-sid-list {
   display: flex;
   flex-direction: column;

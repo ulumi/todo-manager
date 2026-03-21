@@ -28,6 +28,7 @@ export let pendingDelete = null;
 export let _sugg = []; // safe ref for inline onclick
 export let inboxMode = false; // true when modal opened without a date (inbox capture)
 export let scheduleMode = 'date'; // 'date' | 'inbox' | 'backlog'
+export let pastDisplayMode = localStorage.getItem('pastDisplayMode') || 'normal'; // 'normal' | 'stats'
 
 export let lang = localStorage.getItem('lang') || (navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en');
 export let T = TRANSLATIONS[lang] || TRANSLATIONS.en;
@@ -101,6 +102,11 @@ export function setInboxMode(val) {
 export function setScheduleMode(mode) {
   scheduleMode = mode;
   inboxMode = (mode === 'inbox'); // keep in sync for backward compat
+}
+
+export function setPastDisplayMode(mode) {
+  pastDisplayMode = mode;
+  localStorage.setItem('pastDisplayMode', mode);
 }
 
 export function setLang(newLang) {
