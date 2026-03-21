@@ -6,7 +6,8 @@
   "description": "Local API server for todo-manager (dev only)",
   "main": "server.js",
   "scripts": {
-    "server": "node server.js"
+    "server": "node server.js",
+    "dev": "npx sass --watch css/styles.scss:css/styles.css --style=expanded --no-source-map & npx browser-sync start --server --files 'css/styles.css,index.html,js/**/*.js' --port 3000"
   },
   "dependencies": {
     "firebase-admin": "^12.0.0",
