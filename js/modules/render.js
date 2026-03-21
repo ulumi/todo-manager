@@ -215,7 +215,8 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const isStatsMode = state.pastDisplayMode === 'stats';
     const showStats = isPast && !isT && isStatsMode;
     const todayStats = isT && isStatsMode;
-    const nonDaily = allItems.filter(t => t.recurrence !== 'daily');
+    const nonDaily = allItems.filter(t => t.recurrence !== 'daily')
+      .sort((a, b) => isCompleted(a, d) - isCompleted(b, d));
     const displayItems = showStats ? [] : todayStats ? nonDaily.filter(t => !isCompleted(t, d)) : nonDaily;
     let weekStatsHTML = '';
     if (showStats && totalCount > 0) {
@@ -363,7 +364,8 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const ds = DS(date);
   const isT = ds===todayDS;
   const isPast = ds < todayDS;
-  const allItems = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily');
+  const allItems = getTodosForDate(date, todos).filter(t => t.recurrence !== 'daily')
+    .sort((a, b) => isCompleted(a, date) - isCompleted(b, date));
   const isStatsMode = state.pastDisplayMode === 'stats';
   const showStats = isPast && !isT && isStatsMode && allItems.length > 0;
   const todayStats = isT && isStatsMode;
