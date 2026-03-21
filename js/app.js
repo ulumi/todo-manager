@@ -1217,9 +1217,16 @@ class TodoApp {
     this.render();
   }
 
+  togglePlanHideCompleted() {
+    const cur = localStorage.getItem('planHideCompleted') === '1';
+    localStorage.setItem('planHideCompleted', cur ? '0' : '1');
+    this.render();
+  }
+
   _renderPlanCalendar() {
     const mode = localStorage.getItem('planMode') || 'week';
     const filter = this._getPlanRecFilter();
+    const hideCompleted = localStorage.getItem('planHideCompleted') === '1';
     const todayStr = DS(new Date());
 
     const modeBtns = [
@@ -1241,6 +1248,7 @@ class TodoApp {
     ).join('');
 
     const todayBtn = `<button class="plan-today-btn" onclick="window.app.planScrollToToday()">Aujourd'hui</button>`;
+    const hideBtn = `<button class="plan-rec-btn${hideCompleted?' active':''}" onclick="window.app.togglePlanHideCompleted()" title="Masquer les complétés">✓ Masquer</button>`;
     const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
@@ -1250,7 +1258,7 @@ class TodoApp {
         ${todayBtn}
         <div class="plan-mode-btns">${modeBtns}</div>
         <div class="plan-toolbar-sep"></div>
-        <div class="plan-rec-pills">${recToggles}</div>
+        <div class="plan-rec-pills">${recToggles}${hideBtn}</div>
       </div>
       <div class="plan-month-daynames">${dayNames}</div>
       <div class="plan-month-scroll" id="planMonthScroll">
@@ -1262,7 +1270,7 @@ class TodoApp {
     const numDays = mode === 'biweek' ? 14 : 7;
     const weekStart = startOfWeek(state.navDate);
     const days = [];
-    for (let i = 0; i < numDays; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr));
+    for (let i = 0; i < numDays; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr, hideCompleted));
     const weekEnd = addDays(weekStart, numDays - 1);
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
     return `<div class="plan-toolbar">
@@ -1272,7 +1280,7 @@ class TodoApp {
       ${todayBtn}
       <div class="plan-mode-btns">${modeBtns}</div>
       <div class="plan-toolbar-sep"></div>
-      <div class="plan-rec-pills">${recToggles}</div>
+      <div class="plan-rec-pills">${recToggles}${hideBtn}</div>
     </div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
@@ -1334,11 +1342,13 @@ class TodoApp {
   // PLAN MONTH INFINITE SCROLL
   // ═══════════════════════════════════════════════════
 
-  _planMonthDayHTML(d, filter, todayStr) {
+  _planMonthDayHTML(d, filter, todayStr, hideCompleted = false) {
     const recKey = (t) => (!t.recurrence || t.recurrence === 'none') ? 'none' : t.recurrence;
     const ds = DS(d);
     const isT = ds === todayStr;
-    const items = getTodosForDate(d, state.todos).filter(t => filter[recKey(t)] !== false);
+    const items = getTodosForDate(d, state.todos)
+      .filter(t => filter[recKey(t)] !== false)
+      .filter(t => !hideCompleted || !isCompleted(t, d));
     const taskRows = items.map(t => {
       const done = isCompleted(t, d);
       return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
@@ -1366,6 +1376,7 @@ class TodoApp {
 
   _planMonthGenWeeks(fromDate, count, filter, startMonthKey) {
     const todayStr = DS(new Date());
+    const hideCompleted = localStorage.getItem('planHideCompleted') === '1';
     if (startMonthKey === undefined) {
       const db = addDays(fromDate, -1);
       startMonthKey = `${db.getFullYear()}-${db.getMonth()}`;
@@ -1385,7 +1396,7 @@ class TodoApp {
         }
       }
       const days = [];
-      for (let i = 0; i < 7; i++) days.push(this._planMonthDayHTML(addDays(wStart, i), filter, todayStr));
+      for (let i = 0; i < 7; i++) days.push(this._planMonthDayHTML(addDays(wStart, i), filter, todayStr, hideCompleted));
       html += `${monthLabel}<div class="plan-month-scroll-week" data-week-id="${DS(wStart)}">${days.join('')}</div>`;
     }
     return html;
