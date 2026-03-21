@@ -81,7 +81,17 @@ class TodoApp {
   }
 
   init() {
-    state.setTodos(loadTodos());
+    const todos = loadTodos();
+    // Migration: recurring tasks without startDate get one derived from their ID (creation timestamp)
+    let migrated = false;
+    todos.forEach(t => {
+      if (t.recurrence && t.recurrence !== 'none' && !t.startDate) {
+        t.startDate = DS(new Date(parseInt(t.id)));
+        migrated = true;
+      }
+    });
+    if (migrated) saveTodos(todos);
+    state.setTodos(todos);
     this.applyZoom();
     this.initTheme();
     this.applyLang();
