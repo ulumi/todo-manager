@@ -141,7 +141,8 @@ export function initLowPolyBg() {
   _currentId = localStorage.getItem('bgPalette') || 'geo';
   _canvas = document.createElement('canvas');
   _canvas.id = 'lowpoly-bg';
-  document.body.insertBefore(_canvas, document.body.firstChild);
+  // Insérer dans <html> et non <body> pour échapper au body.style.zoom
+  document.documentElement.appendChild(_canvas);
   _generate();
 
   let _rt;

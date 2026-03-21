@@ -41,6 +41,7 @@
 :root {
   --header-h:      81px;
   --bg:            #f8f9fc;
+  --bg-clear:      rgba(248, 249, 252, 0);
   --surface:       #ffffff;
   --surface2:      #f3f4f9;
   --primary:       #f59e0b;
@@ -61,6 +62,7 @@
 
 [data-theme="dark"] {
   --bg:            #0f1117;
+  --bg-clear:      rgba(15, 17, 23, 0);
   --surface:       #1a1d27;
   --surface2:      #222636;
   --primary:       #f59e0b;
@@ -894,7 +896,7 @@ main {
     position: absolute;
     left: 0; right: 0; bottom: -10px;
     height: 10px;
-    background: linear-gradient(var(--bg), transparent);
+    background: linear-gradient(var(--bg), var(--bg-clear));
     pointer-events: none;
   }
 
@@ -1058,7 +1060,7 @@ main {
     position: absolute;
     left: 0; right: 0; bottom: -10px;
     height: 10px;
-    background: linear-gradient(var(--bg), transparent);
+    background: linear-gradient(var(--bg), var(--bg-clear));
     pointer-events: none;
   }
 }
