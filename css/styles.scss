@@ -958,6 +958,9 @@ main {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .day-mini-week-row {
@@ -1041,7 +1044,9 @@ main {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: transparent;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
@@ -4333,6 +4338,60 @@ body:has(.bottom-panel:not(.hidden))::before {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 
+
+// ─── Glass mode ──────────────────────────────────────────────────────────
+
+.glass-mode .todo-item {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+// ─── App toggle (profil apparence) ───────────────────────────────────────
+
+.app-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  &__track {
+    display: block;
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 10px;
+    transition: background .2s;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,.2);
+      transition: transform .2s;
+    }
+  }
+
+  input:checked + .app-toggle__track {
+    background: var(--primary);
+    &::after { transform: translateX(16px); }
+  }
+}
 
 // ─── 22. Responsive ──────────────────────────────────────────────────────
 

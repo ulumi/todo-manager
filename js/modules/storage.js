@@ -89,6 +89,8 @@ export function getAppConfig() {
     icalHour: localStorage.getItem('icalHour'),
     icalFilters: icalFilters ? JSON.parse(icalFilters) : null,
     bgPalette: localStorage.getItem('bgPalette'),
+    bgColor:   localStorage.getItem('bgColor'),
+    glassMode: localStorage.getItem('glassMode'),
   };
 }
 

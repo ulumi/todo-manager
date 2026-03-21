@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { TRANSLATIONS, ZOOM_SIZES } from './modules/config.js';
-import { initLowPolyBg, setPalette as _setBgPalette, PALETTE_OPTIONS } from './modules/lowpoly-bg.js';
+import { initLowPolyBg, setPalette as _setBgPalette, setBgColor as _setBgColor, PALETTE_OPTIONS } from './modules/lowpoly-bg.js';
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
   daysInMonth, firstDayOfMonth, esc
@@ -97,7 +97,7 @@ class TodoApp {
     this.initTheme();
     this.applyLang();
     initLowPolyBg();
-    this._initPaletteSelect();
+    this.initGlassMode();
     // Restore saved view
     const savedView = localStorage.getItem('view');
     if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin'].includes(savedView)) {
@@ -202,7 +202,9 @@ class TodoApp {
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
-      if (backup.config.bgPalette)  { this.setPalette(backup.config.bgPalette); }
+      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette);
+      if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
+      if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
     }
     localStorage.setItem('todos', JSON.stringify(backup.calendar));
     this.render();
@@ -224,6 +226,7 @@ class TodoApp {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     this.updateThemeBtn();
+    if (state.view === 'profile') this.render();
   }
 
   updateThemeBtn() {
@@ -231,15 +234,22 @@ class TodoApp {
     document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
   }
 
-  _initPaletteSelect() {
-    const sel = document.getElementById('paletteSelect');
-    if (!sel) return;
-    sel.value = localStorage.getItem('bgPalette') || 'geo';
-  }
-
   setPalette(id) {
     _setBgPalette(id);
-    this._initPaletteSelect();
+    if (state.view === 'profile') this.render();
+  }
+
+  setBgColor(color) {
+    _setBgColor(color);
+  }
+
+  initGlassMode() {
+    document.documentElement.classList.toggle('glass-mode', localStorage.getItem('glassMode') === '1');
+  }
+
+  setGlassMode(enabled) {
+    localStorage.setItem('glassMode', enabled ? '1' : '0');
+    document.documentElement.classList.toggle('glass-mode', enabled);
   }
 
   applyZoom() {
@@ -1135,6 +1145,8 @@ class TodoApp {
         if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
         if (data.config.bgPalette)  this.setPalette(data.config.bgPalette);
+        if (data.config.bgColor)    _setBgColor(data.config.bgColor);
+        if (data.config.glassMode !== undefined) { localStorage.setItem('glassMode', data.config.glassMode); this.initGlassMode(); }
         this.initTheme();
         this.applyLang();
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
@@ -1630,6 +1642,10 @@ class TodoApp {
   }
 
   _renderProfileView() {
+    const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+    const palette   = localStorage.getItem('bgPalette') || 'geo';
+    const bgColor   = localStorage.getItem('bgColor') || (isDark ? '#0f1117' : '#f8f9fc');
+    const glassMode = localStorage.getItem('glassMode') === '1';
     const user     = getCurrentUser();
     const name     = user?.displayName || user?.email?.split('@')[0] || '';
     const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
@@ -1671,6 +1687,36 @@ class TodoApp {
               <div class="profile-stat"><span class="profile-stat-num">${done}</span><span class="profile-stat-label">complétées</span></div>
               <div class="profile-stat"><span class="profile-stat-num">${recur}</span><span class="profile-stat-label">récurrentes</span></div>
               <div class="profile-stat"><span class="profile-stat-num">${cats}</span><span class="profile-stat-label">catégories</span></div>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h3 class="profile-section-title">Apparence</h3>
+            <div class="profile-rows">
+              <div class="profile-row">
+                <span>${isDark ? '☀️' : '🌙'} Thème ${isDark ? 'sombre' : 'clair'}</span>
+                <button class="btn btn-sm" onclick="window.app.toggleTheme()">${isDark ? 'Passer au clair' : 'Passer au sombre'}</button>
+              </div>
+              <div class="profile-row">
+                <span>🎨 Fond d'écran</span>
+                <select class="lang-select" onchange="window.app.setPalette(this.value)">
+                  <option value="geo"    ${palette === 'geo'    ? 'selected' : ''}>🌋 Géo Chaud</option>
+                  <option value="aurora" ${palette === 'aurora' ? 'selected' : ''}>🌊 Aurore Boréale</option>
+                  <option value="none"   ${palette === 'none'   ? 'selected' : ''}>⬜ Couleur unie</option>
+                </select>
+              </div>
+              ${palette === 'none' ? `
+              <div class="profile-row">
+                <span>🎨 Couleur du fond</span>
+                <input type="color" value="${bgColor}" style="width:38px;height:28px;border:none;border-radius:6px;cursor:pointer;padding:2px;background:none;" onchange="window.app.setBgColor(this.value)">
+              </div>` : ''}
+              <div class="profile-row">
+                <span>🔮 Effet verre sur les cartes</span>
+                <label class="app-toggle">
+                  <input type="checkbox" ${glassMode ? 'checked' : ''} onchange="window.app.setGlassMode(this.checked)">
+                  <span class="app-toggle__track"></span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -2969,6 +3015,8 @@ class TodoApp {
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
       if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette);
+      if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
+      if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));

@@ -95,7 +95,14 @@ function _drawTri(ctx, p1, p2, p3, W, H, palette, isDark) {
 function _generate() {
   if (!_canvas) return;
   const p = PALETTES[_currentId];
-  if (!p?.light) { _canvas.style.display = 'none'; return; }
+  if (!p?.light) {
+    _canvas.style.display = 'none';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const fallback = isDark ? '#0f1117' : '#f8f9fc';
+    document.documentElement.style.backgroundColor = localStorage.getItem('bgColor') || fallback;
+    return;
+  }
+  document.documentElement.style.backgroundColor = '';
   _canvas.style.display = 'block';
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -157,4 +164,11 @@ export function setPalette(id) {
   _currentId = id;
   localStorage.setItem('bgPalette', id);
   _generate();
+}
+
+export function setBgColor(color) {
+  localStorage.setItem('bgColor', color);
+  if (!PALETTES[_currentId]?.light) {
+    document.documentElement.style.backgroundColor = color;
+  }
 }

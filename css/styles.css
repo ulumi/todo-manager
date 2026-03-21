@@ -995,6 +995,9 @@ input:checked + .cal-sid-toggle-track::after {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .day-mini-week-row {
@@ -1084,7 +1087,9 @@ input:checked + .cal-sid-toggle-track::after {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: transparent;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
@@ -4706,6 +4711,54 @@ body:has(.bottom-panel:not(.hidden))::before {
 ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 99px;
+}
+
+.glass-mode .todo-item {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.app-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.app-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.app-toggle__track {
+  display: block;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  transition: background 0.2s;
+  position: relative;
+}
+.app-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+.app-toggle input:checked + .app-toggle__track {
+  background: var(--primary);
+}
+.app-toggle input:checked + .app-toggle__track::after {
+  transform: translateX(16px);
 }
 
 @media (max-width: 1200px) {
