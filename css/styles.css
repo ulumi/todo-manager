@@ -2164,16 +2164,16 @@ input:checked + .cal-sid-toggle-track::after {
 .year-view {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  padding-top: 16px;
-  padding-bottom: 24px;
+  gap: 24px;
+  padding-top: 24px;
+  padding-bottom: 32px;
 }
 
 .year-month-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 20px;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition: all 0.15s;
@@ -2192,7 +2192,7 @@ input:checked + .cal-sid-toggle-track::after {
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   letter-spacing: 0.3px;
 }
 
