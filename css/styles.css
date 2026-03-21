@@ -488,11 +488,6 @@ main {
   gap: 8px;
   max-height: 100vh;
   overflow: hidden;
-  background: color-mix(in srgb, var(--bg) 70%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 8px 20px 8px 8px;
 }
 
 .cal-sid-month {
@@ -931,9 +926,7 @@ input:checked + .cal-sid-toggle-track::after {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent;
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
