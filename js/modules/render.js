@@ -10,6 +10,19 @@ import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './pro
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
+// ── Stats viz color helpers ───────────────────────────────────────────────
+function _pctColor(pct) {
+  if (pct >= 85) return { h: 148, s: 58, l: 52 }; // green
+  if (pct >= 65) return { h: 148, s: 40, l: 44 }; // muted green
+  if (pct >= 40) return { h: 36,  s: 62, l: 52 }; // amber
+  if (pct >= 20) return { h: 12,  s: 58, l: 52 }; // red-orange
+  return             { h: 220, s: 12, l: 32 };     // near-bg
+}
+function _pctHsl(pct, a = 1) {
+  const { h, s, l } = _pctColor(pct);
+  return `hsla(${h},${s}%,${l}%,${a})`;
+}
+
 export function todoItemHTML(todo, date, group = null, dayView = false, hideCategoryBadge = false) {
   const done = isCompleted(todo, date);
   const rec = recLabel(todo, dayView);
@@ -164,10 +177,9 @@ export function renderDayView(todos) {
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
   const sortedPunctual = sortByOrder(punctualItems, dayOrd);
 
-  // Stats mode: filter completed + build stats summary
-  const filterStats = (items) => isStatsMode ? items.filter(t => !isCompleted(t, navDate)) : items;
+  // Always build stats bars (CSS will show/hide based on .stats-mode class)
   const statsLine = (total, done) => {
-    if (!isStatsMode || total === 0) return '';
+    if (total === 0) return '';
     const pct = Math.round((done / total) * 100);
     return `<div class="day-stats-summary">
       <div class="day-stats-bar"><div class="day-stats-fill" style="width:${pct}%"></div></div>
@@ -179,17 +191,17 @@ export function renderDayView(todos) {
   const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
   const punctDone = punctualItems.filter(t => isCompleted(t, navDate)).length;
 
+  // Always render ALL items (CSS hides .done items in stats-mode)
   let leftCol = '';
-  if (filterStats(sortedDaily).length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${filterStats(sortedDaily).map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-  if (filterStats(sortedWeekly).length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${filterStats(sortedWeekly).map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
-  if (filterStats(sortedMonthly).length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${filterStats(sortedMonthly).map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
-  if (filterStats(sortedYearly).length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${filterStats(sortedYearly).map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
+  if (sortedDaily.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${sortedDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+  if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
+  if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
+  if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   leftCol += statsLine(recAllItems.length, recDone);
   if (!leftCol || leftCol === statsLine(recAllItems.length, recDone)) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>` + statsLine(recAllItems.length, recDone);
 
-  const filteredPunctual = filterStats(sortedPunctual);
-  const rightCol = filteredPunctual.length
-    ? `<div class="todo-list" data-group="punctual">${filteredPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>${statsLine(punctualItems.length, punctDone)}`
+  const rightCol = sortedPunctual.length
+    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>${statsLine(punctualItems.length, punctDone)}`
     : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>${statsLine(punctualItems.length, punctDone)}`;
 
   const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
@@ -202,7 +214,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
@@ -220,7 +232,47 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
   </div></div>`;
 }
 
+// Returns [fillDiv, statsDiv] — fillDiv is absolute in .week-day-col, same pattern as month
+function _weekCellStats(doneCount, totalCount) {
+  const pct = Math.round(totalCount > 0 ? doneCount / totalCount * 100 : 0);
+  const viz = state.statsViz;
+
+  if (viz === 'rings') {
+    const R = 26, CX = 32, CY = 32, SZ = 64;
+    const circ = (2 * Math.PI * R).toFixed(1);
+    const offset = (2 * Math.PI * R * (1 - pct / 100)).toFixed(1);
+    const color = _pctHsl(pct, 0.92);
+    const check = pct >= 85;
+    return `<div class="week-cell-stats wc-rings">
+      <svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="hsla(220,12%,22%,1)" stroke-width="2.5"/>
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+          stroke="${color}" stroke-width="2.5"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+          stroke-linecap="round" transform="rotate(-90 ${CX} ${CY})"/>
+        ${check
+          ? `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="17" fill="${color}" font-weight="800">✓</text>`
+          : `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="13" fill="${_pctHsl(pct,.72)}" font-weight="700">${pct}%</text>`}
+      </svg>
+    </div>`;
+  }
+
+  if (viz === 'stamp') {
+    // tint applied on .week-day-col externally; just show score
+    return `<div class="week-cell-stats wc-stamp">
+      <div class="mc-stamp-score" style="color:${_pctHsl(pct,.95)}">${doneCount}/${totalCount}</div>
+    </div>`;
+  }
+
+  // bars — same pattern as month: fill positioned absolute in .week-day-col
+  return `<div class="mc-bars-fill" style="height:${Math.max(pct,5)}%;background:${_pctHsl(pct,.4)}"></div>
+  <div class="week-cell-stats wc-bars">
+    <div class="mc-bars-score" style="color:${_pctHsl(pct,.95)}">${doneCount}/${totalCount}</div>
+  </div>`;
+}
+
 function _renderWeekBlock(todos, weekStart, todayStr) {
+  const isStatsMode = state.pastDisplayMode === 'stats';
   let html = `<div class="week-grid">`;
   for (let i = 0; i < 7; i++) {
     const d = addDays(weekStart, i);
@@ -231,7 +283,6 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const totalCount = allItems.length;
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
     const ratio = totalCount > 0 ? doneCount / totalCount : 0;
-    const isStatsMode = state.pastDisplayMode === 'stats';
     const showStats = isPast && !isT && isStatsMode;
     const todayStats = isT && isStatsMode;
     const nonDaily = allItems.filter(t => t.recurrence !== 'daily')
@@ -239,18 +290,20 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const displayItems = showStats ? [] : todayStats ? nonDaily.filter(t => !isCompleted(t, d)) : nonDaily;
     let weekStatsHTML = '';
     if (showStats && totalCount > 0) {
-      const pct = Math.round(ratio * 100);
-      weekStatsHTML = `<div class="week-cell-stats">
-        <div class="week-stats-bar"><div class="week-stats-fill" style="height:${pct}%"></div></div>
-        <div class="week-stats-label">${doneCount}/${totalCount}</div>
-      </div>`;
+      weekStatsHTML = _weekCellStats(doneCount, totalCount);
     }
     let todayScoreHTML = '';
     if (todayStats && doneCount > 0) {
       todayScoreHTML = `<div class="week-today-score">${doneCount}/${totalCount} ✓</div>`;
     }
     const noExpand = (showStats && !weekStatsHTML) || (!showStats && !todayStats && displayItems.length === 0);
-    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
+    // Stamp mode: tinted background on the cell itself
+    let cellStyle = '';
+    if (showStats && state.statsViz === 'stamp' && totalCount > 0) {
+      const pct = Math.round(ratio * 100);
+      cellStyle = ` style="background:${_pctHsl(pct,.16)};border-color:${_pctHsl(pct,.45)};"`;
+    }
+    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}"${cellStyle} onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
@@ -371,11 +424,39 @@ function monthMiniCal(y, m, todayDS) {
 }
 
 function monthCellStats(date, ds, total, done) {
-  const ratio = total > 0 ? done / total : 0;
-  const pct = Math.round(ratio * 100);
-  return `<div class="month-cell-stats">
-    <div class="month-stats-bar"><div class="month-stats-fill" style="width:${pct}%"></div></div>
-    <div class="month-stats-label">${done}/${total}</div>
+  const pct = Math.round(total > 0 ? done / total * 100 : 0);
+  const viz = state.statsViz;
+
+  if (viz === 'rings') {
+    const R = 26, CX = 32, CY = 32, SZ = 64;
+    const circ = (2 * Math.PI * R).toFixed(1);
+    const offset = (2 * Math.PI * R * (1 - pct / 100)).toFixed(1);
+    const color = _pctHsl(pct, 0.92);
+    const check = pct >= 85;
+    return `<div class="month-cell-stats mc-rings">
+      <svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="hsla(220,12%,22%,1)" stroke-width="2.5"/>
+        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+          stroke="${color}" stroke-width="2.5"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+          stroke-linecap="round" transform="rotate(-90 ${CX} ${CY})"/>
+        ${check
+          ? `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="17" fill="${color}" font-weight="800">✓</text>`
+          : `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="13" fill="${_pctHsl(pct,.72)}" font-weight="700">${pct}%</text>`}
+      </svg>
+    </div>`;
+  }
+
+  if (viz === 'stamp') {
+    return `<div class="month-cell-stats mc-stamp">
+      <div class="mc-stamp-score" style="color:${_pctHsl(pct,.95)}">${done}/${total}</div>
+    </div>`;
+  }
+
+  // bars — fill positioned relative to the full .month-cell (covers entire cell height)
+  return `<div class="mc-bars-fill" style="height:${Math.max(pct, 5)}%;background:${_pctHsl(pct,.4)}"></div>
+  <div class="month-cell-stats mc-bars">
+    <div class="mc-bars-score" style="color:${_pctHsl(pct,.95)}">${done}/${total}</div>
   </div>`;
 }
 
@@ -396,7 +477,12 @@ function monthCell(date, otherMonth, todayDS, todos) {
   if (todayStats && doneCount > 0) {
     todayScoreHTML = `<div class="month-today-score">${doneCount}/${allItems.length} ✓</div>`;
   }
-  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"
+  let cellStyle = '';
+  if (showStats && state.statsViz === 'stamp' && allItems.length > 0) {
+    const pct = Math.round(doneCount / allItems.length * 100);
+    cellStyle = ` style="background:${_pctHsl(pct,.16)};border-color:${_pctHsl(pct,.45)};"`;
+  }
+  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"${cellStyle}
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>
@@ -470,18 +556,34 @@ export function renderYearView(todos) {
 
 function renderSidebarOptions() {
   const isStats = state.pastDisplayMode === 'stats';
-  const labelNormal = state.lang === 'fr' ? 'Normal' : 'Normal';
-  const labelStats  = state.lang === 'fr' ? 'Statistiques' : 'Statistics';
-  const title = state.lang === 'fr' ? 'Éléments complétés' : 'Completed items';
+  const viz = state.statsViz;
+  const title = state.lang === 'fr' ? 'Options d\'affichage' : 'Display options';
+  const label = state.lang === 'fr' ? 'Items complétés' : 'Completed items';
+  const stateLabel = isStats ? 'Stats' : 'On';
+  const vizOpts = [
+    { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
+    { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
+    { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
+  ];
+  const vizPicker = isStats ? `
+    <div class="cal-sid-viz-row">
+      <div class="cal-sid-viz-pick">
+        ${vizOpts.map(o => `<button class="cal-sid-viz-btn${viz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')">${state.lang==='fr'?o.fr:o.en}</button>`).join('')}
+      </div>
+    </div>` : '';
   return `<div class="cal-sid-options">
     <div class="cal-sid-options-title">${title}</div>
     <div class="cal-sid-toggle-row">
-      <span class="cal-sid-toggle-label">${isStats ? labelStats : labelNormal}</span>
-      <label class="cal-sid-toggle">
-        <input type="checkbox" ${isStats ? 'checked' : ''} onchange="window.app.togglePastDisplay()">
-        <span class="cal-sid-toggle-track"></span>
-      </label>
+      <span class="cal-sid-toggle-label">${label}</span>
+      <div class="cal-sid-toggle-right">
+        <span class="cal-sid-toggle-state" data-on="Stats" data-off="On">${stateLabel}</span>
+        <label class="cal-sid-toggle">
+          <input type="checkbox" ${isStats ? 'checked' : ''} onchange="window.app.togglePastDisplay()">
+          <span class="cal-sid-toggle-track"></span>
+        </label>
+      </div>
     </div>
+    ${vizPicker}
   </div>`;
 }
 
@@ -844,6 +946,78 @@ export function renderInboxView(todos) {
     </div>`;
 }
 
+export function renderBacklogView(todos) {
+  const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date);
+
+  const sort = localStorage.getItem('backlogSort') || 'date';
+  const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
+  const sorted = [...backlogItems].sort((a, b) => {
+    if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
+    if (sort === 'title')    return a.title.localeCompare(b.title);
+    if (sort === 'category') return (a.projectId || '').localeCompare(b.projectId || '');
+    return b.id.localeCompare(a.id);
+  });
+
+  const categories = getCategories();
+  const items = sorted.map(t => {
+    const cat = t.projectId ? categories.find(c => c.id === t.projectId) : null;
+    const catBadge = cat
+      ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
+      : '';
+    const prioCfg = { high: { label: '▲ Haute', color: 'var(--danger)', border: 'rgba(239,68,68,.35)', bg: 'rgba(239,68,68,.08)' }, medium: { label: '▸ Moy.', color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)' }, low: { label: '▾ Basse', color: '#3b82f6', border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)' } };
+    const pc = t.priority ? prioCfg[t.priority] : null;
+    const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
+    const hasMeta = catBadge || prioBadge;
+    return `
+      <div class="inbox-item" data-id="${t.id}" draggable="true" onclick="window.app.openEditModal('${t.id}', null)">
+        <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
+        <div class="inbox-item-body">
+          <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
+          ${hasMeta ? `<div class="todo-meta">${prioBadge}${catBadge}</div>` : ''}
+        </div>
+        <div class="inbox-item-actions">
+          <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Planifier aujourd'hui">
+            ${state.T.assignToday || "Auj."}
+          </button>
+          <button class="inbox-assign-date" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)" title="Choisir une date">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </button>
+          <button class="todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)">✎</button>
+          <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const empty = sorted.length === 0 ? `
+    <div class="inbox-empty">
+      <div class="inbox-empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+      </div>
+      <p>Backlog vide — rien en attente !</p>
+      <button class="btn btn-primary" onclick="window.app.openModalForBacklog()">＋ Ajouter au backlog</button>
+    </div>` : '';
+
+  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie']];
+  const sortBtns = sortLabels.map(([v, l]) =>
+    `<button class="inbox-sort-btn${sort === v ? ' active' : ''}" onclick="window.app.setBacklogSort('${v}')">${l}</button>`
+  ).join('');
+
+  return `
+    <div class="inbox-view">
+      <div class="inbox-view-header">
+        <h1 class="inbox-view-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+          Backlog
+        </h1>
+        <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+        <div class="inbox-sort-group">${sortBtns}</div>
+        <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
+      </div>
+      ${empty}
+      ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
+    </div>`;
+}
+
 export function setupTodoItemHoverAnimations() {
   document.querySelectorAll('.todo-item').forEach(item => {
     item.addEventListener('mouseenter', () =>
@@ -859,13 +1033,17 @@ export function setupTodoItemHoverAnimations() {
 
 export function renderPlanInboxList(todos) {
   const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
-  const sort = localStorage.getItem('inboxSort') || 'date';
+  const sort = localStorage.getItem('planSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
   const sortFn = (a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
     return b.id.localeCompare(a.id);
   };
+  const sortLabels = [['date','Récentes'],['priority','Priorité'],['title','A–Z']];
+  const sortBtns = sortLabels.map(([v,l]) =>
+    `<button class="plan-sort-btn${sort===v?' active':''}" onclick="window.app.setPlanSort('${v}')">${l}</button>`
+  ).join('');
 
   const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(sortFn);
   const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(sortFn);
@@ -904,6 +1082,7 @@ export function renderPlanInboxList(todos) {
     : '';
 
   return `
+    <div class="plan-sort-bar">${sortBtns}</div>
     <div class="plan-inbox-section"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"

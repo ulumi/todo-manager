@@ -29,7 +29,7 @@ import {
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
-  renderCategoriesView, renderInboxView, getInboxCount, getBacklogCount,
+  renderCategoriesView, renderInboxView, renderBacklogView, getInboxCount, getBacklogCount,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
   renderPlanInboxList, renderProjectsView,
@@ -97,7 +97,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'plan', 'projects'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -585,6 +585,17 @@ class TodoApp {
   setInboxSort(sort) {
     localStorage.setItem('inboxSort', sort);
     this.render();
+  }
+
+  setBacklogSort(sort) {
+    localStorage.setItem('backlogSort', sort);
+    this.render();
+  }
+
+  setPlanSort(sort) {
+    localStorage.setItem('planSort', sort);
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
   }
 
   quickEditInboxTitle(el, id) {
@@ -1122,12 +1133,14 @@ class TodoApp {
     const isProjects   = state.view === 'projects';
     const isProfile    = state.view === 'profile';
     const isInbox      = state.view === 'inbox';
+    const isBacklog    = state.view === 'backlog';
     const isPlan       = state.view === 'plan';
     document.body.classList.toggle('view-projects', isCategories || isProjects);
     document.body.classList.toggle('view-profile',  isProfile);
     document.body.classList.toggle('view-inbox',    isInbox);
+    document.body.classList.toggle('view-backlog',  isBacklog);
     document.body.classList.toggle('view-plan',     isPlan);
-    const noLabel = isCategories || isProjects || isProfile || isInbox || isPlan;
+    const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
     this._updateInboxBadge();
@@ -1142,6 +1155,7 @@ class TodoApp {
     if (state.view==='categories') html = renderCategoriesView(state.todos);
     if (state.view==='projects')   html = renderProjectsView();
     if (state.view==='inbox')      html = renderInboxView(state.todos);
+    if (state.view==='backlog')    html = renderBacklogView(state.todos);
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
     const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
@@ -1151,7 +1165,7 @@ class TodoApp {
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'profile'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'profile'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
