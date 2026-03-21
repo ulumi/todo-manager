@@ -6228,6 +6228,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .sa-quote-del:hover     { color: var(--danger) !important; }
 .sa-quote-ban:hover     { opacity: .7; }
 .sa-quote-edit:hover    { color: var(--primary) !important; }
+.sa-quote-play:hover    { color: #f59e0b !important; }
 .sa-quote-promote:hover { color: #10b981 !important; }
 .sa-quote-demote:hover  { color: var(--primary) !important; }
 .sa-quote-restore       { font-weight: 600; }

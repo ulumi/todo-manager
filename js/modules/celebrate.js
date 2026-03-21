@@ -313,6 +313,18 @@ export function setGlobalQuotes(g) {
 }
 export function getGlobalQuotes() { return _globalQuotes; }
 
+// ── Preview a specific quote (no recordCompletion) ─────
+export function celebrateWithQuote(quote, lang = 'fr') {
+  const mascot = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
+  buildScene(quote, null, mascot);
+}
+
+// ── Slideshow mode: browse all quotes with nav ──────────
+export function celebrateSlideshow(quotes, lang = 'fr', startIdx = 0) {
+  if (!quotes.length) return;
+  buildSlideshowScene(quotes, lang, startIdx);
+}
+
 // ── Public entry point ─────────────────────────────────
 export function celebrate(lang = 'en') {
   recordCompletion();
@@ -542,6 +554,122 @@ function burstParticles(parent, topPct) {
       }
     );
   }
+}
+
+// ── Slideshow scene ────────────────────────────────────
+function buildSlideshowScene(quotes, lang, startIdx) {
+  let idx = ((startIdx % quotes.length) + quotes.length) % quotes.length;
+
+  const ov = el('div', `
+    position:fixed;inset:0;z-index:9990;overflow:hidden;
+    background:rgba(8,4,18,0.96);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+    cursor:default;
+  `);
+  document.body.appendChild(ov);
+
+  const mascotEl = el('div', `font-size:100px;line-height:1;`);
+  ov.appendChild(mascotEl);
+
+  const quoteEl = el('div', `
+    font-size:clamp(22px,4.5vw,54px);font-weight:900;color:#fff;text-align:center;
+    max-width:80vw;line-height:1.2;letter-spacing:0.04em;
+    text-shadow:0 0 60px rgba(255,180,255,0.8),0 2px 20px rgba(0,0,0,0.9);
+    font-family:system-ui,sans-serif;
+  `);
+  ov.appendChild(quoteEl);
+
+  const counterEl = el('div', `
+    font-size:13px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:.06em;
+  `);
+  ov.appendChild(counterEl);
+
+  // Nav row
+  const navRow = el('div', `display:flex;gap:12px;align-items:center;margin-top:8px;`);
+  ov.appendChild(navRow);
+
+  const btnStyle = `
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:999px;padding:10px 28px;font-size:20px;cursor:pointer;color:#fff;
+    backdrop-filter:blur(6px);transition:background 0.15s,transform 0.1s;
+  `;
+  const prevBtn = el('button', btnStyle); prevBtn.textContent = '← Préc';
+  const nextBtn = el('button', btnStyle); nextBtn.textContent = 'Suiv →';
+  navRow.appendChild(prevBtn);
+  navRow.appendChild(nextBtn);
+
+  [prevBtn, nextBtn].forEach(b => {
+    b.addEventListener('mouseenter', () => { b.style.background = 'rgba(255,255,255,0.2)'; b.style.transform = 'scale(1.05)'; });
+    b.addEventListener('mouseleave', () => { b.style.background = 'rgba(255,255,255,0.1)'; b.style.transform = 'scale(1)'; });
+  });
+
+  // Ban + Close buttons
+  const banBtn = el('button', `
+    background:rgba(220,50,50,0.15);border:1px solid rgba(220,50,50,0.3);
+    border-radius:999px;padding:7px 20px;font-size:13px;cursor:pointer;color:rgba(255,120,120,0.9);
+    backdrop-filter:blur(6px);transition:background 0.15s;margin-top:4px;
+  `);
+  banBtn.textContent = '👎 Bannir cette quote';
+  banBtn.addEventListener('mouseenter', () => { banBtn.style.background = 'rgba(220,50,50,0.35)'; });
+  banBtn.addEventListener('mouseleave', () => { banBtn.style.background = 'rgba(220,50,50,0.15)'; });
+  ov.appendChild(banBtn);
+
+  const closeBtn = el('button', `
+    position:fixed;top:20px;right:24px;
+    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+    border-radius:50%;width:44px;height:44px;font-size:18px;cursor:pointer;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(6px);transition:background 0.15s;
+  `);
+  closeBtn.textContent = '✕';
+  closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = 'rgba(255,255,255,0.2)'; });
+  closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = 'rgba(255,255,255,0.1)'; });
+  ov.appendChild(closeBtn);
+
+  const update = (newIdx, dir = 1) => {
+    idx = ((newIdx % quotes.length) + quotes.length) % quotes.length;
+    const q = quotes[idx];
+    mascotEl.textContent = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
+    counterEl.textContent = `${idx + 1} / ${quotes.length}`;
+    banBtn.dataset.q = q;
+    gsap.to([quoteEl, mascotEl], { opacity: 0, x: dir * -40, duration: 0.15, ease: 'power2.in', onComplete: () => {
+      quoteEl.textContent = q;
+      gsap.fromTo([quoteEl, mascotEl],
+        { opacity: 0, x: dir * 40 },
+        { opacity: 1, x: 0, duration: 0.22, ease: 'power2.out' }
+      );
+    }});
+  };
+
+  // Initial display (no animation)
+  quoteEl.textContent = quotes[idx];
+  mascotEl.textContent = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
+  counterEl.textContent = `${idx + 1} / ${quotes.length}`;
+  banBtn.dataset.q = quotes[idx];
+  gsap.fromTo(ov, { opacity: 0 }, { opacity: 1, duration: 0.25 });
+
+  prevBtn.addEventListener('click', (e) => { e.stopPropagation(); update(idx - 1, -1); });
+  nextBtn.addEventListener('click', (e) => { e.stopPropagation(); update(idx + 1,  1); });
+
+  banBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    banQuote(banBtn.dataset.q);
+    banBtn.textContent = '✓ Banni';
+    banBtn.disabled = true;
+  });
+
+  const dismiss = () => {
+    window.removeEventListener('keydown', onKey);
+    gsap.to(ov, { opacity: 0, duration: 0.3, onComplete: () => ov.remove() });
+  };
+
+  const onKey = (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); update(idx + 1, 1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); update(idx - 1, -1); }
+    if (e.key === 'Escape') dismiss();
+  };
+  window.addEventListener('keydown', onKey);
+  closeBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(); });
 }
 
 function el(tag, css) {

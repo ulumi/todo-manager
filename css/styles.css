@@ -6890,6 +6890,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--primary) !important;
 }
 
+.sa-quote-play:hover {
+  color: #f59e0b !important;
+}
+
 .sa-quote-promote:hover {
   color: #10b981 !important;
 }

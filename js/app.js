@@ -35,7 +35,7 @@ import {
   renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
+import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -1815,7 +1815,8 @@ class TodoApp {
             <button class="superadmin-lang-btn${lang==='fr'?' active':''}" onclick="window.app.superadminFilterLang('fr')">FR</button>
             <button class="superadmin-lang-btn${lang==='en'?' active':''}" onclick="window.app.superadminFilterLang('en')">EN</button>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="window.app.superadminTestCelebrate()">▶ Tester</button>
+          <button class="btn btn-primary btn-sm" onclick="window.app.superadminTestCelebrate()">▶ Aléatoire</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.app.superadminSlideshow()">⏭ Slideshow</button>
         </div>
         <div class="sa-quotes-list" id="saAllList">
           ${filtered.map(({ q, l, src, i }, idx) => {
@@ -1834,6 +1835,7 @@ class TodoApp {
               <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
               <span class="sa-quote-tag${src === 'custom' ? '' : ' sa-quote-tag--default'}">${src === 'custom' ? 'perso' : 'défaut'}</span>
               <span class="sa-quote-text">${esc(q)}</span>
+              <button class="sa-quote-action sa-quote-play" onclick="window.app.superadminPlayQuote(${idx})" title="Prévisualiser">▶</button>
               ${isBanned
                 ? `<button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminToggleBanByIdx(${idx})">↺</button>`
                 : `<button class="sa-quote-action sa-quote-ban" onclick="window.app.superadminToggleBanByIdx(${idx})">🚫</button>`
@@ -1980,6 +1982,17 @@ class TodoApp {
   superadminSetTab(tab) { this._saTab = tab; this._saEditing = null; this._saRefresh(); }
 
   superadminTestCelebrate() { celebrate(this._saLang || state.lang || 'fr'); }
+
+  superadminPlayQuote(idx) {
+    const item = this._saAllList?.[idx];
+    if (item) celebrateWithQuote(item.q, item.l);
+  }
+
+  superadminSlideshow() {
+    const list = this._saAllList || [];
+    if (!list.length) return;
+    celebrateSlideshow(list.map(x => x.q), this._saLang || 'fr', 0);
+  }
 
   superadminFilterLang(lang) { this._saLang = lang; this._saRefresh(); }
 
