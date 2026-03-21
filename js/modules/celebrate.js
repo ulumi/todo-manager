@@ -313,6 +313,9 @@ function buildStats(lang) {
 
 // ── Global quotes (set by superadmin, shared across all users) ─
 let _globalQuotes = { customFR: [], customEN: [], banned: [] };
+
+// ── Persistent backdrop for slideshow mode ─────────────
+let _slideshowBg = null;
 export function setGlobalQuotes(g) {
   _globalQuotes = { customFR: [], customEN: [], banned: [], ...g };
 }
@@ -469,8 +472,8 @@ function buildScene(quote, stats, mascot, opts = {}) {
   // Shockwave
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
 
-  // Particle burst
-  tl.call(() => burstParticles(ov, '38%'), [], '-=0.4');
+  // Particle burst — starts early, particles from all over
+  tl.call(() => burstParticles(ov), [], 0.05);
 
   // ── Quote: words stagger in from small scale ──────────
   tl.to(wordSpans,
@@ -576,62 +579,102 @@ function buildScene(quote, stats, mascot, opts = {}) {
   ov.addEventListener('click', isSlideshow ? () => dismiss(opts.onNext) : dismiss);
 }
 
-// ── Particle burst ─────────────────────────────────────
-function burstParticles(parent, topPct) {
-  const COUNT = 32;
+// ── Particle burst — cannon-style from corners & sides ──
+function burstParticles(parent) {
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+  const COUNT = 50;
+
   for (let i = 0; i < COUNT; i++) {
-    const angle = (i / COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-    const dist  = 140 + Math.random() * 260;
-    const size  = 16 + Math.random() * 30;
+    const size = 16 + Math.random() * 28;
     const p = el('div', `
-      position:absolute;top:${topPct};left:50%;
-      font-size:${size}px;
-      z-index:9994;pointer-events:none;opacity:0;
+      position:absolute;top:0;left:0;
+      font-size:${size}px;z-index:9994;pointer-events:none;
     `);
     p.textContent = PARTICLES[Math.floor(Math.random() * PARTICLES.length)];
     parent.appendChild(p);
 
-    const tx = Math.cos(angle) * dist;
-    const ty = Math.sin(angle) * dist;
-    const hangTime = 0.55 + Math.random() * 0.65; // 0.55–1.2s suspension
+    // Launch zone: corners, sides, bottom — like party poppers
+    const zone = Math.random();
+    let sx, sy;
+    if      (zone < 0.22) { sx = W * (Math.random() * 0.18);        sy = H * (0.82 + Math.random() * 0.2); }  // bottom-left
+    else if (zone < 0.44) { sx = W * (0.82 + Math.random() * 0.18); sy = H * (0.82 + Math.random() * 0.2); }  // bottom-right
+    else if (zone < 0.58) { sx = W * (-0.06);                        sy = H * (0.15 + Math.random() * 0.7); }  // left side
+    else if (zone < 0.72) { sx = W * 1.06;                           sy = H * (0.15 + Math.random() * 0.7); }  // right side
+    else if (zone < 0.86) { sx = W * (0.25 + Math.random() * 0.5);  sy = H * 1.05; }                          // bottom center
+    else                  { sx = W * (0.1 + Math.random() * 0.8);   sy = H * (-0.06); }                        // top (falling down)
 
-    gsap.fromTo(p,
-      { xPercent: -50, yPercent: -50, x: 0, y: 0, scale: 0, opacity: 0, rotation: -40 },
-      {
-        x: tx, y: ty,
-        scale: 1, opacity: 1, rotation: 20 + Math.random() * 80,
-        duration: 0.5 + Math.random() * 0.3, ease: 'power2.out',
-        onComplete: () => {
-          // Gentle float while suspended in air
-          gsap.to(p, {
-            y: ty - 10 - Math.random() * 8,
-            duration: hangTime * 0.5,
-            ease: 'sine.inOut',
-            yoyo: true, repeat: 1,
-          });
-          // Then explode towards viewer (scale up + vanish)
-          gsap.to(p, {
-            scale: 3.5 + Math.random() * 2.5,
-            opacity: 0,
-            duration: 0.18 + Math.random() * 0.1,
-            delay: hangTime,
-            ease: 'power3.in',
-            onComplete: () => p.remove(),
-          });
-        },
-      }
-    );
+    // Arc peak: upper portion of screen
+    const px = W * (0.08 + Math.random() * 0.84);
+    const py = H * (0.04 + Math.random() * 0.42);
+
+    // Landing zone: spread across mid-lower screen
+    const lx = W * (0.05 + Math.random() * 0.9);
+    const ly = H * (0.42 + Math.random() * 0.52);
+
+    const spin1 = (280 + Math.random() * 420) * (Math.random() < 0.5 ? 1 : -1);
+    const spin2 = (160 + Math.random() * 240) * (Math.random() < 0.5 ? 1 : -1);
+    const delay = Math.random() * 0.75;
+
+    gsap.set(p, { x: sx, y: sy, opacity: 0, scale: 0.15, rotation: Math.random() * 360 });
+
+    const tl = gsap.timeline({ delay });
+
+    // Phase 1 — cannon launch (fast, energetic)
+    tl.to(p, {
+      x: px, y: py,
+      opacity: 1, scale: 1,
+      rotation: `+=${spin1}`,
+      duration: 0.25 + Math.random() * 0.18,
+      ease: 'power2.out',
+    });
+
+    // Phase 2 — gravity arc / fall (slower, organic)
+    tl.to(p, {
+      x: lx, y: ly,
+      rotation: `+=${spin2}`,
+      duration: 0.5 + Math.random() * 0.4,
+      ease: 'power1.in',
+    });
+
+    // Phase 3 — hang & explode towards viewer
+    tl.to(p, {
+      scale: 3.5 + Math.random() * 2.5,
+      opacity: 0,
+      duration: 0.16 + Math.random() * 0.08,
+      delay: 0.08 + Math.random() * 0.55,
+      ease: 'power3.in',
+      onComplete: () => p.remove(),
+    });
   }
 }
 
-// ── Slideshow scene ────────────────────────────────────
+// ── Slideshow scene — persistent backdrop, full effect per slide ─
 function buildSlideshowScene(quotes, lang, startIdx) {
   let idx = ((startIdx % quotes.length) + quotes.length) % quotes.length;
+
+  // Persistent near-opaque backdrop stays between slides (no black flash)
+  if (!_slideshowBg || !document.body.contains(_slideshowBg)) {
+    _slideshowBg = el('div', `
+      position:fixed;inset:0;z-index:9988;
+      background:rgba(8,4,18,0.95);pointer-events:none;
+    `);
+    document.body.appendChild(_slideshowBg);
+    gsap.fromTo(_slideshowBg, { opacity: 0 }, { opacity: 1, duration: 0.35 });
+  }
+
   const show = () => {
     const mascot = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
     buildScene(quotes[idx], null, mascot, {
       onNext: () => { idx = (idx + 1) % quotes.length; show(); },
       onPrev: () => { idx = ((idx - 1) + quotes.length) % quotes.length; show(); },
+      onClose: () => {
+        if (_slideshowBg) {
+          gsap.to(_slideshowBg, { opacity: 0, duration: 0.35, onComplete: () => {
+            _slideshowBg.remove(); _slideshowBg = null;
+          }});
+        }
+      },
       counter: `${idx + 1} / ${quotes.length}`,
     });
   };
