@@ -87,7 +87,8 @@ export function getAppConfig() {
     lang: localStorage.getItem('lang'),
     timezone: localStorage.getItem('timezone'),
     icalHour: localStorage.getItem('icalHour'),
-    icalFilters: icalFilters ? JSON.parse(icalFilters) : null
+    icalFilters: icalFilters ? JSON.parse(icalFilters) : null,
+    bgPalette: localStorage.getItem('bgPalette'),
   };
 }
 
@@ -101,6 +102,11 @@ export function getFullBackup(todos) {
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
     avatar: raw('profileAvatar'),
+    quotes: {
+      banned:   raw('bannedQuotes')   || [],
+      customFR: raw('customQuotesFR') || [],
+      customEN: raw('customQuotesEN') || [],
+    },
     exportDate: new Date().toISOString()
   };
   const icalSecret = localStorage.getItem('icalSecret');

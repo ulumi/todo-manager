@@ -64,6 +64,11 @@
       <option value="en">EN</option>
       <option value="fr">FR</option>
     </select>
+    <select id="paletteSelect" class="lang-select" onchange="window.app.setPalette(this.value)" title="Fond d'écran">
+      <option value="geo">🌋 Géo</option>
+      <option value="aurora">🌊 Aurora</option>
+      <option value="none">⬜ Aucun</option>
+    </select>
     <button class="nav-btn" id="themeBtn" onclick="window.app.toggleTheme()" style="font-size:16px;border:none;">🌙</button>
     <div class="hamburger-wrap">
       <button class="hamburger-btn" id="hamburgerBtn" onclick="window.app.toggleHamburger()" aria-label="Menu">
@@ -452,6 +457,19 @@
         </svg>
       </span>
       <span class="hm-item-label">Données</span>
+    </button>
+
+    <div class="hm-divider"></div>
+    <div class="hm-section-label">Dev</div>
+    <button class="hm-item" onclick="window.app.closeHamburger(); window.app.setView('superadmin')">
+      <span class="hm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          <path d="M18 3l1.5 1.5M20 6h2M18 9l1.5-1.5"/>
+        </svg>
+      </span>
+      <span class="hm-item-label">Superadmin</span>
     </button>
   </div>
 </div>

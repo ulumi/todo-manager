@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { TRANSLATIONS, ZOOM_SIZES } from './modules/config.js';
+import { initLowPolyBg, setPalette as _setBgPalette, PALETTE_OPTIONS } from './modules/lowpoly-bg.js';
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
   daysInMonth, firstDayOfMonth, esc
@@ -95,6 +96,8 @@ class TodoApp {
     this.applyZoom();
     this.initTheme();
     this.applyLang();
+    initLowPolyBg();
+    this._initPaletteSelect();
     // Restore saved view
     const savedView = localStorage.getItem('view');
     if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin'].includes(savedView)) {
@@ -193,12 +196,13 @@ class TodoApp {
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',   JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
     if (backup.config) {
-      if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
-      if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
-      if (backup.config.lang)        localStorage.setItem('lang',        backup.config.lang);
-      if (backup.config.timezone)    localStorage.setItem('timezone',    backup.config.timezone);
-      if (backup.config.icalHour)    localStorage.setItem('icalHour',    backup.config.icalHour);
+      if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
+      if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
+      if (backup.config.lang)       localStorage.setItem('lang',       backup.config.lang);
+      if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
+      if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
+      if (backup.config.bgPalette)  { this.setPalette(backup.config.bgPalette); }
     }
     localStorage.setItem('todos', JSON.stringify(backup.calendar));
     this.render();
@@ -225,6 +229,17 @@ class TodoApp {
   updateThemeBtn() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  _initPaletteSelect() {
+    const sel = document.getElementById('paletteSelect');
+    if (!sel) return;
+    sel.value = localStorage.getItem('bgPalette') || 'geo';
+  }
+
+  setPalette(id) {
+    _setBgPalette(id);
+    this._initPaletteSelect();
   }
 
   applyZoom() {
@@ -1113,12 +1128,13 @@ class TodoApp {
       snapshot(state.todos);
       if (data.calendar) state.setTodos(data.calendar);
       if (data.config) {
-        if (data.config.theme)    localStorage.setItem('theme',    data.config.theme);
-        if (data.config.zoom)     localStorage.setItem('zoom',     data.config.zoom);
-        if (data.config.lang)        localStorage.setItem('lang',        data.config.lang);
-        if (data.config.timezone)    localStorage.setItem('timezone',    data.config.timezone);
-        if (data.config.icalHour)    localStorage.setItem('icalHour',    data.config.icalHour);
+        if (data.config.theme)      localStorage.setItem('theme',      data.config.theme);
+        if (data.config.zoom)       localStorage.setItem('zoom',       data.config.zoom);
+        if (data.config.lang)       localStorage.setItem('lang',       data.config.lang);
+        if (data.config.timezone)   localStorage.setItem('timezone',   data.config.timezone);
+        if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
+        if (data.config.bgPalette)  this.setPalette(data.config.bgPalette);
         this.initTheme();
         this.applyLang();
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
@@ -2946,12 +2962,13 @@ class TodoApp {
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
     if (backup.config) {
-      if (backup.config.theme)    localStorage.setItem('theme',    backup.config.theme);
-      if (backup.config.zoom)     localStorage.setItem('zoom',     backup.config.zoom);
-      if (backup.config.lang)        localStorage.setItem('lang',        backup.config.lang);
-      if (backup.config.timezone)    localStorage.setItem('timezone',    backup.config.timezone);
-      if (backup.config.icalHour)    localStorage.setItem('icalHour',    backup.config.icalHour);
+      if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
+      if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
+      if (backup.config.lang)       localStorage.setItem('lang',       backup.config.lang);
+      if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
+      if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
+      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette);
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
