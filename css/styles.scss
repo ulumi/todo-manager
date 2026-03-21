@@ -1988,8 +1988,6 @@ main {
 .year-view-wrapper {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--header-h) - 48px);
-  min-height: 0;
 
   .sticky-header-wrap {
     position: static;
@@ -2003,13 +2001,9 @@ main {
 .year-view {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  align-content: start;
   gap: 16px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-bottom: 16px;
+  padding-top: 16px;
+  padding-bottom: 24px;
 }
 
 .year-month-card {
@@ -6190,6 +6184,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-toolbar-sep {
   flex: 1;
+}
+
+.plan-hide-done-btn {
+  margin-left: 8px;
 }
 
 .plan-today-btn {

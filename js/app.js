@@ -1248,7 +1248,7 @@ class TodoApp {
     ).join('');
 
     const todayBtn = `<button class="plan-today-btn" onclick="window.app.planScrollToToday()">Aujourd'hui</button>`;
-    const hideBtn = `<button class="plan-rec-btn${hideCompleted?' active':''}" onclick="window.app.togglePlanHideCompleted()" title="Masquer les complétés">✓ Masquer</button>`;
+    const hideBtn = `<button class="plan-rec-btn plan-hide-done-btn${hideCompleted?' active':''}" onclick="window.app.togglePlanHideCompleted()">✓ Masquer complétés</button>`;
     const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
@@ -1258,7 +1258,8 @@ class TodoApp {
         ${todayBtn}
         <div class="plan-mode-btns">${modeBtns}</div>
         <div class="plan-toolbar-sep"></div>
-        <div class="plan-rec-pills">${recToggles}${hideBtn}</div>
+        <div class="plan-rec-pills">${recToggles}</div>
+        ${hideBtn}
       </div>
       <div class="plan-month-daynames">${dayNames}</div>
       <div class="plan-month-scroll" id="planMonthScroll">
@@ -1280,7 +1281,8 @@ class TodoApp {
       ${todayBtn}
       <div class="plan-mode-btns">${modeBtns}</div>
       <div class="plan-toolbar-sep"></div>
-      <div class="plan-rec-pills">${recToggles}${hideBtn}</div>
+      <div class="plan-rec-pills">${recToggles}</div>
+      ${hideBtn}
     </div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
