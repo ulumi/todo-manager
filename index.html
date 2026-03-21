@@ -32,27 +32,29 @@
       <button class="view-tab" data-view="month" data-i18n="viewMonth">Month</button>
       <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
     </div>
-    <button class="view-tab inbox-tab" id="inboxTab" data-view="inbox">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-      <span data-i18n="viewInbox">Inbox</span>
-      <span class="inbox-tab-badge hidden" id="inboxBadge">0</span>
-    </button>
-    <button class="view-tab plan-tab" data-view="plan">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      <span data-i18n="viewPlan">Planifier</span>
-      <span class="plan-tab-badge plan-tab-inbox hidden" id="planInboxBadge">0</span>
-      <span class="plan-tab-badge plan-tab-backlog hidden" id="planBacklogBadge">0</span>
-    </button>
-    <button class="view-tab categories-tab" data-view="categories" data-i18n="viewProjects">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="cat-icon"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="1" y="9" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="9" y="9" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
-      <span data-i18n="viewProjects">Catégories</span>
-    </button>
-    <button class="view-tab projects-tab" data-view="projects">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-      <span>Projets</span>
-    </button>
-    <div class="header-sep"></div>
     <div class="header-spacer"></div>
+    <div class="utility-tabs">
+      <button class="view-tab inbox-tab" id="inboxTab" data-view="inbox">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+        <span data-i18n="viewInbox">Inbox</span>
+        <span class="nav-badge hidden" id="inboxBadge">0</span>
+      </button>
+      <button class="view-tab backlog-tab" onclick="window.app.setView('plan')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+        <span>Backlog</span>
+        <span class="nav-badge nav-badge--muted hidden" id="backlogBadge">0</span>
+      </button>
+      <div class="utility-sep"></div>
+      <button class="view-tab plan-icon-tab" data-view="plan" title="Mode planifier">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="plan-icon-label" data-i18n="viewPlan">Planifier</span>
+      </button>
+      <button class="view-tab projects-tab" data-view="projects">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Projets</span>
+      </button>
+    </div>
+    <div class="header-sep"></div>
     <div class="zoom-group" title="Text size">
       <button class="size-btn" id="szSmall" onclick="window.app.setZoom(0)">A</button>
       <button class="size-btn active" id="szMed" onclick="window.app.setZoom(1)">A</button>

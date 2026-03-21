@@ -548,12 +548,9 @@ class TodoApp {
       badge.textContent = count;
       badge.classList.toggle('hidden', count === 0);
     }
-    const inboxCount   = getInboxCount(state.todos);
     const backlogCount = getBacklogCount(state.todos);
-    const planInbox   = document.getElementById('planInboxBadge');
-    const planBacklog = document.getElementById('planBacklogBadge');
-    if (planInbox)   { planInbox.textContent   = inboxCount;   planInbox.classList.toggle('hidden',   inboxCount   === 0); }
-    if (planBacklog) { planBacklog.textContent  = backlogCount; planBacklog.classList.toggle('hidden', backlogCount === 0); }
+    const backlogBadge = document.getElementById('backlogBadge');
+    if (backlogBadge) { backlogBadge.textContent = backlogCount; backlogBadge.classList.toggle('hidden', backlogCount === 0); }
   }
 
   assignInboxToday(id) {
@@ -1333,7 +1330,8 @@ class TodoApp {
       return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
         draggable="true"
         ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
-        ondragend="this.classList.remove('dragging')">
+        ondragend="this.classList.remove('dragging')"
+        onclick="window.app.openEditModal('${t.id}','${ds}')">
         <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="week-todo-text">${esc(t.title)}</span>
         <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
@@ -1620,6 +1618,9 @@ class TodoApp {
           <div class="profile-section">
             <h3 class="profile-section-title">Réglages</h3>
             <div class="profile-rows">
+              <button class="profile-row" onclick="window.app.setView('categories')">
+                <span>🏷 Catégories</span><span class="profile-row-arrow">›</span>
+              </button>
               <button class="profile-row" onclick="window.app.openAdminSection('taches')">
                 <span>📋 Tâches suggérées</span><span class="profile-row-arrow">›</span>
               </button>

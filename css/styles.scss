@@ -281,8 +281,22 @@ header {
 
 }
 
-.categories-tab, .inbox-tab, .plan-tab, .projects-tab {
-  margin-left: 6px;
+.utility-tabs {
+  display: flex;
+  align-items: center;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+
+  .view-tab {
+    margin-left: 0;
+    svg { opacity: 0.55; transition: opacity .15s; }
+    &:hover svg, &.active svg { opacity: 1; }
+  }
+}
+
+.categories-tab, .inbox-tab, .plan-tab, .projects-tab, .backlog-tab {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -306,6 +320,33 @@ header {
     box-shadow: none;
     .cat-icon { opacity: 1; }
   }
+}
+
+.plan-icon-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  svg { opacity: .6; transition: opacity .15s; }
+  &:hover svg, &.active svg { opacity: 1; }
+  &.active {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+    box-shadow: none;
+  }
+}
+
+// Hide plan label when space is tight
+@media (max-width: 1100px) {
+  .plan-icon-label { display: none; }
+}
+
+.utility-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 .nav-group {
@@ -397,9 +438,8 @@ header {
 #appWrapper {
   display: flex;
   align-items: flex-start;
-  max-width: 1440px;
-  margin: 0 auto;
   width: 100%;
+  padding: 0 24px;
 }
 
 main {
@@ -422,7 +462,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(100vh); 
+  max-height: calc(100vh);
   overflow: hidden;
 }
 
@@ -549,6 +589,19 @@ main {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
+  letter-spacing: .03em;
+}
+
+.cal-sid-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cal-sid-toggle-state {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .03em;
 }
@@ -595,6 +648,39 @@ main {
   }
 }
 
+// ── Stats viz picker ─────────────────────────────────────────────────────
+.cal-sid-viz-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.cal-sid-viz-pick {
+  display: flex;
+  gap: 4px;
+}
+
+.cal-sid-viz-btn {
+  flex: 1;
+  padding: 5px 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  letter-spacing: .04em;
+  transition: all .15s;
+
+  &:hover { border-color: var(--primary); color: var(--text); }
+  &.active {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+}
+
 // Month cell stats
 .month-cell-stats {
   display: flex;
@@ -626,6 +712,42 @@ main {
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: .02em;
+}
+
+// Stats viz — month cell variants
+.month-cell-stats {
+  &.mc-bars  { position: relative; z-index: 1; }
+  &.mc-rings { padding: 2px 0; svg { overflow: visible; } }
+  &.mc-stamp { gap: 2px; position: relative; z-index: 1; }
+}
+
+// mc-bars-fill: positioned absolute relative to .month-cell (covers full cell height)
+.mc-bars-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  border-radius: 0 0 7px 7px;
+  transition: height .35s ease;
+  z-index: 0;
+}
+
+.mc-bars-score {
+  font-size: 10px;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+  padding: 4px 0;
+}
+
+.mc-stamp-score {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+// Stats viz — week cell variants
+.week-cell-stats {
+  &.wc-rings { gap: 4px; svg { overflow: visible; } }
+  &.wc-stamp { gap: 4px; }
 }
 
 // Week cell stats
@@ -665,14 +787,18 @@ main {
 }
 
 // Day view stats summary
+// Stats bars hidden by default, shown only in stats-mode
 .day-stats-summary {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 10px;
   padding: 10px 4px 4px;
   margin-top: 8px;
   border-top: 1px solid var(--border);
 }
+
+.day-view.stats-mode .todo-item.done { display: none; }
+.day-view.stats-mode .day-stats-summary { display: flex; }
 
 .day-stats-bar {
   flex: 1;
@@ -1355,6 +1481,7 @@ main {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  position: relative;
   box-shadow: var(--shadow);
   cursor: pointer;
   // Phase 1: siblings shrink fast, phase 2: hovered grows with overshoot
@@ -1390,6 +1517,8 @@ main {
   padding: 14px 12px 10px;
   text-align: center;
   border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
 }
 
 .week-day-name {
@@ -1411,6 +1540,8 @@ main {
   padding: 12px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
   gap: 8px;
   min-height: 200px;
 }
@@ -1687,6 +1818,7 @@ main {
   transition: all .15s;
   box-shadow: var(--shadow);
   position: relative;
+  overflow: hidden;
 
   &:hover {
     border-color: var(--primary);
@@ -1705,6 +1837,8 @@ main {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
+  position: relative;
+  z-index: 1;
 }
 
 .month-cell-num {
@@ -4219,6 +4353,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   .admin-form { grid-template-columns: repeat(2, 1fr); }
 }
 
+// ── Medium desktop (961px – 1380px): compact header to prevent overflow ───
+@media (max-width: 1380px) and (min-width: 961px) {
+  .header-top { gap: 10px; }
+  .view-tab   { padding: 5px 8px; }
+}
+
 @media (max-width: 960px) {
   #calSidebar { display: none; }
 }
@@ -4252,10 +4392,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Flex break after row 1
   .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
 
-  // Row 2: view tabs + categories + today
+  // Row 2: view tabs + utility tabs + today
   .view-tabs      { order: 10; flex: 1; justify-content: center; }
+  .utility-tabs   { display: contents; } // transparent wrapper on mobile
   .view-tab       { flex: 1; text-align: center; padding: 6px 6px; font-size: 13px; }
-  .categories-tab { order: 10; margin-left: 0; flex: none; span { display: none; } }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab { order: 10; flex: none; }
+  .utility-sep { display: none; }
   .today-btn      { order: 10; margin-right: 0; }
 
   // Row 3: nav group
@@ -5638,38 +5780,30 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:    relative;
 }
 
-.inbox-tab-badge {
+// Unified nav badges (inbox + backlog counts in header) — 2× bigger than old badges
+.nav-badge {
   display:         inline-flex;
   align-items:     center;
   justify-content: center;
-  min-width:       16px;
-  height:          16px;
-  padding:         0 4px;
-  border-radius:   8px;
-  font-size:       10px;
+  min-width:       20px;
+  height:          20px;
+  padding:         0 6px;
+  border-radius:   10px;
+  font-size:       12px;
   font-weight:     700;
+  line-height:     1;
   background:      var(--danger);
   color:           #fff;
-  line-height:     1;
+
+  &--muted {
+    background: var(--surface2);
+    color:      var(--text-muted);
+    border:     1px solid var(--border);
+  }
 }
 
-// Plan tab mini-badges (inbox + backlog counts)
-.plan-tab-badge {
-  display:         inline-flex;
-  align-items:     center;
-  justify-content: center;
-  min-width:       15px;
-  height:          15px;
-  padding:         0 4px;
-  border-radius:   7px;
-  font-size:       9px;
-  font-weight:     700;
-  line-height:     1;
-}
-.plan-tab-inbox   { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.75); }
-.plan-tab-backlog { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.45); }
-.plan-tab.active .plan-tab-inbox   { background: rgba(0,0,0,0.18); color: rgba(0,0,0,0.7); }
-.plan-tab.active .plan-tab-backlog { background: rgba(0,0,0,0.10); color: rgba(0,0,0,0.45); }
+.inbox-tab.active .nav-badge   { background: #fff; color: var(--danger); }
+.backlog-tab.active .nav-badge { background: rgba(255,255,255,.18); color: rgba(255,255,255,.75); border-color: transparent; }
 
 // Schedule mode selector (Inbox / Date / Backlog)
 .schedule-mode-options {
