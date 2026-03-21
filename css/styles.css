@@ -420,13 +420,13 @@ main {
   width: 218px;
   flex-shrink: 0;
   position: sticky;
-  top: calc(var(--header-h) + 32px);
+  top: calc(var(--header-h) + 30px);
   z-index: 1;
   padding: 0 20px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(100vh - var(--header-h));
+  max-height: 100vh;
   overflow: hidden;
 }
 

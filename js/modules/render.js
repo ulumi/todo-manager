@@ -432,7 +432,7 @@ export function renderSidebar(todos) {
 
   let html = '';
   for (let i = 0; i < maxMonths; i++) {
-    const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() - 1 + i, 1);
+    const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() + i, 1);
     html += renderSideMonth(monthDate, todayDate, navDate, todos);
   }
   return html;

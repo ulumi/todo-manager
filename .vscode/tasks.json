@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "SCSS Watch",
+      "type": "shell",
+      "command": "bash .vscode/scss-watch.sh",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^Error: (.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Compiled"
+        }
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}
