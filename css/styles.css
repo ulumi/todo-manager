@@ -6424,24 +6424,21 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
-  background: var(--danger);
+  background: #f97316;
   color: #fff;
 }
-.nav-badge--muted {
-  background: var(--surface2);
-  color: var(--text-muted);
-  border: 1px solid var(--border);
+.nav-badge--danger {
+  background: var(--danger);
 }
 
 .inbox-tab.active .nav-badge {
   background: #fff;
-  color: var(--danger);
+  color: #f97316;
 }
 
-.backlog-tab.active .nav-badge {
-  background: rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.75);
-  border-color: transparent;
+.backlog-tab.active .nav-badge--danger {
+  background: #fff;
+  color: var(--danger);
 }
 
 .schedule-mode-options {

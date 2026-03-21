@@ -5792,18 +5792,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size:       12px;
   font-weight:     700;
   line-height:     1;
-  background:      var(--danger);
+  background:      #f97316; // inbox = orange
   color:           #fff;
 
-  &--muted {
-    background: var(--surface2);
-    color:      var(--text-muted);
-    border:     1px solid var(--border);
+  &--danger {
+    background: var(--danger); // backlog = rouge
   }
 }
 
-.inbox-tab.active .nav-badge   { background: #fff; color: var(--danger); }
-.backlog-tab.active .nav-badge { background: rgba(255,255,255,.18); color: rgba(255,255,255,.75); border-color: transparent; }
+.inbox-tab.active   .nav-badge          { background: #fff; color: #f97316; }
+.backlog-tab.active .nav-badge--danger  { background: #fff; color: var(--danger); }
 
 // Schedule mode selector (Inbox / Date / Backlog)
 .schedule-mode-options {
