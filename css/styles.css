@@ -931,7 +931,9 @@ input:checked + .cal-sid-toggle-track::after {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: transparent;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
