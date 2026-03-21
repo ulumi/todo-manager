@@ -203,6 +203,57 @@ http.createServer(async (req, res) => {
         res.writeHead(200);
         res.end(JSON.stringify(messages));
 
+      // POST /admin/generate-quotes — generate celebrate quotes via Claude API
+      } else if (req.method === 'POST' && req.url === '/admin/generate-quotes') {
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+          res.writeHead(503);
+          res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set in .env' }));
+          return;
+        }
+        const { prompt, count = 5, lang = 'fr' } = await readBody(req);
+        const langLabel = lang === 'fr' ? 'français' : 'English';
+        const systemPrompt = lang === 'fr'
+          ? `Tu génères des messages de célébration courts pour une app de gestion de tâches. Chaque message doit être en MAJUSCULES, percutant, entre 3 et 15 mots. Utilise des emojis avec parcimonie (0 ou 1 par message). Réponds UNIQUEMENT avec un tableau JSON de strings, rien d'autre.`
+          : `You generate short celebration messages for a task management app. Each message must be in ALL CAPS, punchy, between 3 and 15 words. Use emojis sparingly (0 or 1 per message). Reply ONLY with a JSON array of strings, nothing else.`;
+        const userMsg = lang === 'fr'
+          ? `Génère exactement ${count} messages de célébration en ${langLabel}. Style / thème demandé : ${prompt || 'varié et original'}`
+          : `Generate exactly ${count} celebration messages in ${langLabel}. Requested style / theme: ${prompt || 'varied and original'}`;
+
+        const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userMsg }],
+          }),
+        });
+        if (!apiRes.ok) {
+          const err = await apiRes.text();
+          res.writeHead(502);
+          res.end(JSON.stringify({ error: `Anthropic API error: ${err}` }));
+          return;
+        }
+        const data = await apiRes.json();
+        let raw  = data.content?.[0]?.text || '[]';
+        // Strip markdown code block if Claude wraps the response (```json...```)
+        raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+        let quotes;
+        try {
+          quotes = JSON.parse(raw);
+          if (!Array.isArray(quotes)) quotes = [];
+        } catch {
+          quotes = [];
+        }
+        res.writeHead(200);
+        res.end(JSON.stringify({ quotes }));
+
       } else {
         res.writeHead(404);
         res.end(JSON.stringify({ error: 'Unknown admin route' }));

@@ -35,7 +35,7 @@ import {
   renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate } from './modules/celebrate.js';
+import { celebrate, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -97,7 +97,7 @@ class TodoApp {
     this.applyLang();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -159,6 +159,16 @@ class TodoApp {
   async _syncServer() {
     const backup = await loadFromServer();
     if (!backup) return; // server not running
+
+    // Always restore user quote preferences from server
+    if (backup.quotes) {
+      if (Array.isArray(backup.quotes.banned))   localStorage.setItem('bannedQuotes',   JSON.stringify(backup.quotes.banned));
+      if (Array.isArray(backup.quotes.customFR)) localStorage.setItem('customQuotesFR', JSON.stringify(backup.quotes.customFR));
+      if (Array.isArray(backup.quotes.customEN)) localStorage.setItem('customQuotesEN', JSON.stringify(backup.quotes.customEN));
+    }
+
+    // Register auto-save: any quote mutation pushes to server
+    onQuoteSave(() => saveBackupToServer(getFullBackup(state.todos)));
 
     const localHasData = state.todos.length > 0;
 
@@ -1129,18 +1139,20 @@ class TodoApp {
   // RENDER
   // ═══════════════════════════════════════════════════
   render() {
-    const isCategories = state.view === 'categories';
-    const isProjects   = state.view === 'projects';
-    const isProfile    = state.view === 'profile';
-    const isInbox      = state.view === 'inbox';
-    const isBacklog    = state.view === 'backlog';
-    const isPlan       = state.view === 'plan';
-    document.body.classList.toggle('view-projects', isCategories || isProjects);
-    document.body.classList.toggle('view-profile',  isProfile);
-    document.body.classList.toggle('view-inbox',    isInbox);
-    document.body.classList.toggle('view-backlog',  isBacklog);
-    document.body.classList.toggle('view-plan',     isPlan);
-    const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan;
+    const isCategories  = state.view === 'categories';
+    const isProjects    = state.view === 'projects';
+    const isProfile     = state.view === 'profile';
+    const isInbox       = state.view === 'inbox';
+    const isBacklog     = state.view === 'backlog';
+    const isPlan        = state.view === 'plan';
+    const isSuperadmin  = state.view === 'superadmin';
+    document.body.classList.toggle('view-projects',   isCategories || isProjects);
+    document.body.classList.toggle('view-profile',    isProfile);
+    document.body.classList.toggle('view-inbox',      isInbox);
+    document.body.classList.toggle('view-backlog',    isBacklog);
+    document.body.classList.toggle('view-plan',       isPlan);
+    document.body.classList.toggle('view-superadmin', isSuperadmin);
+    const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
     this._updateInboxBadge();
@@ -1158,6 +1170,7 @@ class TodoApp {
     if (state.view==='backlog')    html = renderBacklogView(state.todos);
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
+    if (state.view==='superadmin') html = this._renderSuperadminView();
     const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
     if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
     if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
@@ -1165,7 +1178,7 @@ class TodoApp {
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'profile'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'profile', 'superadmin'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -1648,6 +1661,9 @@ class TodoApp {
               <button class="profile-row" onclick="window.app.setView('categories')">
                 <span>🏷 Catégories</span><span class="profile-row-arrow">›</span>
               </button>
+              <button class="profile-row" onclick="window.app.setView('superadmin')">
+                <span>🎉 Messages d'encouragement</span><span class="profile-row-arrow">›</span>
+              </button>
               <button class="profile-row" onclick="window.app.openAdminSection('taches')">
                 <span>📋 Tâches suggérées</span><span class="profile-row-arrow">›</span>
               </button>
@@ -1702,6 +1718,305 @@ class TodoApp {
     // Load the iCal URL async after the profile view is injected into DOM
     setTimeout(() => this.loadICalURL(), 0);
     return html;
+  }
+
+  // ── Superadmin view ──────────────────────────────────
+  _saTab    = 'all';   // 'all' | 'custom' | 'banned' | 'generate'
+  _saLang   = 'fr';
+  _saGenerated = [];   // quotes from last AI generation
+
+  _renderSuperadminView() {
+    return `<div class="superadmin-view">${this._renderSuperadminInner()}</div>`;
+  }
+
+  _renderSuperadminInner() {
+    const tab      = this._saTab;
+    const lang     = this._saLang;
+    const banned   = getBannedQuotes();
+    const customFR = getCustomQuotes('fr');
+    const customEN = getCustomQuotes('en');
+    const customAll = [
+      ...customFR.map((q, i) => ({ q, l: 'fr', i })),
+      ...customEN.map((q, i) => ({ q, l: 'en', i })),
+    ];
+
+    const tabs = [
+      { id: 'all',      label: 'Toutes',    count: DEFAULT_QUOTES_FR.length + DEFAULT_QUOTES_EN.length + customAll.length },
+      { id: 'custom',   label: 'Perso',     count: customAll.length },
+      { id: 'banned',   label: 'Bannis',    count: banned.length },
+      { id: 'generate', label: '✨ Générer', count: null },
+    ];
+
+    const tabBar = `
+      <div class="sa-tabs">
+        ${tabs.map(t => `
+          <button class="sa-tab${tab === t.id ? ' active' : ''}" onclick="window.app.superadminSetTab('${t.id}')">
+            ${t.label}${t.count !== null ? ` <span class="sa-tab-count">${t.count}</span>` : ''}
+          </button>
+        `).join('')}
+      </div>`;
+
+    // ── Tab: Toutes ──────────────────────────────────────
+    let content = '';
+    if (tab === 'all') {
+      const defaultFR = DEFAULT_QUOTES_FR.map(q => ({ q, l: 'fr', src: 'default' }));
+      const defaultEN = DEFAULT_QUOTES_EN.map(q => ({ q, l: 'en', src: 'default' }));
+      const customs   = customAll.map(({ q, l, i }) => ({ q, l, src: 'custom', i }));
+      const all = [...defaultFR, ...defaultEN, ...customs];
+      const filtered = all.filter(({ l }) => lang === 'all' || l === lang);
+      this._saAllList = filtered;
+      content = `
+        <div class="sa-search-row">
+          <input id="saSearch" class="form-input" placeholder="Rechercher…"
+            oninput="window.app.superadminSearch(this.value)">
+          <div class="superadmin-lang-toggle">
+            <button class="superadmin-lang-btn${lang==='all'?' active':''}" onclick="window.app.superadminFilterLang('all')">Tout</button>
+            <button class="superadmin-lang-btn${lang==='fr'?' active':''}" onclick="window.app.superadminFilterLang('fr')">FR</button>
+            <button class="superadmin-lang-btn${lang==='en'?' active':''}" onclick="window.app.superadminFilterLang('en')">EN</button>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="window.app.superadminTestCelebrate()">▶ Tester</button>
+        </div>
+        <div class="sa-quotes-list" id="saAllList">
+          ${filtered.map(({ q, l, src, i }, idx) => {
+            const isBanned = banned.includes(q);
+            return `<div class="sa-quote-row${isBanned ? ' sa-quote-row--banned' : ''}" data-text="${esc(q).toLowerCase()}">
+              <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
+              ${src === 'custom' ? '<span class="sa-quote-tag">perso</span>' : ''}
+              <span class="sa-quote-text">${esc(q)}</span>
+              ${isBanned
+                ? `<button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminToggleBanByIdx(${idx})">↺</button>`
+                : `<button class="sa-quote-action sa-quote-ban" onclick="window.app.superadminToggleBanByIdx(${idx})">🚫</button>`
+              }
+              ${src === 'custom' ? `<button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEdit('${l}',${i})" title="Modifier">✏</button><button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+
+    // ── Tab: Perso ───────────────────────────────────────
+    if (tab === 'custom') {
+      const editing = this._saEditing;
+      content = `
+        <div class="superadmin-section">
+          <h3 class="superadmin-section-title">Ajouter un message</h3>
+          <div class="superadmin-add-row">
+            <input id="saQuoteInput" class="form-input" placeholder="Ton message en majuscules…" maxlength="140"
+              onkeydown="if(event.key==='Enter')window.app.superadminAddQuote()">
+            <div class="superadmin-lang-toggle">
+              <button class="superadmin-lang-btn${this._saLang==='fr'?' active':''}" id="saLangFR" onclick="window.app.superadminSelectLang('fr')">FR</button>
+              <button class="superadmin-lang-btn${this._saLang==='en'?' active':''}" id="saLangEN" onclick="window.app.superadminSelectLang('en')">EN</button>
+            </div>
+            <button class="btn btn-primary" onclick="window.app.superadminAddQuote()">Ajouter</button>
+          </div>
+        </div>
+        ${customAll.length ? `
+        <div class="superadmin-section">
+          <h3 class="superadmin-section-title">Mes messages (${customAll.length})</h3>
+          <div class="sa-quotes-list">
+            ${customAll.map(({ q, l, i }) => {
+              const isEditing = editing && editing.lang === l && editing.i === i;
+              if (isEditing) {
+                return `<div class="sa-quote-row sa-quote-row--editing">
+                  <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
+                  <input id="saEditInput" class="form-input sa-edit-input" value="${esc(q)}" maxlength="140"
+                    onkeydown="if(event.key==='Enter')window.app.superadminSaveEdit('${l}',${i});if(event.key==='Escape')window.app.superadminCancelEdit()">
+                  <button class="btn btn-primary btn-sm" onclick="window.app.superadminSaveEdit('${l}',${i})">✓</button>
+                  <button class="btn btn-ghost btn-sm" onclick="window.app.superadminCancelEdit()">✕</button>
+                </div>`;
+              }
+              return `<div class="sa-quote-row">
+                <span class="sa-quote-lang sa-quote-lang--${l}">${l.toUpperCase()}</span>
+                <span class="sa-quote-text">${esc(q)}</span>
+                <button class="sa-quote-action sa-quote-edit" onclick="window.app.superadminStartEdit('${l}',${i})" title="Modifier">✏</button>
+                <button class="sa-quote-action sa-quote-del" onclick="window.app.superadminRemoveCustom('${l}',${i})" title="Supprimer">✕</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : `<p class="superadmin-hint" style="padding:0 4px">Aucun message personnalisé pour l'instant.</p>`}`;
+    }
+
+    // ── Tab: Bannis ──────────────────────────────────────
+    if (tab === 'banned') {
+      content = banned.length ? `
+        <p class="superadmin-hint" style="padding:0 4px;margin-bottom:12px">Ces messages n'apparaîtront plus dans les célébrations. Clique ↺ pour les restaurer.</p>
+        <div class="superadmin-section">
+          <div class="sa-quotes-list">
+            ${banned.map((q, i) => `
+              <div class="sa-quote-row sa-quote-row--banned">
+                <span class="sa-quote-text">${esc(q)}</span>
+                <button class="sa-quote-action sa-quote-restore" onclick="window.app.superadminUnban(${i})">↺ Restaurer</button>
+              </div>
+            `).join('')}
+          </div>
+        </div>` :
+        `<div class="superadmin-section"><p class="superadmin-hint">Aucun message banni. Pendant la célébration, clique 👎 pour en bannir un.</p></div>`;
+    }
+
+    // ── Tab: Générer ─────────────────────────────────────
+    if (tab === 'generate') {
+      const generated = this._saGenerated;
+      content = `
+        <div class="superadmin-section">
+          <h3 class="superadmin-section-title">Prompt de génération</h3>
+          <textarea id="saGenPrompt" class="form-input sa-gen-textarea"
+            placeholder="Décris le style ou thème voulu&#10;Ex: Chuck Norris, humour absurde, philosophie stoïcienne, citations de films…"></textarea>
+          <div class="sa-gen-options">
+            <div class="sa-gen-count-row">
+              <label class="sa-gen-label">Nombre</label>
+              <input id="saGenCount" type="number" class="form-input sa-gen-count-input" value="5" min="1" max="20">
+            </div>
+            <div class="superadmin-lang-toggle">
+              <button class="superadmin-lang-btn${this._saLang==='fr'?' active':''}" id="saGenLangFR" onclick="window.app.superadminSelectLang('fr')">FR</button>
+              <button class="superadmin-lang-btn${this._saLang==='en'?' active':''}" id="saGenLangEN" onclick="window.app.superadminSelectLang('en')">EN</button>
+            </div>
+            <button class="btn btn-primary" id="saGenBtn" onclick="window.app.superadminGenerate()">✨ Générer</button>
+          </div>
+        </div>
+        ${generated.length ? `
+        <div class="superadmin-section">
+          <h3 class="superadmin-section-title">Résultats (${generated.length}) — coche ceux à garder</h3>
+          <div class="sa-gen-list" id="saGenList">
+            ${generated.map((q, i) => `
+              <label class="sa-gen-item">
+                <input type="checkbox" class="sa-gen-check" data-i="${i}" checked>
+                <span class="sa-quote-text">${esc(q)}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="sa-gen-save-row">
+            <button class="btn btn-ghost btn-sm" onclick="window.app.superadminGenSelectAll(false)">Tout décocher</button>
+            <button class="btn btn-ghost btn-sm" onclick="window.app.superadminGenSelectAll(true)">Tout cocher</button>
+            <button class="btn btn-primary" onclick="window.app.superadminGenSave()">💾 Sauvegarder les cochés</button>
+          </div>
+        </div>` : ''}`;
+    }
+
+    return `
+      <div class="superadmin-header">
+        <button class="superadmin-back-btn" onclick="window.app.setView('profile')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <h2 class="superadmin-title">Messages d'encouragement</h2>
+      </div>
+      ${tabBar}
+      <div class="superadmin-body">${content}</div>`;
+  }
+
+  _saRefresh() {
+    const view = document.querySelector('.superadmin-view');
+    if (view) {
+      view.innerHTML = this._renderSuperadminInner();
+    } else {
+      this.render();
+    }
+  }
+
+  superadminSetTab(tab) { this._saTab = tab; this._saEditing = null; this._saRefresh(); }
+
+  superadminTestCelebrate() { celebrate(this._saLang || state.lang || 'fr'); }
+
+  superadminFilterLang(lang) { this._saLang = lang; this._saRefresh(); }
+
+  superadminSelectLang(lang) { this._saLang = lang; this._saRefresh(); }
+
+  superadminSearch(val) {
+    const q = val.toLowerCase();
+    document.querySelectorAll('#saAllList .sa-quote-row').forEach(row => {
+      row.style.display = row.dataset.text.includes(q) ? '' : 'none';
+    });
+  }
+
+  superadminAddQuote() {
+    const input = document.getElementById('saQuoteInput');
+    const text  = input?.value?.trim().toUpperCase();
+    if (!text) return;
+    addCustomQuote(this._saLang === 'en' ? 'en' : 'fr', text);
+    this._saRefresh();
+  }
+
+  superadminRemoveCustom(lang, i) {
+    const quotes = getCustomQuotes(lang);
+    if (quotes[i] !== undefined) { removeCustomQuote(lang, quotes[i]); this._saEditing = null; this._saRefresh(); }
+  }
+
+  superadminUnban(i) {
+    const banned = getBannedQuotes();
+    if (banned[i] !== undefined) { unbanQuote(banned[i]); this._saRefresh(); }
+  }
+
+  superadminToggleBanByIdx(idx) {
+    const item = this._saAllList?.[idx];
+    if (!item) return;
+    if (getBannedQuotes().includes(item.q)) {
+      unbanQuote(item.q);
+    } else {
+      banQuote(item.q);
+    }
+    this._saRefresh();
+  }
+
+  superadminStartEdit(lang, i) {
+    this._saEditing = { lang, i };
+    this._saTab = 'custom';
+    this._saRefresh();
+    setTimeout(() => document.getElementById('saEditInput')?.focus(), 50);
+  }
+
+  superadminSaveEdit(lang, i) {
+    const val = document.getElementById('saEditInput')?.value?.trim().toUpperCase();
+    if (val) updateCustomQuote(lang, i, val);
+    this._saEditing = null;
+    this._saRefresh();
+  }
+
+  superadminCancelEdit() {
+    this._saEditing = null;
+    this._saRefresh();
+  }
+
+  async superadminGenerate() {
+    const prompt = document.getElementById('saGenPrompt')?.value?.trim() || '';
+    const count  = parseInt(document.getElementById('saGenCount')?.value || '5', 10);
+    const lang   = this._saLang === 'en' ? 'en' : 'fr';
+    const btn    = document.getElementById('saGenBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Génération…'; }
+
+    try {
+      const token = await getIdToken();
+      const res  = await fetch('http://localhost:3333/admin/generate-quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ prompt, count, lang }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      this._saGenerated = data.quotes || [];
+      this._saTab = 'generate';
+      this._saRefresh();
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = '✨ Générer'; }
+      alert(`Erreur : ${err.message}`);
+    }
+  }
+
+  superadminGenSelectAll(checked) {
+    document.querySelectorAll('.sa-gen-check').forEach(cb => { cb.checked = checked; });
+  }
+
+  superadminGenSave() {
+    const lang = this._saLang === 'en' ? 'en' : 'fr';
+    const checks = document.querySelectorAll('.sa-gen-check:checked');
+    checks.forEach(cb => {
+      const i = parseInt(cb.dataset.i, 10);
+      const q = this._saGenerated[i];
+      if (q) addCustomQuote(lang, q);
+    });
+    this._saGenerated = [];
+    this._saTab = 'custom';
+    this._saRefresh();
   }
 
   async saveDisplayName() {
