@@ -477,18 +477,19 @@
 
     <!-- Logged-in / Guest panel -->
     <div id="authPanelUser" class="auth-panel hidden">
-      <!-- Chat header -->
-      <div class="auth-chat-header">
-        <div class="auth-chat-avatar" id="authAvatar">👤</div>
-        <div class="auth-chat-header-info">
-          <div class="auth-chat-name" id="authUserName">Invité</div>
-          <div class="auth-chat-sub" id="authUserSub">Session temporaire</div>
-        </div>
-        <button class="auth-chat-close" onclick="window.app.closeAuthModal()">✕</button>
+
+      <!-- Close button -->
+      <button class="modal-close-btn auth-panel-close" onclick="window.app.closeAuthModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+
+      <!-- User identity -->
+      <div class="auth-panel-identity">
+        <div class="auth-panel-avatar" id="authAvatar">👤</div>
+        <div class="auth-panel-name" id="authUserName">Invité</div>
+        <div class="auth-panel-status" id="authUserSub">Session locale</div>
       </div>
 
-      <!-- Bot message -->
-      <div class="auth-chat-bubble" id="authWelcomeBubble"></div>
+      <!-- Welcome message -->
+      <p class="auth-panel-message" id="authWelcomeBubble"></p>
 
       <!-- Upgrade actions (guests only) -->
       <div id="authUpgradeSection" class="auth-upgrade-section hidden">

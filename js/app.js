@@ -3333,17 +3333,17 @@ class TodoApp {
     panelForm.classList.toggle('hidden',  showUserPanel || showGuestPanel);
 
     if (showUserPanel) {
-      document.getElementById('authUserName').textContent = user.email || 'Utilisateur';
+      document.getElementById('authUserName').textContent = user.displayName || user.email || 'Utilisateur';
       document.getElementById('authUserSub').textContent  = 'Compte connecté';
       document.getElementById('authAvatar').textContent   = '✓';
       document.getElementById('authUpgradeSection').classList.add('hidden');
-      document.getElementById('authWelcomeBubble').textContent = 'Tes tâches se synchronisent automatiquement sur tous tes appareils. ✓';
+      document.getElementById('authWelcomeBubble').textContent = 'Tes tâches se synchronisent automatiquement sur tous tes appareils.';
     } else if (showGuestPanel) {
-      document.getElementById('authUserName').textContent = 'Invité';
-      document.getElementById('authUserSub').textContent  = 'Session temporaire · uid: ' + user.uid.slice(0, 8) + '…';
+      document.getElementById('authUserName').textContent = user.displayName || 'Invité';
+      document.getElementById('authUserSub').textContent  = 'Session locale · données sur cet appareil';
       document.getElementById('authAvatar').textContent   = '👤';
       document.getElementById('authUpgradeSection').classList.remove('hidden');
-      document.getElementById('authWelcomeBubble').textContent = 'Tes tâches sont sauvegardées sur cet appareil. Crée un compte pour y accéder depuis n\'importe où 🔒';
+      document.getElementById('authWelcomeBubble').textContent = 'Crée un compte gratuit pour retrouver tes tâches sur tous tes appareils. Pas de spam, promis.';
     }
 
     document.getElementById('authModalOverlay').classList.remove('hidden');
