@@ -842,6 +842,7 @@ class TodoApp {
       draggedHeight = item.offsetHeight;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', draggedId);
+      this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
     });
 
@@ -928,6 +929,7 @@ class TodoApp {
       draggedDate = item.dataset.date;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', draggedId);
+      this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
     });
 
@@ -971,6 +973,7 @@ class TodoApp {
       draggedGroup = item.dataset.group;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
+      this._setDragGhost(e, item.dataset.id);
       requestAnimationFrame(() => item.classList.add('dragging'));
     });
 
@@ -1228,6 +1231,7 @@ class TodoApp {
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
+    this.initHeaderDropZones();
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
@@ -1313,7 +1317,7 @@ class TodoApp {
     }
 
     const numDays = mode === 'biweek' ? 14 : 7;
-    const weekStart = startOfWeek(state.navDate);
+    const weekStart = new Date(state.navDate);
     const days = [];
     for (let i = 0; i < numDays; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr, hideCompleted));
     const weekEnd = addDays(weekStart, numDays - 1);
@@ -1557,6 +1561,7 @@ class TodoApp {
   planDragStart(event, taskId) {
     event.dataTransfer.setData('text/plain', taskId);
     event.dataTransfer.effectAllowed = 'move';
+    this._setDragGhost(event, taskId);
   }
 
   planDrop(event, ds) {
@@ -1627,6 +1632,78 @@ class TodoApp {
     t.backlog = true;
     saveTodos(state.todos);
     this.render();
+  }
+
+  // ── Header drop zones (Inbox / Backlog buttons) ──────────────────────────
+  initHeaderDropZones() {
+    const inboxBtn   = document.getElementById('inboxTab');
+    const backlogBtn = document.querySelector('.backlog-tab');
+    if (!inboxBtn || !backlogBtn) return;
+
+    // Avoid duplicate listeners by using a flag
+    if (inboxBtn._headerDZ) return;
+    inboxBtn._headerDZ = true;
+
+    const setup = (btn, onDrop) => {
+      btn.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        btn.classList.add('header-drop-hover');
+      });
+      btn.addEventListener('dragleave', e => {
+        if (!btn.contains(e.relatedTarget)) btn.classList.remove('header-drop-hover');
+      });
+      btn.addEventListener('drop', e => {
+        e.preventDefault();
+        btn.classList.remove('header-drop-hover');
+        const taskId = e.dataTransfer.getData('text/plain');
+        if (!taskId) return;
+        onDrop(taskId);
+      });
+    };
+
+    setup(inboxBtn, id => {
+      const t = state.todos.find(x => x.id === id);
+      if (!t) return;
+      snapshot(state.todos);
+      t.date = null;
+      t.backlog = false;
+      saveTodos(state.todos);
+      this.render();
+    });
+
+    setup(backlogBtn, id => {
+      const t = state.todos.find(x => x.id === id);
+      if (!t) return;
+      snapshot(state.todos);
+      t.date = null;
+      t.backlog = true;
+      saveTodos(state.todos);
+      this.render();
+    });
+
+    // Global drag tracking: show/hide header drop zone indicators
+    if (!document._headerDragBound) {
+      document._headerDragBound = true;
+      document.addEventListener('dragstart', () => {
+        requestAnimationFrame(() => document.body.classList.add('is-dragging-task'));
+      });
+      document.addEventListener('dragend', () => {
+        document.body.classList.remove('is-dragging-task');
+        document.querySelectorAll('.header-drop-hover').forEach(el => el.classList.remove('header-drop-hover'));
+      });
+    }
+  }
+
+  // Custom drag ghost: small card with task title
+  _setDragGhost(event, taskId) {
+    const t = state.todos.find(x => x.id === taskId);
+    const ghost = document.createElement('div');
+    ghost.className = 'drag-ghost';
+    ghost.textContent = t ? t.title : '…';
+    document.body.appendChild(ghost);
+    event.dataTransfer.setDragImage(ghost, 12, 12);
+    requestAnimationFrame(() => ghost.remove());
   }
 
   goToDay(ds) {

@@ -39,7 +39,9 @@ export async function loadFromFirestore() {
 // Includes SESSION_ID so the realtime listener can skip our own echoes.
 export async function pushToFirestore(backup) {
   try {
-    await setDoc(userDocRef(), { ...backup, updatedAt: serverTimestamp(), _pushedBySession: SESSION_ID });
+    // JSON round-trip strips undefined values (Firestore rejects them)
+    const clean = JSON.parse(JSON.stringify(backup));
+    await setDoc(userDocRef(), { ...clean, updatedAt: serverTimestamp(), _pushedBySession: SESSION_ID });
   } catch (err) {
     console.warn('[sync] pushToFirestore failed:', err.message);
   }

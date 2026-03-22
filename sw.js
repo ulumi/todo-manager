@@ -95,7 +95,8 @@ self.addEventListener('fetch', event => {
         if (cached) return cached;
         return fetch(request, { mode: 'cors' }).then(res => {
           if (res && res.ok) {
-            caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
+            const cloned = res.clone();
+            caches.open(CACHE_NAME).then(c => c.put(request, cloned));
           }
           return res;
         }).catch(() => caches.match(request));
@@ -108,7 +109,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(request).then(res => {
       if (res && res.ok) {
-        caches.open(CACHE_NAME).then(c => c.put(request, res.clone()));
+        const cloned = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(request, cloned));
       }
       return res;
     }).catch(() => caches.match(request))

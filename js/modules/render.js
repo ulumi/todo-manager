@@ -177,19 +177,19 @@ export function renderDayView(todos) {
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
   const sortedPunctual = sortByOrder(punctualItems, dayOrd);
 
-  // Always build stats bars (CSS will show/hide based on .stats-mode class)
-  const statsLine = (total, done) => {
-    if (total === 0) return '';
-    const pct = Math.round((done / total) * 100);
-    return `<div class="day-stats-summary">
-      <div class="day-stats-bar"><div class="day-stats-fill" style="width:${pct}%"></div></div>
-      <span class="day-stats-label">${done}/${total} ✓</span>
-    </div>`;
-  };
-
   const recAllItems = [...dailyItems, ...weeklyItems, ...monthlyItems, ...yearlyItems];
   const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
   const punctDone = punctualItems.filter(t => isCompleted(t, navDate)).length;
+
+  // Combined stats bar (single, in left column only)
+  const totalAll = punctualItems.length + recAllItems.length;
+  const doneAll = punctDone + recDone;
+  const statsPct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
+  const combinedStats = totalAll > 0 ? `<div class="day-stats-summary">
+    <div class="day-stats-bar"><div class="day-stats-fill" style="width:${statsPct}%"></div></div>
+    <span class="day-stats-label">${doneAll}/${totalAll}</span>
+    <span class="day-stats-pct">${statsPct}%</span>
+  </div>` : '';
 
   // Always render ALL items (CSS hides .done items in stats-mode)
   let leftCol = '';
@@ -197,12 +197,11 @@ export function renderDayView(todos) {
   if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
   if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
   if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
-  leftCol += statsLine(recAllItems.length, recDone);
-  if (!leftCol || leftCol === statsLine(recAllItems.length, recDone)) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>` + statsLine(recAllItems.length, recDone);
+  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
   const rightCol = sortedPunctual.length
-    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>${statsLine(punctualItems.length, punctDone)}`
-    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>${statsLine(punctualItems.length, punctDone)}`;
+    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`
+    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
 
@@ -214,7 +213,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
@@ -897,7 +896,10 @@ export function renderInboxView(todos) {
     const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
     const hasMeta = catBadge || prioBadge;
     return `
-      <div class="inbox-item" data-id="${t.id}" draggable="true" onclick="window.app.openEditModal('${t.id}', null)">
+      <div class="inbox-item" data-id="${t.id}" draggable="true"
+        ondragstart="window.app.planDragStart(event,'${t.id}')"
+        ondragend="this.classList.remove('dragging')"
+        onclick="window.app.openEditModal('${t.id}', null)">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
@@ -969,7 +971,10 @@ export function renderBacklogView(todos) {
     const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
     const hasMeta = catBadge || prioBadge;
     return `
-      <div class="inbox-item" data-id="${t.id}" draggable="true" onclick="window.app.openEditModal('${t.id}', null)">
+      <div class="inbox-item" data-id="${t.id}" draggable="true"
+        ondragstart="window.app.planDragStart(event,'${t.id}')"
+        ondragend="this.classList.remove('dragging')"
+        onclick="window.app.openEditModal('${t.id}', null)">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>

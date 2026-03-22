@@ -9,21 +9,29 @@ import { pushToFirestore } from './sync.js';
 const API = 'http://localhost:3333';
 const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
-// Build auth headers — includes Firebase ID token when available
-async function authHeaders() {
-  const token = await getIdToken();
-  return token
-    ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
-    : { 'Content-Type': 'application/json' };
+// Quick health-check: only talk to the local API if it's actually running.
+// Cached for the page lifetime so we probe at most once.
+let _serverAlive = null;
+async function isServerAlive() {
+  if (_serverAlive !== null) return _serverAlive;
+  if (!IS_LOCAL) return (_serverAlive = false);
+  try {
+    await fetch(`${API}/health`, { signal: AbortSignal.timeout(500) });
+    return (_serverAlive = true);
+  } catch {
+    return (_serverAlive = false);
+  }
 }
 
 // Fire-and-forget POST — never throws, 1.5s timeout
 async function serverPost(endpoint, data) {
-  if (!IS_LOCAL) return;
+  if (!await isServerAlive()) return;
+  const token = await getIdToken();
+  if (!token) return; // no auth yet — skip silently
   try {
     await fetch(`${API}${endpoint}`, {
       method: 'POST',
-      headers: await authHeaders(),
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify(data),
       signal: AbortSignal.timeout(1500),
     });
@@ -32,10 +40,12 @@ async function serverPost(endpoint, data) {
 
 // Returns full backup from server, or null if unavailable
 export async function loadFromServer() {
-  if (!IS_LOCAL) return null;
+  if (!await isServerAlive()) return null;
+  const token = await getIdToken();
+  if (!token) return null; // no auth yet — skip silently
   try {
     const res = await fetch(`${API}/backup`, {
-      headers: await authHeaders(),
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       signal: AbortSignal.timeout(1500),
     });
     if (!res.ok) return null;

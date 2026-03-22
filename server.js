@@ -129,6 +129,7 @@ http.createServer(async (req, res) => {
   Object.entries({ ...CORS, 'Content-Type': 'application/json' }).forEach(([k, v]) => res.setHeader(k, v));
 
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+  if (req.method === 'GET' && req.url === '/health') { res.writeHead(200); res.end('ok'); return; }
 
   try {
     const uid = await verifyToken(req);
