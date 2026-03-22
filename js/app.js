@@ -2830,6 +2830,7 @@ class TodoApp {
     element.replaceWith(input);
     input.focus();
     input.select();
+    input.addEventListener('click', e => e.stopPropagation());
 
     const saveEdit = () => {
       const newTitle = input.value.trim();
