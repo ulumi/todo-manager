@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
-import { getTodosForDate, isCompleted, getSuggestions } from './calendar.js';
+import { getTodosForDate, isCompleted, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
@@ -716,15 +716,22 @@ export function getPeriodLabel() {
 }
 
 export function getCloudsHTML(date, todos) {
-  const suggestions = getSuggestions(todos);
-  state.setSuggestions(suggestions);
+  const frequent = getSuggestions(todos).slice(0, 3);
+  const recent = getRecentTasks(todos).filter(t => !frequent.includes(t)).slice(0, 3);
+  const allQA = [...frequent, ...recent];
+  state.setSuggestions(allQA);
   const recurring = todos.filter(t => t.recurrence && t.recurrence!=='none');
-  if (suggestions.length===0 && recurring.length===0) return '';
+  if (allQA.length===0 && recurring.length===0) return '';
   let html = '';
-  if (suggestions.length > 0) {
+  if (allQA.length > 0) {
+    const freqChips = frequent.map((t, i)=>`<div class="chip" data-chip-type="suggestion-render" data-chip-index="${i}">${esc(t)}</div>`).join('');
+    const recentChips = recent.map((t, i)=>`<div class="chip" data-chip-type="suggestion-render" data-chip-index="${frequent.length + i}">${esc(t)}</div>`).join('');
+    let chips = '';
+    if (frequent.length > 0) chips += `<span class="qa-sub-label">${esc(state.T.frequentlyUsed)}</span>${freqChips}`;
+    if (recent.length > 0) chips += `<span class="qa-sub-label">${esc(state.T.recentlyAdded)}</span>${recentChips}`;
     html += `<div class="clouds-section">
-      <span class="cloud-label">${state.T.frequentlyUsed}</span>
-      <div class="cloud-chips">${suggestions.map((t, i)=>`<div class="chip" data-chip-type="suggestion-render" data-chip-index="${i}">${esc(t)}</div>`).join('')}</div>
+      <span class="cloud-label">${state.T.quickAccess}</span>
+      <div class="cloud-chips">${chips}</div>
     </div>`;
   }
   if (recurring.length > 0) {
@@ -742,7 +749,7 @@ export function getCloudsHTML(date, todos) {
     document.querySelectorAll('[data-chip-type="suggestion-render"]').forEach(chip => {
       chip.style.cursor = 'pointer';
       chip.addEventListener('click', () => {
-        const title = suggestions[parseInt(chip.dataset.chipIndex)];
+        const title = allQA[parseInt(chip.dataset.chipIndex)];
         if (title) window.app.openModalWithTitle(title);
       });
     });

@@ -3216,6 +3216,76 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom: 10px;
 }
 
+.quick-access-section {
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  overflow: hidden;
+}
+
+.qa-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.qa-header:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.qa-header .clouds-chevron {
+  transition: transform 0.22s ease;
+  transform: rotate(90deg);
+}
+
+.quick-access-section.collapsed .qa-body {
+  height: 0;
+  overflow: hidden;
+}
+.quick-access-section.collapsed .qa-header .clouds-chevron {
+  transform: rotate(0deg);
+}
+
+.qa-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+
+.qa-sub-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+  padding: 0 2px;
+}
+.qa-sub-label:first-child {
+  margin-top: 0;
+}
+
+.qa-body {
+  padding: 4px 12px 10px;
+  overflow: hidden;
+  transition: height 0.22s ease;
+}
+.qa-body .cloud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.qa-body .chip {
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
 .clouds-section {
   margin-top: 10px;
   background: var(--surface2);

@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
-import { getTodosForDate, addTask } from './calendar.js';
+import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 
@@ -218,6 +218,7 @@ export function openModal(date, todos, scheduleMode = 'date') {
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
+  renderQuickAccess(todos);
   populateCategorySelect('');
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
@@ -278,6 +279,8 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
+  const qaEl = document.getElementById('quickAccessSection');
+  if (qaEl) { qaEl.style.display = 'none'; qaEl.innerHTML = ''; }
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
 
@@ -688,18 +691,67 @@ function _cloudSection(label, chipsHTML, withEdit = false, openByDefault = false
   </div>`;
 }
 
+// ─── Quick access (3 frequent + 3 recent) inside modal-left ──────────────
+
+export function renderQuickAccess(todos) {
+  const el = document.getElementById('quickAccessSection');
+  if (!el) return;
+
+  const suggestedItems = (() => {
+    const cfg = getSuggestedTasks();
+    return [...cfg.daily, ...cfg.weekly, ...cfg.monthly];
+  })();
+
+  const frequent = getSuggestions(todos)
+    .filter(s => !suggestedItems.includes(s))
+    .slice(0, 3);
+  const recent = getRecentTasks(todos)
+    .filter(s => !suggestedItems.includes(s) && !frequent.includes(s))
+    .slice(0, 3);
+
+  state.setSuggestions([...frequent, ...recent]);
+  if (frequent.length === 0 && recent.length === 0) { el.style.display = 'none'; return; }
+
+  const chipHTML = (title, type, idx) =>
+    `<div class="chip qa-chip" data-qa-type="${type}" data-qa-index="${idx}" data-qa-title="${esc(title)}">${esc(title)}</div>`;
+
+  let chipsHTML = '';
+  if (frequent.length > 0)
+    chipsHTML += `<span class="qa-sub-label">${esc(state.T.frequentlyUsed)}</span>` +
+      frequent.map((t, i) => chipHTML(t, 'frequent', i)).join('');
+  if (recent.length > 0)
+    chipsHTML += `<span class="qa-sub-label">${esc(state.T.recentlyAdded)}</span>` +
+      recent.map((t, i) => chipHTML(t, 'recent', i)).join('');
+
+  el.innerHTML = `
+    <div class="qa-header" onclick="this.parentElement.classList.toggle('collapsed')">
+      <span class="qa-label">${esc(state.T.quickAccess)}</span>
+      ${_chevronSVG}
+    </div>
+    <div class="qa-body">
+      <div class="cloud-chips">${chipsHTML}</div>
+    </div>`;
+  el.classList.remove('collapsed');
+  el.style.display = '';
+
+  // Chip click → fill title
+  setTimeout(() => {
+    el.querySelectorAll('.qa-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const title = chip.dataset.qaTitle;
+        if (title) {
+          document.getElementById('taskTitle').value = title;
+          document.getElementById('taskTitle').focus();
+        }
+      });
+    });
+  }, 0);
+}
+
 export function cloudsHTML(date, todos) {
   const suggestedTasksConfig = getSuggestedTasks();
-  const allSuggestedItems = [...suggestedTasksConfig.daily, ...suggestedTasksConfig.weekly, ...suggestedTasksConfig.monthly];
-
-  const suggestions = getSuggestions(todos).filter(s => !allSuggestedItems.includes(s));
-  state.setSuggestions(suggestions);
 
   let html = '';
-  if (suggestions.length > 0) {
-    const chips = suggestions.map((t, i) => `<div class="chip" data-chip-type="suggestion" data-chip-index="${i}">${esc(t)}</div>`).join('');
-    html += _cloudSection(state.T.frequentlyUsed, chips, false, true);
-  }
   html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" data-chip-type="daily" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
   html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" data-chip-type="weekly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
   html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" data-chip-type="monthly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
@@ -709,12 +761,7 @@ export function cloudsHTML(date, todos) {
     document.querySelectorAll('[data-chip-type]').forEach(chip => {
       chip.style.cursor = 'pointer';
       chip.addEventListener('click', () => {
-        let title = '';
-        if (chip.dataset.chipType === 'suggestion') {
-          title = suggestions[parseInt(chip.dataset.chipIndex)];
-        } else {
-          title = chip.dataset.chipTitle;
-        }
+        const title = chip.dataset.chipTitle;
         if (title) window.app.openModalWithTitle(title);
       });
     });
@@ -780,13 +827,6 @@ export function closeDeleteModal() {
   state.setPendingDelete(null);
 }
 
-
-function getSuggestions(todos) {
-  const counts = {};
-  todos.filter(t => !t.recurrence || t.recurrence==='none')
-    .forEach(t => { counts[t.title] = (counts[t.title]||0)+1; });
-  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>t);
-}
 
 // ─── Combobox (title autocomplete) ───────────────────────────────────────
 
