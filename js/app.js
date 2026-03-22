@@ -968,7 +968,7 @@ class TodoApp {
   initDayDragDrop() {
     const container = document.querySelector('.day-columns');
     if (!container) return;
-    let draggedEl = null, draggedGroup = null, dropTarget = null, dropBefore = false;
+    let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null;
     let draggedHeight = 0;
 
     // Gap placeholder
@@ -978,6 +978,10 @@ class TodoApp {
       placeholder.style.height = '0px';
       placeholder.classList.remove('visible');
       requestAnimationFrame(() => { if (placeholder.parentNode) placeholder.remove(); });
+    };
+
+    const showDragged = () => {
+      if (draggedEl) { draggedEl.style.display = ''; draggedEl.classList.remove('dragging'); }
     };
 
     const draggableSel = '.todo-item[draggable], .day-spacer[draggable]';
@@ -991,11 +995,11 @@ class TodoApp {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id);
-      requestAnimationFrame(() => item.classList.add('dragging'));
+      requestAnimationFrame(() => { item.style.display = 'none'; });
     });
 
     container.addEventListener('dragend', () => {
-      if (draggedEl) draggedEl.classList.remove('dragging');
+      showDragged();
       removePlaceholder();
       draggedEl = null; draggedGroup = null; dropTarget = null;
     });
@@ -1003,19 +1007,41 @@ class TodoApp {
     container.addEventListener('dragover', e => {
       e.preventDefault();
       if (!draggedEl) return;
-      const target = e.target.closest(draggableSel);
-      if (!target || target === draggedEl || target.dataset.group !== draggedGroup) return;
-      const rect = target.getBoundingClientRect();
-      dropBefore = e.clientY < rect.top + rect.height / 2;
-      dropTarget = target.dataset.id;
 
-      // Insert placeholder
-      if (dropBefore) target.parentNode.insertBefore(placeholder, target);
-      else target.parentNode.insertBefore(placeholder, target.nextSibling);
-      requestAnimationFrame(() => {
-        placeholder.style.height = draggedHeight + 'px';
-        placeholder.classList.add('visible');
-      });
+      // Hover on a todo-item → drop after it
+      const todoTarget = e.target.closest('.todo-item[draggable]');
+      if (todoTarget && todoTarget !== draggedEl && todoTarget.dataset.group === draggedGroup) {
+        dropTarget = todoTarget.dataset.id;
+        dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
+        todoTarget.parentNode.insertBefore(placeholder, todoTarget.nextSibling);
+        requestAnimationFrame(() => {
+          placeholder.style.height = draggedHeight + 'px';
+          placeholder.classList.add('visible');
+        });
+        return;
+      }
+
+      // Hover on a spacer → drop at end of its own section
+      const spacerTarget = e.target.closest('.day-spacer[draggable]');
+      if (spacerTarget && spacerTarget !== draggedEl) {
+        const group = spacerTarget.closest('.day-spacer-group');
+        const todoList = group?.querySelector('.todo-list[data-group="punctual"]');
+        if (todoList) {
+          dropPriority = todoList.dataset.priority || null;
+          const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
+          if (lastItem) {
+            dropTarget = lastItem.dataset.id;
+            lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
+          } else {
+            dropTarget = spacerTarget.dataset.id;
+            todoList.appendChild(placeholder);
+          }
+          requestAnimationFrame(() => {
+            placeholder.style.height = draggedHeight + 'px';
+            placeholder.classList.add('visible');
+          });
+        }
+      }
     });
 
     container.addEventListener('dragleave', e => {
@@ -1025,7 +1051,78 @@ class TodoApp {
     container.addEventListener('drop', e => {
       e.preventDefault();
       removePlaceholder();
-      if (draggedEl && dropTarget) this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
+      if (!draggedEl || !dropTarget) return;
+
+      // In priority sort mode, change the item's priority to match the target group
+      if (localStorage.getItem('daySort') === 'priority' && dropPriority != null) {
+        const t = state.todos.find(x => x.id === draggedEl.dataset.id);
+        if (t) {
+          t.priority = dropPriority === 'none' ? '' : dropPriority;
+          saveTodos(state.todos);
+        }
+      }
+
+      this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, false);
+    });
+  }
+
+  initTagSectionDragDrop() {
+    const wrap = document.querySelector('.day-tag-sections');
+    if (!wrap) return;
+    let draggedSec = null;
+
+    wrap.addEventListener('dragstart', e => {
+      const sec = e.target.closest('.day-tag-section[draggable]');
+      if (!sec) return;
+      // Don't hijack todo-item drags
+      if (e.target.closest('.todo-item[draggable]')) return;
+      draggedSec = sec;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', sec.dataset.tagId);
+      requestAnimationFrame(() => sec.classList.add('dragging'));
+    });
+
+    wrap.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!draggedSec) return;
+      const sec = e.target.closest('.day-tag-section');
+      if (!sec || sec === draggedSec) {
+        wrap.querySelectorAll('.drag-over-section').forEach(el => el.classList.remove('drag-over-section'));
+        return;
+      }
+      wrap.querySelectorAll('.drag-over-section').forEach(el => el.classList.remove('drag-over-section'));
+      sec.classList.add('drag-over-section');
+    });
+
+    wrap.addEventListener('dragleave', e => {
+      const sec = e.target.closest('.day-tag-section');
+      if (sec && !sec.contains(e.relatedTarget)) sec.classList.remove('drag-over-section');
+    });
+
+    wrap.addEventListener('dragend', () => {
+      if (draggedSec) draggedSec.classList.remove('dragging');
+      wrap.querySelectorAll('.drag-over-section').forEach(el => el.classList.remove('drag-over-section'));
+      draggedSec = null;
+    });
+
+    wrap.addEventListener('drop', e => {
+      e.preventDefault();
+      wrap.querySelectorAll('.drag-over-section').forEach(el => el.classList.remove('drag-over-section'));
+      if (!draggedSec) return;
+      const targetSec = e.target.closest('.day-tag-section');
+      if (!targetSec || targetSec === draggedSec) return;
+
+      // Reorder: collect current order, move dragged before target
+      const sections = [...wrap.querySelectorAll('.day-tag-section')];
+      const order = sections.map(s => s.dataset.tagId);
+      const fromId = draggedSec.dataset.tagId;
+      const toId = targetSec.dataset.tagId;
+      const newOrder = order.filter(id => id !== fromId);
+      const idx = newOrder.indexOf(toId);
+      newOrder.splice(idx, 0, fromId);
+      localStorage.setItem('dayTagOrder', JSON.stringify(newOrder));
+      draggedSec = null;
+      this.render();
     });
   }
 
@@ -1254,7 +1351,7 @@ class TodoApp {
         }
       }
     }
-    if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); }
+    if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); this.initTagSectionDragDrop(); }
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();

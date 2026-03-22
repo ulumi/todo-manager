@@ -26,6 +26,15 @@
       "prompt": "Create a low-poly background generator with 2 palettes: Géo Chaud (warm reds/oranges/greens) and Aurore Boréale (violet/blue/cyan). Show light and dark variants over a todo app mockup with glassmorphism effects.",
       "createdAt": "2026-03-22",
       "tags": ["generative", "background", "low-poly"]
+    },
+    {
+      "id": "priority-display",
+      "title": "Priority Display — 20 styles",
+      "description": "20 different visual approaches to display task priority levels and section headers when sorting by priority.",
+      "file": "priority-display.html",
+      "prompt": "Create 20 unique variations for displaying task priority indicators and section headers: colored dots, badges, bars, accents, gradients, icons, pills, outlines, glows, text-only, rings, stripes, corners, animations, and glassmorphism styles. Show each with sample tasks and section titles.",
+      "createdAt": "2026-03-22",
+      "tags": ["priority", "design-system", "UI-patterns"]
     }
   ]
 }

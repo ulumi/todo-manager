@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Priority Display — 20 styles</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 25%, #0d2247 50%, #0a1f2e 75%, #0f1420 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 12px; opacity: .9; }
+    .subtitle { font-size: 14px; color: rgba(255,255,255,.5); margin-bottom: 40px; }
+
+    .playground { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 32px; }
+
+    .option {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      backdrop-filter: blur(8px);
+      transition: all .3s ease;
+    }
+
+    .option:hover {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.2);
+    }
+
+    .option-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #a78bfa;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    /* Section styling */
+    .section-header {
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+
+    /* Item styling */
+    .demo-item {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: rgba(255,255,255,.8);
+      transition: all .2s ease;
+    }
+
+    .demo-item:hover {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.15);
+    }
+
+    .task-text { flex: 1; }
+
+    /* ─── STYLE 1: Colored dot left ─── */
+    .style-1 .section-header {
+      color: #ef4444;
+      background: rgba(239, 68, 68, .1);
+      border-color: rgba(239, 68, 68, .2);
+    }
+    .style-1 .priority-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 2: Badge number ─── */
+    .style-2 .section-header {
+      background: linear-gradient(135deg, rgba(239, 68, 68, .15), rgba(239, 68, 68, .05));
+      color: #fca5a5;
+    }
+    .style-2 .priority-indicator {
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 3: Left bar ─── */
+    .style-3 .section-header {
+      border-left: 4px solid #ef4444;
+      padding-left: 12px;
+    }
+    .style-3 .demo-item {
+      border-left: 3px solid #ef4444;
+      padding-left: 11px;
+    }
+
+    /* ─── STYLE 4: Top accent ─── */
+    .style-4 .section-header {
+      border-top: 3px solid #ef4444;
+      padding-top: 9px;
+    }
+    .style-4 .demo-item {
+      border-top: 2px solid #ef4444;
+      padding-top: 10px;
+    }
+
+    /* ─── STYLE 5: Gradient background ─── */
+    .style-5 .section-header {
+      background: linear-gradient(90deg, rgba(239,68,68,.2), transparent);
+      border: none;
+      color: #fca5a5;
+    }
+    .style-5 .demo-item {
+      background: linear-gradient(90deg, rgba(239,68,68,.08), transparent);
+    }
+
+    /* ─── STYLE 6: Icon + text ─── */
+    .style-6 .section-header::before {
+      content: '🔴 ';
+    }
+    .style-6 .priority-indicator {
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 7: Pill badge ─── */
+    .style-7 .section-header {
+      display: inline-block;
+      background: #ef4444;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      border: none;
+      width: 100%;
+      text-align: center;
+    }
+    .style-7 .priority-indicator {
+      background: rgba(239, 68, 68, .2);
+      color: #fca5a5;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 8: Outline box ─── */
+    .style-8 .section-header {
+      border: 2px solid #ef4444;
+      background: transparent;
+      color: #fca5a5;
+    }
+    .style-8 .demo-item {
+      border: 1px dashed rgba(239, 68, 68, .3);
+    }
+
+    /* ─── STYLE 9: Shadow glow ─── */
+    .style-9 .section-header {
+      box-shadow: 0 0 16px rgba(239, 68, 68, .25);
+      background: rgba(239, 68, 68, .12);
+    }
+    .style-9 .priority-indicator {
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(239, 68, 68, .6);
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 10: Background fill ─── */
+    .style-10 .section-header {
+      background: rgba(239, 68, 68, .25);
+      border: 1px solid rgba(239, 68, 68, .4);
+      color: #fecaca;
+    }
+    .style-10 .demo-item {
+      background: rgba(239, 68, 68, .08);
+    }
+
+    /* ─── STYLE 11: Text color only ─── */
+    .style-11 .section-header {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-weight: 800;
+    }
+    .style-11 .priority-indicator {
+      color: #ef4444;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* ─── STYLE 12: Minimal dot inline ─── */
+    .style-12 .section-header {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,.7);
+    }
+    .style-12 .section-header::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .style-12 .priority-indicator {
+      width: 6px;
+      height: 6px;
+      background: #ef4444;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 13: Uppercase badge ─── */
+    .style-13 .section-header {
+      background: #ef4444;
+      color: white;
+      padding: 8px 12px;
+      font-size: 12px;
+      letter-spacing: .1em;
+    }
+    .style-13 .priority-indicator {
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 2px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 14: Wavy border ─── */
+    .style-14 .section-header {
+      border-bottom: 3px wavy rgba(239, 68, 68, .5);
+      padding-bottom: 10px;
+      background: transparent;
+    }
+    .style-14 .demo-item {
+      border-bottom: 2px dotted rgba(239, 68, 68, .3);
+    }
+
+    /* ─── STYLE 15: Icon only ─── */
+    .style-15 .section-header {
+      background: transparent;
+      border: none;
+      padding: 0;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .style-15 .priority-indicator {
+      font-size: 16px;
+      width: auto;
+      height: auto;
+    }
+
+    /* ─── STYLE 16: Ring badge ─── */
+    .style-16 .priority-indicator {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #ef4444;
+      flex-shrink: 0;
+    }
+    .style-16 .section-header {
+      background: transparent;
+      border: 2px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    /* ─── STYLE 17: Striped background ─── */
+    .style-17 .section-header {
+      background: repeating-linear-gradient(45deg, rgba(239,68,68,.08), rgba(239,68,68,.08) 10px, transparent 10px, transparent 20px);
+      border: 1px solid rgba(239, 68, 68, .2);
+    }
+    .style-17 .priority-indicator {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 18: Corner accent ─── */
+    .style-18 .section-header {
+      position: relative;
+      padding-right: 20px;
+    }
+    .style-18 .section-header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-top: 20px solid #ef4444;
+    }
+    .style-18 .priority-indicator {
+      width: 12px;
+      height: 12px;
+      background: #ef4444;
+      clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+      flex-shrink: 0;
+    }
+
+    /* ─── STYLE 19: Animated border ─── */
+    .style-19 .section-header {
+      border: 2px solid transparent;
+      border-image: linear-gradient(90deg, #ef4444, transparent) 0 0 1 0;
+      padding-bottom: 12px;
+      animation: slide-border 2s ease infinite;
+    }
+    @keyframes slide-border {
+      0% { border-image-source: linear-gradient(90deg, #ef4444, transparent); }
+      50% { border-image-source: linear-gradient(90deg, transparent, #ef4444); }
+      100% { border-image-source: linear-gradient(90deg, #ef4444, transparent); }
+    }
+    .style-19 .priority-indicator {
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s ease infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: .5; transform: scale(1.3); }
+    }
+
+    /* ─── STYLE 20: Glass + glow ─── */
+    .style-20 .section-header {
+      background: rgba(239, 68, 68, .1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(239, 68, 68, .3);
+      box-shadow: 0 0 20px rgba(239, 68, 68, .2);
+      color: #fca5a5;
+    }
+    .style-20 .priority-indicator {
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(239, 68, 68, .8);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Priority Display Styles</h1>
+  <p class="subtitle">20 ways to display task priority + section headers</p>
+
+  <div class="playground" id="playground"></div>
+
+  <script>
+    const STYLES = [
+      { num: 1, name: 'Colored dot left', desc: 'Minimal — red dot on left' },
+      { num: 2, name: 'Badge number', desc: 'Numbered badge with background' },
+      { num: 3, name: 'Left bar', desc: 'Accent bar on left edge' },
+      { num: 4, name: 'Top accent', desc: 'Accent stripe on top' },
+      { num: 5, name: 'Gradient bg', desc: 'Subtle gradient background' },
+      { num: 6, name: 'Icon + text', desc: 'Emoji indicator + text' },
+      { num: 7, name: 'Pill badge', desc: 'Full-width rounded badge' },
+      { num: 8, name: 'Outline box', desc: 'Bold outline style' },
+      { num: 9, name: 'Shadow glow', desc: 'Glowing shadow effect' },
+      { num: 10, name: 'Background fill', desc: 'Semi-transparent fill' },
+      { num: 11, name: 'Text color only', desc: 'Colored text, no decoration' },
+      { num: 12, name: 'Minimal dot', desc: 'Tiny inline dot indicator' },
+      { num: 13, name: 'Uppercase', desc: 'Bold uppercase letters' },
+      { num: 14, name: 'Wavy border', desc: 'Organic wavy border' },
+      { num: 15, name: 'Icon only', desc: 'Large emoji, no text' },
+      { num: 16, name: 'Ring badge', desc: 'Circular ring indicator' },
+      { num: 17, name: 'Striped bg', desc: 'Diagonal stripe pattern' },
+      { num: 18, name: 'Corner accent', desc: 'Triangle corner accent' },
+      { num: 19, name: 'Animated', desc: 'Pulsing border + dot' },
+      { num: 20, name: 'Glass glow', desc: 'Glassmorphism + glow' }
+    ];
+
+    const SAMPLE_TASKS = [
+      'Fix critical bug in auth',
+      'Review PR #42',
+      'Update documentation'
+    ];
+
+    const playground = document.getElementById('playground');
+
+    STYLES.forEach(style => {
+      const col = document.createElement('div');
+      col.className = `option style-${style.num}`;
+
+      let priorityContent = '';
+      let sectionTitle = 'HIGH PRIORITY';
+
+      // Different section titles for variety
+      const sectionTitles = [
+        'HIGH PRIORITY',
+        '🔴 Urgent',
+        'CRITICAL',
+        'P1',
+        '⚡ High',
+        'TOP PRIORITY',
+        '!!! Urgent',
+        '🚨 Alert',
+        'Priority: High',
+        'Importance: Critical',
+        '1️⃣ First',
+        'ASAP',
+        '>>> High Priority',
+        '🔥 Burning',
+        'Priority — Highest',
+        '●●● Critical',
+        'Urgent tasks',
+        '▲▲▲ High',
+        '⏰ ASAP',
+        '✦ High Priority'
+      ];
+
+      sectionTitle = sectionTitles[style.num - 1];
+
+      // Build priority indicators
+      if (style.num === 6) {
+        priorityContent = '<span class="priority-indicator">🔴</span>';
+      } else if (style.num === 15) {
+        priorityContent = '<span class="priority-indicator">🔴</span>';
+      } else if (style.num === 18) {
+        priorityContent = '<span class="priority-indicator">★</span>';
+      } else if (style.num === 2 || style.num === 13) {
+        priorityContent = '<span class="priority-indicator">1</span>';
+      } else if (style.num === 11) {
+        priorityContent = '<span class="priority-indicator">High</span>';
+      } else {
+        priorityContent = '<span class="priority-indicator"></span>';
+      }
+
+      col.innerHTML = `
+        <div class="option-title">#${style.num}: ${style.name}</div>
+        <p style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:8px">${style.desc}</p>
+
+        <div class="section-header">${sectionTitle}</div>
+
+        <div class="demo-item">
+          ${priorityContent}
+          <span class="task-text">${SAMPLE_TASKS[0]}</span>
+        </div>
+        <div class="demo-item">
+          ${priorityContent}
+          <span class="task-text">${SAMPLE_TASKS[1]}</span>
+        </div>
+        <div class="demo-item">
+          ${priorityContent}
+          <span class="task-text">${SAMPLE_TASKS[2]}</span>
+        </div>
+      `;
+
+      playground.appendChild(col);
+    });
+  </script>
+
+</body>
+</html>

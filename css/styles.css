@@ -995,18 +995,24 @@ input:checked + .cal-sid-toggle-track::after {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
 }
 
 .day-col-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 11px;
   font-weight: 800;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  opacity: 0.85;
   flex: 1;
+}
+.day-col-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .day-col-controls {
@@ -1088,14 +1094,43 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-auto-group-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #000;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-bottom: 6px;
-  margin-bottom: 2px;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.1em;
+  background: #f59e0b;
+  padding: 5px 12px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.day-tag-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-tag-section {
+  cursor: grab;
+  border-radius: var(--radius);
+  padding: 8px;
+  transition: opacity 0.15s, outline-color 0.15s, background 0.15s;
+}
+.day-tag-section:active {
+  cursor: grabbing;
+}
+.day-tag-section.dragging {
+  opacity: 0.25;
+}
+.day-tag-section.drag-over-section {
+  outline: 2px solid rgba(245, 158, 11, 0.6);
+  outline-offset: 2px;
+  background: rgba(245, 158, 11, 0.08);
+}
+.day-tag-section .day-auto-group-label {
+  margin-bottom: 8px;
 }
 
 .day-spacer-group {
@@ -1129,15 +1164,17 @@ input:checked + .cal-sid-toggle-track::after {
 
 .day-spacer-title {
   min-width: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   outline: none;
   border: none;
   background: none;
   line-height: 1.4;
+  padding-top: 8px;
+  border-top: 2px solid rgba(255, 255, 255, 0.15);
 }
 .day-spacer-title:empty::before {
   content: attr(placeholder);
@@ -1167,10 +1204,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-spacer-line {
-  height: 2px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 1px;
-  width: 100%;
+  display: none;
 }
 
 .day-mini-week {
@@ -1354,14 +1388,21 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-group-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   margin-top: 18px;
-  padding-bottom: 6px;
-  border-bottom: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+.day-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
 }
 .day-group-label:first-child {
   margin-top: 0;

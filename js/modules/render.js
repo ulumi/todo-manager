@@ -241,26 +241,34 @@ export function renderDayView(todos) {
     const grouped = prioGroups.map(g => {
       const items = itemsForRender.filter(t => g.key === 'none' ? !t.priority : t.priority === g.key);
       if (!items.length) return '';
-      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      const listHtml = `<div class="todo-list" data-group="punctual" data-priority="${g.key}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
       return `<div class="day-spacer-group"><div class="day-auto-group-label">${g.label}</div>${listHtml}</div>`;
     }).join('');
     rightColItems = grouped || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   } else if (daySort === 'tag') {
-    // Group by category/tag
+    // Group by category/tag — sections draggable to reorder
     const categories = getCategories();
+    const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
     const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
     const untagged = itemsForRender.filter(t => !t.projectId);
+    // Sort catGroups by stored order
+    catGroups.sort((a, b) => {
+      const ia = tagOrder.indexOf(a.id), ib = tagOrder.indexOf(b.id);
+      if (ia < 0 && ib < 0) return 0;
+      if (ia < 0) return 1; if (ib < 0) return -1;
+      return ia - ib;
+    });
     let grouped = catGroups.map(c => {
       const items = itemsForRender.filter(t => t.projectId === c.id);
-      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      return `<div class="day-spacer-group"><div class="day-auto-group-label" style="border-color:${c.color}40;color:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
+      const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      return `<div class="day-tag-section" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
     }).join('');
     if (untagged.length) {
-      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      grouped += `<div class="day-spacer-group"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
+      const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      grouped += `<div class="day-tag-section" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
     }
-    rightColItems = grouped || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+    rightColItems = `<div class="day-tag-sections">${grouped}</div>` || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   } else {
     // Manual mode — with spacers
