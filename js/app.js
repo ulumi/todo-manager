@@ -969,8 +969,16 @@ class TodoApp {
     const container = document.querySelector('.day-columns');
     if (!container) return;
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropBefore = false;
-    const indicator = document.createElement('div');
-    indicator.className = 'drop-indicator';
+    let draggedHeight = 0;
+
+    // Gap placeholder
+    const placeholder = document.createElement('div');
+    placeholder.className = 'drop-gap';
+    const removePlaceholder = () => {
+      placeholder.style.height = '0px';
+      placeholder.classList.remove('visible');
+      requestAnimationFrame(() => { if (placeholder.parentNode) placeholder.remove(); });
+    };
 
     const draggableSel = '.todo-item[draggable], .day-spacer[draggable]';
 
@@ -979,6 +987,7 @@ class TodoApp {
       if (!item) return;
       draggedEl = item;
       draggedGroup = item.dataset.group;
+      draggedHeight = item.offsetHeight;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id);
@@ -987,7 +996,7 @@ class TodoApp {
 
     container.addEventListener('dragend', () => {
       if (draggedEl) draggedEl.classList.remove('dragging');
-      indicator.remove();
+      removePlaceholder();
       draggedEl = null; draggedGroup = null; dropTarget = null;
     });
 
@@ -999,13 +1008,23 @@ class TodoApp {
       const rect = target.getBoundingClientRect();
       dropBefore = e.clientY < rect.top + rect.height / 2;
       dropTarget = target.dataset.id;
-      if (dropBefore) target.parentNode.insertBefore(indicator, target);
-      else target.parentNode.insertBefore(indicator, target.nextSibling);
+
+      // Insert placeholder
+      if (dropBefore) target.parentNode.insertBefore(placeholder, target);
+      else target.parentNode.insertBefore(placeholder, target.nextSibling);
+      requestAnimationFrame(() => {
+        placeholder.style.height = draggedHeight + 'px';
+        placeholder.classList.add('visible');
+      });
+    });
+
+    container.addEventListener('dragleave', e => {
+      if (!container.contains(e.relatedTarget)) removePlaceholder();
     });
 
     container.addEventListener('drop', e => {
       e.preventDefault();
-      indicator.remove();
+      removePlaceholder();
       if (draggedEl && dropTarget) this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, dropBefore);
     });
   }
@@ -2655,6 +2674,17 @@ class TodoApp {
 
   setDayColCount(n) {
     localStorage.setItem('dayColCount', n);
+    this.render();
+  }
+
+  setDaySort(mode) {
+    localStorage.setItem('daySort', mode);
+    this.render();
+  }
+
+  toggleDayAutoPrio() {
+    const cur = localStorage.getItem('dayAutoPrio') === 'true';
+    localStorage.setItem('dayAutoPrio', String(!cur));
     this.render();
   }
 

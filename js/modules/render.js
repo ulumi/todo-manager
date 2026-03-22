@@ -189,35 +189,133 @@ export function renderDayView(todos) {
   if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
-  // Column count
+  // Column count — icon buttons
   const colCount = parseInt(localStorage.getItem('dayColCount') || '2');
-  const colBtns = [1,2,3,4].map(n =>
-    `<button class="day-col-count-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})">${n}</button>`
-  ).join('');
-  const spacerBtn = `<button class="day-col-count-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur">─</button>`;
-
-  // Build punctual items with spacers interleaved
-  const dayOrdFull = window.app?.dayOrder?.[dateStr] || [];
-  const punctualIds = sortedPunctual.map(t => t.id);
-  const allEntries = dayOrdFull.filter(id => id.startsWith('spacer-') || punctualIds.includes(id));
-  // Add any punctual items not yet in order
-  punctualIds.forEach(id => { if (!allEntries.includes(id)) allEntries.push(id); });
-
-  let rightColItems = '';
-  if (sortedPunctual.length > 0 || allEntries.some(id => id.startsWith('spacer-'))) {
-    const cells = allEntries.map(id => {
-      if (id.startsWith('spacer-')) {
-        return `<div class="day-spacer" data-spacer-id="${id}"><span class="day-spacer-line"></span><button class="day-spacer-remove" onclick="window.app.removeDaySpacer('${id}')" title="Supprimer">×</button></div>`;
-      }
-      const t = sortedPunctual.find(x => x.id === id);
-      return t ? todoItemHTML(t, navDate, 'punctual') : '';
+  const colIcon = n => {
+    const bars = Array.from({length: n}, () => `<rect/>`).map((_, i) => {
+      const w = Math.floor(10 / n);
+      const g = n > 1 ? Math.floor((10 - w * n) / (n - 1)) : 0;
+      const x = i * (w + g);
+      return `<rect x="${x}" y="0" width="${w}" height="12" rx="1" fill="currentColor"/>`;
     }).join('');
-    rightColItems = `<div class="todo-list" data-group="punctual" style="grid-template-columns:repeat(${colCount},1fr)">${cells}</div>`;
-  } else {
-    rightColItems = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+    return `<svg viewBox="0 0 10 12" width="10" height="12">${bars}</svg>`;
+  };
+  const colBtns = [1,2,3,4].map(n =>
+    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${colIcon(n)}</button>`
+  ).join('');
+  const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 12 12" width="12" height="12"><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></svg> Spacer</button>`;
+
+  // Sort / group mode
+  const daySort = localStorage.getItem('daySort') || 'manual';
+  const sortOpts = [
+    { id: 'manual',   label: 'Manuel' },
+    { id: 'priority', label: 'Priorité' },
+    { id: 'tag',      label: 'Tag' },
+  ];
+  const sortBtns = sortOpts.map(o =>
+    `<button class="day-ctrl-btn day-sort-btn${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}')">${o.label}</button>`
+  ).join('');
+
+  // Auto-prioritize checkbox
+  const autoPrio = localStorage.getItem('dayAutoPrio') === 'true';
+  const autoPrioCheck = `<label class="day-ctrl-check" title="Remonter automatiquement les tâches prioritaires"><input type="checkbox" ${autoPrio?'checked':''} onchange="window.app.toggleDayAutoPrio()"><span>Auto-prio</span></label>`;
+
+  // Apply auto-prioritize: sort by priority weight before manual order
+  let itemsForRender = [...sortedPunctual];
+  if (autoPrio) {
+    const prioW = { high: 0, medium: 1, low: 2 };
+    itemsForRender.sort((a, b) => (prioW[a.priority] ?? 3) - (prioW[b.priority] ?? 3));
   }
 
-  const punctualHeader = `<div class="day-col-title-row"><div class="day-col-title">${state.T.groupOnce}</div><div class="day-col-controls">${colBtns}${spacerBtn}</div></div>`;
+  const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
+  let rightColItems = '';
+
+  if (daySort === 'priority') {
+    // Group by priority
+    const prioGroups = [
+      { key: 'high',   label: 'Haute' },
+      { key: 'medium', label: 'Moyenne' },
+      { key: 'low',    label: 'Basse' },
+      { key: 'none',   label: 'Sans priorité' },
+    ];
+    const grouped = prioGroups.map(g => {
+      const items = itemsForRender.filter(t => g.key === 'none' ? !t.priority : t.priority === g.key);
+      if (!items.length) return '';
+      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      return `<div class="day-spacer-group"><div class="day-auto-group-label">${g.label}</div>${listHtml}</div>`;
+    }).join('');
+    rightColItems = grouped || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+
+  } else if (daySort === 'tag') {
+    // Group by category/tag
+    const categories = getCategories();
+    const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
+    const untagged = itemsForRender.filter(t => !t.projectId);
+    let grouped = catGroups.map(c => {
+      const items = itemsForRender.filter(t => t.projectId === c.id);
+      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      return `<div class="day-spacer-group"><div class="day-auto-group-label" style="border-color:${c.color}40;color:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
+    }).join('');
+    if (untagged.length) {
+      const listHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      grouped += `<div class="day-spacer-group"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
+    }
+    rightColItems = grouped || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+
+  } else {
+    // Manual mode — with spacers
+    const dayOrdFull = window.app?.dayOrder?.[dateStr] || [];
+    const punctualIds = itemsForRender.map(t => t.id);
+    const allEntries = dayOrdFull.filter(id => id.startsWith('spacer-') || punctualIds.includes(id));
+    punctualIds.forEach(id => { if (!allEntries.includes(id)) allEntries.push(id); });
+
+    if (itemsForRender.length > 0 || allEntries.some(id => id.startsWith('spacer-'))) {
+      const groups = [];
+      let cur = { spacer: '', items: [] };
+      groups.push(cur);
+      for (const id of allEntries) {
+        if (id.startsWith('spacer-')) {
+          const spacerData = window.app?.daySpacer?.[id] || {};
+          const sTitle = esc(spacerData.title || '');
+          cur = { spacer: `<div class="day-spacer" data-spacer-id="${id}" draggable="true" data-group="punctual" data-id="${id}">
+            <div class="day-spacer-top">
+              <span class="day-spacer-title" contenteditable="true" spellcheck="false"
+                onblur="window.app.updateSpacerTitle('${id}',this.textContent.trim())"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+                onclick="event.stopPropagation()"
+                placeholder="Titre…">${sTitle}</span>
+              <button class="day-spacer-remove" onclick="event.stopPropagation();window.app.removeDaySpacer('${id}')" title="Supprimer">×</button>
+            </div>
+            <div class="day-spacer-line"></div>
+          </div>`, items: [] };
+          groups.push(cur);
+        } else {
+          const t = itemsForRender.find(x => x.id === id);
+          if (t) cur.items.push(todoItemHTML(t, navDate, 'punctual'));
+        }
+      }
+      rightColItems = groups.map(g => {
+        const itemsHtml = g.items.length ? `<div class="todo-list" data-group="punctual" style="${colStyle}">${g.items.join('')}</div>` : '';
+        if (!g.spacer) return itemsHtml;
+        return `<div class="day-spacer-group">${g.spacer}${itemsHtml}</div>`;
+      }).join('');
+    } else {
+      rightColItems = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+    }
+  }
+
+  const punctualHeader = `<div class="day-col-title-row">
+    <div class="day-col-title">${state.T.groupOnce}</div>
+    <div class="day-col-controls">
+      <div class="day-ctrl-group">${sortBtns}</div>
+      <div class="day-ctrl-sep"></div>
+      <div class="day-ctrl-group">${colBtns}</div>
+      <div class="day-ctrl-sep"></div>
+      ${spacerBtn}
+      <div class="day-ctrl-sep"></div>
+      ${autoPrioCheck}
+    </div>
+  </div>`;
 
   const hasPunctual = sortedPunctual.length > 0;
   const actionBar = `

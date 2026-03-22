@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playground — UI Experiments</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 25%, #0d2247 50%, #0a1f2e 75%, #0f1420 100%);
+      color: #e8e9f0;
+      min-height: 100vh;
+      padding: 60px 24px;
+      overflow-x: hidden;
+    }
+
+    /* Animated background elements */
+    .bg-glow-1 {
+      position: fixed;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+      animation: float-slow 20s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    .bg-glow-2 {
+      position: fixed;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -80px;
+      left: -50px;
+      pointer-events: none;
+      animation: float-slow 25s ease-in-out infinite reverse;
+      z-index: 0;
+    }
+
+    @keyframes float-slow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(30px); }
+    }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 80px;
+      animation: fade-in-down 0.8s ease-out;
+    }
+
+    .header h1 {
+      font-size: 56px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header .subtitle {
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .header .divider {
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      margin: 16px auto;
+      border-radius: 2px;
+    }
+
+    /* Grid */
+    .playground-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+
+    /* Card */
+    .card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
+      position: relative;
+      animation: fade-in-up 0.6s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    /* Card Header */
+    .card-header {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #f1f5f9;
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.6;
+    }
+
+    /* Tags */
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      border-radius: 6px;
+      color: #d8b4fe;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .tag.design { background: rgba(96, 165, 250, 0.2); border-color: rgba(96, 165, 250, 0.3); color: #93c5fd; }
+    .tag.animation { background: rgba(52, 211, 153, 0.2); border-color: rgba(52, 211, 153, 0.3); color: #86efac; }
+    .tag.generative { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+
+    /* Metadata */
+    .metadata {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .meta-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meta-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.08em;
+    }
+
+    .meta-value {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+      line-height: 1.6;
+      font-family: 'Courier New', monospace;
+      color: #c4f0f9;
+    }
+
+    .creation-date {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    /* CTA */
+    .card-cta {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a78bfa;
+      text-decoration: none;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: rgba(167, 139, 250, 0.1);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      transition: all 0.3s ease;
+      width: fit-content;
+    }
+
+    .card:hover .card-cta {
+      background: rgba(167, 139, 250, 0.2);
+      border-color: rgba(167, 139, 250, 0.4);
+      transform: translateX(4px);
+    }
+
+    .card-cta::after {
+      content: '→';
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover .card-cta::after {
+      transform: translateX(4px);
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 13px;
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Animations */
+    @keyframes fade-in-down {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fade-in-up {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body { padding: 40px 16px; }
+      .header h1 { font-size: 36px; }
+      .header .subtitle { font-size: 16px; }
+      .playground-grid { gap: 20px; }
+      .card { padding: 24px; }
+      .card-title { font-size: 18px; }
+    }
+
+    /* Loading state */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <div class="container">
+    <div class="header">
+      <h1>🎨 Playground</h1>
+      <div class="subtitle">Interactive UI Experiments & Design Explorations</div>
+      <div class="divider"></div>
+    </div>
+
+    <div class="playground-grid" id="grid">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top: 20px;">Loading playgrounds...</p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>✨ Each playground is a self-contained experiment. Hover for details, click to explore.</p>
+    </div>
+  </div>
+
+  <script>
+    async function loadPlaygrounds() {
+      try {
+        const response = await fetch('./playgrounds.json');
+        const data = await response.json();
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+
+        data.playgrounds.forEach(pg => {
+          const card = document.createElement('a');
+          card.href = pg.file;
+          card.className = 'card';
+
+          // Format date
+          const date = new Date(pg.createdAt);
+          const formattedDate = new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }).format(date);
+
+          // Determine tag colors
+          const tagClasses = pg.tags.map(t => {
+            if (t === 'animation' || t.includes('animation')) return 'tag animation';
+            if (t === 'design-system' || t.includes('design')) return 'tag design';
+            if (t === 'generative' || t.includes('generative')) return 'tag generative';
+            return 'tag';
+          }).join(' ');
+
+          card.innerHTML = `
+            <div class="card-header">
+              <h2 class="card-title">${pg.title}</h2>
+              <p class="card-description">${pg.description}</p>
+            </div>
+
+            <div class="tags">
+              ${pg.tags.map((tag, i) => {
+                const tagClass = ['design', 'animation', 'generative'].includes(tag) ? tag : '';
+                return `<span class="tag ${tagClass}">${tag}</span>`;
+              }).join('')}
+            </div>
+
+            <div class="metadata">
+              <div class="meta-section">
+                <div class="meta-label">📝 Prompt Used</div>
+                <div class="meta-value">"${pg.prompt}"</div>
+              </div>
+              <div class="creation-date">
+                📅 Created on <strong>${formattedDate}</strong>
+              </div>
+            </div>
+
+            <div class="card-cta">
+              Open Playground
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+      } catch (error) {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = `<div class="loading" style="grid-column: 1 / -1; color: #ef4444;">
+          Failed to load playgrounds. Make sure playgrounds.json exists.
+        </div>`;
+        console.error('Error loading playgrounds:', error);
+      }
+    }
+
+    // Load on page load
+    window.addEventListener('load', loadPlaygrounds);
+  </script>
+</body>
+</html>

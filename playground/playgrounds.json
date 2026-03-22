@@ -1,0 +1,31 @@
+{
+  "playgrounds": [
+    {
+      "id": "drag-demo",
+      "title": "Drag & Drop — 3 feedback styles",
+      "description": "Compare 3 approaches for drag and drop feedback: animated gap, orange arrow indicator, and ghost preview.",
+      "file": "drag-demo.html",
+      "prompt": "Create a comparison playground showing 3 different drag & drop feedback patterns: gap animé (Notion/Trello style), flèche orange (arrow + line), and ghost preview. Use vibrant colors, smooth animations, and a dark gradient background.",
+      "createdAt": "2026-03-22",
+      "tags": ["drag-drop", "animation", "UX"]
+    },
+    {
+      "id": "dropzone-styles",
+      "title": "Dropzone Styles — 10 variations",
+      "description": "Explore 10 different visual styles for drop zones, from subtle dashed borders to glowing neon outlines.",
+      "file": "dropzone-styles.html",
+      "prompt": "Generate 10 unique dropzone placeholder styles: dashed subtle, solid glow, bright fill, gradient pulse, white ghost, left bar, neon outline, dotted with label, glass orange, breathing animation. Each with drag & drop functionality.",
+      "createdAt": "2026-03-22",
+      "tags": ["dropzone", "design-system", "animation"]
+    },
+    {
+      "id": "lowpoly-demo",
+      "title": "Low-poly backgrounds — 2 palettes",
+      "description": "Dynamic low-poly background generator with warm geography and northern lights themed palettes.",
+      "file": "lowpoly-demo.html",
+      "prompt": "Create a low-poly background generator with 2 palettes: Géo Chaud (warm reds/oranges/greens) and Aurore Boréale (violet/blue/cyan). Show light and dark variants over a todo app mockup with glassmorphism effects.",
+      "createdAt": "2026-03-22",
+      "tags": ["generative", "background", "low-poly"]
+    }
+  ]
+}

@@ -1015,63 +1015,148 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
 }
 
-.day-col-count-btn {
-  width: 22px;
+.day-ctrl-group {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.day-ctrl-sep {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 5px;
+}
+
+.day-ctrl-btn {
   height: 22px;
+  min-width: 22px;
+  padding: 0 5px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.12s;
+  white-space: nowrap;
 }
-.day-col-count-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+.day-ctrl-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
 }
-.day-col-count-btn.active {
-  background: rgba(255, 255, 255, 0.2);
+.day-ctrl-btn.active {
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.day-sort-btn {
+  padding: 0 8px;
+  letter-spacing: 0.03em;
 }
 
 .day-spacer-btn {
-  margin-left: 4px;
-  width: auto;
-  padding: 0 8px;
-  font-size: 13px;
-  letter-spacing: 0.15em;
+  padding: 0 10px;
+  gap: 5px;
+  letter-spacing: 0.03em;
+}
+
+.day-ctrl-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.day-ctrl-check input {
+  accent-color: var(--primary);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+.day-ctrl-check:has(input:checked) {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.day-auto-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.12);
+}
+
+.day-spacer-group {
+  margin-top: 6px;
+  padding-left: 16px;
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+}
+.day-spacer-group .todo-list {
+  margin-top: 8px;
 }
 
 .day-spacer {
-  grid-column: 1/-1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: grab;
+  transition: opacity 0.15s;
+}
+.day-spacer:active {
+  cursor: grabbing;
+}
+.day-spacer.dragging {
+  opacity: 0.35;
+}
+
+.day-spacer-top {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
 }
 
-.day-spacer-line {
-  flex: 1;
-  height: 1.5px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 1px;
+.day-spacer-title {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  outline: none;
+  border: none;
+  background: none;
+  line-height: 1.4;
+}
+.day-spacer-title:empty::before {
+  content: attr(placeholder);
+  color: rgba(255, 255, 255, 0.25);
+}
+.day-spacer-title:focus {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .day-spacer-remove {
   opacity: 0;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 15px;
   cursor: pointer;
-  padding: 0 4px;
+  padding: 0 2px;
   transition: opacity 0.12s, color 0.12s;
+  flex-shrink: 0;
 }
 .day-spacer-remove:hover {
   color: var(--danger);
@@ -1079,6 +1164,13 @@ input:checked + .cal-sid-toggle-track::after {
 
 .day-spacer:hover .day-spacer-remove {
   opacity: 1;
+}
+
+.day-spacer-line {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+  width: 100%;
 }
 
 .day-mini-week {
@@ -1525,6 +1617,21 @@ input:checked + .cal-sid-toggle-track::after {
   margin: 2px 0;
   pointer-events: none;
   flex-shrink: 0;
+}
+
+.drop-gap {
+  height: 0;
+  border-radius: var(--radius);
+  background: rgba(245, 158, 11, 0.2);
+  border: 2px solid rgba(245, 158, 11, 0.6);
+  pointer-events: none;
+  flex-shrink: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: height 0.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.15s;
+}
+.drop-gap.visible {
+  opacity: 1;
 }
 
 .drag-ghost {
