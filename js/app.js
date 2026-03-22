@@ -75,6 +75,7 @@ class TodoApp {
     this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
     if (isNaN(this.zoomIdx) || this.zoomIdx < 0 || this.zoomIdx > 2) this.zoomIdx = 1;
     this.dayOrder = JSON.parse(localStorage.getItem('dayOrder') || '{}');
+    this.daySpacer = JSON.parse(localStorage.getItem('daySpacer') || '{}');
     this.recurringOrder = JSON.parse(localStorage.getItem('recurringOrder') || '{}');
     this._clickTimer = null;
     this._quickAddInDayMode = false;
@@ -971,14 +972,16 @@ class TodoApp {
     const indicator = document.createElement('div');
     indicator.className = 'drop-indicator';
 
+    const draggableSel = '.todo-item[draggable], .day-spacer[draggable]';
+
     container.addEventListener('dragstart', e => {
-      const item = e.target.closest('.todo-item[draggable]');
+      const item = e.target.closest(draggableSel);
       if (!item) return;
       draggedEl = item;
       draggedGroup = item.dataset.group;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
-      this._setDragGhost(e, item.dataset.id);
+      if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id);
       requestAnimationFrame(() => item.classList.add('dragging'));
     });
 
@@ -991,7 +994,7 @@ class TodoApp {
     container.addEventListener('dragover', e => {
       e.preventDefault();
       if (!draggedEl) return;
-      const target = e.target.closest('.todo-item[draggable]');
+      const target = e.target.closest(draggableSel);
       if (!target || target === draggedEl || target.dataset.group !== draggedGroup) return;
       const rect = target.getBoundingClientRect();
       dropBefore = e.clientY < rect.top + rect.height / 2;
@@ -2659,17 +2662,33 @@ class TodoApp {
     const dateStr = DS(state.navDate);
     const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
     if (!this.dayOrder[dateStr]) this.dayOrder[dateStr] = items.map(t => t.id);
-    this.dayOrder[dateStr].push('spacer-' + Date.now());
+    const id = 'spacer-' + Date.now();
+    this.dayOrder[dateStr].push(id);
+    this.daySpacer[id] = { title: '' };
     localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    localStorage.setItem('daySpacer', JSON.stringify(this.daySpacer));
     this.render();
+    // Focus the new spacer title
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-spacer-id="${id}"] .day-spacer-title`);
+      if (el) { el.focus(); }
+    });
   }
 
   removeDaySpacer(spacerId) {
     const dateStr = DS(state.navDate);
     if (!this.dayOrder[dateStr]) return;
     this.dayOrder[dateStr] = this.dayOrder[dateStr].filter(id => id !== spacerId);
+    delete this.daySpacer[spacerId];
     localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    localStorage.setItem('daySpacer', JSON.stringify(this.daySpacer));
     this.render();
+  }
+
+  updateSpacerTitle(spacerId, title) {
+    if (!this.daySpacer[spacerId]) this.daySpacer[spacerId] = {};
+    this.daySpacer[spacerId].title = title;
+    localStorage.setItem('daySpacer', JSON.stringify(this.daySpacer));
   }
 
   clearDay() {
@@ -2827,7 +2846,6 @@ class TodoApp {
       span.textContent = newTitle || currentText;
       span.ondblclick = () => this.quickEditTitle(span, id, dateStr);
       input.replaceWith(span);
-      this.render();
     };
 
     input.addEventListener('blur', saveEdit);
