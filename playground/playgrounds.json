@@ -6,7 +6,7 @@
       "description": "Compare 3 approaches for drag and drop feedback: animated gap, orange arrow indicator, and ghost preview.",
       "file": "drag-demo.html",
       "prompt": "Create a comparison playground showing 3 different drag & drop feedback patterns: gap animé (Notion/Trello style), flèche orange (arrow + line), and ghost preview. Use vibrant colors, smooth animations, and a dark gradient background.",
-      "createdAt": "2026-03-22",
+      "createdAt": "2026-03-18",
       "tags": ["drag-drop", "animation", "UX"]
     },
     {
@@ -15,7 +15,7 @@
       "description": "Explore 10 different visual styles for drop zones, from subtle dashed borders to glowing neon outlines.",
       "file": "dropzone-styles.html",
       "prompt": "Generate 10 unique dropzone placeholder styles: dashed subtle, solid glow, bright fill, gradient pulse, white ghost, left bar, neon outline, dotted with label, glass orange, breathing animation. Each with drag & drop functionality.",
-      "createdAt": "2026-03-22",
+      "createdAt": "2026-03-19",
       "tags": ["dropzone", "design-system", "animation"]
     },
     {
@@ -24,7 +24,7 @@
       "description": "Dynamic low-poly background generator with warm geography and northern lights themed palettes.",
       "file": "lowpoly-demo.html",
       "prompt": "Create a low-poly background generator with 2 palettes: Géo Chaud (warm reds/oranges/greens) and Aurore Boréale (violet/blue/cyan). Show light and dark variants over a todo app mockup with glassmorphism effects.",
-      "createdAt": "2026-03-22",
+      "createdAt": "2026-03-20",
       "tags": ["generative", "background", "low-poly"]
     },
     {
@@ -33,8 +33,17 @@
       "description": "20 different visual approaches to display task priority levels and section headers when sorting by priority.",
       "file": "priority-display.html",
       "prompt": "Create 20 unique variations for displaying task priority indicators and section headers: colored dots, badges, bars, accents, gradients, icons, pills, outlines, glows, text-only, rings, stripes, corners, animations, and glassmorphism styles. Show each with sample tasks and section titles.",
-      "createdAt": "2026-03-22",
+      "createdAt": "2026-03-21",
       "tags": ["priority", "design-system", "UI-patterns"]
+    },
+    {
+      "id": "add-screen-concepts",
+      "title": "Add Screen — 100 concepts",
+      "description": "100 innovative approaches for the add-task screen: command palette, progressive disclosure, spatial, conversational, step-by-step, minimal, gesture, hybrid, immersive, and experimental.",
+      "file": "add-screen-concepts.html",
+      "prompt": "Generate 100 different add-task screen concepts organized in 10 categories (Command, Progressive, Spatial, Conversationnel, Steps, Minimal, Gesture, Hybrid, Immersif, Expérimental). Each concept is an interactive mockup with dark glass aesthetic. Filterable navigation bar.",
+      "createdAt": "2026-03-22",
+      "tags": ["add-screen", "UX", "concepts", "modal"]
     }
   ]
 }

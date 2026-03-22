@@ -12,319 +12,166 @@
       background: linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 25%, #0d2247 50%, #0a1f2e 75%, #0f1420 100%);
       color: #e8e9f0;
       min-height: 100vh;
-      padding: 60px 24px;
+      padding: 40px 24px;
       overflow-x: hidden;
     }
 
-    /* Animated background elements */
+    /* Animated background */
     .bg-glow-1 {
-      position: fixed;
-      width: 400px;
-      height: 400px;
+      position: fixed; width: 400px; height: 400px;
       background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
-      border-radius: 50%;
-      top: -100px;
-      right: -100px;
-      pointer-events: none;
-      animation: float-slow 20s ease-in-out infinite;
-      z-index: 0;
+      border-radius: 50%; top: -100px; right: -100px;
+      pointer-events: none; animation: float-slow 20s ease-in-out infinite; z-index: 0;
     }
-
     .bg-glow-2 {
-      position: fixed;
-      width: 350px;
-      height: 350px;
+      position: fixed; width: 350px; height: 350px;
       background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-      border-radius: 50%;
-      bottom: -80px;
-      left: -50px;
-      pointer-events: none;
-      animation: float-slow 25s ease-in-out infinite reverse;
-      z-index: 0;
+      border-radius: 50%; bottom: -80px; left: -50px;
+      pointer-events: none; animation: float-slow 25s ease-in-out infinite reverse; z-index: 0;
     }
+    @keyframes float-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(30px); } }
 
-    @keyframes float-slow {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(30px); }
-    }
+    .container { max-width: 1400px; margin: 0 auto; position: relative; z-index: 1; }
 
-    /* Layout */
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Header */
-    .header {
-      text-align: center;
-      margin-bottom: 80px;
-      animation: fade-in-down 0.8s ease-out;
-    }
-
+    /* Header — compact */
+    .header { text-align: center; margin-bottom: 32px; }
     .header h1 {
-      font-size: 56px;
-      font-weight: 900;
-      letter-spacing: -2px;
-      margin-bottom: 12px;
+      font-size: 40px; font-weight: 900; letter-spacing: -2px; margin-bottom: 6px;
       background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
+    .header .subtitle { font-size: 15px; color: rgba(255,255,255,.5); font-weight: 500; }
 
-    .header .subtitle {
-      font-size: 18px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 8px;
-      font-weight: 500;
+    /* ─── Toolbar ─── */
+    .toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+      padding: 10px 16px; border-radius: 12px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06);
     }
-
-    .header .divider {
-      width: 60px;
-      height: 4px;
-      background: linear-gradient(90deg, #a78bfa, #60a5fa);
-      margin: 16px auto;
-      border-radius: 2px;
+    .toolbar-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      color: rgba(255,255,255,.35); white-space: nowrap;
     }
+    .sort-btn {
+      padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.5); cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .sort-btn:hover { background: rgba(255,255,255,.1); color: #f1f5f9; }
+    .sort-btn.active { background: rgba(167,139,250,.2); border-color: rgba(167,139,250,.4); color: #d8b4fe; }
+    .sort-dir {
+      width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
+      color: rgba(255,255,255,.5); cursor: pointer; transition: all .2s; font-size: 14px;
+    }
+    .sort-dir:hover { background: rgba(255,255,255,.1); color: #f1f5f9; }
+    .toolbar-count { margin-left: auto; font-size: 12px; color: rgba(255,255,255,.3); }
 
-    /* Grid */
+    /* ─── Grid — 6 columns ─── */
     .playground-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 32px;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 16px;
       margin-bottom: 40px;
     }
 
-    /* Card */
+    /* ─── Card — compact, details on hover ─── */
     .card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.2, 1, 0.3, 1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      overflow: hidden;
-      position: relative;
-      animation: fade-in-up 0.6s ease-out;
-      animation-fill-mode: both;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px;
+      cursor: pointer; transition: all .3s cubic-bezier(.2,1,.3,1);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      overflow: hidden; position: relative; text-decoration: none; color: inherit;
     }
-
-    .card:nth-child(1) { animation-delay: 0.1s; }
-    .card:nth-child(2) { animation-delay: 0.2s; }
-    .card:nth-child(3) { animation-delay: 0.3s; }
-
     .card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, transparent 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(168,85,247,.1) 0%, transparent 100%);
+      opacity: 0; transition: opacity .3s;
     }
-
     .card:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.08);
+      transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.35);
     }
-
-    .card:hover::before {
-      opacity: 1;
-    }
-
-    /* Card Header */
-    .card-header {
-      position: relative;
-      z-index: 1;
-    }
+    .card:hover::before { opacity: 1; }
 
     .card-title {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      color: #f1f5f9;
+      font-size: 14px; font-weight: 700; color: #f1f5f9;
+      position: relative; z-index: 1; line-height: 1.3;
     }
 
-    .card-description {
-      font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
-      line-height: 1.6;
+    .card-date {
+      font-size: 11px; color: rgba(255,255,255,.3);
+      position: relative; z-index: 1;
     }
 
-    /* Tags */
+    /* Tags — always visible, compact */
     .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      position: relative;
-      z-index: 1;
+      display: flex; flex-wrap: wrap; gap: 4px;
+      position: relative; z-index: 1;
     }
-
     .tag {
-      display: inline-block;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 4px 12px;
-      background: rgba(168, 85, 247, 0.2);
-      border: 1px solid rgba(168, 85, 247, 0.3);
-      border-radius: 6px;
-      color: #d8b4fe;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+      background: rgba(168,85,247,.15); border: 1px solid rgba(168,85,247,.2);
+      color: #d8b4fe; text-transform: uppercase; letter-spacing: .04em;
     }
+    .tag.design { background: rgba(96,165,250,.15); border-color: rgba(96,165,250,.2); color: #93c5fd; }
+    .tag.animation { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.2); color: #86efac; }
+    .tag.generative { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.2); color: #fcd34d; }
 
-    .tag.design { background: rgba(96, 165, 250, 0.2); border-color: rgba(96, 165, 250, 0.3); color: #93c5fd; }
-    .tag.animation { background: rgba(52, 211, 153, 0.2); border-color: rgba(52, 211, 153, 0.3); color: #86efac; }
-    .tag.generative { background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
-
-    /* Metadata */
-    .metadata {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    /* Details — hidden, shown on hover */
+    .card-details {
+      position: relative; z-index: 1;
+      max-height: 0; overflow: hidden; opacity: 0;
+      transition: max-height .35s ease, opacity .25s ease, margin .25s ease;
+      margin-top: 0;
     }
-
-    .meta-section {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .card:hover .card-details {
+      max-height: 200px; opacity: 1; margin-top: 6px;
     }
-
-    .meta-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.4);
-      letter-spacing: 0.08em;
+    .card-desc {
+      font-size: 12px; color: rgba(255,255,255,.55); line-height: 1.5;
+      margin-bottom: 8px;
     }
-
-    .meta-value {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.6;
-      font-family: 'Courier New', monospace;
-      color: #c4f0f9;
+    .card-prompt {
+      font-size: 10px; color: rgba(255,255,255,.3); line-height: 1.5;
+      font-family: 'SF Mono', 'Courier New', monospace;
+      padding: 8px 10px; border-radius: 6px;
+      background: rgba(0,0,0,.2); border: 1px solid rgba(255,255,255,.04);
+      max-height: 60px; overflow: hidden;
     }
-
-    .creation-date {
-      font-size: 12px;
-      color: rgba(255, 255, 255, 0.5);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    /* CTA */
     .card-cta {
-      position: relative;
-      z-index: 2;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: #a78bfa;
-      text-decoration: none;
-      margin-top: 8px;
-      padding: 8px 12px;
-      border-radius: 6px;
-      background: rgba(167, 139, 250, 0.1);
-      border: 1px solid rgba(167, 139, 250, 0.2);
-      transition: all 0.3s ease;
-      width: fit-content;
+      position: relative; z-index: 2;
+      font-size: 11px; font-weight: 700; color: #a78bfa;
+      opacity: 0; transition: opacity .25s; margin-top: auto;
     }
-
-    .card:hover .card-cta {
-      background: rgba(167, 139, 250, 0.2);
-      border-color: rgba(167, 139, 250, 0.4);
-      transform: translateX(4px);
-    }
-
-    .card-cta::after {
-      content: '→';
-      transition: transform 0.3s ease;
-    }
-
-    .card:hover .card-cta::after {
-      transform: translateX(4px);
-    }
+    .card:hover .card-cta { opacity: 1; }
+    .card-cta::after { content: ' →'; }
 
     /* Footer */
     .footer {
-      text-align: center;
-      color: rgba(255, 255, 255, 0.4);
-      font-size: 13px;
-      margin-top: 60px;
-      padding-top: 40px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    /* Animations */
-    @keyframes fade-in-down {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fade-in-up {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      text-align: center; color: rgba(255,255,255,.3); font-size: 12px;
+      padding-top: 24px; border-top: 1px solid rgba(255,255,255,.06);
     }
 
     /* Responsive */
-    @media (max-width: 768px) {
-      body { padding: 40px 16px; }
-      .header h1 { font-size: 36px; }
-      .header .subtitle { font-size: 16px; }
-      .playground-grid { gap: 20px; }
-      .card { padding: 24px; }
-      .card-title { font-size: 18px; }
+    @media (max-width: 1400px) { .playground-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 1000px) { .playground-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 700px) {
+      body { padding: 24px 12px; }
+      .header h1 { font-size: 28px; }
+      .playground-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .card { padding: 14px; }
+      .toolbar { flex-wrap: wrap; }
     }
 
-    /* Loading state */
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: rgba(255, 255, 255, 0.5);
-    }
-
+    /* Loading */
+    .loading { text-align: center; padding: 60px 20px; color: rgba(255,255,255,.5); grid-column: 1 / -1; }
     .spinner {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(255, 255, 255, 0.2);
-      border-top-color: #a78bfa;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+      display: inline-block; width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,.2); border-top-color: #a78bfa;
+      border-radius: 50%; animation: spin 1s linear infinite;
     }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -333,93 +180,113 @@
 
   <div class="container">
     <div class="header">
-      <h1>🎨 Playground</h1>
-      <div class="subtitle">Interactive UI Experiments & Design Explorations</div>
-      <div class="divider"></div>
+      <h1>Playground</h1>
+      <div class="subtitle">UI Experiments & Design Explorations</div>
+    </div>
+
+    <div class="toolbar">
+      <span class="toolbar-label">Sort</span>
+      <button class="sort-btn active" data-sort="date">Date</button>
+      <button class="sort-btn" data-sort="title">Title</button>
+      <button class="sort-btn" data-sort="tags">Tags</button>
+      <button class="sort-dir" id="sortDir" title="Toggle sort direction">↓</button>
+      <span class="toolbar-count" id="count"></span>
     </div>
 
     <div class="playground-grid" id="grid">
       <div class="loading">
         <div class="spinner"></div>
-        <p style="margin-top: 20px;">Loading playgrounds...</p>
+        <p style="margin-top: 16px;">Loading...</p>
       </div>
     </div>
 
     <div class="footer">
-      <p>✨ Each playground is a self-contained experiment. Hover for details, click to explore.</p>
+      <p>Each playground is a self-contained experiment. Hover for details, click to explore.</p>
     </div>
   </div>
 
   <script>
-    async function loadPlaygrounds() {
-      try {
-        const response = await fetch('./playgrounds.json');
-        const data = await response.json();
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
+    let playgrounds = [];
+    let sortKey = 'date';
+    let sortAsc = false; // desc by default (most recent first)
 
-        data.playgrounds.forEach(pg => {
-          const card = document.createElement('a');
-          card.href = pg.file;
-          card.className = 'card';
-
-          // Format date
-          const date = new Date(pg.createdAt);
-          const formattedDate = new Intl.DateTimeFormat('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          }).format(date);
-
-          // Determine tag colors
-          const tagClasses = pg.tags.map(t => {
-            if (t === 'animation' || t.includes('animation')) return 'tag animation';
-            if (t === 'design-system' || t.includes('design')) return 'tag design';
-            if (t === 'generative' || t.includes('generative')) return 'tag generative';
-            return 'tag';
-          }).join(' ');
-
-          card.innerHTML = `
-            <div class="card-header">
-              <h2 class="card-title">${pg.title}</h2>
-              <p class="card-description">${pg.description}</p>
-            </div>
-
-            <div class="tags">
-              ${pg.tags.map((tag, i) => {
-                const tagClass = ['design', 'animation', 'generative'].includes(tag) ? tag : '';
-                return `<span class="tag ${tagClass}">${tag}</span>`;
-              }).join('')}
-            </div>
-
-            <div class="metadata">
-              <div class="meta-section">
-                <div class="meta-label">📝 Prompt Used</div>
-                <div class="meta-value">"${pg.prompt}"</div>
-              </div>
-              <div class="creation-date">
-                📅 Created on <strong>${formattedDate}</strong>
-              </div>
-            </div>
-
-            <div class="card-cta">
-              Open Playground
-            </div>
-          `;
-
-          grid.appendChild(card);
-        });
-      } catch (error) {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = `<div class="loading" style="grid-column: 1 / -1; color: #ef4444;">
-          Failed to load playgrounds. Make sure playgrounds.json exists.
-        </div>`;
-        console.error('Error loading playgrounds:', error);
-      }
+    function sortData(data) {
+      const sorted = [...data];
+      sorted.sort((a, b) => {
+        let va, vb;
+        if (sortKey === 'date') {
+          va = new Date(a.createdAt).getTime();
+          vb = new Date(b.createdAt).getTime();
+        } else if (sortKey === 'title') {
+          va = a.title.toLowerCase();
+          vb = b.title.toLowerCase();
+        } else if (sortKey === 'tags') {
+          va = (a.tags[0] || '').toLowerCase();
+          vb = (b.tags[0] || '').toLowerCase();
+        }
+        if (va < vb) return sortAsc ? -1 : 1;
+        if (va > vb) return sortAsc ? 1 : -1;
+        return 0;
+      });
+      return sorted;
     }
 
-    // Load on page load
-    window.addEventListener('load', loadPlaygrounds);
+    function render() {
+      const grid = document.getElementById('grid');
+      const sorted = sortData(playgrounds);
+      document.getElementById('count').textContent = `${sorted.length} experiments`;
+
+      grid.innerHTML = sorted.map(pg => {
+        const date = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(pg.createdAt));
+        const tagHTML = pg.tags.map(t => {
+          const cls = ['design', 'design-system'].some(k => t.includes(k)) ? 'design'
+            : t.includes('animation') ? 'animation'
+            : t.includes('generative') ? 'generative' : '';
+          return `<span class="tag ${cls}">${t}</span>`;
+        }).join('');
+
+        return `
+          <a href="${pg.file}" class="card">
+            <div class="card-title">${pg.title}</div>
+            <div class="card-date">${date}</div>
+            <div class="tags">${tagHTML}</div>
+            <div class="card-details">
+              <div class="card-desc">${pg.description}</div>
+              <div class="card-prompt">${pg.prompt}</div>
+            </div>
+            <div class="card-cta">Open</div>
+          </a>`;
+      }).join('');
+    }
+
+    // Toolbar events
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        sortKey = btn.dataset.sort;
+        render();
+      });
+    });
+
+    document.getElementById('sortDir').addEventListener('click', function() {
+      sortAsc = !sortAsc;
+      this.textContent = sortAsc ? '↑' : '↓';
+      render();
+    });
+
+    // Load
+    async function load() {
+      try {
+        const res = await fetch('./playgrounds.json');
+        const data = await res.json();
+        playgrounds = data.playgrounds;
+        render();
+      } catch (e) {
+        document.getElementById('grid').innerHTML = `<div class="loading" style="color:#ef4444;">Failed to load playgrounds.json</div>`;
+      }
+    }
+    window.addEventListener('load', load);
   </script>
 </body>
 </html>

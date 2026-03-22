@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Add Screen — 100 Concepts</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #1a1040 0%, #2d1b69 30%, #1e3a5f 70%, #0d4f4f 100%);
+  color: #f1f5f9;
+  min-height: 100vh;
+}
+
+/* ─── Navigation ─── */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(15,15,30,.85); backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  padding: 16px 32px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+}
+.nav h1 { font-size: 16px; font-weight: 800; margin-right: 16px; opacity: .9; }
+.nav-pill {
+  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.5); cursor: pointer; transition: all .2s;
+}
+.nav-pill:hover { background: rgba(255,255,255,.12); color: #f1f5f9; }
+.nav-pill.active { background: #f59e0b; color: #000; border-color: #f59e0b; }
+.nav-count { font-size: 11px; color: rgba(255,255,255,.3); margin-left: auto; }
+
+/* ─── Grid ─── */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px; padding: 32px;
+}
+
+/* ─── Card (each concept) ─── */
+.card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; overflow: hidden; transition: all .3s;
+}
+.card:hover { border-color: rgba(255,255,255,.18); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+.card-head {
+  padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.card-num {
+  font-size: 10px; font-weight: 800; color: #f59e0b;
+  background: rgba(245,158,11,.15); border-radius: 6px; padding: 2px 7px;
+}
+.card-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.85); }
+.card-tag {
+  font-size: 9px; font-weight: 600; padding: 2px 8px; border-radius: 10px;
+  background: rgba(255,255,255,.06); color: rgba(255,255,255,.35); margin-left: auto;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.card-body { padding: 16px 18px; min-height: 200px; position: relative; }
+.card-desc { font-size: 11px; color: rgba(255,255,255,.35); margin-bottom: 12px; line-height: 1.5; }
+
+/* ─── Shared mini-UI elements ─── */
+.m-input {
+  width: 100%; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+  background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.1);
+  color: #f1f5f9; outline: none; transition: all .2s; font-family: inherit;
+}
+.m-input:focus { border-color: rgba(245,158,11,.5); background: rgba(255,255,255,.12); }
+.m-input::placeholder { color: rgba(255,255,255,.25); }
+.m-btn {
+  padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  border: none; cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.m-btn-primary { background: #f59e0b; color: #000; }
+.m-btn-primary:hover { background: #fbbf24; transform: scale(1.03); }
+.m-btn-ghost { background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); }
+.m-btn-ghost:hover { background: rgba(255,255,255,.14); color: #f1f5f9; }
+.m-pill {
+  display: inline-flex; padding: 4px 12px; border-radius: 20px; font-size: 11px;
+  font-weight: 600; cursor: pointer; transition: all .15s;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  color: rgba(255,255,255,.4);
+}
+.m-pill:hover { background: rgba(255,255,255,.12); color: #f1f5f9; }
+.m-pill.active { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.4); color: #f59e0b; }
+.m-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.m-select {
+  padding: 8px 12px; border-radius: 8px; font-size: 12px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+  color: #f1f5f9; outline: none; font-family: inherit; cursor: pointer;
+  appearance: none;
+}
+.m-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500;
+  background: rgba(255,255,255,.06); color: rgba(255,255,255,.5);
+}
+.m-divider { height: 1px; background: rgba(255,255,255,.06); margin: 10px 0; }
+.m-icon { opacity: .4; font-size: 14px; }
+.m-row { display: flex; gap: 8px; align-items: center; }
+.m-col { display: flex; flex-direction: column; gap: 8px; }
+.m-flex-1 { flex: 1; }
+.m-gap-4 { gap: 4px; }
+.m-gap-6 { gap: 6px; }
+.m-mt { margin-top: 10px; }
+.m-mb { margin-bottom: 10px; }
+.m-text-xs { font-size: 10px; }
+.m-text-sm { font-size: 12px; }
+.m-text-muted { color: rgba(255,255,255,.35); }
+.m-tag {
+  font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+
+/* ─── Concept-specific styles ─── */
+
+/* Command bar */
+.cmd-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.12);
+  border-radius: 14px; padding: 4px 6px;
+}
+.cmd-bar input {
+  flex: 1; background: transparent; border: none; color: #f1f5f9;
+  font-size: 14px; padding: 8px 10px; outline: none; font-family: inherit;
+}
+.cmd-bar input::placeholder { color: rgba(255,255,255,.2); }
+.cmd-tokens { display: flex; gap: 4px; flex-wrap: wrap; }
+.cmd-token {
+  padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  background: rgba(245,158,11,.12); color: #f59e0b; cursor: pointer;
+}
+.cmd-hint {
+  font-size: 10px; color: rgba(255,255,255,.2); margin-top: 8px;
+  display: flex; gap: 12px;
+}
+.cmd-hint kbd {
+  padding: 1px 5px; border-radius: 3px; font-size: 9px;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+  font-family: inherit;
+}
+
+/* Expanding card */
+.exp-card {
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px; overflow: hidden; transition: all .3s;
+}
+.exp-header {
+  padding: 12px 16px; display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.exp-body { padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height .4s cubic-bezier(.4,0,.2,1), padding .3s; }
+.exp-card.open .exp-body { max-height: 300px; padding: 0 16px 14px; }
+.exp-chevron { transition: transform .3s; font-size: 10px; opacity: .3; }
+.exp-card.open .exp-chevron { transform: rotate(90deg); }
+
+/* Step dots */
+.step-dots { display: flex; gap: 6px; justify-content: center; margin: 10px 0; }
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,.12); transition: all .3s;
+}
+.step-dot.active { background: #f59e0b; transform: scale(1.3); }
+.step-dot.done { background: rgba(245,158,11,.4); }
+
+/* Fab */
+.fab {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #f59e0b; color: #000; font-size: 24px; font-weight: 300;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .3s; border: none;
+  box-shadow: 0 4px 16px rgba(245,158,11,.3);
+}
+.fab:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 8px 24px rgba(245,158,11,.4); }
+
+/* Slot machine */
+.slot-row {
+  display: flex; align-items: center; gap: 2px;
+  background: rgba(255,255,255,.04); border-radius: 10px; padding: 4px;
+}
+.slot-cell {
+  flex: 1; text-align: center; padding: 8px 4px; border-radius: 8px; font-size: 12px;
+  font-weight: 600; cursor: pointer; transition: all .15s;
+  color: rgba(255,255,255,.4);
+}
+.slot-cell:hover { background: rgba(255,255,255,.08); color: #f1f5f9; }
+.slot-cell.active { background: rgba(245,158,11,.15); color: #f59e0b; }
+
+/* Inline tags */
+.inline-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 6px; font-size: 11px;
+  background: rgba(91,94,247,.12); color: #818cf8; font-weight: 500;
+}
+
+/* Radial menu */
+.radial-wrap { position: relative; width: 160px; height: 160px; margin: 0 auto; }
+.radial-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(245,158,11,.15); border: 2px solid rgba(245,158,11,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #f59e0b; cursor: pointer;
+}
+.radial-opt {
+  position: absolute; width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; cursor: pointer; transition: all .2s;
+  color: rgba(255,255,255,.5);
+}
+.radial-opt:hover { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.4); color: #f59e0b; transform: scale(1.15); }
+
+/* Timeline */
+.tl-track {
+  position: relative; height: 4px; background: rgba(255,255,255,.08);
+  border-radius: 2px; margin: 20px 0;
+}
+.tl-fill { position: absolute; left: 0; top: 0; height: 100%; background: #f59e0b; border-radius: 2px; transition: width .3s; }
+.tl-node {
+  position: absolute; top: 50%; transform: translate(-50%,-50%);
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2);
+  background: rgba(15,15,30,.8); cursor: pointer; transition: all .2s;
+}
+.tl-node.done { border-color: #f59e0b; background: #f59e0b; }
+.tl-node:hover { transform: translate(-50%,-50%) scale(1.3); border-color: #f59e0b; }
+.tl-label {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; color: rgba(255,255,255,.3); white-space: nowrap;
+}
+
+/* Drawer */
+.drawer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: rgba(15,15,30,.9); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px 16px 0 0; padding: 16px;
+  transform: translateY(calc(100% - 42px)); transition: transform .4s cubic-bezier(.4,0,.2,1);
+}
+.drawer.open { transform: translateY(0); }
+.drawer-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,.2); margin: 0 auto 12px; cursor: pointer;
+}
+
+/* Conversation bubble */
+.chat-bubble {
+  padding: 10px 14px; border-radius: 14px; font-size: 12px;
+  max-width: 85%; line-height: 1.5;
+}
+.chat-q { background: rgba(255,255,255,.06); color: rgba(255,255,255,.6); align-self: flex-start; border-bottom-left-radius: 4px; }
+.chat-a { background: rgba(245,158,11,.12); color: #f59e0b; align-self: flex-end; border-bottom-right-radius: 4px; }
+
+/* Kanban mini */
+.kanban-cols { display: flex; gap: 6px; }
+.kanban-col {
+  flex: 1; background: rgba(255,255,255,.03); border-radius: 8px; padding: 6px;
+  min-height: 80px;
+}
+.kanban-col-title { font-size: 9px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; margin-bottom: 6px; text-align: center; }
+.kanban-card {
+  background: rgba(255,255,255,.06); border-radius: 6px; padding: 6px 8px;
+  font-size: 10px; color: rgba(255,255,255,.6); margin-bottom: 4px;
+  cursor: grab; border: 1px solid transparent; transition: all .15s;
+}
+.kanban-card:hover { border-color: rgba(245,158,11,.3); }
+.kanban-card.highlight { border-color: #f59e0b; background: rgba(245,158,11,.08); }
+
+/* Wheel picker */
+.wheel { display: flex; gap: 4px; justify-content: center; }
+.wheel-col {
+  width: 60px; height: 80px; overflow: hidden; position: relative;
+  background: rgba(255,255,255,.04); border-radius: 8px;
+  mask-image: linear-gradient(transparent, black 30%, black 70%, transparent);
+}
+.wheel-items { display: flex; flex-direction: column; align-items: center; padding-top: 28px; transition: transform .3s; }
+.wheel-item { padding: 4px 0; font-size: 12px; color: rgba(255,255,255,.3); cursor: pointer; transition: all .15s; }
+.wheel-item.active { color: #f59e0b; font-weight: 700; transform: scale(1.15); }
+.wheel-highlight {
+  position: absolute; top: 50%; left: 4px; right: 4px; height: 24px;
+  transform: translateY(-50%); border: 1px solid rgba(245,158,11,.3);
+  border-radius: 6px; pointer-events: none;
+}
+
+/* Gesture zone */
+.gesture-zone {
+  height: 100px; border: 2px dashed rgba(255,255,255,.08); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: rgba(255,255,255,.2); cursor: pointer; transition: all .2s;
+}
+.gesture-zone:hover { border-color: rgba(245,158,11,.3); color: rgba(255,255,255,.4); }
+
+/* Matrix grid */
+.matrix-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.matrix-cell {
+  aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06);
+  cursor: pointer; transition: all .2s; font-size: 10px; color: rgba(255,255,255,.4);
+}
+.matrix-cell:hover { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.3); color: #f59e0b; }
+.matrix-cell.active { background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.5); color: #f59e0b; }
+
+/* Morph button */
+.morph-btn {
+  width: 100%; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600;
+  background: rgba(245,158,11,.12); border: 1.5px solid rgba(245,158,11,.3);
+  color: #f59e0b; cursor: pointer; transition: all .4s cubic-bezier(.4,0,.2,1);
+  text-align: center; overflow: hidden; position: relative;
+}
+.morph-btn:hover { background: rgba(245,158,11,.2); }
+
+/* Glass panel */
+.glass {
+  background: rgba(255,255,255,.06); backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 14px;
+}
+
+/* Priority dots */
+.prio-dots { display: flex; gap: 6px; }
+.prio-dot {
+  width: 10px; height: 10px; border-radius: 50%; cursor: pointer;
+  transition: all .2s; border: 2px solid transparent;
+}
+.prio-dot:hover { transform: scale(1.4); }
+.prio-dot.high { background: #ef4444; }
+.prio-dot.med { background: #f59e0b; }
+.prio-dot.low { background: #3b82f6; }
+.prio-dot.none { background: rgba(255,255,255,.15); }
+.prio-dot.active { border-color: #fff; transform: scale(1.3); }
+
+/* Accordion */
+.acc-item { border-bottom: 1px solid rgba(255,255,255,.06); }
+.acc-head {
+  padding: 10px 0; display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-size: 12px; color: rgba(255,255,255,.5);
+}
+.acc-head:hover { color: #f1f5f9; }
+.acc-body { max-height: 0; overflow: hidden; transition: max-height .3s; }
+.acc-item.open .acc-body { max-height: 100px; }
+.acc-item.open .acc-head { color: #f59e0b; }
+
+/* Carousel */
+.carousel { overflow: hidden; position: relative; }
+.carousel-track { display: flex; transition: transform .4s cubic-bezier(.4,0,.2,1); }
+.carousel-slide { min-width: 100%; padding: 4px; }
+
+/* Floating labels */
+.fl-group { position: relative; margin-bottom: 2px; }
+.fl-input {
+  width: 100%; padding: 18px 14px 6px; border-radius: 10px; font-size: 13px;
+  background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.1);
+  color: #f1f5f9; outline: none; transition: all .2s; font-family: inherit;
+}
+.fl-label {
+  position: absolute; left: 14px; top: 12px; font-size: 13px;
+  color: rgba(255,255,255,.25); pointer-events: none;
+  transition: all .2s cubic-bezier(.4,0,.2,1);
+}
+.fl-input:focus + .fl-label,
+.fl-input:not(:placeholder-shown) + .fl-label {
+  top: 4px; font-size: 9px; color: #f59e0b; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.fl-input:focus { border-color: rgba(245,158,11,.4); }
+
+/* Typewriter */
+.typewriter {
+  font-size: 16px; font-weight: 500; color: rgba(255,255,255,.7);
+  border-bottom: 2px solid #f59e0b; padding-bottom: 4px;
+  min-height: 24px;
+}
+.typewriter-cursor {
+  display: inline-block; width: 2px; height: 18px; background: #f59e0b;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Quick action bar */
+.qa-bar {
+  display: flex; gap: 2px; background: rgba(255,255,255,.03); border-radius: 12px; padding: 3px;
+}
+.qa-btn {
+  flex: 1; padding: 8px 4px; border-radius: 10px; font-size: 10px; font-weight: 600;
+  text-align: center; cursor: pointer; transition: all .15s;
+  color: rgba(255,255,255,.35); display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.qa-btn:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.6); }
+.qa-btn.active { background: rgba(245,158,11,.1); color: #f59e0b; }
+.qa-icon { font-size: 16px; }
+
+/* Segmented control */
+.seg-ctrl {
+  display: flex; background: rgba(255,255,255,.04); border-radius: 10px; padding: 3px;
+}
+.seg-opt {
+  flex: 1; padding: 6px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  text-align: center; cursor: pointer; transition: all .2s;
+  color: rgba(255,255,255,.35);
+}
+.seg-opt:hover { color: rgba(255,255,255,.6); }
+.seg-opt.active { background: rgba(245,158,11,.15); color: #f59e0b; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+
+/* Token input */
+.token-input-wrap {
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(255,255,255,.06); border: 1.5px solid rgba(255,255,255,.1);
+  min-height: 40px; cursor: text;
+}
+.token {
+  padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; gap: 4px;
+}
+.token-title { background: rgba(245,158,11,.12); color: #f59e0b; }
+.token-date { background: rgba(59,130,246,.12); color: #60a5fa; }
+.token-prio { background: rgba(239,68,68,.12); color: #f87171; }
+.token-cat { background: rgba(16,185,129,.12); color: #34d399; }
+.token-x { cursor: pointer; opacity: .5; font-size: 9px; }
+.token-x:hover { opacity: 1; }
+.token-input {
+  flex: 1; min-width: 60px; background: transparent; border: none;
+  color: #f1f5f9; font-size: 13px; outline: none; font-family: inherit;
+}
+
+/* Slide panels */
+.slide-panels { position: relative; height: 180px; overflow: hidden; }
+.slide-panel {
+  position: absolute; inset: 0; padding: 4px;
+  transition: all .4s cubic-bezier(.4,0,.2,1);
+}
+.slide-panel.left { transform: translateX(-110%); opacity: 0; }
+.slide-panel.center { transform: translateX(0); opacity: 1; }
+.slide-panel.right { transform: translateX(110%); opacity: 0; }
+
+/* Orbit */
+.orbit-wrap { position: relative; width: 180px; height: 180px; margin: 0 auto; }
+.orbit-ring {
+  position: absolute; inset: 0; border: 1px dashed rgba(255,255,255,.08);
+  border-radius: 50%; animation: spin 20s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Minimal line */
+.min-line {
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.08); padding: 8px 0;
+}
+
+/* Tag cloud */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag-cloud-item {
+  padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 500;
+  background: rgba(255,255,255,.04); color: rgba(255,255,255,.35);
+  cursor: pointer; transition: all .15s; border: 1px solid transparent;
+}
+.tag-cloud-item:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.6); }
+.tag-cloud-item.selected { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.3); color: #f59e0b; }
+
+/* Progress ring */
+.prog-ring { position: relative; width: 60px; height: 60px; margin: 0 auto; }
+.prog-ring svg { transform: rotate(-90deg); }
+.prog-ring-text {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #f59e0b;
+}
+
+/* Dock */
+.dock {
+  display: flex; gap: 4px; justify-content: center; padding: 8px 12px;
+  background: rgba(15,15,30,.6); border-radius: 16px; backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.dock-item {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 16px;
+  cursor: pointer; transition: all .2s;
+  background: rgba(255,255,255,.04);
+}
+.dock-item:hover { transform: scale(1.3) translateY(-4px); background: rgba(245,158,11,.15); }
+
+/* Swipe cards */
+.swipe-stack { position: relative; height: 120px; perspective: 600px; }
+.swipe-card {
+  position: absolute; inset: 8px; background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+  padding: 14px; display: flex; flex-direction: column; justify-content: center;
+  align-items: center; transition: all .3s; cursor: grab;
+}
+.swipe-card:nth-child(1) { z-index: 3; }
+.swipe-card:nth-child(2) { z-index: 2; transform: scale(.95) translateY(6px); opacity: .7; }
+.swipe-card:nth-child(3) { z-index: 1; transform: scale(.9) translateY(12px); opacity: .4; }
+
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h1>Add Screen Concepts</h1>
+  <div class="nav-pill active" data-cat="all">Tous</div>
+  <div class="nav-pill" data-cat="cmd">Command</div>
+  <div class="nav-pill" data-cat="prog">Progressive</div>
+  <div class="nav-pill" data-cat="spatial">Spatial</div>
+  <div class="nav-pill" data-cat="conv">Conversationnel</div>
+  <div class="nav-pill" data-cat="step">Steps</div>
+  <div class="nav-pill" data-cat="minimal">Minimal</div>
+  <div class="nav-pill" data-cat="gesture">Gesture</div>
+  <div class="nav-pill" data-cat="hybrid">Hybrid</div>
+  <div class="nav-pill" data-cat="immersive">Immersif</div>
+  <div class="nav-pill" data-cat="exp">Expérimental</div>
+  <span class="nav-count" id="count">100 concepts</span>
+</nav>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const CONCEPTS = [
+  // ─── COMMAND (1-10) ───
+  { id:1, cat:'cmd', title:'Command Bar', desc:'Une seule ligne. Tape le titre, les options apparaissent en tokens parsés.',
+    html:`<div class="cmd-bar"><input placeholder="Acheter du lait !high @courses #demain" oninput="parseCmdTokens(this)"></div><div class="cmd-tokens m-mt" id="tokens1"></div><div class="cmd-hint"><span><kbd>/</kbd> priorité</span><span><kbd>@</kbd> catégorie</span><span><kbd>#</kbd> date</span><span><kbd>!</kbd> récurrence</span></div>`},
+
+  { id:2, cat:'cmd', title:'Slash Command', desc:'Commence par / pour activer les options. Autocomplétion contextuelle.',
+    html:`<div class="m-col"><div class="m-input" contenteditable="true" style="min-height:36px" data-placeholder="Acheter du lait /prio haute /cat courses"></div><div class="glass" style="padding:8px;margin-top:4px"><div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:6px">Suggestions</div><div class="m-col m-gap-4"><div class="m-chip" style="cursor:pointer">/priorité <span style="color:#f59e0b">haute moyenne basse</span></div><div class="m-chip" style="cursor:pointer">/catégorie <span style="color:#34d399">courses santé geek</span></div><div class="m-chip" style="cursor:pointer">/date <span style="color:#60a5fa">aujourd'hui demain lundi</span></div></div></div></div>`},
+
+  { id:3, cat:'cmd', title:'NLP Parse', desc:'Écris en langage naturel. L\'IA comprend et extrait les métadonnées.',
+    html:`<div class="m-col"><input class="m-input" style="font-size:15px;padding:14px" placeholder="Acheter du lait demain matin, priorité haute"><div class="m-divider"></div><div class="m-row" style="flex-wrap:wrap;gap:6px"><span class="token token-title">Acheter du lait</span><span class="token token-date">📅 Demain</span><span class="token token-prio">🔴 Haute</span></div><div class="m-text-xs m-text-muted m-mt">Parsing automatique — cliquer pour corriger</div></div>`},
+
+  { id:4, cat:'cmd', title:'Token Input', desc:'Chaque option est un token éditable dans la ligne. Supprimer un token retire l\'option.',
+    html:`<div class="token-input-wrap"><span class="token token-title">Acheter du lait <span class="token-x">×</span></span><span class="token token-date">Demain <span class="token-x">×</span></span><span class="token token-prio">Haute <span class="token-x">×</span></span><input class="token-input" placeholder="+ ajouter..."></div><div class="m-row m-mt m-gap-4" style="flex-wrap:wrap"><span class="m-pill">📅 Date</span><span class="m-pill">🏷 Catégorie</span><span class="m-pill">⚡ Priorité</span><span class="m-pill">🔁 Récurrence</span></div>`},
+
+  { id:5, cat:'cmd', title:'Spotlight Search', desc:'Comme Spotlight/Alfred. Un seul champ, résultats en dessous.',
+    html:`<div style="background:rgba(0,0,0,.3);border-radius:16px;padding:4px;border:1px solid rgba(255,255,255,.15)"><div class="m-row" style="padding:10px 14px"><span style="font-size:16px;opacity:.3">⌘</span><input class="m-input" style="border:none;background:transparent;font-size:15px;padding:4px 8px" placeholder="Nouvelle tâche..."></div><div class="m-divider" style="margin:0"></div><div style="padding:10px 14px"><div class="m-row" style="padding:6px 0;cursor:pointer;opacity:.4"><span>📅</span><span class="m-text-sm">Ajouter une date</span><span style="margin-left:auto;font-size:10px;opacity:.5">⌘D</span></div><div class="m-row" style="padding:6px 0;cursor:pointer;opacity:.4"><span>⚡</span><span class="m-text-sm">Définir la priorité</span><span style="margin-left:auto;font-size:10px;opacity:.5">⌘P</span></div><div class="m-row" style="padding:6px 0;cursor:pointer;opacity:.4"><span>🏷</span><span class="m-text-sm">Choisir une catégorie</span><span style="margin-left:auto;font-size:10px;opacity:.5">⌘K</span></div></div></div>`},
+
+  { id:6, cat:'cmd', title:'Terminal Style', desc:'Interface monospace façon terminal. Chaque ligne est une commande.',
+    html:`<div style="background:rgba(0,0,0,.4);border-radius:10px;padding:14px;font-family:monospace;font-size:12px"><div style="color:rgba(255,255,255,.3)">$ task add</div><div style="margin-top:6px"><span style="color:#f59e0b">titre:</span> <span style="color:#f1f5f9">Acheter du lait</span></div><div><span style="color:#f59e0b">prio:</span> <span style="color:#ef4444">haute</span></div><div><span style="color:#f59e0b">date:</span> <span style="color:#60a5fa">2026-03-23</span></div><div><span style="color:#f59e0b">cat:</span> <span style="color:#34d399">courses</span></div><div style="margin-top:8px;color:rgba(255,255,255,.2)">$ <span class="typewriter-cursor"></span></div></div>`},
+
+  { id:7, cat:'cmd', title:'Markdown Input', desc:'Écris en markdown. Les métadonnées sont des front-matter.',
+    html:`<div style="background:rgba(0,0,0,.3);border-radius:10px;padding:14px;font-family:monospace;font-size:12px;line-height:1.8"><div style="color:rgba(255,255,255,.2)">---</div><div><span style="color:#f59e0b">prio</span><span style="color:rgba(255,255,255,.2)">:</span> <span style="color:#ef4444">high</span></div><div><span style="color:#f59e0b">date</span><span style="color:rgba(255,255,255,.2)">:</span> <span style="color:#60a5fa">tomorrow</span></div><div><span style="color:#f59e0b">cat</span><span style="color:rgba(255,255,255,.2)">:</span> <span style="color:#34d399">courses</span></div><div style="color:rgba(255,255,255,.2)">---</div><div style="color:#f1f5f9;margin-top:4px">Acheter du lait</div></div>`},
+
+  { id:8, cat:'cmd', title:'Emoji Shortcuts', desc:'Tape un emoji pour déclencher une option. 🔴=haute, 📅=date, etc.',
+    html:`<div class="m-col"><div class="cmd-bar"><input placeholder="🔴 Acheter du lait 📅 demain"></div><div class="m-row m-mt" style="flex-wrap:wrap;gap:6px;justify-content:center"><span class="m-chip">🔴 Haute</span><span class="m-chip">🟡 Moyenne</span><span class="m-chip">🔵 Basse</span><span class="m-chip">📅 Date</span><span class="m-chip">🔁 Répéter</span><span class="m-chip">🏷 Tag</span></div></div>`},
+
+  { id:9, cat:'cmd', title:'Dual Pane Command', desc:'Gauche: texte libre. Droite: preview structurée en temps réel.',
+    html:`<div class="m-row" style="gap:12px;align-items:stretch"><div style="flex:1"><textarea class="m-input" style="height:100%;resize:none;min-height:120px" placeholder="Acheter du lait\nPriorité haute\nDemain\nCatégorie: courses"></textarea></div><div style="flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:12px"><div style="font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:8px">Acheter du lait</div><div class="m-row m-gap-4" style="flex-wrap:wrap"><span class="m-chip" style="background:rgba(239,68,68,.1);color:#f87171">Haute</span><span class="m-chip" style="background:rgba(59,130,246,.1);color:#60a5fa">Demain</span><span class="m-chip" style="background:rgba(16,185,129,.1);color:#34d399">Courses</span></div></div></div>`},
+
+  { id:10, cat:'cmd', title:'Quick Capture', desc:'Juste le titre + Entrée. Tout le reste plus tard.',
+    html:`<div class="m-col" style="align-items:center;padding:20px 0"><div style="font-size:24px;opacity:.15;margin-bottom:16px">✏️</div><input class="m-input" style="text-align:center;font-size:16px;border:none;border-bottom:2px solid rgba(245,158,11,.3);border-radius:0;background:transparent;max-width:250px" placeholder="Quoi faire ?"><div class="m-text-xs m-text-muted m-mt">Entrée pour ajouter • Tab pour les options</div></div>`},
+
+  // ─── PROGRESSIVE DISCLOSURE (11-20) ───
+  { id:11, cat:'prog', title:'Accordion Reveal', desc:'Titre toujours visible. Chaque section s\'ouvre à la demande.',
+    html:`<div class="m-col"><input class="m-input" placeholder="Quoi faire ?"><div class="m-col m-mt" style="gap:0"><div class="acc-item open" onclick="this.classList.toggle('open')"><div class="acc-head"><span>📅 Quand</span><span class="exp-chevron">▸</span></div><div class="acc-body"><div class="seg-ctrl m-mt" style="margin-bottom:8px"><div class="seg-opt active">Auj.</div><div class="seg-opt">Demain</div><div class="seg-opt">Choisir</div></div></div></div><div class="acc-item" onclick="this.classList.toggle('open')"><div class="acc-head"><span>⚡ Priorité</span><span class="exp-chevron">▸</span></div><div class="acc-body"><div class="prio-dots m-mt" style="margin-bottom:8px"><div class="prio-dot none active"></div><div class="prio-dot low"></div><div class="prio-dot med"></div><div class="prio-dot high"></div></div></div></div><div class="acc-item" onclick="this.classList.toggle('open')"><div class="acc-head"><span>🏷 Catégorie</span><span class="exp-chevron">▸</span></div><div class="acc-body" style="padding-bottom:8px"><div class="tag-cloud m-mt"><span class="tag-cloud-item">Courses</span><span class="tag-cloud-item selected">Santé</span><span class="tag-cloud-item">Geek</span></div></div></div></div></div>`},
+
+  { id:12, cat:'prog', title:'Expand on Focus', desc:'Les options apparaissent quand le titre est rempli.',
+    html:`<div class="m-col"><input class="m-input" style="font-size:15px;padding:14px" placeholder="Quoi faire ?" onfocus="this.parentElement.querySelector('.reveal').style.maxHeight='200px';this.parentElement.querySelector('.reveal').style.opacity='1'"><div class="reveal" style="max-height:0;opacity:0;overflow:hidden;transition:all .4s"><div class="m-divider"></div><div class="m-row m-gap-6" style="flex-wrap:wrap"><span class="m-pill">📅 Aujourd'hui</span><span class="m-pill">⚡ Priorité</span><span class="m-pill">🏷 Catégorie</span><span class="m-pill">🔁 Répéter</span><span class="m-pill">📝 Notes</span></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary">Ajouter</button></div></div></div>`},
+
+  { id:13, cat:'prog', title:'Pill Toolbar', desc:'Barre d\'options en bas. Cliquer ouvre un micro-panel inline.',
+    html:`<div class="m-col"><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-row m-mt" style="flex-wrap:wrap;gap:4px"><span class="m-pill active">📅 Demain</span><span class="m-pill">⚡ —</span><span class="m-pill">🏷 —</span><span class="m-pill">🔁 —</span><span class="m-pill">⏱ —</span></div><div class="glass m-mt" style="padding:10px"><div class="m-label">Date</div><div class="seg-ctrl"><div class="seg-opt">Auj.</div><div class="seg-opt active">Demain</div><div class="seg-opt">Lundi</div><div class="seg-opt">📅</div></div></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary">Ajouter</button></div></div>`},
+
+  { id:14, cat:'prog', title:'Smart Defaults', desc:'Pré-rempli intelligemment. Cliquer pour changer.',
+    html:`<div class="m-col"><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-divider"></div><div class="m-text-xs m-text-muted m-mb">Basé sur tes habitudes</div><div class="m-row" style="flex-wrap:wrap;gap:6px"><span class="m-pill active" style="cursor:pointer">📅 Aujourd'hui</span><span class="m-pill active" style="cursor:pointer">🏷 Routine</span><span class="m-pill" style="cursor:pointer;opacity:.4">⚡ Aucune priorité</span></div><div class="m-row m-mt" style="justify-content:space-between"><span class="m-text-xs m-text-muted">↑↓ modifier</span><button class="m-btn m-btn-primary">Ajouter</button></div></div>`},
+
+  { id:15, cat:'prog', title:'Floating Labels', desc:'Labels qui flottent au-dessus des inputs quand remplis.',
+    html:`<div class="m-col m-gap-6"><div class="fl-group"><input class="fl-input" placeholder=" "><label class="fl-label">Quoi faire ?</label></div><div class="m-row m-gap-6"><div class="fl-group m-flex-1"><input class="fl-input" placeholder=" " value="Demain"><label class="fl-label">Date</label></div><div class="fl-group m-flex-1"><input class="fl-input" placeholder=" "><label class="fl-label">Catégorie</label></div></div><div class="m-row m-gap-6"><div class="fl-group m-flex-1"><input class="fl-input" placeholder=" "><label class="fl-label">Priorité</label></div><div class="fl-group m-flex-1"><input class="fl-input" placeholder=" "><label class="fl-label">Récurrence</label></div></div><div style="text-align:right"><button class="m-btn m-btn-primary">Ajouter</button></div></div>`},
+
+  { id:16, cat:'prog', title:'Bottom Sheet Stages', desc:'Le sheet monte en 3 étapes: titre → options → détails.',
+    html:`<div style="position:relative;height:200px;background:rgba(0,0,0,.2);border-radius:12px;overflow:hidden"><div style="position:absolute;top:16px;left:16px;right:16px;text-align:center;color:rgba(255,255,255,.15);font-size:12px">[ Vue principale ]</div><div class="drawer open"><div class="drawer-handle"></div><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-row m-mt" style="flex-wrap:wrap;gap:4px"><span class="m-pill">📅 Date</span><span class="m-pill">⚡ Prio</span><span class="m-pill">🏷 Cat</span></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary">↑ Plus</button></div></div></div>`},
+
+  { id:17, cat:'prog', title:'Two-Phase', desc:'Phase 1: Quoi + Quand. Phase 2: Le reste (optionnel).',
+    html:`<div class="m-col"><div class="m-label">Phase 1 — Essentiel</div><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px"><div class="seg-ctrl m-mb"><div class="seg-opt">Inbox</div><div class="seg-opt active">Auj.</div><div class="seg-opt">Demain</div><div class="seg-opt">📅</div></div><div class="m-divider"></div><div style="opacity:.4"><div class="m-label">Phase 2 — Optionnel</div><div class="m-row m-gap-4" style="flex-wrap:wrap"><span class="m-pill">⚡ Priorité</span><span class="m-pill">🏷 Catégorie</span><span class="m-pill">🔁 Répéter</span><span class="m-pill">📝 Notes</span><span class="m-pill">⏱ Durée</span></div></div><div class="m-row m-mt" style="justify-content:flex-end;gap:8px"><button class="m-btn m-btn-ghost">Juste ajouter</button><button class="m-btn m-btn-primary">+ Détails</button></div></div>`},
+
+  { id:18, cat:'prog', title:'Peek Preview', desc:'Preview card en bas montrant le résultat en temps réel.',
+    html:`<div class="m-col"><input class="m-input" placeholder="Acheter du lait" style="font-size:14px" value="Acheter du lait"><div class="m-row m-mt" style="flex-wrap:wrap;gap:4px"><span class="m-pill active">📅 Demain</span><span class="m-pill active">⚡ Haute</span><span class="m-pill">🏷 —</span></div><div class="m-divider"></div><div class="m-label">Aperçu</div><div class="glass" style="padding:10px 14px"><div class="m-row"><div style="width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-radius:50%"></div><div class="m-col m-gap-4" style="flex:1"><span style="font-size:13px;font-weight:500">Acheter du lait</span><div class="m-row m-gap-4"><span class="m-chip" style="font-size:9px">Demain</span><span style="width:8px;height:8px;border-radius:50%;background:#ef4444"></span></div></div></div></div></div>`},
+
+  { id:19, cat:'prog', title:'Contextual Sidebar', desc:'Le sidebar droit glisse avec les options quand le titre est rempli.',
+    html:`<div class="m-row" style="align-items:stretch;gap:8px"><div style="flex:2" class="m-col"><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px" value="Acheter du lait"><textarea class="m-input m-mt" placeholder="Notes..." rows="3" style="resize:none;font-family:inherit"></textarea><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary">Ajouter</button></div></div><div style="flex:1;background:rgba(255,255,255,.03);border-radius:10px;padding:10px" class="m-col m-gap-6"><div class="m-label">Options</div><div class="prio-dots"><div class="prio-dot none active"></div><div class="prio-dot low"></div><div class="prio-dot med"></div><div class="prio-dot high"></div></div><div class="seg-ctrl" style="flex-direction:column"><div class="seg-opt active" style="text-align:left;padding:4px 8px">Auj.</div><div class="seg-opt" style="text-align:left;padding:4px 8px">Demain</div><div class="seg-opt" style="text-align:left;padding:4px 8px">📅</div></div></div></div>`},
+
+  { id:20, cat:'prog', title:'Morph Button', desc:'Le bouton + se transforme en formulaire complet.',
+    html:`<div style="text-align:center;padding:20px 0"><div class="morph-btn" onclick="this.innerHTML=this.dataset.expanded||this.innerHTML;this.style.textAlign='left'" data-expanded="<input class='m-input' placeholder='Quoi faire ?' style='margin-bottom:8px'><div class='m-row' style='gap:4px;flex-wrap:wrap'><span class='m-pill'>📅</span><span class='m-pill'>⚡</span><span class='m-pill'>🏷</span></div><div class='m-row m-mt' style='justify-content:flex-end'><button class='m-btn m-btn-primary' onclick='event.stopPropagation()'>Ajouter</button></div>">＋ Nouvelle tâche</div></div>`},
+
+  // ─── SPATIAL (21-30) ───
+  { id:21, cat:'spatial', title:'Radial Menu', desc:'Le bouton + ouvre un menu radial avec les options autour.',
+    html:`<div class="radial-wrap"><div class="radial-center">＋</div><div class="radial-opt" style="top:10px;left:50%;transform:translateX(-50%)" title="Titre">✏️</div><div class="radial-opt" style="top:30%;right:8px" title="Date">📅</div><div class="radial-opt" style="bottom:30%;right:8px" title="Priorité">⚡</div><div class="radial-opt" style="bottom:10px;left:50%;transform:translateX(-50%)" title="Notes">📝</div><div class="radial-opt" style="bottom:30%;left:8px" title="Catégorie">🏷</div><div class="radial-opt" style="top:30%;left:8px" title="Répéter">🔁</div></div>`},
+
+  { id:22, cat:'spatial', title:'Kanban Drop', desc:'Drag la nouvelle tâche vers une colonne (Inbox/Date/Backlog).',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:13px"><div class="kanban-cols"><div class="kanban-col"><div class="kanban-col-title">Inbox</div><div class="kanban-card">Task existante</div></div><div class="kanban-col" style="border:1px dashed rgba(245,158,11,.3)"><div class="kanban-col-title" style="color:#f59e0b">Aujourd'hui</div><div class="kanban-card highlight">← Déposer ici</div></div><div class="kanban-col"><div class="kanban-col-title">Backlog</div></div></div></div>`},
+
+  { id:23, cat:'spatial', title:'Matrix Priority', desc:'Grille Eisenhower. Cliquer pour placer la tâche.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?"><div class="matrix-grid"><div class="matrix-cell active" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3)"><span style="font-size:14px">🔥</span><span>Urgent +<br>Important</span></div><div class="matrix-cell"><span style="font-size:14px">📋</span><span>Important</span></div><div class="matrix-cell"><span style="font-size:14px">⚡</span><span>Urgent</span></div><div class="matrix-cell"><span style="font-size:14px">📦</span><span>Backlog</span></div><div class="matrix-cell"><span style="font-size:14px">📥</span><span>Inbox</span></div><div class="matrix-cell"><span style="font-size:14px">🔁</span><span>Routine</span></div></div></div>`},
+
+  { id:24, cat:'spatial', title:'Timeline Drop', desc:'Dépose la tâche sur une timeline des prochains jours.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?"><div class="m-label">Quand ?</div><div style="display:flex;gap:4px"><div style="flex:1;text-align:center;padding:12px 4px;border-radius:8px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.4);cursor:pointer"><div style="font-size:9px;color:rgba(255,255,255,.4)">DIM</div><div style="font-size:16px;font-weight:700;color:#f59e0b">22</div></div><div style="flex:1;text-align:center;padding:12px 4px;border-radius:8px;background:rgba(255,255,255,.04);cursor:pointer"><div style="font-size:9px;color:rgba(255,255,255,.3)">LUN</div><div style="font-size:16px;font-weight:700;color:rgba(255,255,255,.5)">23</div></div><div style="flex:1;text-align:center;padding:12px 4px;border-radius:8px;background:rgba(255,255,255,.04);cursor:pointer"><div style="font-size:9px;color:rgba(255,255,255,.3)">MAR</div><div style="font-size:16px;font-weight:700;color:rgba(255,255,255,.5)">24</div></div><div style="flex:1;text-align:center;padding:12px 4px;border-radius:8px;background:rgba(255,255,255,.04);cursor:pointer"><div style="font-size:9px;color:rgba(255,255,255,.3)">MER</div><div style="font-size:16px;font-weight:700;color:rgba(255,255,255,.5)">25</div></div><div style="flex:1;text-align:center;padding:12px 4px;border-radius:8px;background:rgba(255,255,255,.04);cursor:pointer"><div style="font-size:9px;color:rgba(255,255,255,.3)">…</div><div style="font-size:12px;color:rgba(255,255,255,.3);margin-top:4px">📅</div></div></div></div>`},
+
+  { id:25, cat:'spatial', title:'Card Stack', desc:'Swipe à droite pour ajouter, gauche pour annuler. Stack de champs.',
+    html:`<div class="swipe-stack"><div class="swipe-card"><div class="m-text-xs m-text-muted">Titre</div><input class="m-input" placeholder="Quoi faire ?" style="text-align:center;border:none;background:transparent;font-size:15px"></div><div class="swipe-card"><div class="m-text-xs m-text-muted">Date</div><div style="font-size:14px;color:rgba(255,255,255,.5)">Aujourd'hui</div></div><div class="swipe-card"><div class="m-text-xs m-text-muted">Priorité</div></div></div><div class="m-text-xs m-text-muted" style="text-align:center;margin-top:8px">← Annuler | Suivant →</div>`},
+
+  { id:26, cat:'spatial', title:'Dock Bar', desc:'Dock macOS-like en bas. Chaque icône ouvre un micro-formulaire.',
+    html:`<div class="m-col" style="align-items:center;gap:20px;padding:16px 0"><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px;max-width:250px;text-align:center"><div class="dock"><div class="dock-item" title="Date">📅</div><div class="dock-item" title="Priorité">⚡</div><div class="dock-item" title="Catégorie">🏷</div><div class="dock-item" title="Répéter">🔁</div><div class="dock-item" title="Notes">📝</div><div class="dock-item" title="Durée">⏱</div></div></div>`},
+
+  { id:27, cat:'spatial', title:'Orbit Options', desc:'Les options orbitent autour du champ titre central.',
+    html:`<div class="orbit-wrap"><div class="orbit-ring"></div><div class="radial-center" style="width:80px;height:80px;font-size:12px;border:none;background:rgba(255,255,255,.06)"><input style="width:60px;background:transparent;border:none;color:#f1f5f9;font-size:11px;text-align:center;outline:none" placeholder="Titre"></div><div class="radial-opt" style="top:5px;left:50%;transform:translateX(-50%)">📅</div><div class="radial-opt" style="top:50%;right:5px;transform:translateY(-50%)">⚡</div><div class="radial-opt" style="bottom:5px;left:50%;transform:translateX(-50%)">🏷</div><div class="radial-opt" style="top:50%;left:5px;transform:translateY(-50%)">🔁</div></div>`},
+
+  { id:28, cat:'spatial', title:'Split Screen', desc:'Haut: input minimal. Bas: preview de la journée avec la tâche insérée.',
+    html:`<div class="m-col" style="gap:0"><div style="padding:12px;border-bottom:1px solid rgba(255,255,255,.08)"><div class="m-row"><input class="m-input" style="border:none;background:transparent;font-size:14px;padding:4px" placeholder="Quoi faire ?"><button class="m-btn m-btn-primary" style="padding:6px 14px">＋</button></div></div><div style="padding:12px;background:rgba(0,0,0,.15);border-radius:0 0 10px 10px"><div class="m-text-xs m-text-muted m-mb">Aujourd'hui — 6 tâches</div><div class="m-col m-gap-4"><div class="m-chip" style="width:100%;justify-content:flex-start;padding:6px 10px;font-size:11px">☑ Douche</div><div class="m-chip" style="width:100%;justify-content:flex-start;padding:6px 10px;font-size:11px;border:1px dashed rgba(245,158,11,.3);background:rgba(245,158,11,.06);color:#f59e0b">＋ Nouvelle tâche ici</div><div class="m-chip" style="width:100%;justify-content:flex-start;padding:6px 10px;font-size:11px">○ Dents - matin</div></div></div></div>`},
+
+  { id:29, cat:'spatial', title:'Wheel Picker', desc:'Roues de sélection style iOS pour chaque option.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px"><div class="wheel"><div class="wheel-col"><div class="wheel-highlight"></div><div class="wheel-items"><div class="wheel-item">—</div><div class="wheel-item active">Auj.</div><div class="wheel-item">Demain</div><div class="wheel-item">Lun</div></div></div><div class="wheel-col"><div class="wheel-highlight"></div><div class="wheel-items"><div class="wheel-item active">—</div><div class="wheel-item">Basse</div><div class="wheel-item">Moy.</div><div class="wheel-item">Haute</div></div></div><div class="wheel-col"><div class="wheel-highlight"></div><div class="wheel-items"><div class="wheel-item active">—</div><div class="wheel-item">Santé</div><div class="wheel-item">Geek</div><div class="wheel-item">Maison</div></div></div></div><div class="m-row m-mt" style="justify-content:center;gap:20px"><span class="m-text-xs m-text-muted">Date</span><span class="m-text-xs m-text-muted">Priorité</span><span class="m-text-xs m-text-muted">Catégorie</span></div></div>`},
+
+  { id:30, cat:'spatial', title:'Drag to Priority', desc:'Drag le titre vers une zone pour lui assigner sa priorité.',
+    html:`<div class="m-col"><div class="m-input m-mb" style="text-align:center;cursor:grab;font-size:13px;font-weight:500">🫳 Acheter du lait</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="gesture-zone" style="border-color:rgba(239,68,68,.2)"><span style="font-size:20px">🔥</span></div><div class="gesture-zone" style="border-color:rgba(245,158,11,.2)"><span style="font-size:20px">⚡</span></div><div class="gesture-zone" style="border-color:rgba(59,130,246,.2)"><span style="font-size:20px">📋</span></div><div class="gesture-zone" style="border-color:rgba(255,255,255,.1)"><span style="font-size:20px">📥</span></div></div></div>`},
+
+  // ─── CONVERSATIONNEL (31-40) ───
+  { id:31, cat:'conv', title:'Chat Flow', desc:'Le système pose des questions. Tu réponds naturellement.',
+    html:`<div class="m-col m-gap-6" style="font-size:12px"><div class="chat-bubble chat-q">Qu'est-ce que tu dois faire ?</div><div class="chat-bubble chat-a">Acheter du lait</div><div class="chat-bubble chat-q">Pour quand ?</div><div class="chat-bubble chat-a">Demain</div><div class="chat-bubble chat-q">Priorité ?</div><div class="m-row m-gap-4"><span class="m-pill">Haute</span><span class="m-pill active">Moyenne</span><span class="m-pill">Basse</span><span class="m-pill">Aucune</span></div></div>`},
+
+  { id:32, cat:'conv', title:'Question-Only', desc:'Une seule question à la fois. Répondre passe à la suivante.',
+    html:`<div style="text-align:center;padding:24px 0"><div style="font-size:20px;font-weight:300;color:rgba(255,255,255,.5);margin-bottom:20px">Qu'est-ce que tu<br>dois faire ?</div><input class="m-input" style="text-align:center;font-size:16px;max-width:250px;margin:0 auto;border:none;border-bottom:2px solid rgba(245,158,11,.3);border-radius:0;background:transparent" placeholder=""><div class="step-dots" style="margin-top:20px"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div></div></div>`},
+
+  { id:33, cat:'conv', title:'Voice First', desc:'Bouton micro au centre. Dicte ta tâche, elle est parsée.',
+    html:`<div style="text-align:center;padding:16px 0"><div style="width:64px;height:64px;border-radius:50%;background:rgba(245,158,11,.12);border:2px solid rgba(245,158,11,.3);margin:0 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:24px;transition:all .3s" onmouseenter="this.style.transform='scale(1.1)';this.style.background='rgba(245,158,11,.2)'" onmouseleave="this.style.transform='';this.style.background=''">🎙</div><div class="m-text-sm m-text-muted" style="margin-top:12px">Appuyer pour dicter</div><div class="m-divider"></div><div class="m-text-xs m-text-muted">ou taper ci-dessous</div><input class="m-input m-mt" placeholder="Quoi faire ?" style="text-align:center;font-size:13px"></div>`},
+
+  { id:34, cat:'conv', title:'Template Suggest', desc:'Suggestions basées sur l\'heure et les habitudes.',
+    html:`<div class="m-col"><div class="m-label">Suggestions pour ce soir</div><div class="m-col m-gap-4"><div class="glass" style="padding:10px 14px;cursor:pointer;transition:all .15s" onmouseenter="this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.borderColor=''"><div class="m-row"><span style="font-size:13px">Vaisselle - soir</span><span style="margin-left:auto;font-size:10px;opacity:.3">quotidien</span></div></div><div class="glass" style="padding:10px 14px;cursor:pointer;transition:all .15s" onmouseenter="this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.borderColor=''"><div class="m-row"><span style="font-size:13px">Dents - soir</span><span style="margin-left:auto;font-size:10px;opacity:.3">quotidien</span></div></div></div><div class="m-divider"></div><input class="m-input" placeholder="Ou ajouter autre chose..." style="font-size:13px"></div>`},
+
+  { id:35, cat:'conv', title:'Story Mode', desc:'Raconte ta tâche comme une story. Le système décompose.',
+    html:`<div class="m-col"><textarea class="m-input" style="font-size:14px;resize:none;min-height:60px;font-family:inherit" placeholder="Je dois acheter du lait demain matin, c'est assez urgent parce qu'on n'en a plus..."></textarea><div class="m-divider"></div><div class="m-label">Extraction</div><div class="m-col m-gap-4"><div class="m-row"><span class="m-text-xs" style="width:60px;color:rgba(255,255,255,.3)">Tâche</span><span class="m-text-sm">Acheter du lait</span></div><div class="m-row"><span class="m-text-xs" style="width:60px;color:rgba(255,255,255,.3)">Quand</span><span class="m-text-sm">Demain matin</span></div><div class="m-row"><span class="m-text-xs" style="width:60px;color:rgba(255,255,255,.3)">Priorité</span><span class="m-text-sm" style="color:#ef4444">Haute</span></div></div></div>`},
+
+  { id:36, cat:'conv', title:'Guided Cards', desc:'Série de cartes-questions. Swipe pour naviguer.',
+    html:`<div class="m-col"><div class="glass" style="padding:20px;text-align:center"><div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:12px">1 / 4</div><div style="font-size:15px;color:rgba(255,255,255,.6);margin-bottom:16px">Quoi ?</div><input class="m-input" style="text-align:center;font-size:15px;background:transparent;border:none;border-bottom:1.5px solid rgba(255,255,255,.15);border-radius:0" placeholder="Décris ta tâche"><div class="m-row m-mt" style="justify-content:center;gap:16px"><button class="m-btn m-btn-ghost" style="padding:6px 20px">←</button><button class="m-btn m-btn-primary" style="padding:6px 20px">→</button></div></div><div class="step-dots"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div></div></div>`},
+
+  { id:37, cat:'conv', title:'Autocomplete Context', desc:'Commence à taper, suggestions contextuelles instantanées.',
+    html:`<div class="m-col"><div class="cmd-bar"><input value="Ach" style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:14px;padding:8px 10px;outline:none"></div><div class="glass m-mt" style="padding:6px"><div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,.08);cursor:pointer;font-size:13px;color:#f1f5f9">Acheter du lait <span style="color:rgba(255,255,255,.3)">— ajouté 12 fois</span></div><div style="padding:8px 12px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.5)">Acheter des fruits</div><div style="padding:8px 12px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.5)">Acheter croquettes chat</div></div></div>`},
+
+  { id:38, cat:'conv', title:'Fill the Blank', desc:'"Je dois ___ le ___ avec priorité ___"',
+    html:`<div style="font-size:14px;line-height:2.2;color:rgba(255,255,255,.4);padding:8px 0">Je dois <span style="border-bottom:2px solid #f59e0b;color:#f1f5f9;padding:0 4px">acheter du lait</span> pour <span style="border-bottom:2px solid rgba(59,130,246,.4);color:#60a5fa;padding:0 4px">demain</span> avec priorité <span style="border-bottom:2px solid rgba(239,68,68,.4);color:#f87171;padding:0 4px">haute</span> dans <span style="border-bottom:2px dashed rgba(255,255,255,.15);padding:0 4px;cursor:pointer">___</span></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary">Ajouter</button></div>`},
+
+  { id:39, cat:'conv', title:'Contextual AI', desc:'L\'IA suggère des métadonnées basées sur le titre tapé.',
+    html:`<div class="m-col"><input class="m-input" value="Rendez-vous dentiste" style="font-size:14px"><div class="m-divider"></div><div class="m-row m-gap-4" style="flex-wrap:wrap"><div class="m-text-xs m-text-muted" style="width:100%">🤖 Suggestions IA</div><span class="m-pill active" style="background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:#34d399">🏷 Santé</span><span class="m-pill" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#f87171">⚡ Haute</span><span class="m-pill" style="background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2);color:#60a5fa">⏱ 1h</span></div></div>`},
+
+  { id:40, cat:'conv', title:'Quick Reply Buttons', desc:'Chaque question a des boutons de réponse rapide.',
+    html:`<div class="m-col m-gap-6"><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px" value="Acheter du lait"><div class="m-label">Quand ?</div><div class="m-row m-gap-4" style="flex-wrap:wrap"><button class="m-btn m-btn-ghost" style="padding:6px 14px;font-size:11px">📥 Inbox</button><button class="m-btn" style="padding:6px 14px;font-size:11px;background:rgba(245,158,11,.15);color:#f59e0b">☀ Auj.</button><button class="m-btn m-btn-ghost" style="padding:6px 14px;font-size:11px">📅 Demain</button><button class="m-btn m-btn-ghost" style="padding:6px 14px;font-size:11px">🗓 Choisir</button><button class="m-btn m-btn-ghost" style="padding:6px 14px;font-size:11px">📦 Backlog</button></div></div>`},
+
+  // ─── STEPS (41-50) ───
+  { id:41, cat:'step', title:'Progress Bar', desc:'Barre de progression en haut. Chaque étape = un champ.',
+    html:`<div class="m-col"><div class="tl-track"><div class="tl-fill" style="width:40%"></div><div class="tl-node done" style="left:0%"><div class="tl-label">Quoi</div></div><div class="tl-node done" style="left:25%"><div class="tl-label">Quand</div></div><div class="tl-node" style="left:50%;border-color:#f59e0b"><div class="tl-label" style="color:#f59e0b">Prio</div></div><div class="tl-node" style="left:75%"><div class="tl-label">Cat</div></div><div class="tl-node" style="left:100%"><div class="tl-label">OK</div></div></div><div style="margin-top:36px"><div class="m-label">Priorité</div><div class="prio-dots" style="gap:12px;justify-content:center"><div class="prio-dot none" style="width:20px;height:20px"></div><div class="prio-dot low" style="width:20px;height:20px"></div><div class="prio-dot med" style="width:20px;height:20px"></div><div class="prio-dot high" style="width:20px;height:20px"></div></div></div></div>`},
+
+  { id:42, cat:'step', title:'Wizard Slides', desc:'Slides horizontaux avec navigation.',
+    html:`<div class="m-col"><div class="seg-ctrl m-mb"><div class="seg-opt active">1. Quoi</div><div class="seg-opt">2. Quand</div><div class="seg-opt">3. Options</div></div><div class="glass" style="padding:20px;min-height:80px"><input class="m-input" placeholder="Décris ta tâche..." style="font-size:15px;background:transparent;border:none;padding:0"></div><div class="m-row m-mt" style="justify-content:space-between"><button class="m-btn m-btn-ghost">← Retour</button><button class="m-btn m-btn-primary">Suivant →</button></div></div>`},
+
+  { id:43, cat:'step', title:'Stepper Vertical', desc:'Étapes verticales avec indicateurs de complétion.',
+    html:`<div class="m-col"><div class="m-row m-gap-6"><div style="display:flex;flex-direction:column;align-items:center;gap:0"><div style="width:20px;height:20px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:10px;color:#000;font-weight:700">✓</div><div style="width:2px;height:20px;background:rgba(245,158,11,.4)"></div><div style="width:20px;height:20px;border-radius:50%;border:2px solid #f59e0b;display:flex;align-items:center;justify-content:center;font-size:10px;color:#f59e0b;font-weight:700">2</div><div style="width:2px;height:20px;background:rgba(255,255,255,.08)"></div><div style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.15);font-size:10px;color:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center">3</div></div><div class="m-col m-flex-1"><div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:2px">✓ Acheter du lait</div><div style="margin-top:4px"><div class="m-label">Quand ?</div><div class="seg-ctrl"><div class="seg-opt active">Auj.</div><div class="seg-opt">Demain</div><div class="seg-opt">📅</div></div></div><div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:8px">Options...</div></div></div></div>`},
+
+  { id:44, cat:'step', title:'Typewriter Step', desc:'Chaque réponse s\'affiche comme du texte tapé.',
+    html:`<div class="m-col" style="font-family:monospace"><div style="color:rgba(255,255,255,.3);font-size:12px">Tâche: <span style="color:#f1f5f9">Acheter du lait</span></div><div style="color:rgba(255,255,255,.3);font-size:12px">Date: <span style="color:#60a5fa">Demain</span></div><div style="color:rgba(255,255,255,.3);font-size:12px;margin-top:8px">Priorité: <span class="typewriter-cursor"></span></div><div class="m-row m-mt m-gap-4"><span class="m-pill">Aucune</span><span class="m-pill">Basse</span><span class="m-pill">Moyenne</span><span class="m-pill">Haute</span></div></div>`},
+
+  { id:45, cat:'step', title:'Ring Progress', desc:'Anneau de complétion central. Plus on remplit, plus il se ferme.',
+    html:`<div style="text-align:center"><div class="prog-ring"><svg width="60" height="60"><circle cx="30" cy="30" r="26" stroke="rgba(255,255,255,.06)" stroke-width="4" fill="none"/><circle cx="30" cy="30" r="26" stroke="#f59e0b" stroke-width="4" fill="none" stroke-dasharray="163" stroke-dashoffset="98" stroke-linecap="round"/></svg><div class="prog-ring-text">40%</div></div><div class="m-text-xs m-text-muted" style="margin:8px 0">2 sur 5 champs remplis</div><div class="m-col m-gap-4" style="text-align:left"><div class="m-row"><span style="color:#f59e0b;font-size:10px">●</span><span class="m-text-sm">Titre ✓</span></div><div class="m-row"><span style="color:#f59e0b;font-size:10px">●</span><span class="m-text-sm">Date ✓</span></div><div class="m-row"><span style="color:rgba(255,255,255,.15);font-size:10px">○</span><span class="m-text-sm m-text-muted">Priorité</span></div><div class="m-row"><span style="color:rgba(255,255,255,.15);font-size:10px">○</span><span class="m-text-sm m-text-muted">Catégorie</span></div></div></div>`},
+
+  { id:46, cat:'step', title:'Flip Card Steps', desc:'La carte flip pour révéler l\'étape suivante.',
+    html:`<div style="perspective:400px"><div class="glass" style="padding:24px;text-align:center;transition:transform .6s;transform-style:preserve-3d"><div style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:12px">Étape 2 / 4</div><div style="font-size:16px;color:rgba(255,255,255,.5);margin-bottom:16px">📅 Quand ?</div><div class="seg-ctrl" style="max-width:200px;margin:0 auto"><div class="seg-opt active">Auj.</div><div class="seg-opt">Demain</div><div class="seg-opt">📅</div></div><div class="m-text-xs m-text-muted m-mt">Tap pour retourner →</div></div></div>`},
+
+  { id:47, cat:'step', title:'Breadcrumb Build', desc:'Chaque choix s\'ajoute au breadcrumb en haut.',
+    html:`<div class="m-col"><div class="m-row m-gap-4" style="flex-wrap:wrap;font-size:11px"><span style="color:#f59e0b">Acheter du lait</span><span style="color:rgba(255,255,255,.2)">›</span><span style="color:#60a5fa">Demain</span><span style="color:rgba(255,255,255,.2)">›</span><span style="color:rgba(255,255,255,.3);border-bottom:1px dashed rgba(255,255,255,.2);cursor:pointer">Priorité ?</span></div><div class="m-divider"></div><div style="text-align:center;padding:16px 0"><div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:14px">Priorité ?</div><div class="m-row" style="justify-content:center;gap:12px"><div class="prio-dot none" style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,255,255,.4);background:rgba(255,255,255,.06)">—</div><div class="prio-dot low" style="width:28px;height:28px;border-radius:8px"></div><div class="prio-dot med" style="width:28px;height:28px;border-radius:8px"></div><div class="prio-dot high" style="width:28px;height:28px;border-radius:8px"></div></div></div></div>`},
+
+  { id:48, cat:'step', title:'Decision Tree', desc:'Chaque réponse ouvre une branche de questions.',
+    html:`<div class="m-col m-gap-4"><div class="glass" style="padding:10px 14px;border-left:3px solid #f59e0b"><div class="m-text-xs" style="color:#f59e0b;margin-bottom:4px">Quoi ?</div><div class="m-text-sm">Acheter du lait</div></div><div style="margin-left:16px" class="m-col m-gap-4"><div class="glass" style="padding:10px 14px;border-left:3px solid #60a5fa"><div class="m-text-xs" style="color:#60a5fa;margin-bottom:4px">C'est urgent ?</div><div class="m-row m-gap-4"><span class="m-pill active">Oui</span><span class="m-pill">Non</span><span class="m-pill">Un peu</span></div></div><div style="margin-left:16px;opacity:.4"><div class="glass" style="padding:10px 14px;border-left:3px solid rgba(255,255,255,.15)"><div class="m-text-xs m-text-muted">Pour quand ?</div></div></div></div></div>`},
+
+  { id:49, cat:'step', title:'Reveal Gradient', desc:'Le formulaire se dévoile en fondu du haut vers le bas.',
+    html:`<div class="m-col"><div style="opacity:1"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px" value="Acheter du lait"></div><div style="opacity:.8"><div class="seg-ctrl m-mb"><div class="seg-opt active">Auj.</div><div class="seg-opt">Demain</div><div class="seg-opt">📅</div></div></div><div style="opacity:.5"><div class="m-row m-gap-4 m-mb"><span class="m-pill">⚡ Priorité</span><span class="m-pill">🏷 Catégorie</span></div></div><div style="opacity:.2"><textarea class="m-input" rows="2" style="resize:none;font-family:inherit" placeholder="Notes..."></textarea></div></div>`},
+
+  { id:50, cat:'step', title:'Milestone Steps', desc:'Chaque milestone atteint montre un micro-résumé.',
+    html:`<div class="m-col"><div class="m-row" style="gap:2px"><div style="flex:1;height:4px;border-radius:2px;background:#f59e0b"></div><div style="flex:1;height:4px;border-radius:2px;background:#f59e0b"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(245,158,11,.3)"></div><div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.06)"></div></div><div class="m-row m-mt" style="gap:4px"><span class="m-chip" style="font-size:10px;background:rgba(245,158,11,.1);color:#f59e0b">✓ Acheter du lait</span><span class="m-chip" style="font-size:10px;background:rgba(59,130,246,.1);color:#60a5fa">✓ Demain</span></div><div class="glass m-mt" style="padding:16px;text-align:center"><div class="m-label" style="margin-bottom:12px">Priorité</div><div class="m-row" style="justify-content:center;gap:16px"><div style="padding:8px 16px;border-radius:10px;background:rgba(255,255,255,.04);cursor:pointer;text-align:center"><div style="font-size:18px">😌</div><div class="m-text-xs m-text-muted">Basse</div></div><div style="padding:8px 16px;border-radius:10px;background:rgba(255,255,255,.04);cursor:pointer;text-align:center"><div style="font-size:18px">🤔</div><div class="m-text-xs m-text-muted">Moy.</div></div><div style="padding:8px 16px;border-radius:10px;background:rgba(255,255,255,.04);cursor:pointer;text-align:center"><div style="font-size:18px">🔥</div><div class="m-text-xs m-text-muted">Haute</div></div></div></div></div>`},
+
+  // ─── MINIMAL (51-60) ───
+  { id:51, cat:'minimal', title:'One Line', desc:'Tout sur une ligne. Titre + icônes d\'options cliquables.',
+    html:`<div class="cmd-bar" style="padding:6px 10px"><input placeholder="Quoi faire ?" style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:14px;padding:6px;outline:none"><div class="m-row m-gap-4"><span style="cursor:pointer;opacity:.3;font-size:16px" title="Date">📅</span><span style="cursor:pointer;opacity:.3;font-size:16px" title="Priorité">⚡</span><span style="cursor:pointer;opacity:.3;font-size:16px" title="Catégorie">🏷</span><button class="m-btn m-btn-primary" style="padding:6px 14px">＋</button></div></div>`},
+
+  { id:52, cat:'minimal', title:'Just Title + Enter', desc:'Rien d\'autre. Titre, Entrée, c\'est fait.',
+    html:`<div style="text-align:center;padding:40px 0"><div class="typewriter" style="display:inline-block;min-width:200px;text-align:left;font-size:18px;color:rgba(255,255,255,.8)">Acheter du lait<span class="typewriter-cursor"></span></div><div class="m-text-xs m-text-muted" style="margin-top:16px">Entrée ↵</div></div>`},
+
+  { id:53, cat:'minimal', title:'Inline Add', desc:'La nouvelle tâche apparaît inline dans la liste, éditable sur place.',
+    html:`<div class="m-col m-gap-4"><div class="m-row" style="padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px"><div style="width:14px;height:14px;border:2px solid rgba(16,185,129,.4);border-radius:50%"></div><span class="m-text-sm" style="opacity:.5">Tâche existante</span></div><div class="m-row" style="padding:8px 12px;background:rgba(245,158,11,.06);border:1.5px solid rgba(245,158,11,.3);border-radius:8px"><div style="width:14px;height:14px;border:2px solid rgba(255,255,255,.15);border-radius:50%"></div><input style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:13px;outline:none" placeholder="Nouvelle tâche..." autofocus></div><div class="m-row" style="padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px"><div style="width:14px;height:14px;border:2px solid rgba(16,185,129,.4);border-radius:50%"></div><span class="m-text-sm" style="opacity:.5">Autre tâche</span></div></div>`},
+
+  { id:54, cat:'minimal', title:'FAB + Sheet', desc:'Bouton flottant → micro-sheet en bas.',
+    html:`<div style="position:relative;height:200px;background:rgba(0,0,0,.15);border-radius:12px"><div style="position:absolute;bottom:16px;right:16px"><div class="fab">＋</div></div><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(15,15,30,.9);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1);border-radius:16px 16px 0 0;padding:16px"><div class="drawer-handle"></div><div class="m-row"><input class="m-input" placeholder="Quoi faire ?" style="border:none;background:transparent;font-size:14px;padding:4px"><button class="m-btn m-btn-primary">＋</button></div></div></div>`},
+
+  { id:55, cat:'minimal', title:'Sticky Footer', desc:'Barre collée en bas de l\'écran. Toujours accessible.',
+    html:`<div style="position:relative;height:180px;background:rgba(0,0,0,.1);border-radius:12px"><div style="padding:16px;color:rgba(255,255,255,.15);text-align:center;font-size:12px">[ Contenu de la page ]</div><div style="position:absolute;bottom:0;left:0;right:0;background:rgba(15,15,30,.85);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,.08);padding:10px 14px"><div class="m-row"><input style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#f1f5f9;font-size:13px;outline:none" placeholder="＋ Ajouter une tâche..."><div class="m-row m-gap-4" style="margin-left:8px"><span style="cursor:pointer;opacity:.3;font-size:14px">📅</span><span style="cursor:pointer;opacity:.3;font-size:14px">⚡</span></div></div></div></div>`},
+
+  { id:56, cat:'minimal', title:'Double-Tap Add', desc:'Double-tap sur le vide pour ajouter au point de clic.',
+    html:`<div style="text-align:center;padding:40px 0"><div style="font-size:40px;opacity:.08;margin-bottom:16px">👆👆</div><div class="m-text-sm m-text-muted">Double-tap n'importe où</div><div class="m-text-sm m-text-muted">pour ajouter une tâche</div><div class="glass m-mt" style="padding:12px;display:inline-block;margin-top:20px"><input style="background:transparent;border:none;color:#f1f5f9;font-size:14px;outline:none;width:180px;text-align:center" placeholder="Quoi faire ?"></div></div>`},
+
+  { id:57, cat:'minimal', title:'Corner Input', desc:'Petit input permanent dans le coin. Expand au focus.',
+    html:`<div style="position:relative;height:180px;background:rgba(0,0,0,.1);border-radius:12px"><div style="position:absolute;bottom:12px;right:12px;transition:all .3s"><div class="cmd-bar" style="width:180px;transition:all .3s" onfocuswithin="this.style.width='280px'" onfocusout="this.style.width='180px'"><input placeholder="＋ Ajouter..." style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:12px;padding:6px 8px;outline:none"><button class="m-btn m-btn-primary" style="padding:4px 10px;font-size:11px">＋</button></div></div></div>`},
+
+  { id:58, cat:'minimal', title:'Tap to Expand', desc:'Juste "+" qui s\'expand en formulaire minimal.',
+    html:`<div style="text-align:center;padding:16px 0"><div style="display:inline-block;transition:all .4s" id="tapExpand"><div style="width:48px;height:48px;border-radius:14px;background:rgba(245,158,11,.1);border:1.5px solid rgba(245,158,11,.3);display:flex;align-items:center;justify-content:center;font-size:20px;color:#f59e0b;cursor:pointer;transition:all .3s" onclick="this.parentElement.innerHTML='<div class=\\'m-col\\' style=\\'width:250px\\'><input class=\\'m-input\\' placeholder=\\'Quoi faire ?\\' autofocus style=\\'font-size:14px\\'><div class=\\'m-row m-mt\\' style=\\'justify-content:flex-end\\'><button class=\\'m-btn m-btn-ghost\\' style=\\'font-size:11px\\'>Annuler</button><button class=\\'m-btn m-btn-primary\\' style=\\'font-size:11px\\'>Ajouter</button></div></div>'">＋</div></div></div>`},
+
+  { id:59, cat:'minimal', title:'Ghost Item', desc:'Un item fantôme en fin de liste. Cliquer pour remplir.',
+    html:`<div class="m-col m-gap-4"><div class="m-row" style="padding:10px 14px;background:rgba(255,255,255,.06);border-radius:10px"><div style="width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-radius:50%"></div><span class="m-text-sm">Vaisselle - soir</span></div><div class="m-row" style="padding:10px 14px;background:rgba(255,255,255,.06);border-radius:10px"><div style="width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-radius:50%"></div><span class="m-text-sm">Dents - soir</span></div><div class="m-row" style="padding:10px 14px;border:1.5px dashed rgba(255,255,255,.1);border-radius:10px;cursor:pointer;transition:all .2s" onmouseenter="this.style.borderColor='rgba(245,158,11,.3)'" onmouseleave="this.style.borderColor='rgba(255,255,255,.1)'"><div style="width:16px;height:16px;border:2px dashed rgba(255,255,255,.1);border-radius:50%"></div><span class="m-text-sm m-text-muted">＋ Ajouter une tâche...</span></div></div>`},
+
+  { id:60, cat:'minimal', title:'Keyboard First', desc:'Tout au clavier. Tab entre les champs, raccourcis affichés.',
+    html:`<div class="m-col" style="font-family:monospace"><div class="m-row" style="margin-bottom:4px"><kbd style="padding:2px 6px;border-radius:3px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.4)">Tab</kbd><span class="m-text-xs m-text-muted" style="margin-left:4px">champ suivant</span></div><input class="m-input" style="font-family:monospace;font-size:14px" placeholder="Titre" value="Acheter du lait"><div class="m-row m-mt m-gap-6" style="font-size:11px"><span><kbd style="padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.08);font-size:9px">⌘1</kbd> <span style="color:rgba(255,255,255,.3)">Prio</span></span><span><kbd style="padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.08);font-size:9px">⌘2</kbd> <span style="color:rgba(255,255,255,.3)">Date</span></span><span><kbd style="padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.08);font-size:9px">⌘3</kbd> <span style="color:rgba(255,255,255,.3)">Cat</span></span><span><kbd style="padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.08);font-size:9px">⏎</kbd> <span style="color:#f59e0b">Ajouter</span></span></div></div>`},
+
+  // ─── GESTURE (61-70) ───
+  { id:61, cat:'gesture', title:'Swipe Options', desc:'Swipe left/right sur le champ titre pour naviguer les options.',
+    html:`<div class="m-col" style="text-align:center"><div style="font-size:11px;color:rgba(255,255,255,.2);margin-bottom:8px">← Swipe pour les options →</div><div class="glass" style="padding:20px;touch-action:pan-y"><input class="m-input" style="text-align:center;font-size:15px;background:transparent;border:none" placeholder="Quoi faire ?"></div><div class="m-row m-mt" style="justify-content:center;gap:24px"><span style="font-size:11px;color:rgba(255,255,255,.15)">← Date</span><span style="font-size:11px;color:rgba(255,255,255,.3)">Titre</span><span style="font-size:11px;color:rgba(255,255,255,.15)">Prio →</span></div></div>`},
+
+  { id:62, cat:'gesture', title:'Long Press Menu', desc:'Long press sur le + ouvre un menu contextuel.',
+    html:`<div style="text-align:center;padding:20px 0"><div class="fab" style="margin:0 auto;position:relative"><span>＋</span></div><div style="margin-top:16px;display:flex;flex-direction:column;gap:4px;align-items:center"><div class="glass" style="padding:8px 20px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span>⚡</span> Tâche rapide</div><div class="glass" style="padding:8px 20px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span>📋</span> Tâche détaillée</div><div class="glass" style="padding:8px 20px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span>📑</span> Depuis template</div></div></div>`},
+
+  { id:63, cat:'gesture', title:'Shake to Undo', desc:'Secouer pour annuler la dernière option sélectionnée.',
+    html:`<div class="m-col"><input class="m-input" value="Acheter du lait" style="font-size:14px"><div class="m-row m-mt" style="flex-wrap:wrap;gap:4px"><span class="m-pill active">📅 Demain</span><span class="m-pill active">⚡ Haute</span><span class="m-pill active">🏷 Courses</span></div><div class="m-divider"></div><div class="m-row" style="justify-content:center"><div class="m-text-xs m-text-muted" style="display:flex;align-items:center;gap:6px"><span style="font-size:16px">📱</span> Secouer = annuler la dernière sélection</div></div></div>`},
+
+  { id:64, cat:'gesture', title:'Pull Down Add', desc:'Pull-down depuis le haut de la liste pour ajouter.',
+    html:`<div style="position:relative;height:180px;overflow:hidden;border-radius:12px;background:rgba(0,0,0,.15)"><div style="padding:16px;text-align:center"><div style="font-size:10px;color:#f59e0b;margin-bottom:8px">↓ Tirer pour ajouter ↓</div><div class="glass" style="padding:10px 14px;margin-bottom:6px"><input class="m-input" style="border:none;background:transparent;font-size:13px;padding:0" placeholder="Nouvelle tâche..."></div></div><div class="m-col m-gap-4" style="padding:0 16px"><div style="padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;font-size:12px;color:rgba(255,255,255,.4)">○ Tâche existante 1</div><div style="padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;font-size:12px;color:rgba(255,255,255,.4)">○ Tâche existante 2</div></div></div>`},
+
+  { id:65, cat:'gesture', title:'Pinch to Expand', desc:'Pinch-out sur un item compact pour voir/modifier ses détails.',
+    html:`<div class="m-col" style="text-align:center;padding:20px 0"><div style="font-size:28px;opacity:.15;margin-bottom:12px">🤏</div><div class="glass" style="padding:14px;display:inline-block"><div class="m-row m-gap-6"><div style="width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-radius:50%"></div><span class="m-text-sm">Acheter du lait</span></div></div><div class="m-text-xs m-text-muted m-mt">Pinch-out pour détails</div><div style="margin-top:12px;opacity:.4"><div class="m-text-xs">↕ Expand</div><div class="glass" style="padding:14px;display:inline-block;margin-top:4px"><div class="m-col m-gap-4" style="text-align:left"><span class="m-text-sm">Acheter du lait</span><div class="m-row m-gap-4"><span class="m-chip">📅 Demain</span><span class="m-chip">⚡ Haute</span></div></div></div></div></div>`},
+
+  { id:66, cat:'gesture', title:'Drag Line Priority', desc:'Drag un slider vertical pour définir l\'urgence.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-row" style="gap:16px"><div style="width:4px;height:100px;border-radius:2px;background:linear-gradient(to bottom, #ef4444, #f59e0b, #3b82f6, rgba(255,255,255,.1));position:relative"><div style="position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#f59e0b;border:2px solid #fff;cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div></div><div class="m-col m-flex-1 m-gap-4"><div class="m-text-xs" style="color:#ef4444">🔥 Critique</div><div class="m-text-xs" style="color:#f59e0b">⚡ Moyenne ←</div><div class="m-text-xs" style="color:#3b82f6">📋 Basse</div><div class="m-text-xs m-text-muted">💤 Aucune</div></div></div></div>`},
+
+  { id:67, cat:'gesture', title:'3D Touch Levels', desc:'La pression du clic détermine la priorité.',
+    html:`<div style="text-align:center;padding:20px 0"><div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:16px">Force du clic = priorité</div><div class="m-row" style="justify-content:center;gap:16px"><div style="text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin-bottom:4px">👆</div><div class="m-text-xs m-text-muted">Léger</div><div class="m-text-xs" style="color:#3b82f6">Basse</div></div><div style="text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin-bottom:4px">👆</div><div class="m-text-xs m-text-muted">Normal</div><div class="m-text-xs" style="color:#f59e0b">Moyenne</div></div><div style="text-align:center"><div style="width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;margin-bottom:4px">👆</div><div class="m-text-xs m-text-muted">Fort</div><div class="m-text-xs" style="color:#ef4444">Haute</div></div></div></div>`},
+
+  { id:68, cat:'gesture', title:'Flick Direction', desc:'Flick en haut = haute prio, droite = demain, etc.',
+    html:`<div style="text-align:center;padding:8px 0"><div style="position:relative;width:140px;height:140px;margin:0 auto"><div style="position:absolute;inset:0;border:2px dashed rgba(255,255,255,.06);border-radius:50%"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:36px;height:36px;border-radius:50%;background:rgba(245,158,11,.15);border:2px solid rgba(245,158,11,.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:grab">📌</div><div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(239,68,68,.6)">↑ Haute</div><div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:9px;color:rgba(59,130,246,.6)">↓ Basse</div><div style="position:absolute;left:4px;top:50%;transform:translateY(-50%);font-size:9px;color:rgba(255,255,255,.3)">← Inbox</div><div style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:9px;color:rgba(245,158,11,.6)">Date →</div></div></div>`},
+
+  { id:69, cat:'gesture', title:'Tap Zones', desc:'L\'écran est divisé en zones. Tap une zone = option.',
+    html:`<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;height:160px"><div style="background:rgba(245,158,11,.06);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-direction:column;gap:4px" onmouseenter="this.style.background='rgba(245,158,11,.15)'" onmouseleave="this.style.background=''"><span style="font-size:16px">📅</span><span class="m-text-xs m-text-muted">Aujourd'hui</span></div><div style="background:rgba(59,130,246,.06);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-direction:column;gap:4px" onmouseenter="this.style.background='rgba(59,130,246,.15)'" onmouseleave="this.style.background=''"><span style="font-size:16px">📅</span><span class="m-text-xs m-text-muted">Demain</span></div><div style="background:rgba(239,68,68,.06);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-direction:column;gap:4px" onmouseenter="this.style.background='rgba(239,68,68,.15)'" onmouseleave="this.style.background=''"><span style="font-size:16px">⚡</span><span class="m-text-xs m-text-muted">Priorité haute</span></div><div style="background:rgba(16,185,129,.06);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex-direction:column;gap:4px" onmouseenter="this.style.background='rgba(16,185,129,.15)'" onmouseleave="this.style.background=''"><span style="font-size:16px">📥</span><span class="m-text-xs m-text-muted">Inbox</span></div></div>`},
+
+  { id:70, cat:'gesture', title:'Hold & Drag', desc:'Hold le + et drag vers l\'option désirée sans relâcher.',
+    html:`<div class="m-col" style="align-items:center;padding:8px 0"><div style="position:relative;width:180px;height:180px"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;font-size:20px;color:#000;cursor:pointer;z-index:2;box-shadow:0 4px 12px rgba(245,158,11,.3)">＋</div><div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.25)">📅 Date</div><div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.25)">📝 Notes</div><div style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(255,255,255,.25)">🏷 Cat</div><div style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:rgba(255,255,255,.25)">⚡ Prio</div></div><div class="m-text-xs m-text-muted">Hold + drag</div></div>`},
+
+  // ─── HYBRID (71-80) ───
+  { id:71, cat:'hybrid', title:'Quick + Detail', desc:'Mode rapide (titre seul) ou mode détaillé (tout). Toggle.',
+    html:`<div class="m-col"><div class="seg-ctrl m-mb"><div class="seg-opt active">⚡ Rapide</div><div class="seg-opt">📋 Détaillé</div></div><div class="glass" style="padding:16px"><input class="m-input" placeholder="Quoi faire ?" style="font-size:15px;background:transparent;border:none;padding:0"><div class="m-row m-mt" style="justify-content:space-between"><span class="m-text-xs m-text-muted">Entrée pour ajouter rapidement</span><button class="m-btn m-btn-primary" style="padding:6px 14px">＋</button></div></div></div>`},
+
+  { id:72, cat:'hybrid', title:'Template + Custom', desc:'Templates récents en haut, formulaire custom en bas.',
+    html:`<div class="m-col"><div class="m-label">Récents</div><div class="m-row m-gap-4 m-mb" style="flex-wrap:wrap"><div class="glass" style="padding:8px 14px;cursor:pointer;font-size:12px;transition:all .15s" onmouseenter="this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.borderColor=''">🧹 Ménage</div><div class="glass" style="padding:8px 14px;cursor:pointer;font-size:12px;transition:all .15s" onmouseenter="this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.borderColor=''">🛒 Courses</div><div class="glass" style="padding:8px 14px;cursor:pointer;font-size:12px;transition:all .15s" onmouseenter="this.style.borderColor='rgba(245,158,11,.4)'" onmouseleave="this.style.borderColor=''">💻 Code</div></div><div class="m-divider"></div><div class="m-label">Ou personnalisé</div><input class="m-input" placeholder="Quoi faire ?" style="font-size:13px"></div>`},
+
+  { id:73, cat:'hybrid', title:'Context Aware', desc:'L\'interface change selon l\'heure / jour / contexte.',
+    html:`<div class="m-col"><div style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-bottom:8px">🌙 Dimanche soir — Mode relaxation</div><div class="glass" style="padding:16px"><input class="m-input" placeholder="Quoi faire demain ?" style="font-size:14px;background:transparent;border:none;padding:0"><div class="m-row m-mt" style="flex-wrap:wrap;gap:4px"><span class="m-pill active">📅 Demain</span><span class="m-pill">⚡ Aucune prio</span></div><div class="m-text-xs m-text-muted m-mt">💡 Pas de tâche urgente le dimanche soir ?</div></div></div>`},
+
+  { id:74, cat:'hybrid', title:'Batch Add', desc:'Ajouter plusieurs tâches d\'un coup, une par ligne.',
+    html:`<div class="m-col"><div class="m-label">Ajouter en lot</div><textarea class="m-input" rows="5" style="resize:none;font-family:inherit;line-height:1.8;font-size:13px" placeholder="Une tâche par ligne...">Acheter du lait
+Sortir recyclage
+Appeler dentiste
+Nettoyer cuisine</textarea><div class="m-row m-mt" style="justify-content:space-between"><span class="m-text-xs m-text-muted">4 tâches détectées</span><button class="m-btn m-btn-primary">Ajouter tout</button></div></div>`},
+
+  { id:75, cat:'hybrid', title:'Smart Bar + Panel', desc:'Barre de saisie rapide en haut, panel de détails qui slide si besoin.',
+    html:`<div class="m-col"><div class="cmd-bar"><input placeholder="Acheter du lait" style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:14px;padding:8px 10px;outline:none" value="Acheter du lait"><button class="m-btn m-btn-ghost" style="font-size:10px;padding:4px 10px">⚙</button><button class="m-btn m-btn-primary" style="padding:6px 12px">＋</button></div><div class="glass m-mt" style="padding:12px;border-left:3px solid #f59e0b"><div class="m-text-xs" style="color:#f59e0b;margin-bottom:8px">Options rapides</div><div class="m-row" style="flex-wrap:wrap;gap:6px"><span class="m-pill active">Auj.</span><span class="m-pill">Demain</span><span class="m-pill">Inbox</span><span class="m-pill" style="border-left:3px solid #ef4444;padding-left:8px">Haute</span><span class="m-pill" style="border-left:3px solid #f59e0b;padding-left:8px">Moy.</span></div></div></div>`},
+
+  { id:76, cat:'hybrid', title:'Split Add + List', desc:'Gauche: formulaire. Droite: la liste du jour mise à jour en direct.',
+    html:`<div class="m-row" style="gap:8px;align-items:stretch"><div style="flex:1" class="m-col"><input class="m-input" placeholder="Quoi ?" style="font-size:13px"><div class="m-row m-mt m-gap-4"><span class="m-pill active">Auj.</span><span class="m-pill">⚡</span><span class="m-pill">🏷</span></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary" style="font-size:11px">＋</button></div></div><div style="flex:1;background:rgba(255,255,255,.03);border-radius:8px;padding:8px"><div class="m-text-xs m-text-muted m-mb">Aujourd'hui</div><div class="m-col m-gap-4" style="font-size:11px;color:rgba(255,255,255,.4)"><div>○ Douche</div><div>○ Dents matin</div><div style="color:#f59e0b;font-weight:500">→ Nouvelle tâche</div></div></div></div>`},
+
+  { id:77, cat:'hybrid', title:'Palette Command', desc:'⌘K ouvre une palette de commandes multimodale.',
+    html:`<div style="background:rgba(0,0,0,.3);border-radius:16px;padding:4px;border:1px solid rgba(255,255,255,.15)"><div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06)"><input style="width:100%;background:transparent;border:none;color:#f1f5f9;font-size:15px;outline:none" placeholder="Taper une commande..." value="Acheter du lait"></div><div style="padding:8px"><div style="padding:8px 12px;border-radius:8px;background:rgba(245,158,11,.08);font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer"><span style="color:#f59e0b">✏</span> <span>Créer: Acheter du lait</span><span style="margin-left:auto;font-size:10px;opacity:.3">⏎</span></div><div style="padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.4)"><span>📅</span> <span>+ Date</span><span style="margin-left:auto;font-size:10px;opacity:.3">⌘D</span></div><div style="padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.4)"><span>⚡</span> <span>+ Priorité</span><span style="margin-left:auto;font-size:10px;opacity:.3">⌘P</span></div></div></div>`},
+
+  { id:78, cat:'hybrid', title:'Snapshot + Edit', desc:'Photo/screenshot → OCR → tâche extraite, éditable.',
+    html:`<div class="m-col" style="text-align:center"><div style="width:100%;height:60px;background:rgba(255,255,255,.04);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:2px dashed rgba(255,255,255,.1)"><span class="m-text-sm m-text-muted">📸 Prendre une photo ou coller</span></div><div class="m-divider"></div><div class="m-label" style="text-align:left">Extrait</div><input class="m-input" value="Appeler Dr. Martin le 25 mars" style="font-size:13px"><div class="m-row m-mt m-gap-4" style="flex-wrap:wrap"><span class="m-pill active">📅 25 mars</span><span class="m-pill">🏷 Santé</span></div></div>`},
+
+  { id:79, cat:'hybrid', title:'Drag from Anywhere', desc:'Drag du texte depuis n\'importe quelle app → tâche créée.',
+    html:`<div class="gesture-zone" style="height:140px;flex-direction:column;gap:12px"><div style="font-size:24px;opacity:.3">📎</div><div style="font-size:12px">Glisser du texte, un lien,<br>ou un email ici</div></div><div class="m-text-xs m-text-muted m-mt" style="text-align:center">Le titre et les métadonnées sont extraits automatiquement</div>`},
+
+  { id:80, cat:'hybrid', title:'Mini + Full Toggle', desc:'Formulaire minuscule qui peut devenir full-screen.',
+    html:`<div class="m-col"><div class="m-row" style="justify-content:space-between;margin-bottom:8px"><span class="m-text-xs m-text-muted">Mode compact</span><span style="font-size:14px;cursor:pointer;opacity:.3" title="Agrandir">⤢</span></div><div class="cmd-bar"><input placeholder="Quoi faire ?" style="flex:1;background:transparent;border:none;color:#f1f5f9;font-size:13px;padding:6px 8px;outline:none"><span style="cursor:pointer;opacity:.3;font-size:12px">📅</span><span style="cursor:pointer;opacity:.3;font-size:12px">⚡</span><button class="m-btn m-btn-primary" style="padding:4px 10px;font-size:11px">＋</button></div><div class="m-text-xs m-text-muted m-mt" style="text-align:center">⤢ pour le mode détaillé</div></div>`},
+
+  // ─── IMMERSIF (81-90) ───
+  { id:81, cat:'immersive', title:'Full Screen Focus', desc:'L\'écran entier est le formulaire. Rien d\'autre.',
+    html:`<div style="text-align:center;padding:30px 0"><div style="font-size:10px;color:rgba(255,255,255,.15);text-transform:uppercase;letter-spacing:.15em;margin-bottom:24px">Nouvelle tâche</div><div class="typewriter" style="display:inline-block;font-size:18px;min-width:200px;text-align:left;border-color:rgba(245,158,11,.2)"><span style="color:rgba(255,255,255,.7)">Acheter du lait</span><span class="typewriter-cursor"></span></div><div class="m-text-xs m-text-muted" style="margin-top:24px">Tab pour les options · Entrée pour confirmer · Esc pour annuler</div></div>`},
+
+  { id:82, cat:'immersive', title:'Ambient Typing', desc:'Le fond change de couleur selon la priorité sélectionnée.',
+    html:`<div style="padding:20px;border-radius:12px;background:linear-gradient(135deg, rgba(239,68,68,.15), rgba(245,158,11,.1));transition:all 1s;text-align:center"><div class="m-text-xs" style="color:rgba(255,255,255,.3);margin-bottom:16px">L'ambiance change avec la priorité</div><input class="m-input" style="text-align:center;font-size:16px;max-width:250px;margin:0 auto;background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.1)" placeholder="Quoi faire ?" value="Tâche urgente"><div class="prio-dots m-mt" style="justify-content:center;gap:12px"><div class="prio-dot none" style="width:14px;height:14px"></div><div class="prio-dot low" style="width:14px;height:14px"></div><div class="prio-dot med" style="width:14px;height:14px"></div><div class="prio-dot high active" style="width:14px;height:14px"></div></div></div>`},
+
+  { id:83, cat:'immersive', title:'Zen Mode', desc:'Espace blanc infini. Juste toi et ta tâche.',
+    html:`<div style="text-align:center;padding:50px 0"><input style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:20px;text-align:center;outline:none;font-weight:300;letter-spacing:.02em;width:100%" placeholder="..."><div style="width:40px;height:1px;background:rgba(255,255,255,.1);margin:20px auto"></div><div class="m-text-xs" style="color:rgba(255,255,255,.1)">respire. écris. ajoute.</div></div>`},
+
+  { id:84, cat:'immersive', title:'Dark Terminal', desc:'Full dark, cursor clignotant, vibe hacker.',
+    html:`<div style="background:#0a0a0f;border-radius:10px;padding:16px;font-family:'SF Mono',monospace;font-size:12px;border:1px solid rgba(255,255,255,.05)"><div style="color:rgba(245,158,11,.4);margin-bottom:8px">todo-manager v0.4 — add mode</div><div style="color:rgba(255,255,255,.2);margin-bottom:4px">> titre: <span style="color:#f1f5f9">Acheter du lait</span></div><div style="color:rgba(255,255,255,.2);margin-bottom:4px">> prio: <span style="color:#ef4444">high</span></div><div style="color:rgba(255,255,255,.2)">> date: <span class="typewriter-cursor"></span></div><div style="margin-top:12px;color:rgba(255,255,255,.1)">[tab] compléter  [enter] confirmer  [esc] annuler</div></div>`},
+
+  { id:85, cat:'immersive', title:'Voice Waveform', desc:'Dictée vocale avec visualisation de la forme d\'onde.',
+    html:`<div style="text-align:center;padding:16px 0"><div style="display:flex;align-items:center;justify-content:center;gap:2px;height:40px;margin-bottom:16px"><div style="width:3px;height:20px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease infinite alternate"></div><div style="width:3px;height:30px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.1s infinite alternate"></div><div style="width:3px;height:15px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.2s infinite alternate"></div><div style="width:3px;height:35px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.15s infinite alternate"></div><div style="width:3px;height:25px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.25s infinite alternate"></div><div style="width:3px;height:18px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.05s infinite alternate"></div><div style="width:3px;height:28px;background:#f59e0b;border-radius:2px;animation:wave 0.5s ease 0.3s infinite alternate"></div></div><div class="m-text-sm" style="color:rgba(255,255,255,.5)">Acheter du lait demain...</div><style>@keyframes wave{to{height:8px}}</style></div>`},
+
+  { id:86, cat:'immersive', title:'Calendar Embed', desc:'Le calendrier est le formulaire. Tap un jour = date assignée.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px" value="Acheter du lait"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:10px;text-align:center"><div style="color:rgba(255,255,255,.2);padding:4px">L</div><div style="color:rgba(255,255,255,.2);padding:4px">M</div><div style="color:rgba(255,255,255,.2);padding:4px">M</div><div style="color:rgba(255,255,255,.2);padding:4px">J</div><div style="color:rgba(255,255,255,.2);padding:4px">V</div><div style="color:rgba(255,255,255,.2);padding:4px">S</div><div style="color:rgba(255,255,255,.2);padding:4px">D</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">16</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">17</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">18</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">19</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">20</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.2)">21</div><div style="padding:6px;border-radius:6px;background:#f59e0b;color:#000;font-weight:700;cursor:pointer">22</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">23</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">24</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">25</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">26</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">27</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">28</div><div style="padding:6px;border-radius:6px;color:rgba(255,255,255,.4);cursor:pointer">29</div></div></div>`},
+
+  { id:87, cat:'immersive', title:'Spatial Audio', desc:'Son différent pour chaque action. Feedback haptique.',
+    html:`<div style="text-align:center;padding:20px 0"><div style="font-size:28px;opacity:.15;margin-bottom:16px">🔊</div><div class="m-col m-gap-6"><div class="m-row" style="justify-content:center;gap:16px"><div style="text-align:center;cursor:pointer"><div style="font-size:18px">🔔</div><div class="m-text-xs m-text-muted">click</div></div><div style="text-align:center;cursor:pointer"><div style="font-size:18px">✨</div><div class="m-text-xs m-text-muted">select</div></div><div style="text-align:center;cursor:pointer"><div style="font-size:18px">🎵</div><div class="m-text-xs m-text-muted">confirm</div></div><div style="text-align:center;cursor:pointer"><div style="font-size:18px">💫</div><div class="m-text-xs m-text-muted">done</div></div></div><div class="m-text-xs m-text-muted">Chaque action a un son unique</div></div></div>`},
+
+  { id:88, cat:'immersive', title:'Handwriting', desc:'Écris ta tâche à la main sur un canvas tactile.',
+    html:`<div class="m-col"><div style="height:80px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;cursor:crosshair"><svg width="200" height="40" viewBox="0 0 200 40"><path d="M10 30 Q30 10 50 25 Q70 40 90 20 Q110 5 130 25 Q150 35 170 15" stroke="rgba(245,158,11,.6)" fill="none" stroke-width="2" stroke-linecap="round"/></svg></div><div class="m-text-xs m-text-muted m-mt" style="text-align:center">Reconnaissance: <strong style="color:#f1f5f9">Acheter du lait</strong></div></div>`},
+
+  { id:89, cat:'immersive', title:'AR View', desc:'Pointe la caméra → la tâche apparaît en AR dans l\'espace.',
+    html:`<div style="text-align:center;padding:16px 0;background:rgba(0,0,0,.2);border-radius:12px"><div style="font-size:32px;opacity:.1;margin-bottom:8px">📱</div><div class="m-text-sm m-text-muted">Vue AR — Pointe vers un objet</div><div class="glass m-mt" style="padding:10px 16px;display:inline-block;transform:perspective(200px) rotateY(-5deg)"><div class="m-row m-gap-6"><div style="width:12px;height:12px;border:2px solid rgba(255,255,255,.2);border-radius:50%"></div><span class="m-text-sm">Acheter du lait</span></div></div><div class="m-text-xs m-text-muted m-mt">Tâche ancrée à la porte du frigo 📍</div></div>`},
+
+  { id:90, cat:'immersive', title:'Mind Map Node', desc:'La tâche est un nœud central. Les options sont des branches.',
+    html:`<div style="position:relative;height:180px"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2"><div class="glass" style="padding:8px 16px;font-size:13px;font-weight:600">Acheter du lait</div></div><svg width="100%" height="180" style="position:absolute;inset:0"><line x1="50%" y1="50%" x2="20%" y2="15%" stroke="rgba(255,255,255,.08)" stroke-width="1"/><line x1="50%" y1="50%" x2="80%" y2="15%" stroke="rgba(255,255,255,.08)" stroke-width="1"/><line x1="50%" y1="50%" x2="15%" y2="85%" stroke="rgba(255,255,255,.08)" stroke-width="1"/><line x1="50%" y1="50%" x2="85%" y2="85%" stroke="rgba(255,255,255,.08)" stroke-width="1"/></svg><div style="position:absolute;top:5px;left:10%;font-size:10px;color:rgba(255,255,255,.3)">📅 Date</div><div style="position:absolute;top:5px;right:10%;font-size:10px;color:rgba(255,255,255,.3)">⚡ Priorité</div><div style="position:absolute;bottom:5px;left:5%;font-size:10px;color:rgba(255,255,255,.3)">🏷 Catégorie</div><div style="position:absolute;bottom:5px;right:5%;font-size:10px;color:rgba(255,255,255,.3)">🔁 Récurrence</div></div>`},
+
+  // ─── EXPÉRIMENTAL (91-100) ───
+  { id:91, cat:'exp', title:'Mood Based', desc:'Choisis ton mood. Les options s\'adaptent.',
+    html:`<div class="m-col" style="text-align:center"><div class="m-label" style="text-align:center">Comment tu te sens ?</div><div class="m-row" style="justify-content:center;gap:12px;margin:12px 0"><div style="font-size:24px;cursor:pointer;transition:all .2s;padding:8px;border-radius:12px" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background=''">😴</div><div style="font-size:24px;cursor:pointer;transition:all .2s;padding:8px;border-radius:12px" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background=''">😊</div><div style="font-size:24px;cursor:pointer;transition:all .2s;padding:8px;border-radius:12px;background:rgba(245,158,11,.1)">💪</div><div style="font-size:24px;cursor:pointer;transition:all .2s;padding:8px;border-radius:12px" onmouseenter="this.style.background='rgba(255,255,255,.08)'" onmouseleave="this.style.background=''">🔥</div></div><div class="m-text-xs m-text-muted m-mb">Mode productif — tâches importantes suggérées</div><input class="m-input" placeholder="Quoi faire ?" style="font-size:14px"></div>`},
+
+  { id:92, cat:'exp', title:'Dice Roll', desc:'Random task attributes. Re-roll ce qui ne te plaît pas.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" value="Acheter du lait" style="font-size:14px"><div class="m-label">🎲 Attributs aléatoires</div><div class="m-col m-gap-4"><div class="m-row" style="justify-content:space-between"><span class="m-text-sm">📅 Demain</span><span style="cursor:pointer;font-size:14px" title="Re-roll">🎲</span></div><div class="m-row" style="justify-content:space-between"><span class="m-text-sm">⚡ Moyenne</span><span style="cursor:pointer;font-size:14px" title="Re-roll">🎲</span></div><div class="m-row" style="justify-content:space-between"><span class="m-text-sm">🏷 Courses</span><span style="cursor:pointer;font-size:14px" title="Re-roll">🎲</span></div></div><div class="m-text-xs m-text-muted m-mt" style="text-align:center">Accepter ou re-roll 🎲</div></div>`},
+
+  { id:93, cat:'exp', title:'Color Picker Priority', desc:'Choisis une couleur → la priorité est déduite.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-label">Couleur = Priorité</div><div style="display:flex;gap:6px;justify-content:center"><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#ef4444,#dc2626);cursor:pointer;border:3px solid transparent;transition:all .2s" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform=''"></div><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);cursor:pointer;border:3px solid #fff;transition:all .2s;transform:scale(1.1)"></div><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);cursor:pointer;border:3px solid transparent;transition:all .2s" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform=''"></div><div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05));cursor:pointer;border:3px solid transparent;transition:all .2s" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform=''"></div></div></div>`},
+
+  { id:94, cat:'exp', title:'Gravity Drop', desc:'Les options tombent du haut. Attrape celles que tu veux.',
+    html:`<div style="position:relative;height:180px;overflow:hidden;border-radius:12px;background:rgba(0,0,0,.15)"><div style="position:absolute;top:16px;left:20px;animation:fall 2s ease-in infinite"><span class="m-pill">📅 Auj.</span></div><div style="position:absolute;top:8px;right:30px;animation:fall 2s ease-in 0.5s infinite"><span class="m-pill">⚡ Haute</span></div><div style="position:absolute;top:12px;left:50%;animation:fall 2s ease-in 1s infinite"><span class="m-pill">🏷 Santé</span></div><div style="position:absolute;bottom:12px;left:0;right:0;text-align:center"><input class="m-input" style="max-width:200px;margin:0 auto;text-align:center;font-size:13px" placeholder="Attrape les options !"></div><style>@keyframes fall{0%{transform:translateY(0);opacity:1}80%{opacity:1}100%{transform:translateY(140px);opacity:0}}</style></div>`},
+
+  { id:95, cat:'exp', title:'Puzzle Pieces', desc:'Assemble les pièces du puzzle pour construire ta tâche.',
+    html:`<div class="m-col"><div class="m-label">Construis ta tâche</div><div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:rgba(255,255,255,.03);border-radius:10px;min-height:40px;border:2px dashed rgba(255,255,255,.08)"><span style="padding:6px 12px;background:rgba(245,158,11,.12);color:#f59e0b;border-radius:8px 2px 8px 2px;font-size:12px;font-weight:600">Acheter du lait</span><span style="padding:6px 12px;background:rgba(59,130,246,.12);color:#60a5fa;border-radius:2px 8px 2px 8px;font-size:12px;font-weight:600">Demain</span></div><div class="m-divider"></div><div class="m-label">Pièces disponibles</div><div style="display:flex;flex-wrap:wrap;gap:4px"><span style="padding:4px 10px;background:rgba(255,255,255,.04);border-radius:6px;font-size:11px;color:rgba(255,255,255,.35);cursor:pointer">⚡ Haute</span><span style="padding:4px 10px;background:rgba(255,255,255,.04);border-radius:6px;font-size:11px;color:rgba(255,255,255,.35);cursor:pointer">⚡ Moyenne</span><span style="padding:4px 10px;background:rgba(255,255,255,.04);border-radius:6px;font-size:11px;color:rgba(255,255,255,.35);cursor:pointer">🏷 Courses</span><span style="padding:4px 10px;background:rgba(255,255,255,.04);border-radius:6px;font-size:11px;color:rgba(255,255,255,.35);cursor:pointer">🔁 Quotidien</span></div></div>`},
+
+  { id:96, cat:'exp', title:'Music Score', desc:'Les tâches sont des notes sur une portée temporelle.',
+    html:`<div style="position:relative;height:120px;padding:0 16px"><div style="position:absolute;left:16px;right:16px;top:20px;height:1px;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:16px;right:16px;top:40px;height:1px;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:16px;right:16px;top:60px;height:1px;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:16px;right:16px;top:80px;height:1px;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:16px;right:16px;top:100px;height:1px;background:rgba(255,255,255,.05)"></div><div style="position:absolute;left:30%;top:15px;width:12px;height:12px;border-radius:50%;background:#f59e0b;border:2px solid rgba(255,255,255,.3);cursor:pointer" title="Acheter du lait (haute prio)"></div><div style="position:absolute;left:50%;top:55px;width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2px solid rgba(255,255,255,.3);cursor:pointer" title="Sortir recyclage (basse prio)"></div><div style="position:absolute;left:70%;top:35px;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.2);border:2px dashed rgba(245,158,11,.3);cursor:pointer;animation:pulse 1s infinite" title="Nouvelle tâche"></div><div style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;font-size:9px;color:rgba(255,255,255,.2)"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span></div><style>@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}</style></div>`},
+
+  { id:97, cat:'exp', title:'Recipe Card', desc:'La tâche est présentée comme une recette à remplir.',
+    html:`<div style="background:rgba(255,255,255,.03);border-radius:12px;padding:16px;border-left:4px solid #f59e0b"><div style="font-size:9px;color:#f59e0b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">Recette de tâche</div><div style="font-size:15px;font-weight:600;margin-bottom:12px;color:#f1f5f9">Acheter du lait</div><div class="m-col m-gap-4" style="font-size:12px"><div class="m-row"><span style="color:rgba(255,255,255,.3);width:80px">Ingrédient</span><span>📅 Demain</span></div><div class="m-row"><span style="color:rgba(255,255,255,.3);width:80px">Épice</span><span>⚡ Moyenne</span></div><div class="m-row"><span style="color:rgba(255,255,255,.3);width:80px">Catégorie</span><span style="color:rgba(255,255,255,.2)">à définir...</span></div></div><div class="m-row m-mt" style="justify-content:flex-end"><button class="m-btn m-btn-primary" style="font-size:11px">🍳 Cuire</button></div></div>`},
+
+  { id:98, cat:'exp', title:'Tarot Draw', desc:'Tire une carte pour chaque attribut. Mystique.',
+    html:`<div style="text-align:center;padding:8px 0"><div class="m-text-xs" style="color:rgba(245,158,11,.4);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px">Tire tes cartes</div><div class="m-row" style="justify-content:center;gap:8px"><div style="width:50px;height:72px;border-radius:8px;background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));border:1px solid rgba(245,158,11,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;font-size:18px" onmouseenter="this.style.transform='translateY(-8px)'" onmouseleave="this.style.transform=''">📅</div><div style="width:50px;height:72px;border-radius:8px;background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));border:1px solid rgba(239,68,68,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;font-size:18px" onmouseenter="this.style.transform='translateY(-8px)'" onmouseleave="this.style.transform=''">⚡</div><div style="width:50px;height:72px;border-radius:8px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;font-size:14px;color:rgba(255,255,255,.2)" onmouseenter="this.style.transform='translateY(-8px)'" onmouseleave="this.style.transform=''">?</div><div style="width:50px;height:72px;border-radius:8px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s;font-size:14px;color:rgba(255,255,255,.2)" onmouseenter="this.style.transform='translateY(-8px)'" onmouseleave="this.style.transform=''">?</div></div><div class="m-text-xs m-text-muted m-mt">Cliquer pour retourner</div></div>`},
+
+  { id:99, cat:'exp', title:'DNA Helix', desc:'Double hélice: un brin = tâche, l\'autre = métadonnées.',
+    html:`<div style="text-align:center;padding:8px 0"><svg width="200" height="120" viewBox="0 0 200 120" style="margin:0 auto;display:block"><path d="M30 10 Q100 40 170 10" stroke="rgba(245,158,11,.4)" fill="none" stroke-width="2"/><path d="M30 10 Q100 -20 170 10" stroke="rgba(59,130,246,.4)" fill="none" stroke-width="2"/><path d="M30 50 Q100 80 170 50" stroke="rgba(245,158,11,.4)" fill="none" stroke-width="2"/><path d="M30 50 Q100 20 170 50" stroke="rgba(59,130,246,.4)" fill="none" stroke-width="2"/><path d="M30 90 Q100 120 170 90" stroke="rgba(245,158,11,.4)" fill="none" stroke-width="2"/><path d="M30 90 Q100 60 170 90" stroke="rgba(59,130,246,.4)" fill="none" stroke-width="2"/><line x1="65" y1="2" x2="65" y2="18" stroke="rgba(255,255,255,.1)"/><line x1="100" y1="10" x2="100" y2="10" stroke="rgba(255,255,255,.1)"/><line x1="135" y1="2" x2="135" y2="18" stroke="rgba(255,255,255,.1)"/><circle cx="65" cy="2" r="3" fill="#f59e0b"/><circle cx="65" cy="18" r="3" fill="#3b82f6"/><circle cx="135" cy="2" r="3" fill="#f59e0b"/><circle cx="135" cy="18" r="3" fill="#3b82f6"/></svg><div class="m-text-xs m-text-muted">🧬 Titre + Données = Tâche complète</div></div>`},
+
+  { id:100, cat:'exp', title:'Pixel Art', desc:'Dessine ta priorité en pixel art sur une grille 5×5.',
+    html:`<div class="m-col"><input class="m-input m-mb" placeholder="Quoi faire ?" style="font-size:14px"><div class="m-label" style="text-align:center">Dessine ta priorité</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:3px;max-width:140px;margin:0 auto">${Array(25).fill(0).map((_,i)=>`<div style="aspect-ratio:1;border-radius:3px;background:${[6,7,8,11,12,13,16,17,18].includes(i)?'rgba(245,158,11,.4)':'rgba(255,255,255,.06)'};cursor:pointer;transition:all .15s" onmouseenter="this.style.background='rgba(245,158,11,.5)'" onmouseleave="this.style.background=this.dataset.on||''"></div>`).join('')}</div><div class="m-text-xs m-text-muted m-mt" style="text-align:center">Cliquer pour colorier</div></div>`},
+
+];
+
+// ─── Render ───
+const grid = document.getElementById('grid');
+const countEl = document.getElementById('count');
+let activeFilter = 'all';
+
+function render(filter) {
+  const items = filter === 'all' ? CONCEPTS : CONCEPTS.filter(c => c.cat === filter);
+  grid.innerHTML = items.map(c => `
+    <div class="card" data-cat="${c.cat}">
+      <div class="card-head">
+        <span class="card-num">${c.id}</span>
+        <span class="card-title">${c.title}</span>
+        <span class="card-tag">${c.cat}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-desc">${c.desc}</div>
+        ${c.html}
+      </div>
+    </div>
+  `).join('');
+  countEl.textContent = `${items.length} concepts`;
+}
+
+document.querySelectorAll('.nav-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.nav-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeFilter = pill.dataset.cat;
+    render(activeFilter);
+  });
+});
+
+render('all');
+</script>
+</body>
+</html>

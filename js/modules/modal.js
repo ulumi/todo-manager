@@ -224,29 +224,43 @@ export function openModal(date, todos, scheduleMode = 'date') {
   const hadDraft = _tryRestoreDraft();
   if (draftBanner) draftBanner.style.display = hadDraft ? '' : 'none';
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  modalBox.classList.add('modal-two-columns');
-  // Reset right column state (open)
+  // Reset right column state — collapsed in add mode
   const right = document.getElementById('modalRight');
   const inner = document.getElementById('modalRightInner');
   const toggle = document.getElementById('modalColToggle');
-  if (right) { right.style.display = ''; right.classList.remove('collapsed'); gsap.set(right, { clearProps: 'width' }); }
-  if (inner) gsap.set(inner, { clearProps: 'x,opacity' });
-  if (toggle) { toggle.classList.remove('collapsed'); toggle.style.display = ''; }
+  if (right) { right.style.display = ''; right.classList.add('collapsed'); gsap.set(right, { width: 0 }); }
+  if (inner) gsap.set(inner, { x: 30, opacity: 0 });
+  if (toggle) { toggle.classList.add('collapsed'); toggle.style.display = 'none'; }
+  // Context fields — hidden until title has content
+  const ctxFields = document.getElementById('contextFields');
+  if (ctxFields) {
+    if (hadDraft && document.getElementById('taskTitle').value.trim()) {
+      gsap.set(ctxFields, { maxHeight: 2000, opacity: 1 });
+      if (toggle) toggle.style.display = '';
+    } else {
+      gsap.set(ctxFields, { maxHeight: 0, opacity: 0 });
+    }
+  }
+  // Hide guided overlay
+  const guidedOv = document.getElementById('guidedOverlay');
+  if (guidedOv) guidedOv.style.display = 'none';
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
-    { scale: 0.92, y: 24, opacity: 0 },
-    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+    { scale: 0.94, y: 30, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.45, ease: 'power2.out' }
   );
   _initModalSwipe();
   _initCombobox(todos);
   _initDraftListeners();
+  _initContextReveal();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
 export function closeModal() {
   _destroyCombobox();
   _destroyDraftListeners();
+  _destroyContextReveal();
   state.setEditingId(null);
   state.setInsertAfterId(null);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
@@ -323,21 +337,27 @@ export function openEditModal(id, dateStr, todos) {
   }
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  modalBox.classList.add('modal-two-columns');
   const right = document.getElementById('modalRight');
   const inner = document.getElementById('modalRightInner');
   const toggle = document.getElementById('modalColToggle');
   if (right) { right.style.display = ''; right.classList.remove('collapsed'); gsap.set(right, { clearProps: 'width' }); }
   if (inner) gsap.set(inner, { clearProps: 'x,opacity' });
   if (toggle) { toggle.classList.remove('collapsed'); toggle.style.display = ''; }
+  // Context fields — immediately visible in edit mode
+  const ctxFields = document.getElementById('contextFields');
+  if (ctxFields) gsap.set(ctxFields, { maxHeight: 2000, opacity: 1 });
+  // Hide guided overlay
+  const guidedOv = document.getElementById('guidedOverlay');
+  if (guidedOv) guidedOv.style.display = 'none';
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
-    { scale: 0.92, y: 24, opacity: 0 },
-    { scale: 1, y: 0, opacity: 1, duration: 0.3, ease: 'back.out(1.4)' }
+    { scale: 0.94, y: 30, opacity: 0 },
+    { scale: 1, y: 0, opacity: 1, duration: 0.45, ease: 'power2.out' }
   );
   _initCombobox(todos);
   _initModalSwipe();
+  _initContextReveal();
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
@@ -915,4 +935,189 @@ function _destroyCombobox() {
   box?.removeEventListener('mousedown', onClick);
   if (box) box.classList.add('hidden');
   _comboboxHandlers = null;
+}
+
+// ─── Progressive disclosure (context reveal) ─────────────────────────────
+
+let _contextRevealed = false;
+let _contextRevealHandler = null;
+
+function _initContextReveal() {
+  _contextRevealed = false;
+  const title = document.getElementById('taskTitle');
+  const ctx = document.getElementById('contextFields');
+  const toggle = document.getElementById('modalColToggle');
+  if (!title || !ctx) return;
+
+  // If already has content (edit mode or draft), mark as revealed
+  if (title.value.trim()) _contextRevealed = true;
+
+  _contextRevealHandler = () => {
+    const hasContent = title.value.trim().length > 0;
+    if (hasContent && !_contextRevealed) {
+      _contextRevealed = true;
+      gsap.to(ctx, { maxHeight: 2000, opacity: 1, duration: 0.4, ease: 'power2.out' });
+      if (toggle) { toggle.style.display = ''; gsap.fromTo(toggle, { opacity: 0 }, { opacity: 1, duration: 0.3 }); }
+    } else if (!hasContent && _contextRevealed) {
+      _contextRevealed = false;
+      gsap.to(ctx, { maxHeight: 0, opacity: 0, duration: 0.3, ease: 'power2.in' });
+      if (toggle) gsap.to(toggle, { opacity: 0, duration: 0.2, onComplete: () => { toggle.style.display = 'none'; } });
+    }
+  };
+  title.addEventListener('input', _contextRevealHandler);
+}
+
+function _destroyContextReveal() {
+  const title = document.getElementById('taskTitle');
+  if (title && _contextRevealHandler) title.removeEventListener('input', _contextRevealHandler);
+  _contextRevealHandler = null;
+  _contextRevealed = false;
+}
+
+// ─── Guided Cards ─────────────────────────────────────────────────────────
+
+let _guidedStep = 0;
+
+export function openGuidedCards() {
+  const overlay = document.getElementById('guidedOverlay');
+  const main = document.querySelector('.modal-main');
+  const colToggle = document.getElementById('modalColToggle');
+  const right = document.getElementById('modalRight');
+  if (!overlay) return;
+
+  // Sync current form values to guided fields
+  const gTitle = document.getElementById('guidedTitle');
+  if (gTitle) gTitle.value = document.getElementById('taskTitle')?.value || '';
+  const gDate = document.getElementById('guidedDate');
+  if (gDate) gDate.value = document.getElementById('taskDate')?.value || '';
+  const gPrio = document.getElementById('guidedPriority');
+  if (gPrio) gPrio.value = document.getElementById('taskPriority')?.value || '';
+  // Populate guided category from main category
+  const gCat = document.getElementById('guidedCategory');
+  const mainCat = document.getElementById('taskCategory');
+  if (gCat && mainCat) {
+    gCat.innerHTML = mainCat.innerHTML;
+    gCat.value = mainCat.value;
+  }
+  const gDesc = document.getElementById('guidedDescription');
+  if (gDesc) gDesc.value = document.getElementById('taskDescription')?.value || '';
+  const gTime = document.getElementById('guidedStartTime');
+  if (gTime) gTime.value = document.getElementById('taskStartTime')?.value || '';
+  const gDur = document.getElementById('guidedDuration');
+  if (gDur) gDur.value = document.getElementById('taskDurationEstimated')?.value || '';
+
+  // Hide main, show guided
+  if (main) gsap.to(main, { opacity: 0, x: -20, duration: 0.2, onComplete: () => main.style.display = 'none' });
+  if (colToggle) colToggle.style.display = 'none';
+  if (right) gsap.to(right, { width: 0, duration: 0.2 });
+
+  overlay.style.display = 'flex';
+  gsap.fromTo(overlay, { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power2.out' });
+
+  _guidedStep = 0;
+  _showGuidedStep(0);
+  setTimeout(() => document.getElementById('guidedTitle')?.focus(), 100);
+}
+
+export function closeGuidedCards() {
+  const overlay = document.getElementById('guidedOverlay');
+  const main = document.querySelector('.modal-main');
+
+  // Sync guided values back to main form
+  _syncGuidedToMain();
+
+  if (overlay) gsap.to(overlay, { opacity: 0, scale: 0.96, duration: 0.2, onComplete: () => overlay.style.display = 'none' });
+  if (main) {
+    main.style.display = '';
+    gsap.to(main, { opacity: 1, x: 0, duration: 0.3, ease: 'power2.out' });
+  }
+  // Re-show toggle if title has content
+  const toggle = document.getElementById('modalColToggle');
+  if (toggle && document.getElementById('taskTitle')?.value.trim()) toggle.style.display = '';
+}
+
+export function guidedNext() {
+  if (_guidedStep >= 3) return;
+  // Validate title on step 0
+  if (_guidedStep === 0) {
+    const t = document.getElementById('guidedTitle')?.value.trim();
+    if (!t) { document.getElementById('guidedTitle')?.focus(); return; }
+  }
+  _guidedStep++;
+  _showGuidedStep(_guidedStep);
+}
+
+export function guidedBack() {
+  if (_guidedStep <= 0) return;
+  _guidedStep--;
+  _showGuidedStep(_guidedStep);
+}
+
+export function guidedFinish() {
+  _syncGuidedToMain();
+  // Trigger save via existing save button click
+  document.getElementById('saveTask')?.click();
+}
+
+export function guidedSelectWhen(mode) {
+  document.querySelectorAll('.guided-when-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const dateRow = document.getElementById('guidedDateRow');
+  if (dateRow) dateRow.style.display = mode === 'date' ? '' : 'none';
+  // Also sync to main form schedule mode
+  const opts = document.querySelectorAll('.schedule-mode-option');
+  opts.forEach(o => o.classList.toggle('active', o.dataset.mode === mode));
+  state.setScheduleMode(mode);
+  const dateGroup = document.getElementById('dateGroup');
+  if (dateGroup) dateGroup.style.display = mode === 'date' ? '' : 'none';
+}
+
+export function guidedSetToday() {
+  const d = document.getElementById('guidedDate');
+  if (d) d.value = DS(today());
+}
+
+export function guidedSetTomorrow() {
+  const d = document.getElementById('guidedDate');
+  const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+  if (d) d.value = DS(tmr);
+}
+
+function _showGuidedStep(step) {
+  const cards = document.querySelectorAll('.guided-card');
+  cards.forEach((c, i) => {
+    if (i === step) {
+      c.classList.add('active');
+      gsap.fromTo(c, { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.3, ease: 'power2.out' });
+    } else {
+      c.classList.remove('active');
+    }
+  });
+  const indicator = document.getElementById('guidedStepIndicator');
+  if (indicator) indicator.textContent = `${step + 1} / 4`;
+}
+
+function _syncGuidedToMain() {
+  const map = [
+    ['guidedTitle', 'taskTitle'],
+    ['guidedDate', 'taskDate'],
+    ['guidedPriority', 'taskPriority'],
+    ['guidedCategory', 'taskCategory'],
+    ['guidedDescription', 'taskDescription'],
+    ['guidedStartTime', 'taskStartTime'],
+    ['guidedDuration', 'taskDurationEstimated'],
+  ];
+  map.forEach(([gId, mId]) => {
+    const g = document.getElementById(gId);
+    const m = document.getElementById(mId);
+    if (g && m) m.value = g.value;
+  });
+  // Sync priority to state
+  const p = document.getElementById('taskPriority')?.value || '';
+  selectPriority(p);
+  // Ensure context fields are revealed
+  const ctx = document.getElementById('contextFields');
+  if (ctx && document.getElementById('taskTitle')?.value.trim()) {
+    _contextRevealed = true;
+    gsap.set(ctx, { maxHeight: 2000, opacity: 1 });
+  }
 }
