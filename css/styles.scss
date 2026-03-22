@@ -2232,12 +2232,16 @@ main {
     background: var(--surface);
     border: 1.5px solid var(--border);
     border-radius: 14px;
-    padding: 28px;
-    padding-bottom: 0;
+    padding: 20px 22px 0;
     box-shadow: 0 20px 48px rgba(0,0,0,.2);
     backdrop-filter: blur(20px);
     display: flex;
     flex-direction: column;
+
+    .modal-header     { margin-bottom: 12px; }
+    .form-group       { margin-bottom: 12px; }
+    .form-label       { margin-bottom: 4px; }
+    .modal-detail-header { padding: 8px 0; }
   }
 
   .modal-two-columns & .modal-footer {
@@ -2245,8 +2249,7 @@ main {
     bottom: 0;
     background: var(--surface);
     margin-top: auto;
-    padding-top: 16px;
-    padding-bottom: 28px;
+    padding: 12px 0 20px;
     border-top: 1px solid var(--border);
     backdrop-filter: blur(20px);
   }
@@ -4528,6 +4531,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: color-mix(in srgb, var(--surface) 78%, transparent);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  &.prio-high   { background: color-mix(in srgb, var(--surface) 70%, rgba(239,68,68,.15)); }
+  &.prio-medium { background: color-mix(in srgb, var(--surface) 72%, rgba(245,158,11,.12)); }
+  &.prio-low    { background: color-mix(in srgb, var(--surface) 74%, rgba(59,130,246,.10)); }
 }
 
 // ─── App toggle (profil apparence) ───────────────────────────────────────
@@ -4863,13 +4869,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
-// Priority — subtle background tint on the item itself
+// Priority — left accent + background tint
 .todo-item.prio-high,
-.inbox-item.prio-high   { background: rgba(239, 68, 68, .07); }
+.inbox-item.prio-high   { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, .18); }
 .todo-item.prio-medium,
-.inbox-item.prio-medium { background: rgba(245, 158, 11, .07); }
+.inbox-item.prio-medium { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, .15); }
 .todo-item.prio-low,
-.inbox-item.prio-low    { background: rgba(59, 130, 246, .07); }
+.inbox-item.prio-low    { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, .12); }
 
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -6298,6 +6304,23 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // Modal detail sections (right column collapsibles)
+// Compact row for priority + recurrence dropdowns
+.modal-compact-row {
+  display: flex;
+  gap: 10px;
+
+  .form-group { flex: 1; }
+}
+
+.modal-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
 .modal-detail-section {
   border-top: 1px solid var(--border);
 

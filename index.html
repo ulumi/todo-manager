@@ -152,14 +152,28 @@
         <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
       </div>
 
-      <div class="form-group">
-        <div class="priority-options">
-          <div class="priority-option active" data-priority="">—</div>
-          <div class="priority-option priority-low" data-priority="low">▾ Basse</div>
-          <div class="priority-option priority-medium" data-priority="medium">▸ Moy.</div>
-          <div class="priority-option priority-high" data-priority="high">▲ Haute</div>
+      <div class="modal-compact-row">
+        <div class="form-group">
+          <label class="form-label">Priorité</label>
+          <select class="form-input modal-select" id="taskPriority" onchange="window.app.selectPriority(this.value)">
+            <option value="">— Aucune</option>
+            <option value="low">▾ Basse</option>
+            <option value="medium">▸ Moyenne</option>
+            <option value="high">▲ Haute</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="repeat">Repeat</label>
+          <select class="form-input modal-select" id="taskRecurrence" onchange="window.app.selectRecurrence(this.value)">
+            <option value="none" data-i18n="recNone">Aucune</option>
+            <option value="daily" data-i18n="recDaily">Quotidien</option>
+            <option value="weekly" data-i18n="recWeekly">Hebdomadaire</option>
+            <option value="monthly" data-i18n="recMonthly">Mensuel</option>
+            <option value="yearly" data-i18n="recYearly">Annuel</option>
+          </select>
         </div>
       </div>
+      <div class="rec-detail" id="recDetail"></div>
 
       <div class="form-group" id="scheduleModeGroup">
         <div class="schedule-mode-options">
@@ -177,25 +191,13 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label class="form-label" data-i18n="repeat">Repeat</label>
-        <div class="rec-options">
-          <div class="rec-option active" data-rec="none" data-i18n="recNone">No repeat</div>
-          <div class="rec-option" data-rec="daily" data-i18n="recDaily">Daily</div>
-          <div class="rec-option" data-rec="weekly" data-i18n="recWeekly">Weekly</div>
-          <div class="rec-option" data-rec="monthly" data-i18n="recMonthly">Monthly</div>
-          <div class="rec-option" data-rec="yearly" data-i18n="recYearly">Yearly</div>
-        </div>
-        <div class="rec-detail" id="recDetail"></div>
-      </div>
-
       <!-- Détails: Category + Description -->
-      <div class="modal-detail-section open">
+      <div class="modal-detail-section">
         <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
           <span>Détails</span>
           <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="modal-detail-body" style="height:auto;overflow:hidden">
+        <div class="modal-detail-body" style="height:0;overflow:hidden">
           <div class="form-group">
             <label class="form-label">Catégorie</label>
             <div class="category-select-row">

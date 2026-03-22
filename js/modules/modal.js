@@ -182,9 +182,8 @@ export function addCategoryInline() {
 
 export function selectPriority(p) {
   state.setSelectedPriority(p);
-  document.querySelectorAll('.priority-option').forEach(o =>
-    o.classList.toggle('active', o.dataset.priority === p)
-  );
+  const sel = document.getElementById('taskPriority');
+  if (sel) sel.value = p;
   _scheduleDraftSave();
 }
 
@@ -209,7 +208,8 @@ export function openModal(date, todos, scheduleMode = 'date') {
   document.getElementById('taskFlexibleTime').checked = false;
   document.getElementById('taskDurationEstimated').value = '';
   document.getElementById('taskDurationReal').value = '';
-  document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec==='none'));
+  const recSel = document.getElementById('taskRecurrence');
+  if (recSel) recSel.value = 'none';
   document.getElementById('recDetail').innerHTML = '';
   // Schedule mode UI
   document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === scheduleMode));
@@ -286,7 +286,8 @@ export function openEditModal(id, dateStr, todos) {
   const scheduleModeGroup = document.getElementById('scheduleModeGroup');
 
   // Set recurrence UI
-  document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence));
+  const recSel2 = document.getElementById('taskRecurrence');
+  if (recSel2) recSel2.value = state.selectedRecurrence;
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
 
@@ -342,7 +343,8 @@ export function openEditModal(id, dateStr, todos) {
 
 export function selectRecurrence(rec) {
   state.setSelectedRecurrence(rec);
-  document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec===rec));
+  const sel = document.getElementById('taskRecurrence');
+  if (sel) sel.value = rec;
   _scheduleDraftSave();
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
