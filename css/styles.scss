@@ -5443,6 +5443,186 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 
+// ─── 22b. Onboarding ──────────────────────────────────────────────────────
+
+.onboarding-modal {
+  max-width: 400px;
+  padding: 36px 28px 28px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.onboarding-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: onb-step-in .5s cubic-bezier(.22, 1, .36, 1) both;
+
+  &--hidden { display: none !important; }
+
+  &--exit {
+    animation: onb-step-out .3s cubic-bezier(.55, .06, .68, .19) both;
+  }
+
+  &--enter {
+    animation: onb-step-in .45s cubic-bezier(.22, 1, .36, 1) both;
+  }
+}
+
+// Logo bounce-in
+.onboarding-logo {
+  animation: onb-logo-pop .6s cubic-bezier(.34, 1.56, .64, 1) both;
+  animation-delay: .1s;
+}
+
+.onboarding-logo-mark {
+  filter: drop-shadow(0 4px 12px rgba(245, 158, 11, .35));
+}
+
+.onboarding-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 4px 0 0;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .2s;
+}
+
+.onboarding-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .3s;
+}
+
+.onboarding-try-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  padding: 13px 24px;
+  margin-top: 8px;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .4s;
+
+  svg {
+    transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+  }
+
+  &:hover svg {
+    transform: translateX(4px);
+  }
+}
+
+.onboarding-signup-btn {
+  width: 100%;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .55s;
+}
+
+.onboarding-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .45s;
+}
+
+.onboarding-signup-btn + .onboarding-hint {
+  animation-delay: .6s;
+}
+
+.onboarding-login-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .65s;
+}
+
+.onboarding-modal .auth-divider {
+  width: 100%;
+  animation: onb-fade-up .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: .5s;
+}
+
+// Step 2 specifics
+.onboarding-emoji-pop {
+  font-size: 40px;
+  animation: onb-emoji-bounce .6s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.onboarding-name-input {
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  padding: 12px 16px;
+}
+
+.onboarding-avatar-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.onboarding-step2-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+
+  .btn { flex: 1; }
+}
+
+// Close animation on overlay
+.onboarding-closing {
+  animation: onb-overlay-out .25s ease-in both;
+}
+
+// Keyframes
+@keyframes onb-step-in {
+  from { opacity: 0; transform: translateY(24px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes onb-step-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-40px); }
+}
+
+@keyframes onb-logo-pop {
+  from { opacity: 0; transform: scale(.5) rotate(-12deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes onb-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes onb-emoji-bounce {
+  0%   { opacity: 0; transform: scale(.3) rotate(-20deg); }
+  60%  { transform: scale(1.15) rotate(5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes onb-overlay-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+
 // ─── 23. Chat UI ─────────────────────────────────────────────────────────
 
 // Auth modal — chat style header

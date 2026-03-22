@@ -3203,27 +3203,52 @@ class TodoApp {
   _promptGuestName() {
     return new Promise(resolve => {
       const overlay = document.getElementById('guestNameOverlay');
-      const input   = document.getElementById('guestNameInput');
       if (!overlay) { resolve(); return; }
+      // Reset to step 1
+      document.getElementById('onboardingStep1')?.classList.remove('onboarding-step--hidden');
+      document.getElementById('onboardingStep2')?.classList.add('onboarding-step--hidden');
       overlay.classList.remove('hidden');
-      input.focus();
-      input.addEventListener('keydown', e => { if (e.key === 'Enter') this.saveGuestName(); }, { once: true });
       this._resolveGuestNamePrompt = resolve;
     });
   }
 
+  // ── Onboarding step 1 actions ──
+  onboardingTryApp() {
+    const step1 = document.getElementById('onboardingStep1');
+    const step2 = document.getElementById('onboardingStep2');
+    // Slide step 1 out, step 2 in
+    step1.classList.add('onboarding-step--exit');
+    setTimeout(() => {
+      step1.classList.add('onboarding-step--hidden');
+      step1.classList.remove('onboarding-step--exit');
+      step2.classList.remove('onboarding-step--hidden');
+      step2.classList.add('onboarding-step--enter');
+      document.getElementById('guestNameInput')?.focus();
+      // Listen for Enter key
+      document.getElementById('guestNameInput')?.addEventListener('keydown',
+        e => { if (e.key === 'Enter') this.saveGuestName(); }, { once: true });
+    }, 300);
+  }
+
+  onboardingSignup() {
+    this._closeGuestNamePrompt();
+    this.openAuthModal();
+    this.showAuthRegister();
+  }
+
+  onboardingLogin() {
+    this._closeGuestNamePrompt();
+    this.openAuthModal();
+    this.showAuthLogin();
+  }
+
+  // ── Onboarding step 2 actions ──
   async saveGuestName() {
-    const name  = document.getElementById('guestNameInput')?.value.trim();
-    const email = document.getElementById('guestEmailInput')?.value.trim();
+    const name = document.getElementById('guestNameInput')?.value.trim();
     if (name) { await updateUserProfile(name); updatePresenceName(name); }
+    localStorage.setItem('guestNameSkipped', '1');
     this._closeGuestNamePrompt();
     this._updateUserBtn();
-    if (email) {
-      this.openAuthModal();
-      this.showAuthRegister();
-      document.getElementById('authEmail').value = email;
-      document.getElementById('authPassword')?.focus();
-    }
   }
 
   skipGuestName() {
@@ -3234,13 +3259,20 @@ class TodoApp {
   async openAvatarFromPrompt() {
     const name = document.getElementById('guestNameInput')?.value.trim();
     if (name) { await updateUserProfile(name); updatePresenceName(name); }
+    localStorage.setItem('guestNameSkipped', '1');
     this._closeGuestNamePrompt();
     this._updateUserBtn();
     this.openAvatarEditor();
   }
 
   _closeGuestNamePrompt() {
-    document.getElementById('guestNameOverlay')?.classList.add('hidden');
+    const overlay = document.getElementById('guestNameOverlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    overlay.classList.add('onboarding-closing');
+    setTimeout(() => {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('onboarding-closing');
+    }, 250);
     this._resolveGuestNamePrompt?.();
     this._resolveGuestNamePrompt = null;
   }

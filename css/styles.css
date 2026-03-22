@@ -6026,6 +6026,207 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex-shrink: 0;
 }
 
+.onboarding-modal {
+  max-width: 400px;
+  padding: 36px 28px 28px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.onboarding-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: onb-step-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.onboarding-step--hidden {
+  display: none !important;
+}
+.onboarding-step--exit {
+  animation: onb-step-out 0.3s cubic-bezier(0.55, 0.06, 0.68, 0.19) both;
+}
+.onboarding-step--enter {
+  animation: onb-step-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.onboarding-logo {
+  animation: onb-logo-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.1s;
+}
+
+.onboarding-logo-mark {
+  filter: drop-shadow(0 4px 12px rgba(245, 158, 11, 0.35));
+}
+
+.onboarding-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 4px 0 0;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.2s;
+}
+
+.onboarding-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 6px;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.3s;
+}
+
+.onboarding-try-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  padding: 13px 24px;
+  margin-top: 8px;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.4s;
+}
+.onboarding-try-btn svg {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.onboarding-try-btn:hover svg {
+  transform: translateX(4px);
+}
+
+.onboarding-signup-btn {
+  width: 100%;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.55s;
+}
+
+.onboarding-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.45s;
+}
+
+.onboarding-signup-btn + .onboarding-hint {
+  animation-delay: 0.6s;
+}
+
+.onboarding-login-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.65s;
+}
+
+.onboarding-modal .auth-divider {
+  width: 100%;
+  animation: onb-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 0.5s;
+}
+
+.onboarding-emoji-pop {
+  font-size: 40px;
+  animation: onb-emoji-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.onboarding-name-input {
+  width: 100%;
+  text-align: center;
+  font-size: 16px;
+  padding: 12px 16px;
+}
+
+.onboarding-avatar-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.onboarding-step2-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+.onboarding-step2-actions .btn {
+  flex: 1;
+}
+
+.onboarding-closing {
+  animation: onb-overlay-out 0.25s ease-in both;
+}
+
+@keyframes onb-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes onb-step-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+}
+@keyframes onb-logo-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes onb-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes onb-emoji-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-20deg);
+  }
+  60% {
+    transform: scale(1.15) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+@keyframes onb-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
 .auth-chat-header {
   display: flex;
   align-items: center;

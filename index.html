@@ -633,40 +633,55 @@
   </div>
 </div>
 
-<!-- Guest Name Prompt -->
-<div class="modal-overlay hidden" id="guestNameOverlay" onclick="if(event.target===this)window.app.skipGuestName()">
-  <div class="modal" style="max-width:360px;padding:28px 24px;display:flex;flex-direction:column;gap:14px;">
-    <button class="modal-close-btn" onclick="window.app.skipGuestName()" title="Fermer" aria-label="Fermer" style="align-self:flex-end;margin-bottom:-8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
-    <div style="text-align:center;">
-      <div style="font-size:24px;margin-bottom:6px;">👋</div>
-      <div style="font-weight:600;font-size:15px;margin-bottom:4px;">Bienvenue !</div>
-      <div style="font-size:13px;color:var(--text-muted);">Personnalise ton expérience — tout est optionnel.</div>
-    </div>
+<!-- Onboarding -->
+<div class="modal-overlay hidden" id="guestNameOverlay">
+  <div class="modal onboarding-modal">
 
-    <button class="btn btn-ghost" style="width:100%;justify-content:center;gap:8px;display:flex;align-items:center;"
-      onclick="window.app.openAvatarFromPrompt()">
-      🎨 <span>Choisir un avatar ou une photo</span>
-    </button>
+    <!-- Step 1: Choose path -->
+    <div class="onboarding-step" id="onboardingStep1">
+      <div class="onboarding-logo">
+        <svg class="onboarding-logo-mark" width="48" height="48" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="26" height="26" rx="7" fill="var(--primary)"/><path d="M7 13.5L11 17.5L19 9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="onboarding-title">Bienvenue sur 2FŨKOI</h2>
+      <p class="onboarding-subtitle">Organise ta journée, ta semaine, ta vie.</p>
 
-    <input class="form-input" type="text" id="guestNameInput" placeholder="Ton prénom" maxlength="32" autocomplete="off">
+      <button class="btn btn-primary onboarding-try-btn" onclick="window.app.onboardingTryApp()">
+        Essayer l'app
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+      <p class="onboarding-hint">Aucun compte requis — tes tâches restent sur cet appareil.</p>
 
-    <div style="display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:11px;">
-      <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span>ou crée un compte</span>
-      <div style="flex:1;height:1px;background:var(--border)"></div>
-    </div>
+      <div class="auth-divider"><span>ou</span></div>
 
-    <div>
-      <input class="form-input" type="email" id="guestEmailInput" placeholder="Email — sync multi-appareils" autocomplete="email">
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;padding-left:2px;">
-        Un compte garde tes tâches sur tous tes appareils.
+      <button class="btn btn-ghost onboarding-signup-btn" onclick="window.app.onboardingSignup()">
+        Créer un compte gratuit
+      </button>
+      <p class="onboarding-hint">Sync multi-appareils · Gratuit · Pas de spam, promis.</p>
+
+      <div class="onboarding-login-link">
+        <span>Déjà un compte ?</span>
+        <button class="btn-link" onclick="window.app.onboardingLogin()">Se connecter</button>
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:2px;">
-      <button class="btn btn-ghost" style="flex:1" onclick="window.app.skipGuestName()">Passer</button>
-      <button class="btn btn-primary" style="flex:1" onclick="window.app.saveGuestName()">Continuer</button>
+    <!-- Step 2: Personalize (after "Essayer") -->
+    <div class="onboarding-step onboarding-step--hidden" id="onboardingStep2">
+      <div class="onboarding-emoji-pop">✌️</div>
+      <h2 class="onboarding-title">C'est parti !</h2>
+      <p class="onboarding-subtitle">Un petit nom pour personnaliser ?</p>
+
+      <input class="form-input onboarding-name-input" type="text" id="guestNameInput" placeholder="Ton prénom" maxlength="32" autocomplete="off">
+
+      <button class="btn btn-ghost onboarding-avatar-btn" onclick="window.app.openAvatarFromPrompt()">
+        🎨 <span>Choisir un avatar</span>
+      </button>
+
+      <div class="onboarding-step2-actions">
+        <button class="btn btn-ghost" onclick="window.app.skipGuestName()">Passer</button>
+        <button class="btn btn-primary" onclick="window.app.saveGuestName()">C'est bon, allons-y !</button>
+      </div>
     </div>
+
   </div>
 </div>
 
