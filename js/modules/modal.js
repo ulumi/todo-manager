@@ -218,7 +218,6 @@ export function openModal(date, todos, scheduleMode = 'date') {
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
-  renderQuickAccess(todos);
   populateCategorySelect('');
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
@@ -279,8 +278,6 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
-  const qaEl = document.getElementById('quickAccessSection');
-  if (qaEl) { qaEl.style.display = 'none'; qaEl.innerHTML = ''; }
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
 
@@ -691,12 +688,9 @@ function _cloudSection(label, chipsHTML, withEdit = false, openByDefault = false
   </div>`;
 }
 
-// ─── Quick access (3 frequent + 3 recent) inside modal-left ──────────────
+// ─── Quick access (3 frequent + 3 recent) in modal-right ─────────────────
 
-export function renderQuickAccess(todos) {
-  const el = document.getElementById('quickAccessSection');
-  if (!el) return;
-
+function _quickAccessHTML(todos) {
   const suggestedItems = (() => {
     const cfg = getSuggestedTasks();
     return [...cfg.daily, ...cfg.weekly, ...cfg.monthly];
@@ -710,59 +704,48 @@ export function renderQuickAccess(todos) {
     .slice(0, 3);
 
   state.setSuggestions([...frequent, ...recent]);
-  if (frequent.length === 0 && recent.length === 0) { el.style.display = 'none'; return; }
+  if (frequent.length === 0 && recent.length === 0) return '';
 
-  const chipHTML = (title, type, idx) =>
+  const chip = (title, type, idx) =>
     `<div class="chip qa-chip" data-qa-type="${type}" data-qa-index="${idx}" data-qa-title="${esc(title)}">${esc(title)}</div>`;
 
-  let chipsHTML = '';
+  let chips = '';
   if (frequent.length > 0)
-    chipsHTML += `<span class="qa-sub-label">${esc(state.T.frequentlyUsed)}</span>` +
-      frequent.map((t, i) => chipHTML(t, 'frequent', i)).join('');
+    chips += `<span class="qa-sub-label">${esc(state.T.frequentlyUsed)}</span>` +
+      frequent.map((t, i) => chip(t, 'frequent', i)).join('');
   if (recent.length > 0)
-    chipsHTML += `<span class="qa-sub-label">${esc(state.T.recentlyAdded)}</span>` +
-      recent.map((t, i) => chipHTML(t, 'recent', i)).join('');
+    chips += `<span class="qa-sub-label">${esc(state.T.recentlyAdded)}</span>` +
+      recent.map((t, i) => chip(t, 'recent', i)).join('');
 
-  el.innerHTML = `
-    <div class="qa-header" onclick="this.parentElement.classList.toggle('collapsed')">
-      <span class="qa-label">${esc(state.T.quickAccess)}</span>
-      ${_chevronSVG}
-    </div>
-    <div class="qa-body">
-      <div class="cloud-chips">${chipsHTML}</div>
-    </div>`;
-  el.classList.remove('collapsed');
-  el.style.display = '';
-
-  // Chip click → fill title
-  setTimeout(() => {
-    el.querySelectorAll('.qa-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const title = chip.dataset.qaTitle;
-        if (title) {
-          document.getElementById('taskTitle').value = title;
-          document.getElementById('taskTitle').focus();
-        }
-      });
-    });
-  }, 0);
+  return _cloudSection(state.T.quickAccess, chips, false, true);
 }
 
 export function cloudsHTML(date, todos) {
   const suggestedTasksConfig = getSuggestedTasks();
 
-  let html = '';
+  let html = _quickAccessHTML(todos);
   html += _cloudSection(state.T.recurringDaily,   suggestedTasksConfig.daily.map(t=>`<div class="chip" data-chip-type="daily" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
   html += _cloudSection(state.T.recurringWeekly,  suggestedTasksConfig.weekly.map(t=>`<div class="chip" data-chip-type="weekly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
   html += _cloudSection(state.T.recurringMonthly, suggestedTasksConfig.monthly.map(t=>`<div class="chip" data-chip-type="monthly" data-chip-title="${esc(t)}">${esc(t)}</div>`).join(''), true);
 
   // Setup event listeners after HTML is inserted
   setTimeout(() => {
+    // Recurring chip → open modal with title
     document.querySelectorAll('[data-chip-type]').forEach(chip => {
       chip.style.cursor = 'pointer';
       chip.addEventListener('click', () => {
         const title = chip.dataset.chipTitle;
         if (title) window.app.openModalWithTitle(title);
+      });
+    });
+    // Quick access chip → fill title input
+    document.querySelectorAll('.qa-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const title = chip.dataset.qaTitle;
+        if (title) {
+          document.getElementById('taskTitle').value = title;
+          document.getElementById('taskTitle').focus();
+        }
       });
     });
   }, 0);

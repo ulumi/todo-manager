@@ -35,26 +35,15 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     if (!cat) return '';
     return `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
   })();
-  const priorityBadge = (() => {
-    if (!todo.priority) return '';
-    const cfg = {
-      high:   { label: '▲ Haute',  color: 'var(--danger)',  border: 'rgba(239,68,68,.35)',  bg: 'rgba(239,68,68,.08)'   },
-      medium: { label: '▸ Moy.',   color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)'  },
-      low:    { label: '▾ Basse',  color: '#3b82f6',        border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)'  },
-    };
-    const c = cfg[todo.priority];
-    if (!c) return '';
-    return `<span class="todo-priority-badge" style="color:${c.color};border-color:${c.border};background:${c.bg};">${c.label}</span>`;
-  })();
-  const hasMeta = categoryBadge || rec || priorityBadge;
+  const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
+  const hasMeta = categoryBadge || rec;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
-    <div class="todo-item${done?' done':''}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
-      ${dragHandleHTML}
+    <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <div class="todo-content">
         <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${priorityBadge}${categoryBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${categoryBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
       <div class="todo-actions">
         <button class="todo-add-after" onclick="window.app.addTaskAfter('${todo.id}','${ds}')" title="Ajouter après">＋</button>
@@ -62,6 +51,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
         <button class="todo-duplicate" onclick="window.app.duplicateTodo('${todo.id}','${ds}')" title="Dupliquer">⧉</button>
         <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
       </div>
+      ${dragHandleHTML}
     </div>`;
 }
 
@@ -557,8 +547,8 @@ function renderSidebarOptions() {
   const isStats = state.pastDisplayMode === 'stats';
   const viz = state.statsViz;
   const title = state.lang === 'fr' ? 'Options d\'affichage' : 'Display options';
-  const label = state.lang === 'fr' ? 'Items complétés' : 'Completed items';
-  const stateLabel = isStats ? 'Stats' : 'On';
+  const label = state.lang === 'fr' ? 'Complétés' : 'Completed';
+  const stateLabel = isStats ? 'stats' : 'visible';
   const vizOpts = [
     { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
     { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
@@ -575,7 +565,7 @@ function renderSidebarOptions() {
     <div class="cal-sid-toggle-row">
       <span class="cal-sid-toggle-label">${label}</span>
       <div class="cal-sid-toggle-right">
-        <span class="cal-sid-toggle-state" data-on="Stats" data-off="On">${stateLabel}</span>
+        <span class="cal-sid-toggle-state" data-on="stats" data-off="visible">${stateLabel}</span>
         <label class="cal-sid-toggle">
           <input type="checkbox" ${isStats ? 'checked' : ''} onchange="window.app.togglePastDisplay()">
           <span class="cal-sid-toggle-track"></span>
@@ -898,19 +888,17 @@ export function renderInboxView(todos) {
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
-    const prioCfg = { high: { label: '▲ Haute', color: 'var(--danger)', border: 'rgba(239,68,68,.35)', bg: 'rgba(239,68,68,.08)' }, medium: { label: '▸ Moy.', color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)' }, low: { label: '▾ Basse', color: '#3b82f6', border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)' } };
-    const pc = t.priority ? prioCfg[t.priority] : null;
-    const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
-    const hasMeta = catBadge || prioBadge;
+    const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    const hasMeta = !!catBadge;
     return `
-      <div class="inbox-item" data-id="${t.id}" draggable="true"
+      <div class="inbox-item${prioCls}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}', null)">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          ${hasMeta ? `<div class="todo-meta">${prioBadge}${catBadge}</div>` : ''}
+          ${hasMeta ? `<div class="todo-meta">${catBadge}</div>` : ''}
         </div>
         <div class="inbox-item-actions">
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Assigner à aujourd'hui">
@@ -973,19 +961,17 @@ export function renderBacklogView(todos) {
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
-    const prioCfg = { high: { label: '▲ Haute', color: 'var(--danger)', border: 'rgba(239,68,68,.35)', bg: 'rgba(239,68,68,.08)' }, medium: { label: '▸ Moy.', color: 'var(--primary)', border: 'rgba(245,158,11,.35)', bg: 'var(--primary-light)' }, low: { label: '▾ Basse', color: '#3b82f6', border: 'rgba(59,130,246,.35)', bg: 'rgba(59,130,246,.08)' } };
-    const pc = t.priority ? prioCfg[t.priority] : null;
-    const prioBadge = pc ? `<span class="todo-priority-badge" style="color:${pc.color};border-color:${pc.border};background:${pc.bg};">${pc.label}</span>` : '';
-    const hasMeta = catBadge || prioBadge;
+    const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    const hasMeta = !!catBadge;
     return `
-      <div class="inbox-item" data-id="${t.id}" draggable="true"
+      <div class="inbox-item${prioCls}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}', null)">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          ${hasMeta ? `<div class="todo-meta">${prioBadge}${catBadge}</div>` : ''}
+          ${hasMeta ? `<div class="todo-meta">${catBadge}</div>` : ''}
         </div>
         <div class="inbox-item-actions">
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Planifier aujourd'hui">

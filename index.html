@@ -152,8 +152,6 @@
         <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
       </div>
 
-      <div id="quickAccessSection" class="quick-access-section" style="display:none"></div>
-
       <div class="form-group">
         <div class="priority-options">
           <div class="priority-option active" data-priority="">—</div>
@@ -191,13 +189,72 @@
         <div class="rec-detail" id="recDetail"></div>
       </div>
 
+      <!-- Détails: Category + Description -->
+      <div class="modal-detail-section open">
+        <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
+          <span>Détails</span>
+          <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="modal-detail-body" style="height:auto;overflow:hidden">
+          <div class="form-group">
+            <label class="form-label">Catégorie</label>
+            <div class="category-select-row">
+              <select class="form-input" id="taskCategory">
+                <option value="">— Aucune catégorie —</option>
+              </select>
+              <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
+            </div>
+            <div id="newCatRow" style="display:none">
+              <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
+                onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:4px">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="taskDescription" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:62px;font-family:inherit"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Horaire + Durée sur une ligne -->
+      <div class="modal-detail-section">
+        <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
+          <span>Horaire & Durée</span>
+          <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="modal-detail-body" style="height:0;overflow:hidden">
+          <div class="time-row">
+            <div class="form-group">
+              <label class="form-label">Début</label>
+              <input type="time" class="form-input" id="taskStartTime">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fin</label>
+              <input type="time" class="form-input" id="taskEndTime">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Estimée</label>
+              <input type="number" class="form-input" id="taskDurationEstimated" min="0" placeholder="min">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Réelle</label>
+              <input type="number" class="form-input" id="taskDurationReal" min="0" placeholder="min">
+            </div>
+          </div>
+          <label class="flex-time-label">
+            <input type="checkbox" id="taskFlexibleTime">
+            <span>Heure flexible</span>
+          </label>
+        </div>
+      </div>
+
       <div class="modal-footer">
         <button class="btn btn-ghost" id="cancelModal" data-i18n="cancel">Annuler</button>
         <button class="btn btn-primary" id="saveTask" data-i18n="saveTask">Ajouter</button>
       </div>
     </div>
 
-    <button class="modal-col-toggle" id="modalColToggle" onclick="window.app.toggleModalRight()" title="Détails">
+    <button class="modal-col-toggle" id="modalColToggle" onclick="window.app.toggleModalRight()" title="Suggestions">
       <svg viewBox="0 0 10 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="2 2 8 8 2 14"/>
       </svg>
@@ -205,79 +262,7 @@
 
     <div class="modal-right" id="modalRight">
       <div class="modal-right-inner" id="modalRightInner">
-
-        <!-- Détails: Category + Description -->
-        <div class="modal-detail-section open">
-          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
-            <span>Détails</span>
-            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="modal-detail-body" style="height:auto;overflow:hidden">
-            <div class="form-group">
-              <label class="form-label">Catégorie</label>
-              <div class="category-select-row">
-                <select class="form-input" id="taskCategory">
-                  <option value="">— Aucune catégorie —</option>
-                </select>
-                <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
-              </div>
-              <div id="newCatRow" style="display:none">
-                <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
-                  onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom:4px">
-              <label class="form-label">Description</label>
-              <textarea class="form-input" id="taskDescription" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:62px;font-family:inherit"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Horaire -->
-        <div class="modal-detail-section">
-          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
-            <span>Horaire</span>
-            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="modal-detail-body" style="height:0;overflow:hidden">
-            <div class="time-row">
-              <div class="form-group">
-                <label class="form-label">Début</label>
-                <input type="time" class="form-input" id="taskStartTime">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Fin</label>
-                <input type="time" class="form-input" id="taskEndTime">
-              </div>
-            </div>
-            <label class="flex-time-label">
-              <input type="checkbox" id="taskFlexibleTime">
-              <span>Heure flexible</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Durée -->
-        <div class="modal-detail-section">
-          <div class="modal-detail-header" onclick="window.app.toggleDetailSection(this)">
-            <span>Durée</span>
-            <svg class="modal-detail-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </div>
-          <div class="modal-detail-body" style="height:0;overflow:hidden">
-            <div class="time-row">
-              <div class="form-group">
-                <label class="form-label">Estimée (min)</label>
-                <input type="number" class="form-input" id="taskDurationEstimated" min="0" placeholder="—">
-              </div>
-              <div class="form-group" style="margin-bottom:4px">
-                <label class="form-label">Réelle (min)</label>
-                <input type="number" class="form-input" id="taskDurationReal" min="0" placeholder="—">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="modalClouds" style="margin-top:8px"></div>
+        <div id="modalClouds"></div>
       </div>
     </div>
   </div>

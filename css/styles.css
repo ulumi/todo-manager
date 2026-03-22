@@ -488,8 +488,12 @@ main {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 100vh;
-  overflow: hidden;
+  max-height: calc(100vh - var(--header-h) - 30px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+#calSidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .cal-sid-month {
@@ -990,12 +994,12 @@ input:checked + .cal-sid-toggle-track::after {
 .day-col-title {
   font-size: 11px;
   font-weight: 800;
-  color: var(--primary);
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--primary);
-  opacity: 0.7;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+  opacity: 0.85;
 }
 
 .day-mini-week {
@@ -1181,12 +1185,12 @@ input:checked + .cal-sid-toggle-track::after {
 .day-group-label {
   font-size: 12px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.85);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-top: 18px;
   padding-bottom: 6px;
-  border-bottom: 1.5px solid var(--border);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.2);
 }
 .day-group-label:first-child {
   margin-top: 0;
@@ -1285,8 +1289,9 @@ input:checked + .cal-sid-toggle-track::after {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
 }
 
 .todo-meta {
@@ -3216,47 +3221,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom: 10px;
 }
 
-.quick-access-section {
-  margin-bottom: 10px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border);
-  background: var(--surface2);
-  overflow: hidden;
-}
-
-.qa-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  cursor: pointer;
-  user-select: none;
-}
-.qa-header:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-.qa-header .clouds-chevron {
-  transition: transform 0.22s ease;
-  transform: rotate(90deg);
-}
-
-.quick-access-section.collapsed .qa-body {
-  height: 0;
-  overflow: hidden;
-}
-.quick-access-section.collapsed .qa-header .clouds-chevron {
-  transform: rotate(0deg);
-}
-
-.qa-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--primary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  flex: 1;
-}
-
 .qa-sub-label {
   display: block;
   font-size: 10px;
@@ -3264,26 +3228,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-top: 4px;
+  margin-top: 6px;
   padding: 0 2px;
 }
 .qa-sub-label:first-child {
   margin-top: 0;
-}
-
-.qa-body {
-  padding: 4px 12px 10px;
-  overflow: hidden;
-  transition: height 0.22s ease;
-}
-.qa-body .cloud-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.qa-body .chip {
-  padding: 5px 10px;
-  font-size: 11px;
 }
 
 .clouds-section {
@@ -5447,15 +5396,19 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--danger);
 }
 
-.todo-priority-badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 10px;
-  border: 1px solid;
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
+.todo-item.prio-high,
+.inbox-item.prio-high {
+  background: rgba(239, 68, 68, 0.07);
+}
+
+.todo-item.prio-medium,
+.inbox-item.prio-medium {
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.todo-item.prio-low,
+.inbox-item.prio-low {
+  background: rgba(59, 130, 246, 0.07);
 }
 
 .category-panel-overlay {
@@ -7008,10 +6961,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .modal-detail-section {
-  border-bottom: 1px solid var(--border);
-}
-.modal-detail-section:last-of-type {
-  border-bottom: none;
+  border-top: 1px solid var(--border);
 }
 .modal-detail-section.open .modal-detail-chevron {
   transform: rotate(90deg);
