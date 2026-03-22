@@ -1011,8 +1011,8 @@ input:checked + .cal-sid-toggle-track::after {
 .day-col-title::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.15);
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .day-col-controls {
@@ -1174,7 +1174,7 @@ input:checked + .cal-sid-toggle-track::after {
   background: none;
   line-height: 1.4;
   padding-top: 8px;
-  border-top: 2px solid rgba(255, 255, 255, 0.15);
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
 }
 .day-spacer-title:empty::before {
   content: attr(placeholder);
@@ -1401,8 +1401,8 @@ input:checked + .cal-sid-toggle-track::after {
 .day-group-label::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.15);
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.35);
 }
 .day-group-label:first-child {
   margin-top: 0;
@@ -5145,19 +5145,175 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-radius: 99px;
 }
 
+.glass-mode {
+  color: #f1f5f9;
+}
 .glass-mode .todo-item {
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.glass-mode .todo-item.prio-high {
+  background: color-mix(in srgb, var(--surface) 35%, rgba(239, 68, 68, 0.18));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.glass-mode .todo-item.prio-medium {
+  background: color-mix(in srgb, var(--surface) 35%, rgba(245, 158, 11, 0.15));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.glass-mode .todo-item.prio-low {
+  background: color-mix(in srgb, var(--surface) 38%, rgba(59, 130, 246, 0.12));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.glass-mode .cal-sid-month,
+.glass-mode .cal-sid-options,
+.glass-mode #calSidebar {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .day-ctrl-btn,
+.glass-mode .day-sort-btn,
+.glass-mode .day-spacer-btn,
+.glass-mode .day-action-btn,
+.glass-mode .btn-secondary {
+  background: color-mix(in srgb, var(--surface) 30%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9 !important;
+}
+.glass-mode .day-ctrl-btn:hover,
+.glass-mode .day-sort-btn:hover,
+.glass-mode .day-spacer-btn:hover,
+.glass-mode .day-action-btn:hover,
+.glass-mode .btn-secondary:hover {
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+}
+.glass-mode .btn-primary {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-.glass-mode .todo-item.prio-high {
-  background: color-mix(in srgb, var(--surface) 70%, rgba(239, 68, 68, 0.15));
+.glass-mode .day-ctrl-group,
+.glass-mode .day-ctrl-check {
+  color: #f1f5f9;
 }
-.glass-mode .todo-item.prio-medium {
-  background: color-mix(in srgb, var(--surface) 72%, rgba(245, 158, 11, 0.12));
+.glass-mode .modal {
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
 }
-.glass-mode .todo-item.prio-low {
-  background: color-mix(in srgb, var(--surface) 74%, rgba(59, 130, 246, 0.1));
+.glass-mode .modal-footer {
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode input[type=text],
+.glass-mode input[type=date],
+.glass-mode input[type=time],
+.glass-mode textarea,
+.glass-mode select {
+  background: color-mix(in srgb, var(--surface) 30%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode input[type=text]::placeholder,
+.glass-mode input[type=date]::placeholder,
+.glass-mode input[type=time]::placeholder,
+.glass-mode textarea::placeholder,
+.glass-mode select::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .month-cell,
+.glass-mode .month-year-mini,
+.glass-mode .year-month-card {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .profile-section,
+.glass-mode .category-card {
+  background: color-mix(in srgb, var(--surface) 38%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .superadmin-section {
+  background: color-mix(in srgb, var(--surface) 38%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .inbox-panel,
+.glass-mode .backlog-panel {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .search-input,
+.glass-mode .command-bar {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .popover,
+.glass-mode .dropdown-menu,
+.glass-mode .context-menu {
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.glass-mode .day-spacer-title {
+  color: #f1f5f9;
+}
+.glass-mode .stat-card,
+.glass-mode .onboarding-card,
+.glass-mode .guest-auth-panel {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .todo-title, .glass-mode .todo-tag, .glass-mode .todo-date,
+.glass-mode .cal-sid-label, .glass-mode .cal-sid-value,
+.glass-mode h1, .glass-mode h2, .glass-mode h3, .glass-mode h4,
+.glass-mode .section-title, .glass-mode .day-col-title,
+.glass-mode .day-group-label, .glass-mode .day-auto-group-label {
+  color: #f1f5f9;
+}
+.glass-mode .text-muted, .glass-mode .text-secondary,
+.glass-mode .todo-meta, .glass-mode .todo-subtitle {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .app-toggle {
@@ -5644,19 +5800,16 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .todo-item.prio-high,
 .inbox-item.prio-high {
-  border-left: 4px solid #ef4444;
   background: rgba(239, 68, 68, 0.18);
 }
 
 .todo-item.prio-medium,
 .inbox-item.prio-medium {
-  border-left: 4px solid #f59e0b;
   background: rgba(245, 158, 11, 0.15);
 }
 
 .todo-item.prio-low,
 .inbox-item.prio-low {
-  border-left: 4px solid #3b82f6;
   background: rgba(59, 130, 246, 0.12);
 }
 

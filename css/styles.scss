@@ -970,8 +970,8 @@ main {
   &::after {
     content: '';
     flex: 1;
-    height: 1px;
-    background: rgba(255,255,255,.15);
+    height: 1.5px;
+    background: rgba(255,255,255,.35);
   }
 }
 
@@ -1124,7 +1124,7 @@ main {
   background: none;
   line-height: 1.4;
   padding-top: 8px;
-  border-top: 2px solid rgba(255,255,255,.15);
+  border-top: 2px solid rgba(255,255,255,.35);
 
   &:empty::before {
     content: attr(placeholder);
@@ -1337,8 +1337,8 @@ main {
   &::after {
     content: '';
     flex: 1;
-    height: 1px;
-    background: rgba(255,255,255,.15);
+    height: 1.5px;
+    background: rgba(255,255,255,.35);
   }
 
   &:first-child { margin-top: 0; }
@@ -4741,13 +4741,157 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // ─── Glass mode ──────────────────────────────────────────────────────────
 
-.glass-mode .todo-item {
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  &.prio-high   { background: color-mix(in srgb, var(--surface) 70%, rgba(239,68,68,.15)); }
-  &.prio-medium { background: color-mix(in srgb, var(--surface) 72%, rgba(245,158,11,.12)); }
-  &.prio-low    { background: color-mix(in srgb, var(--surface) 74%, rgba(59,130,246,.10)); }
+// Shared glass mixin
+@mixin glass-surface($opacity: 40%, $blur: 12px) {
+  background: color-mix(in srgb, var(--surface) $opacity, transparent);
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border-color: rgba(255,255,255,.12);
+}
+
+.glass-mode {
+  // Force white text globally
+  color: #f1f5f9;
+
+  // ── Todo items ──
+  .todo-item {
+    @include glass-surface(40%, 12px);
+    color: #f1f5f9;
+    border-color: rgba(255,255,255,.15);
+    &.prio-high   { background: color-mix(in srgb, var(--surface) 35%, rgba(239,68,68,.18)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    &.prio-medium { background: color-mix(in srgb, var(--surface) 35%, rgba(245,158,11,.15)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    &.prio-low    { background: color-mix(in srgb, var(--surface) 38%, rgba(59,130,246,.12)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  }
+
+  // ── Sidebar ──
+  .cal-sid-month,
+  .cal-sid-options,
+  #calSidebar {
+    @include glass-surface(35%, 14px);
+    color: #f1f5f9;
+  }
+
+  // ── Buttons & controls ──
+  .day-ctrl-btn,
+  .day-sort-btn,
+  .day-spacer-btn,
+  .day-action-btn,
+  .btn-secondary {
+    @include glass-surface(30%, 10px);
+    color: #f1f5f9 !important;
+    &:hover {
+      background: color-mix(in srgb, var(--surface) 50%, transparent);
+    }
+  }
+
+  .btn-primary {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  // ── Day view controls row ──
+  .day-ctrl-group,
+  .day-ctrl-check {
+    color: #f1f5f9;
+  }
+
+  // ── Modals ──
+  .modal {
+    @include glass-surface(45%, 20px);
+    color: #f1f5f9;
+    border: 1px solid rgba(255,255,255,.15);
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+  }
+
+  .modal-footer {
+    @include glass-surface(50%, 14px);
+  }
+
+  // ── Inputs ──
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    @include glass-surface(30%, 8px);
+    color: #f1f5f9;
+    &::placeholder { color: rgba(255,255,255,.4); }
+  }
+
+  // ── Month / Year view cards ──
+  .month-cell,
+  .month-year-mini,
+  .year-month-card {
+    @include glass-surface(35%, 12px);
+    color: #f1f5f9;
+  }
+
+  // ── Profile & category cards ──
+  .profile-section,
+  .category-card {
+    @include glass-surface(38%, 14px);
+    color: #f1f5f9;
+    border-color: rgba(255,255,255,.12);
+  }
+
+  // ── Superadmin ──
+  .superadmin-section {
+    @include glass-surface(38%, 14px);
+    color: #f1f5f9;
+  }
+
+  // ── Inbox panel, action bar ──
+  .inbox-panel,
+  .backlog-panel {
+    @include glass-surface(35%, 14px);
+    color: #f1f5f9;
+  }
+
+  // ── Search / command bar ──
+  .search-input,
+  .command-bar {
+    @include glass-surface(35%, 14px);
+    color: #f1f5f9;
+  }
+
+  // ── Popovers & dropdowns ──
+  .popover,
+  .dropdown-menu,
+  .context-menu {
+    @include glass-surface(50%, 16px);
+    color: #f1f5f9;
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  }
+
+  // ── Spacer titles ──
+  .day-spacer-title {
+    color: #f1f5f9;
+  }
+
+  // ── Generic: any remaining var(--surface) cards ──
+  .stat-card,
+  .onboarding-card,
+  .guest-auth-panel {
+    @include glass-surface(35%, 14px);
+    color: #f1f5f9;
+    border-color: rgba(255,255,255,.12);
+  }
+
+  // ── Text overrides for readability ──
+  .todo-title, .todo-tag, .todo-date,
+  .cal-sid-label, .cal-sid-value,
+  h1, h2, h3, h4,
+  .section-title, .day-col-title,
+  .day-group-label, .day-auto-group-label {
+    color: #f1f5f9;
+  }
+
+  // Muted text slightly brighter
+  .text-muted, .text-secondary,
+  .todo-meta, .todo-subtitle {
+    color: rgba(255,255,255,.6);
+  }
 }
 
 // ─── App toggle (profil apparence) ───────────────────────────────────────
@@ -5083,13 +5227,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
-// Priority — left accent + background tint
+// Priority — background tint only
 .todo-item.prio-high,
-.inbox-item.prio-high   { border-left: 4px solid #ef4444; background: rgba(239, 68, 68, .18); }
+.inbox-item.prio-high   { background: rgba(239, 68, 68, .18); }
 .todo-item.prio-medium,
-.inbox-item.prio-medium { border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, .15); }
+.inbox-item.prio-medium { background: rgba(245, 158, 11, .15); }
 .todo-item.prio-low,
-.inbox-item.prio-low    { border-left: 4px solid #3b82f6; background: rgba(59, 130, 246, .12); }
+.inbox-item.prio-low    { background: rgba(59, 130, 246, .12); }
 
 
 // ─────────────────────────────────────────────────────────────────────────

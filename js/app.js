@@ -3882,7 +3882,9 @@ class TodoApp {
       'auth/popup-blocked':           'Popup bloquée. Autorisez les popups pour ce site.',
       'auth/account-exists-with-different-credential': 'Un compte existe déjà avec cet email. Connectez-vous avec la méthode d\'origine.',
     };
-    return messages[code] || 'Une erreur est survenue. Veuillez réessayer.';
+    if (messages[code]) return messages[code];
+    console.error('Firebase auth error:', code);
+    return `Erreur d'authentification (${code}). Veuillez réessayer.`;
   }
 
   // ═══════════════════════════════════════════════════
