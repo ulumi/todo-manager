@@ -189,11 +189,35 @@ export function renderDayView(todos) {
   if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
-  const rightCol = sortedPunctual.length
-    ? `<div class="todo-list" data-group="punctual">${sortedPunctual.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`
-    : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+  // Column count
+  const colCount = parseInt(localStorage.getItem('dayColCount') || '2');
+  const colBtns = [1,2,3,4].map(n =>
+    `<button class="day-col-count-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})">${n}</button>`
+  ).join('');
+  const spacerBtn = `<button class="day-col-count-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur">─</button>`;
 
-  const punctualHeader = `<div class="day-col-title">${state.T.groupOnce}</div>`;
+  // Build punctual items with spacers interleaved
+  const dayOrdFull = window.app?.dayOrder?.[dateStr] || [];
+  const punctualIds = sortedPunctual.map(t => t.id);
+  const allEntries = dayOrdFull.filter(id => id.startsWith('spacer-') || punctualIds.includes(id));
+  // Add any punctual items not yet in order
+  punctualIds.forEach(id => { if (!allEntries.includes(id)) allEntries.push(id); });
+
+  let rightColItems = '';
+  if (sortedPunctual.length > 0 || allEntries.some(id => id.startsWith('spacer-'))) {
+    const cells = allEntries.map(id => {
+      if (id.startsWith('spacer-')) {
+        return `<div class="day-spacer" data-spacer-id="${id}"><span class="day-spacer-line"></span><button class="day-spacer-remove" onclick="window.app.removeDaySpacer('${id}')" title="Supprimer">×</button></div>`;
+      }
+      const t = sortedPunctual.find(x => x.id === id);
+      return t ? todoItemHTML(t, navDate, 'punctual') : '';
+    }).join('');
+    rightColItems = `<div class="todo-list" data-group="punctual" style="grid-template-columns:repeat(${colCount},1fr)">${cells}</div>`;
+  } else {
+    rightColItems = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+  }
+
+  const punctualHeader = `<div class="day-col-title-row"><div class="day-col-title">${state.T.groupOnce}</div><div class="day-col-controls">${colBtns}${spacerBtn}</div></div>`;
 
   const hasPunctual = sortedPunctual.length > 0;
   const actionBar = `
@@ -203,7 +227,7 @@ export function renderDayView(todos) {
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightCol}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

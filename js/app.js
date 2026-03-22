@@ -774,7 +774,7 @@ class TodoApp {
       const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
       let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
-      order = order.filter(id => items.some(t => t.id === id));
+      order = order.filter(id => id.startsWith('spacer-') || items.some(t => t.id === id));
       const newOrder = order.filter(id => id !== draggedId);
       const idx = newOrder.indexOf(targetId);
       if (idx < 0) return;
@@ -912,7 +912,7 @@ class TodoApp {
     const items = getTodosForDate(d, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
     let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
     items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
-    order = order.filter(id => items.some(t => t.id === id));
+    order = order.filter(id => id.startsWith('spacer-') || items.some(t => t.id === id));
     const newOrder = order.filter(id => id !== draggedId);
     const idx = newOrder.indexOf(targetId);
     if (idx < 0) return;
@@ -2648,6 +2648,28 @@ class TodoApp {
       const lh = parseFloat(getComputedStyle(text).lineHeight) || 20;
       item.classList.toggle('todo-item--multiline', text.scrollHeight > lh * 1.5);
     });
+  }
+
+  setDayColCount(n) {
+    localStorage.setItem('dayColCount', n);
+    this.render();
+  }
+
+  addDaySpacer() {
+    const dateStr = DS(state.navDate);
+    const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
+    if (!this.dayOrder[dateStr]) this.dayOrder[dateStr] = items.map(t => t.id);
+    this.dayOrder[dateStr].push('spacer-' + Date.now());
+    localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    this.render();
+  }
+
+  removeDaySpacer(spacerId) {
+    const dateStr = DS(state.navDate);
+    if (!this.dayOrder[dateStr]) return;
+    this.dayOrder[dateStr] = this.dayOrder[dateStr].filter(id => id !== spacerId);
+    localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    this.render();
   }
 
   clearDay() {

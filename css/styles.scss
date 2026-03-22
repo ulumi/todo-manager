@@ -950,16 +950,87 @@ main {
   opacity: .7;
 }
 
+.day-col-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(255,255,255,.35);
+}
+
 .day-col-title {
   font-size: 11px;
   font-weight: 800;
   color: #fff;
   text-transform: uppercase;
   letter-spacing: .1em;
-  padding-bottom: 8px;
-  border-bottom: 2px solid rgba(255,255,255,.35);
   opacity: .85;
+  flex: 1;
 }
+
+.day-col-controls {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.day-col-count-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: transparent;
+  color: rgba(255,255,255,.5);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+
+  &:hover { background: rgba(255,255,255,.1); color: #fff; }
+  &.active { background: rgba(255,255,255,.2); color: #fff; border-color: rgba(255,255,255,.4); }
+}
+
+.day-spacer-btn {
+  margin-left: 4px;
+  width: auto;
+  padding: 0 8px;
+  font-size: 13px;
+  letter-spacing: .15em;
+}
+
+// Spacer element — full-width separator in the grid
+.day-spacer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.day-spacer-line {
+  flex: 1;
+  height: 1.5px;
+  background: rgba(255,255,255,.15);
+  border-radius: 1px;
+}
+
+.day-spacer-remove {
+  opacity: 0;
+  border: none;
+  background: none;
+  color: rgba(255,255,255,.4);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: opacity .12s, color .12s;
+
+  &:hover { color: var(--danger); }
+}
+
+.day-spacer:hover .day-spacer-remove { opacity: 1; }
 
 // Mini two-week grid — desktop drop zones in day view
 .day-mini-week {
@@ -6373,6 +6444,59 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-bottom: 12px;
 
   input[type="checkbox"] { accent-color: var(--primary); }
+}
+
+// Compact timing row (time + durations + flex toggle)
+.modal-timing-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.timing-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+
+  .timing-icon {
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .form-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    padding: 5px 6px;
+  }
+
+  // hide spinner on number inputs
+  input[type="number"] {
+    -moz-appearance: textfield;
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  }
+}
+
+.timing-flex {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  input[type="checkbox"] {
+    accent-color: var(--primary);
+    margin: 0;
+  }
 }
 
 // Inbox view layout
