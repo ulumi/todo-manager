@@ -163,7 +163,7 @@
           </select>
         </div>
         <div class="form-group">
-          <select class="form-input modal-select" id="taskRecurrence" onchange="window.app.selectRecurrence(this.value)">
+          <select class="form-input modal-select" id="taskRecurrence" autocomplete="off" onchange="window.app.selectRecurrence(this.value)">
             <option value="none">🔁 Aucune répétition</option>
             <option value="daily" data-i18n="recDaily">Quotidien</option>
             <option value="weekly" data-i18n="recWeekly">Hebdomadaire</option>
@@ -184,7 +184,7 @@
 
       <div class="form-group" id="dateGroup">
         <div class="date-row" id="dateInputRow">
-          <input class="form-input" type="date" id="taskDate" onclick="this.showPicker()">
+          <input class="form-input" type="date" id="taskDate" autocomplete="off" onclick="this.showPicker()">
           <button type="button" class="today-btn" data-i18n="today" onclick="window.app.setTaskDateToday()">Aujourd'hui</button>
           <button type="button" class="today-btn" data-i18n="tomorrow" onclick="window.app.setTaskDateTomorrow()">Demain</button>
         </div>
@@ -193,34 +193,34 @@
       <div class="form-group">
         <label class="form-label">Catégorie</label>
         <div class="category-select-row">
-          <select class="form-input" id="taskCategory">
+          <select class="form-input" id="taskCategory" autocomplete="off">
             <option value="">— Aucune catégorie —</option>
           </select>
           <button type="button" class="add-cat-btn" onclick="window.app.toggleNewCatRow()" title="Nouvelle catégorie">+</button>
         </div>
         <div id="newCatRow" style="display:none">
-          <input class="form-input" id="newCatInput" placeholder="Nom de la catégorie..."
+          <input class="form-input" id="newCatInput" autocomplete="off" placeholder="Nom de la catégorie..."
             onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')window.app.toggleNewCatRow()">
         </div>
       </div>
 
       <div class="form-group" style="margin-bottom:4px">
-        <textarea class="form-input" id="taskDescription" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
+        <textarea class="form-input" id="taskDescription" autocomplete="off" placeholder="Notes, détails..." rows="2" style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
       </div>
 
       <!-- Horaire + Durée — always visible, compact inline -->
       <div class="modal-timing-row">
         <div class="timing-field">
           <label class="timing-icon" for="taskStartTime" title="Heure">🕐</label>
-          <input type="time" class="form-input" id="taskStartTime">
+          <input type="time" class="form-input" id="taskStartTime" autocomplete="off">
         </div>
         <div class="timing-field">
           <label class="timing-icon" for="taskDurationEstimated" title="Durée estimée">⏱</label>
-          <input type="number" class="form-input" id="taskDurationEstimated" min="0" placeholder="est. min">
+          <input type="number" class="form-input" id="taskDurationEstimated" autocomplete="off" min="0" placeholder="est. min">
         </div>
         <div class="timing-field">
           <label class="timing-icon" for="taskDurationReal" title="Durée réelle">✓</label>
-          <input type="number" class="form-input" id="taskDurationReal" min="0" placeholder="réel min">
+          <input type="number" class="form-input" id="taskDurationReal" autocomplete="off" min="0" placeholder="réel min">
         </div>
         <label class="timing-flex" title="Heure flexible">
           <input type="checkbox" id="taskFlexibleTime">
@@ -546,7 +546,7 @@
     <div class="auth-divider"><span>ou</span></div>
     <div class="form-group">
       <label class="form-label">Email</label>
-      <input class="form-input" type="email" id="upgradeEmail" placeholder="vous@exemple.com">
+      <input class="form-input" type="email" id="upgradeEmail" autocomplete="off" placeholder="vous@exemple.com">
     </div>
     <div class="form-group">
       <label class="form-label">Mot de passe</label>
