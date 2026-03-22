@@ -299,7 +299,7 @@ export function openEditModal(id, dateStr, todos) {
   } else if (state.selectedRecurrence === 'daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-top:4px;">${state.T.repeatsEveryDay}</p>`;
+    detail.innerHTML = '';
   } else if (state.selectedRecurrence === 'weekly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
@@ -357,7 +357,7 @@ export function selectRecurrence(rec) {
   } else if (rec==='daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    detail.innerHTML = `<p style="font-size:13px;color:var(--text-muted);margin-top:4px;">${state.T.repeatsEveryDay}</p>`;
+    detail.innerHTML = '';
   } else if (rec==='weekly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
