@@ -26,7 +26,9 @@ import {
   saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
   toggleCloudSection, toggleModalRight, selectPriority,
   toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection,
-  cancelModal, clearDraft, discardDraft
+  cancelModal, clearDraft, discardDraft,
+  openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
+  guidedSelectWhen, guidedSetToday, guidedSetTomorrow
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -687,6 +689,15 @@ class TodoApp {
   toggleModalRight() {
     toggleModalRight();
   }
+
+  openGuidedCards() { openGuidedCards(); }
+  closeGuidedCards() { closeGuidedCards(); }
+  guidedNext() { guidedNext(); }
+  guidedBack() { guidedBack(); }
+  guidedFinish() { guidedFinish(); }
+  guidedSelectWhen(mode) { guidedSelectWhen(mode); }
+  guidedSetToday() { guidedSetToday(); }
+  guidedSetTomorrow() { guidedSetTomorrow(); }
 
   saveTask() {
     const before = JSON.parse(JSON.stringify(state.todos));

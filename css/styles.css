@@ -5751,6 +5751,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-color: #f59e0b;
   color: #f59e0b;
 }
+.glass-mode .todo-category-badge {
+  color: #f1f5f9 !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
 
 .app-toggle {
   position: relative;

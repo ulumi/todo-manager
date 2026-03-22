@@ -5332,6 +5332,13 @@ body:has(.bottom-panel:not(.hidden))::before {
       color: #f59e0b;
     }
   }
+
+  // ── Category badges (make text white, darken background) ──
+  .todo-category-badge {
+    color: #f1f5f9 !important;
+    background: rgba(0,0,0,.4) !important;
+    border-color: rgba(255,255,255,.3) !important;
+  }
 }
 
 // ─── App toggle (profil apparence) ───────────────────────────────────────
