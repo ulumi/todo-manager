@@ -111,6 +111,11 @@ class TodoApp {
     const vl = document.getElementById('versionLabel');
     if (vl) vl.textContent = 'v' + VERSION;
     setupEventListeners(this);
+    // Kill browser autocomplete on all inputs except auth fields (email/password)
+    document.addEventListener('focusin', e => {
+      if (e.target.tagName === 'INPUT' && !e.target.getAttribute('autocomplete'))
+        e.target.setAttribute('autocomplete', 'off');
+    });
     this._animateViewTabs();
     let _resizeTimer;
     window.addEventListener('resize', () => {
@@ -1726,10 +1731,47 @@ class TodoApp {
     const user     = getCurrentUser();
     const name     = user?.displayName || user?.email?.split('@')[0] || '';
     const initials = (user?.displayName || user?.email || '?').slice(0, 2).toUpperCase();
-    const cats     = getCategories().length;
-    const total    = state.todos.length;
-    const recur    = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
-    const done     = state.todos.filter(t => t.completed).length;
+
+    // ── Statistics ──
+    const cats      = getCategories().length;
+    const total     = state.todos.length;
+    const recur     = state.todos.filter(t => t.recurrence && t.recurrence !== 'none').length;
+    const done      = state.todos.filter(t => t.completed).length;
+    const inbox     = getInboxCount(state.todos);
+    const backlog   = getBacklogCount(state.todos);
+    const todayDS   = DS(today());
+    const todayAll  = state.todos.filter(t => t.date === todayDS);
+    const todayDone = todayAll.filter(t => t.completed).length;
+    const todayTot  = todayAll.length;
+    const overdue   = state.todos.filter(t => t.date && t.date < todayDS && !t.completed && (!t.recurrence || t.recurrence === 'none')).length;
+    const highPrio  = state.todos.filter(t => t.priority === 'high' && !t.completed).length;
+    const pct       = total > 0 ? Math.round(done / total * 100) : 0;
+
+    // SVG icon helpers (stroke-based, 16×16)
+    const ic = {
+      tasks:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+      done:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+      recur:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>',
+      cats:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+      inbox:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>',
+      backlog:  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+      today:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      overdue:  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+      prio:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+      pct:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+      theme:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+      palette:  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="13.5" r="2.5"/><circle cx="6.5" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.74-.39-1.04-.24-.3-.39-.65-.39-1.04 0-.828.672-1.42 1.5-1.42H16c3.31 0 6-2.69 6-6 0-5.52-4.48-9-10-9z"/></svg>',
+      glass:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+      tag:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+      star:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+      list:     '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+      template: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+      cal:      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      upload:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+      trash:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>',
+      logout:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+      chevron:  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    };
 
     const html = `
       <div class="profile-view">
@@ -1747,6 +1789,8 @@ class TodoApp {
         </div>
 
         <div class="profile-body">
+
+          <!-- Name -->
           <div class="profile-section">
             <h3 class="profile-section-title">Nom d'affichage</h3>
             <div class="profile-name-row">
@@ -1757,38 +1801,96 @@ class TodoApp {
             <p class="profile-save-msg hidden" id="profileSaveMsg">✓ Sauvegardé</p>
           </div>
 
+          <!-- Stats — grid -->
           <div class="profile-section">
             <h3 class="profile-section-title">Statistiques</h3>
-            <div class="profile-stats">
-              <div class="profile-stat"><span class="profile-stat-num">${total}</span><span class="profile-stat-label">tâches</span></div>
-              <div class="profile-stat"><span class="profile-stat-num">${done}</span><span class="profile-stat-label">complétées</span></div>
-              <div class="profile-stat"><span class="profile-stat-num">${recur}</span><span class="profile-stat-label">récurrentes</span></div>
-              <div class="profile-stat"><span class="profile-stat-num">${cats}</span><span class="profile-stat-label">catégories</span></div>
+            <div class="profile-stats-grid">
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.today}</div>
+                <div class="profile-stat-num">${todayDone}<span class="profile-stat-slash">/${todayTot}</span></div>
+                <div class="profile-stat-label">aujourd'hui</div>
+              </div>
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.pct}</div>
+                <div class="profile-stat-num">${pct}<span class="profile-stat-unit">%</span></div>
+                <div class="profile-stat-label">complétion</div>
+              </div>
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.tasks}</div>
+                <div class="profile-stat-num">${total}</div>
+                <div class="profile-stat-label">tâches</div>
+              </div>
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.done}</div>
+                <div class="profile-stat-num">${done}</div>
+                <div class="profile-stat-label">complétées</div>
+              </div>
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.recur}</div>
+                <div class="profile-stat-num">${recur}</div>
+                <div class="profile-stat-label">récurrentes</div>
+              </div>
+              <div class="profile-stat-card">
+                <div class="profile-stat-icon">${ic.cats}</div>
+                <div class="profile-stat-num">${cats}</div>
+                <div class="profile-stat-label">catégories</div>
+              </div>
+              ${overdue > 0 ? `<div class="profile-stat-card profile-stat-card--warn">
+                <div class="profile-stat-icon">${ic.overdue}</div>
+                <div class="profile-stat-num">${overdue}</div>
+                <div class="profile-stat-label">en retard</div>
+              </div>` : ''}
+              ${highPrio > 0 ? `<div class="profile-stat-card profile-stat-card--accent">
+                <div class="profile-stat-icon">${ic.prio}</div>
+                <div class="profile-stat-num">${highPrio}</div>
+                <div class="profile-stat-label">priorité haute</div>
+              </div>` : ''}
             </div>
           </div>
 
+          <!-- Inbox & Backlog -->
+          <div class="profile-columns">
+            <div class="profile-section profile-section--clickable" onclick="window.app.setView('inbox')">
+              <div class="profile-section-header">
+                <span class="profile-section-icon">${ic.inbox}</span>
+                <h3 class="profile-section-title" style="margin:0">Inbox</h3>
+                <span class="profile-stat-badge">${inbox}</span>
+              </div>
+              <p class="profile-section-desc">Tâches capturées rapidement, sans date. Trie-les quand tu veux.</p>
+            </div>
+            <div class="profile-section profile-section--clickable" onclick="window.app.setView('backlog')">
+              <div class="profile-section-header">
+                <span class="profile-section-icon">${ic.backlog}</span>
+                <h3 class="profile-section-title" style="margin:0">Backlog</h3>
+                <span class="profile-stat-badge">${backlog}</span>
+              </div>
+              <p class="profile-section-desc">Idées et tâches futures. Pas urgentes, mais tu ne veux pas les oublier.</p>
+            </div>
+          </div>
+
+          <!-- Appearance -->
           <div class="profile-section">
             <h3 class="profile-section-title">Apparence</h3>
             <div class="profile-rows">
               <div class="profile-row">
-                <span>${isDark ? '☀️' : '🌙'} Thème ${isDark ? 'sombre' : 'clair'}</span>
+                <span class="profile-row-label">${ic.theme} Thème</span>
                 <button class="btn btn-sm" onclick="window.app.toggleTheme()">${isDark ? 'Passer au clair' : 'Passer au sombre'}</button>
               </div>
               <div class="profile-row">
-                <span>🎨 Fond d'écran</span>
+                <span class="profile-row-label">${ic.palette} Fond d'écran</span>
                 <select class="lang-select" onchange="window.app.setPalette(this.value)">
-                  <option value="geo"    ${palette === 'geo'    ? 'selected' : ''}>🌋 Géo Chaud</option>
-                  <option value="aurora" ${palette === 'aurora' ? 'selected' : ''}>🌊 Aurore Boréale</option>
-                  <option value="none"   ${palette === 'none'   ? 'selected' : ''}>⬜ Couleur unie</option>
+                  <option value="geo"    ${palette === 'geo'    ? 'selected' : ''}>Géo Chaud</option>
+                  <option value="aurora" ${palette === 'aurora' ? 'selected' : ''}>Aurore Boréale</option>
+                  <option value="none"   ${palette === 'none'   ? 'selected' : ''}>Couleur unie</option>
                 </select>
               </div>
               ${palette === 'none' ? `
               <div class="profile-row">
-                <span>🎨 Couleur du fond</span>
+                <span class="profile-row-label">${ic.palette} Couleur du fond</span>
                 <input type="color" value="${bgColor}" style="width:38px;height:28px;border:none;border-radius:6px;cursor:pointer;padding:2px;background:none;" onchange="window.app.setBgColor(this.value)">
               </div>` : ''}
               <div class="profile-row">
-                <span>🔮 Effet verre sur les cartes</span>
+                <span class="profile-row-label">${ic.glass} Effet verre</span>
                 <label class="app-toggle">
                   <input type="checkbox" ${glassMode ? 'checked' : ''} onchange="window.app.setGlassMode(this.checked)">
                   <span class="app-toggle__track"></span>
@@ -1797,27 +1899,32 @@ class TodoApp {
             </div>
           </div>
 
+          <!-- Settings -->
           <div class="profile-section">
             <h3 class="profile-section-title">Réglages</h3>
             <div class="profile-rows">
               <button class="profile-row" onclick="window.app.setView('categories')">
-                <span>🏷 Catégories</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.tag} Catégories</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
               <button class="profile-row" onclick="window.app.setView('superadmin')">
-                <span>🎉 Messages d'encouragement</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.star} Messages d'encouragement</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
               <button class="profile-row" onclick="window.app.openAdminSection('taches')">
-                <span>📋 Tâches suggérées</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.list} Tâches suggérées</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
               <button class="profile-row" onclick="window.app.openAdminSection('modeles')">
-                <span>🗂 Modèles de journée</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.template} Modèles de journée</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
             </div>
           </div>
 
+          <!-- iCal -->
           <div class="profile-section">
-            <h3 class="profile-section-title">Abonnement calendrier (iCal)</h3>
-            <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Abonne-toi à tes tâches depuis Apple Calendar, Google Calendar ou Outlook. L'URL se met à jour automatiquement.</p>
+            <div class="profile-section-header">
+              <span class="profile-section-icon">${ic.cal}</span>
+              <h3 class="profile-section-title" style="margin:0">Abonnement calendrier (iCal)</h3>
+            </div>
+            <p style="font-size:13px;color:var(--text-muted);margin:8px 0 12px;">Abonne-toi à tes tâches depuis Apple Calendar, Google Calendar ou Outlook.</p>
             <div class="ical-url-row" id="icalUrlRow">
               <input class="form-input ical-url-input" id="icalUrlInput" readonly placeholder="Chargement…" onclick="this.select()" style="font-size:11px;font-family:monospace;">
               <button class="btn btn-primary" onclick="window.app.copyICalLink()" title="Copier l'URL">
@@ -1839,20 +1946,24 @@ class TodoApp {
             </div>
           </div>
 
+          <!-- Data -->
           <div class="profile-section">
             <h3 class="profile-section-title">Données</h3>
             <div class="profile-rows">
               <button class="profile-row" onclick="window.app.exportAllData()">
-                <span>📤 Exporter mes données</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.upload} Exporter mes données</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
               <button class="profile-row profile-row--danger" onclick="window.app.profileDeleteData()">
-                <span>🗑 Effacer mes données</span><span class="profile-row-arrow">›</span>
+                <span class="profile-row-label">${ic.trash} Effacer mes données</span><span class="profile-row-arrow">${ic.chevron}</span>
               </button>
             </div>
           </div>
 
+          <!-- Sign out -->
           <div class="profile-section">
-            <button class="btn btn-ghost profile-signout-btn" onclick="window.app.authSignOut()">Se déconnecter</button>
+            <button class="btn btn-ghost profile-signout-btn" onclick="window.app.authSignOut()">
+              ${ic.logout} Se déconnecter
+            </button>
           </div>
         </div>
       </div>

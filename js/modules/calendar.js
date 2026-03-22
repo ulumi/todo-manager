@@ -87,3 +87,16 @@ export function getSuggestions(todos) {
     .forEach(t => { counts[t.title] = (counts[t.title]||0)+1; });
   return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([t])=>t);
 }
+
+// 3 most recently added unique titles (by ID desc, non-recurring only)
+export function getRecentTasks(todos) {
+  const seen = new Set();
+  return [...todos]
+    .filter(t => !t.recurrence || t.recurrence === 'none')
+    .sort((a, b) => Number(b.id) - Number(a.id))
+    .reduce((acc, t) => {
+      if (!seen.has(t.title)) { seen.add(t.title); acc.push(t.title); }
+      return acc;
+    }, [])
+    .slice(0, 3);
+}
