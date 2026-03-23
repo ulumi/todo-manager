@@ -1374,7 +1374,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-auto-group-label {
-  display: inline-block;
+  display: block;
   font-size: 10px;
   font-weight: 800;
   color: #000;
