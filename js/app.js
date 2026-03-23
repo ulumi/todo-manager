@@ -4313,6 +4313,24 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 });
 
 // Keyboard shortcuts
+let hoveredItem = null;
+
+document.addEventListener('mouseover', e => {
+  const item = e.target.closest('.todo-item');
+  if (item) {
+    hoveredItem = {
+      id: item.getAttribute('data-id'),
+      ds: item.getAttribute('data-date')
+    };
+  }
+});
+
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('.todo-item') === hoveredItem) {
+    hoveredItem = null;
+  }
+});
+
 document.addEventListener('keydown', e => {
   if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
     if (e.code === 'KeyD') {
@@ -4328,5 +4346,22 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       window.app.setPalette('geo');
     }
+  }
+
+  if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+    if (e.code === 'KeyN') {
+      e.preventDefault();
+      const date = hoveredItem?.ds || window.app.getNavDate?.()?.format?.('YYYY-MM-DD') || new Date().toISOString().split('T')[0];
+      window.app.openModal(date);
+    }
+    if (e.code === 'KeyD' && hoveredItem) {
+      e.preventDefault();
+      window.app.duplicateTodo(hoveredItem.id, hoveredItem.ds);
+    }
+  }
+
+  if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.code === 'KeyE' && hoveredItem) {
+    e.preventDefault();
+    window.app.openEditModal(hoveredItem.id, hoveredItem.ds);
   }
 });
