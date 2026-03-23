@@ -1012,9 +1012,9 @@ main {
   border: none !important;
   border-radius: 0;
   background: transparent !important;
-  color: rgba(255,255,255,.5);
+  color: rgba(255,255,255,.4);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1026,14 +1026,14 @@ main {
   backdrop-filter: none !important;
 
   &:hover {
-    color: rgba(255,255,255,.8);
+    color: rgba(255,255,255,.7);
     background: transparent !important;
     border: none !important;
   }
   &.active {
-    color: #fff;
+    color: rgba(255,255,255,.7);
     text-decoration: underline;
-    text-decoration-thickness: 2px;
+    text-decoration-thickness: 1px;
     text-underline-offset: 4px;
     background: transparent !important;
     border: none !important;
