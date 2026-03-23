@@ -201,7 +201,7 @@ export function renderDayView(todos) {
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const colBtns = [1,2,3,4].map(n =>
-    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${colIcon(n)}</button>`
+    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${n} col${n>1?'s':''}</button>`
   ).join('');
   const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 12 12" width="12" height="12"><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></svg> Spacer</button>`;
 

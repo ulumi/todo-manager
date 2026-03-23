@@ -984,8 +984,9 @@ main {
 
 .day-ctrl-group {
   display: flex;
-  gap: 2px;
+  gap: 5px;
   align-items: center;
+  margin-right: 5px;
 }
 
 .day-ctrl-label {
@@ -1006,23 +1007,30 @@ main {
 
 .day-ctrl-btn {
   height: 22px;
-  min-width: 22px;
-  padding: 0 5px;
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,.15);
+  min-width: auto;
+  padding: 0 4px;
+  border: none;
+  border-radius: 0;
   background: transparent;
-  color: rgba(255,255,255,.4);
+  color: rgba(255,255,255,.5);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all .12s;
   white-space: nowrap;
+  text-decoration: none;
+  gap: 2px;
 
-  &:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); }
-  &.active { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.3); }
+  &:hover { color: rgba(255,255,255,.8); }
+  &.active {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
 }
 
 .day-sort-btn {
