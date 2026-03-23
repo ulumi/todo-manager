@@ -1158,23 +1158,23 @@ input:checked + .cal-sid-toggle-track::after {
   gap: 4px;
   padding: 2px 7px;
   border: 1.5px solid var(--tag-color);
-  background: var(--tag-color);
-  color: #fff;
+  background: color-mix(in srgb, var(--tag-color) 35%, transparent);
+  color: color-mix(in srgb, var(--tag-color) 70%, #fff);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   cursor: pointer;
   border-radius: 5px;
-  transition: opacity 0.15s;
+  transition: background 0.15s, color 0.15s;
   white-space: nowrap;
-  opacity: 0.35;
 }
 .day-tag-cloud-item .day-tag-x {
   visibility: hidden;
 }
 .day-tag-cloud-item.selected {
-  opacity: 1;
+  background: var(--tag-color);
+  color: #fff;
 }
 .day-tag-cloud-item.selected .day-tag-x {
   visibility: visible;
