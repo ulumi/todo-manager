@@ -537,7 +537,8 @@ function buildScene(quote, stats, mascot, opts = {}) {
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
 
   // Particle burst — starts early, particles from all over
-  tl.call(() => burstParticles(ov), [], 0.05);
+  let particles = [];
+  tl.call(() => { particles = burstParticles(ov); }, [], 0.05);
 
   // ── Quote: words stagger in from small scale ──────────
   tl.to(wordSpans,
@@ -601,12 +602,14 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
     if (callback) {
       // Fast exit for slideshow nav — no black flash
+      gsap.to(particles, { opacity: 0, duration: 0.18, ease: 'power2.in' });
       gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
     } else {
       gsap.to(quoteEl,    { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
       if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
       gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
       gsap.to(thumbsBtn,   { opacity: 0, duration: 0.2, ease: 'power2.in' });
+      gsap.to(particles, { opacity: 0, duration: 0.35, ease: 'power2.in' });
       gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
       gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
     }
@@ -648,6 +651,7 @@ function burstParticles(parent) {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const COUNT = 50;
+  const particles = [];
 
   for (let i = 0; i < COUNT; i++) {
     const size = 16 + Math.random() * 28;
@@ -657,6 +661,7 @@ function burstParticles(parent) {
     `);
     p.textContent = PARTICLES[Math.floor(Math.random() * PARTICLES.length)];
     parent.appendChild(p);
+    particles.push(p);
 
     // Launch zone: corners, sides, bottom — like party poppers
     const zone = Math.random();
@@ -678,39 +683,40 @@ function burstParticles(parent) {
 
     const spin1 = (280 + Math.random() * 420) * (Math.random() < 0.5 ? 1 : -1);
     const spin2 = (160 + Math.random() * 240) * (Math.random() < 0.5 ? 1 : -1);
-    const delay = Math.random() * 0.75;
+    const delay = Math.random() * 1.5;
 
     gsap.set(p, { x: sx, y: sy, opacity: 0, scale: 0.15, rotation: Math.random() * 360 });
 
     const tl = gsap.timeline({ delay });
 
-    // Phase 1 — cannon launch (fast, energetic)
+    // Phase 1 — cannon launch (fast, energetic) — SLOWED DOWN
     tl.to(p, {
       x: px, y: py,
       opacity: 1, scale: 1,
       rotation: `+=${spin1}`,
-      duration: 0.25 + Math.random() * 0.18,
+      duration: (0.25 + Math.random() * 0.18) * 1.8,
       ease: 'power2.out',
     });
 
-    // Phase 2 — gravity arc / fall (slower, organic)
+    // Phase 2 — gravity arc / fall (slower, organic) — SLOWED DOWN
     tl.to(p, {
       x: lx, y: ly,
       rotation: `+=${spin2}`,
-      duration: 0.5 + Math.random() * 0.4,
+      duration: (0.5 + Math.random() * 0.4) * 2.0,
       ease: 'power1.in',
     });
 
-    // Phase 3 — hang & explode towards viewer
+    // Phase 3 — hang in place (stays suspended) — no removal
     tl.to(p, {
-      scale: 3.5 + Math.random() * 2.5,
-      opacity: 0,
-      duration: 0.16 + Math.random() * 0.08,
-      delay: 0.08 + Math.random() * 0.55,
-      ease: 'power3.in',
-      onComplete: () => p.remove(),
+      scale: 1 + Math.random() * 0.8,
+      opacity: 0.6 + Math.random() * 0.3,
+      duration: 1.5 + Math.random() * 1.0,
+      delay: 0.5 + Math.random() * 1.0,
+      ease: 'power3.inOut',
     });
   }
+
+  return particles;
 }
 
 // ── Slideshow scene — persistent backdrop, full effect per slide ─
