@@ -407,12 +407,24 @@ class TodoApp {
 
   openSearchView(query) {
     this._closeQuickFindDropdown();
+    // Save current view so we can return to it after drop
+    this._searchViewPreviousView = state.view;
     state.setView('search');
     localStorage.setItem('searchQuery', query);
     // Close the dropdown
     document.getElementById('quickFindDropdown').classList.add('hidden');
     document.getElementById('quickFindInput').blur();
     this.render();
+  }
+
+  _closeSearchView() {
+    if (this._searchViewPreviousView && this._searchViewPreviousView !== 'search') {
+      state.setView(this._searchViewPreviousView);
+      localStorage.setItem('view', this._searchViewPreviousView);
+      this._searchViewPreviousView = null;
+      this._pushHistory();
+      this.render();
+    }
   }
 
   setTheme(theme) {
@@ -2393,6 +2405,7 @@ class TodoApp {
       t.backlog = false;
       saveTodos(state.todos);
       this.render();
+      this._closeSearchView();
     });
 
     setup(backlogBtn, id => {
@@ -2403,6 +2416,7 @@ class TodoApp {
       t.backlog = true;
       saveTodos(state.todos);
       this.render();
+      this._closeSearchView();
     });
 
     // Global drag tracking: show/hide header drop zone indicators
