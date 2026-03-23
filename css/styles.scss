@@ -1026,12 +1026,10 @@ main {
   backdrop-filter: none !important;
 
   &:hover {
-    color: rgba(255,255,255,.7);
     background: transparent !important;
     border: none !important;
   }
   &.active {
-    color: rgba(255,255,255,.7);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;

@@ -1065,12 +1065,10 @@ input:checked + .cal-sid-toggle-track::after {
   backdrop-filter: none !important;
 }
 .day-ctrl-btn:hover {
-  color: rgba(255, 255, 255, 0.7);
   background: transparent !important;
   border: none !important;
 }
 .day-ctrl-btn.active {
-  color: rgba(255, 255, 255, 0.7);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
