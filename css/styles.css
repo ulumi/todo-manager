@@ -2006,9 +2006,9 @@ input:checked + .cal-sid-toggle-track::after {
   flex-shrink: 0;
 }
 .todo-badge.recurring {
-  border: 1px solid rgba(150, 150, 150, 0.35);
+  border: 1px solid var(--border);
   color: var(--text-muted);
-  background: rgba(150, 150, 150, 0.08);
+  background: var(--border);
 }
 
 .todo-reorder {

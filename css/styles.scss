@@ -1941,9 +1941,9 @@ main {
   flex-shrink: 0;
 
   &.recurring {
-    border: 1px solid rgba(150,150,150,.35);
+    border: 1px solid var(--border);
     color: var(--text-muted);
-    background: rgba(150,150,150,.08);
+    background: var(--border);
   }
 }
 
