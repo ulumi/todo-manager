@@ -3587,11 +3587,14 @@ select.fl-input ~ .fl-label {
   transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   outline: none;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  backdrop-filter: blur(8px);
 }
 .form-input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(91, 94, 247, 0.1);
+  box-shadow: 0 0 0 3px rgba(91, 94, 247, 0.15);
   background: var(--surface);
+  backdrop-filter: blur(12px);
+  transform: scale(1.01);
 }
 .form-input::placeholder {
   opacity: 0.5;
@@ -6218,53 +6221,248 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .day-ctrl-check {
   color: #f1f5f9;
 }
-.glass-mode .modal-overlay {
-  color: var(--text);
+.glass-mode .modal {
+  background: rgba(20, 22, 35, 0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
 }
-.glass-mode .modal-overlay .modal,
-.glass-mode .modal-overlay .modal-left,
-.glass-mode .modal-overlay .modal-right,
-.glass-mode .modal-overlay .modal-main,
-.glass-mode .modal-overlay .guided-container {
-  color: var(--text);
-  background: var(--surface);
+.glass-mode .modal-left,
+.glass-mode .modal-right,
+.glass-mode .modal-main {
+  background: rgba(20, 22, 35, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
-.glass-mode .app-header input[type=text],
-.glass-mode .app-header input[type=date],
-.glass-mode .app-header input[type=time],
-.glass-mode .app-header textarea,
-.glass-mode .app-header select,
-.glass-mode .cal-sid-month input[type=text],
-.glass-mode .cal-sid-month input[type=date],
-.glass-mode .cal-sid-month input[type=time],
-.glass-mode .cal-sid-month textarea,
-.glass-mode .cal-sid-month select,
-.glass-mode .cal-sid-options input[type=text],
-.glass-mode .cal-sid-options input[type=date],
-.glass-mode .cal-sid-options input[type=time],
-.glass-mode .cal-sid-options textarea,
-.glass-mode .cal-sid-options select {
+.glass-mode .modal-main .modal-footer {
+  background: transparent;
+}
+.glass-mode .fl-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .fl-input:focus ~ .fl-label,
+.glass-mode .fl-input:not(:placeholder-shown) ~ .fl-label,
+.glass-mode select.fl-input ~ .fl-label,
+.glass-mode .fl-group .category-select-row ~ .fl-label {
+  background: rgba(20, 22, 35, 0.85);
+  color: rgba(255, 255, 255, 0.6);
+}
+.glass-mode .fl-input:focus ~ .fl-label {
+  color: var(--primary);
+}
+.glass-mode .guided-container {
+  background: rgba(20, 22, 35, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+.glass-mode .guided-card h3 {
+  color: #f1f5f9;
+}
+.glass-mode .guided-hint {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .guided-dest-btn {
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+.glass-mode .guided-dest-btn:hover {
+  border-color: var(--primary);
+  background: rgba(245, 158, 11, 0.05);
+}
+.glass-mode .guided-dest-btn.active {
+  border-color: var(--primary);
+  background: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.glass-mode .guided-dest-icon {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.4);
+}
+.guided-dest-btn.active .glass-mode .guided-dest-icon {
+  color: var(--primary);
+  background: rgba(245, 158, 11, 0.12);
+}
+.glass-mode .guided-dest-text span {
+  color: rgba(255, 255, 255, 0.35);
+}
+.glass-mode .guided-when-btn {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+}
+.glass-mode .guided-when-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.glass-mode .guided-when-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.glass-mode .guided-nav {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+.glass-mode .guided-detail-item label {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .guided-section-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .guided-separator {
+  background: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .guided-switch-link, .glass-mode .guided-link {
+  color: rgba(255, 255, 255, 0.35);
+}
+.glass-mode .guided-switch-link:hover, .glass-mode .guided-link:hover {
+  color: var(--primary);
+}
+.glass-mode .guided-tip {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .guided-tip:hover::after {
+  background: rgba(20, 22, 35, 0.95);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .guided-summary {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .guided-summary .summary-label {
+  color: rgba(255, 255, 255, 0.4);
+}
+.glass-mode .guided-summary .summary-value {
+  color: #f1f5f9;
+}
+.glass-mode .guided-flex-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+.glass-mode .modal-title {
+  color: #f1f5f9;
+}
+.glass-mode .modal-close-btn {
+  color: rgba(255, 255, 255, 0.5);
+}
+.glass-mode .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+}
+.glass-mode .modal-footer {
+  background: transparent;
+}
+.glass-mode .form-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+.glass-mode .form-input,
+.glass-mode .modal select,
+.glass-mode .modal textarea {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .form-input::placeholder,
+.glass-mode .modal select::placeholder,
+.glass-mode .modal textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.glass-mode .form-input:focus,
+.glass-mode .modal select:focus,
+.glass-mode .modal textarea:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+.glass-mode .modal-select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.glass-mode .add-cat-btn,
+.glass-mode .today-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.5);
+}
+.glass-mode .add-cat-btn:hover,
+.glass-mode .today-btn:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #f1f5f9;
+}
+.glass-mode .schedule-mode-option {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.45);
+}
+.glass-mode .schedule-mode-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+.glass-mode .schedule-mode-option.active {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #f1f5f9;
+}
+.glass-mode .priority-option {
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.45);
+}
+.glass-mode .priority-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .title-combobox {
+  background: rgba(20, 22, 35, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .title-combobox-item {
+  color: #f1f5f9;
+}
+.glass-mode .title-combobox-item:hover, .glass-mode .title-combobox-item.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .title-combobox-item + .glass-mode .title-combobox-item {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .modal-detail-header {
+  color: rgba(255, 255, 255, 0.6);
+}
+.glass-mode .modal-detail-section {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .modal-detail-body {
+  color: rgba(255, 255, 255, 0.6);
+}
+.glass-mode .modal-detail-chevron {
+  color: rgba(255, 255, 255, 0.3);
+}
+.glass-mode .draft-banner {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+}
+.glass-mode .modal-timing-row {
+  color: rgba(255, 255, 255, 0.5);
+}
+.glass-mode input[type=text],
+.glass-mode input[type=date],
+.glass-mode input[type=time],
+.glass-mode textarea,
+.glass-mode select {
   background: color-mix(in srgb, var(--surface) 30%, transparent);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: rgba(255, 255, 255, 0.12);
   color: #f1f5f9;
 }
-.glass-mode .app-header input[type=text]::placeholder,
-.glass-mode .app-header input[type=date]::placeholder,
-.glass-mode .app-header input[type=time]::placeholder,
-.glass-mode .app-header textarea::placeholder,
-.glass-mode .app-header select::placeholder,
-.glass-mode .cal-sid-month input[type=text]::placeholder,
-.glass-mode .cal-sid-month input[type=date]::placeholder,
-.glass-mode .cal-sid-month input[type=time]::placeholder,
-.glass-mode .cal-sid-month textarea::placeholder,
-.glass-mode .cal-sid-month select::placeholder,
-.glass-mode .cal-sid-options input[type=text]::placeholder,
-.glass-mode .cal-sid-options input[type=date]::placeholder,
-.glass-mode .cal-sid-options input[type=time]::placeholder,
-.glass-mode .cal-sid-options textarea::placeholder,
-.glass-mode .cal-sid-options select::placeholder {
+.glass-mode input[type=text]::placeholder,
+.glass-mode input[type=date]::placeholder,
+.glass-mode input[type=time]::placeholder,
+.glass-mode textarea::placeholder,
+.glass-mode select::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
 .glass-mode .month-cell,
