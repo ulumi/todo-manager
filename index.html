@@ -64,34 +64,48 @@
       <option value="en">EN</option>
       <option value="fr">FR</option>
     </select>
-    <button class="nav-btn" id="menuSettingsBtn" onclick="window.app.toggleSettingsMenu()" title="Options">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    <button class="nav-btn" id="menuSettingsBtn" onclick="window.app.toggleSettingsMenu()" title="Theme & appearance">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="10"/><circle cx="12" cy="13" r="6" fill="none"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><circle cx="9" cy="11" r="1.5" fill="currentColor"/><circle cx="13" cy="15" r="1.5" fill="currentColor"/></svg>
     </button>
     <div class="settings-menu hidden" id="settingsMenu">
       <div class="settings-menu-content">
+        <!-- Theme: Dark/Bright -->
         <div class="settings-menu-section">
-          <div class="settings-menu-title" data-i18n="displayOptions">Display options</div>
-          <div class="settings-toggle-row">
-            <span class="settings-toggle-label" id="settingsCompletedLabel">Completed</span>
-            <div class="settings-toggle-right">
-              <span class="settings-toggle-state" id="settingsToggleState" data-on="stats" data-off="visible">visible</span>
-              <label class="cal-sid-toggle">
-                <input type="checkbox" id="settingsToggleInput" onchange="window.app.togglePastDisplay()">
-                <span class="cal-sid-toggle-track"></span>
-              </label>
-            </div>
-          </div>
-          <div class="settings-viz-row" id="settingsVizRow" style="display:none;">
-            <div class="settings-viz-pick" id="settingsVizPick"></div>
+          <div class="settings-menu-title">Theme</div>
+          <div class="settings-theme-toggle">
+            <button class="settings-theme-btn" id="settingsLightBtn" onclick="window.app.setTheme('light')" title="Light">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <span>Bright</span>
+            </button>
+            <button class="settings-theme-btn" id="settingsDarkBtn" onclick="window.app.setTheme('dark')" title="Dark">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span>Dark</span>
+            </button>
           </div>
         </div>
-        <div class="settings-menu-sep"></div>
+
+        <!-- Text Size -->
         <div class="settings-menu-section">
-          <div class="settings-menu-title">Langue / Language</div>
-          <div class="settings-lang-options">
-            <button class="settings-lang-btn" data-lang="fr" onclick="window.app.setLang('fr')">Français</button>
-            <button class="settings-lang-btn active" data-lang="en" onclick="window.app.setLang('en')">English</button>
+          <div class="settings-menu-title">Text size</div>
+          <div class="settings-size-group">
+            <button class="settings-size-btn" id="szSmallSettings" onclick="window.app.setZoom(0)">A</button>
+            <button class="settings-size-btn active" id="szMedSettings" onclick="window.app.setZoom(1)">A</button>
+            <button class="settings-size-btn" id="szLargeSettings" onclick="window.app.setZoom(2)">A</button>
+            <div class="settings-size-preview" id="settingsSizePreview">Normal text example</div>
           </div>
+        </div>
+
+        <!-- Accent Color -->
+        <div class="settings-menu-section">
+          <div class="settings-menu-title">Accent color</div>
+          <div class="settings-colors-grid" id="settingsColorsGrid"></div>
+          <div class="settings-color-preview" id="settingsColorPreview"></div>
+        </div>
+
+        <!-- Themes/Gradients -->
+        <div class="settings-menu-section">
+          <div class="settings-menu-title">Themes</div>
+          <div class="settings-themes-grid" id="settingsThemesGrid"></div>
         </div>
       </div>
     </div>
@@ -436,88 +450,83 @@
             </div>
           </div>
 
-          <!-- Card 2: When (destination + date + recurrence + timing) -->
+          <!-- Card 2: When -->
           <div class="guided-card" data-step="1">
             <h3>Quand ?</h3>
-            <p class="guided-hint">Où ranger cette tâche et quand la faire</p>
+            <p class="guided-hint">Où ranger cette tâche</p>
 
-            <!-- Destination: Inbox / Backlog -->
-            <div class="guided-section">
-              <div class="guided-section-label">Destination</div>
-              <div class="guided-dest-options">
-                <button class="guided-dest-btn active" data-mode="inbox" onclick="window.app.guidedSelectWhen('inbox')">
-                  <div class="guided-dest-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-                  </div>
-                  <div class="guided-dest-text">
-                    <strong>Inbox</strong>
-                    <span>Tâches à trier — tu décideras plus tard quand la planifier. Idéal pour capturer vite une idée.</span>
-                  </div>
-                </button>
-                <button class="guided-dest-btn" data-mode="backlog" onclick="window.app.guidedSelectWhen('backlog')">
-                  <div class="guided-dest-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-                  </div>
-                  <div class="guided-dest-text">
-                    <strong>Backlog</strong>
-                    <span>Idées, projets un jour peut-être. Pas urgentes, pas planifiées, mais pas oubliées.</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div class="guided-separator"></div>
-
-            <!-- Date -->
-            <div class="guided-section">
-              <div class="guided-section-label">Ou planifier à une date <span class="guided-tip" data-tip="La tâche apparaîtra dans ta vue jour/semaine à la date choisie.">?</span></div>
-              <div class="guided-when-options">
-                <button class="guided-when-btn" data-mode="date" onclick="window.app.guidedSelectWhen('date')">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Choisir une date
-                </button>
-              </div>
-              <div class="guided-date-row" id="guidedDateRow" style="display:none">
-                <input class="form-input" type="date" id="guidedDate" autocomplete="off" onclick="this.showPicker()">
-                <button type="button" class="today-btn" onclick="window.app.guidedSetToday()">Aujourd'hui</button>
-                <button type="button" class="today-btn" onclick="window.app.guidedSetTomorrow()">Demain</button>
-              </div>
-            </div>
-
-            <div class="guided-separator"></div>
-
-            <!-- Recurrence -->
-            <div class="guided-section">
-              <div class="guided-section-label">Répétition <span class="guided-tip" data-tip="La tâche se recrée automatiquement à la fréquence choisie. Se combine avec une date de début.">?</span></div>
-              <select class="form-input" id="guidedRecurrence" onchange="window.app.guidedSelectRecurrence(this.value)">
-                <option value="none">Aucune</option>
-                <option value="daily">Quotidien</option>
-                <option value="weekly">Hebdomadaire</option>
-                <option value="monthly">Mensuel</option>
-                <option value="yearly">Annuel</option>
-              </select>
-              <div id="guidedRecDetail" class="guided-rec-detail"></div>
-            </div>
-
-            <div class="guided-separator"></div>
-
-            <!-- Time + Duration -->
-            <div class="guided-section">
-              <div class="guided-section-label">Horaire & durée <span class="guided-tip" data-tip="Optionnel — précise une heure de début et une durée si tu veux bloquer un créneau.">?</span></div>
-              <div class="guided-detail-grid">
-                <div class="guided-detail-item">
-                  <label>Heure <span class="guided-tip" data-tip="L'heure à laquelle tu prévois commencer.">?</span></label>
-                  <input type="time" class="form-input" id="guidedStartTime">
+            <!-- 3 destination choices -->
+            <div class="guided-dest-options">
+              <button class="guided-dest-btn" data-mode="inbox" onclick="window.app.guidedSelectWhen('inbox')">
+                <div class="guided-dest-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
                 </div>
-                <div class="guided-detail-item">
-                  <label>Durée <span class="guided-tip" data-tip="Combien de minutes tu penses que ça prendra.">?</span></label>
-                  <input type="number" class="form-input" id="guidedDuration" min="0" placeholder="min">
+                <div class="guided-dest-text">
+                  <strong>Inbox</strong>
+                  <span>À trier plus tard</span>
+                </div>
+              </button>
+              <button class="guided-dest-btn" data-mode="date" onclick="window.app.guidedSelectWhen('date')">
+                <div class="guided-dest-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div class="guided-dest-text">
+                  <strong>Date</strong>
+                  <span>Planifier un jour précis</span>
+                </div>
+              </button>
+              <button class="guided-dest-btn" data-mode="backlog" onclick="window.app.guidedSelectWhen('backlog')">
+                <div class="guided-dest-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+                </div>
+                <div class="guided-dest-text">
+                  <strong>Backlog</strong>
+                  <span>Un jour peut-être</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Date extras — only when "date" is selected -->
+            <div class="guided-date-extras" id="guidedDateExtras" style="display:none">
+              <div class="guided-separator"></div>
+
+              <div class="guided-section">
+                <div class="guided-date-row" id="guidedDateRow">
+                  <input class="form-input" type="date" id="guidedDate" autocomplete="off" onclick="this.showPicker()">
+                  <button type="button" class="today-btn" onclick="window.app.guidedSetToday()">Aujourd'hui</button>
+                  <button type="button" class="today-btn" onclick="window.app.guidedSetTomorrow()">Demain</button>
                 </div>
               </div>
-              <label class="guided-flex-label">
-                <input type="checkbox" id="guidedFlexibleTime">
-                <span>Heure flexible <span class="guided-tip" data-tip="Si coché, l'heure est approximative et peut bouger.">?</span></span>
-              </label>
+
+              <div class="guided-section">
+                <div class="guided-section-label">Répétition <span class="guided-tip" data-tip="La tâche se recrée automatiquement à la fréquence choisie.">?</span></div>
+                <select class="form-input" id="guidedRecurrence" onchange="window.app.guidedSelectRecurrence(this.value)">
+                  <option value="none">Aucune</option>
+                  <option value="daily">Quotidien</option>
+                  <option value="weekly">Hebdomadaire</option>
+                  <option value="monthly">Mensuel</option>
+                  <option value="yearly">Annuel</option>
+                </select>
+                <div id="guidedRecDetail" class="guided-rec-detail"></div>
+              </div>
+
+              <div class="guided-section">
+                <div class="guided-section-label">Horaire & durée <span class="guided-tip" data-tip="Optionnel — précise une heure et une durée pour bloquer un créneau.">?</span></div>
+                <div class="guided-detail-grid">
+                  <div class="guided-detail-item">
+                    <label>Heure <span class="guided-tip" data-tip="L'heure à laquelle tu prévois commencer.">?</span></label>
+                    <input type="time" class="form-input" id="guidedStartTime">
+                  </div>
+                  <div class="guided-detail-item">
+                    <label>Durée <span class="guided-tip" data-tip="Combien de minutes tu penses que ça prendra.">?</span></label>
+                    <input type="number" class="form-input" id="guidedDuration" min="0" placeholder="min">
+                  </div>
+                </div>
+                <label class="guided-flex-label">
+                  <input type="checkbox" id="guidedFlexibleTime">
+                  <span>Heure flexible <span class="guided-tip" data-tip="Si coché, l'heure est approximative et peut bouger.">?</span></span>
+                </label>
+              </div>
             </div>
 
             <div class="guided-nav">

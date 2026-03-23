@@ -1015,9 +1015,8 @@ export function openGuidedCards() {
   // Set correct destination based on current scheduleMode
   const currentMode = state.scheduleMode || 'inbox';
   document.querySelectorAll('.guided-dest-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
-  document.querySelectorAll('.guided-when-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
-  const guidedDateRow = document.getElementById('guidedDateRow');
-  if (guidedDateRow) guidedDateRow.style.display = currentMode === 'date' ? '' : 'none';
+  const guidedDateExtras = document.getElementById('guidedDateExtras');
+  if (guidedDateExtras) guidedDateExtras.style.display = currentMode === 'date' ? '' : 'none';
 
   // Hide main, show guided
   if (main) gsap.to(main, { opacity: 0, x: -20, duration: 0.2, onComplete: () => main.style.display = 'none' });
@@ -1090,11 +1089,18 @@ export function guidedFinish() {
 }
 
 export function guidedSelectWhen(mode) {
-  // Update all destination and when buttons
+  // Update destination buttons
   document.querySelectorAll('.guided-dest-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  document.querySelectorAll('.guided-when-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  const dateRow = document.getElementById('guidedDateRow');
-  if (dateRow) dateRow.style.display = mode === 'date' ? '' : 'none';
+  // Show/hide date extras with animation
+  const extras = document.getElementById('guidedDateExtras');
+  if (extras) {
+    if (mode === 'date') {
+      extras.style.display = '';
+      gsap.fromTo(extras, { opacity: 0, maxHeight: 0 }, { opacity: 1, maxHeight: 600, duration: 0.35, ease: 'power2.out' });
+    } else {
+      gsap.to(extras, { opacity: 0, maxHeight: 0, duration: 0.25, ease: 'power2.in', onComplete: () => extras.style.display = 'none' });
+    }
+  }
   // Also sync to main form schedule mode
   const opts = document.querySelectorAll('.schedule-mode-option');
   opts.forEach(o => o.classList.toggle('active', o.dataset.mode === mode));

@@ -227,6 +227,11 @@ class TodoApp {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = saved || (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
+    // Restore primary color
+    const primaryColor = localStorage.getItem('primaryColor');
+    if (primaryColor) {
+      document.documentElement.style.setProperty('--primary', primaryColor);
+    }
     this.updateThemeBtn();
   }
 
@@ -278,39 +283,58 @@ class TodoApp {
     }
   }
 
+  setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    this.updateThemeBtn();
+    this._updateSettingsMenuContent();
+    if (state.view === 'profile') this.render();
+  }
+
   _updateSettingsMenuContent() {
-    const isStats = state.pastDisplayMode === 'stats';
-    const viz = state.statsViz;
-    const label = state.lang === 'fr' ? 'Complétés' : 'Completed';
-    const stateLabel = isStats ? 'stats' : 'visible';
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const zoomIdx = this.zoomIdx ?? 1;
+    const primaryColor = localStorage.getItem('primaryColor') || '#f59e0b';
+    const bgPalette = localStorage.getItem('bgPalette') || 'default';
 
-    // Update toggle state
-    document.getElementById('settingsCompletedLabel').textContent = label;
-    document.getElementById('settingsToggleInput').checked = isStats;
-    document.getElementById('settingsToggleState').textContent = stateLabel;
+    // Update theme buttons
+    document.getElementById('settingsLightBtn').classList.toggle('active', !isDark);
+    document.getElementById('settingsDarkBtn').classList.toggle('active', isDark);
 
-    // Update viz picker
-    const vizRow = document.getElementById('settingsVizRow');
-    const vizPick = document.getElementById('settingsVizPick');
-    if (isStats) {
-      vizRow.style.display = 'block';
-      const vizOpts = [
-        { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
-        { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
-        { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
-      ];
-      vizPick.innerHTML = vizOpts.map(o =>
-        `<button class="settings-viz-btn${viz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')">${state.lang==='fr'?o.fr:o.en}</button>`
-      ).join('');
-    } else {
-      vizRow.style.display = 'none';
-    }
-
-    // Update language buttons
-    const langBtns = document.querySelectorAll('.settings-lang-btn');
-    langBtns.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.lang === state.lang);
+    // Update text size buttons
+    document.querySelectorAll('.settings-size-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === zoomIdx);
     });
+
+    // Update size preview
+    const sizeLabels = ['Small', 'Normal', 'Large'];
+    document.getElementById('settingsSizePreview').textContent = sizeLabels[zoomIdx] + ' text';
+
+    // Update accent color buttons
+    const colorOptions = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+    const colorsGrid = document.getElementById('settingsColorsGrid');
+    colorsGrid.innerHTML = colorOptions.map(color =>
+      `<button class="settings-color-btn${primaryColor === color ? ' active' : ''}" style="background: ${color};" onclick="window.app.setPrimaryColor('${color}')"></button>`
+    ).join('');
+
+    // Update color preview
+    const preview = document.getElementById('settingsColorPreview');
+    preview.style.background = `linear-gradient(135deg, ${primaryColor}, ${primaryColor}88)`;
+
+    // Update themes buttons
+    const themesGrid = document.getElementById('settingsThemesGrid');
+    const themes = [
+      { id: 'default', name: 'Forest', colors: '#1f2937,#10b981' },
+      { id: 'ocean', name: 'Ocean', colors: '#0c4a6e,#0ea5e9' },
+      { id: 'sunset', name: 'Sunset', colors: '#7c2d12,#ea580c' },
+      { id: 'midnight', name: 'Midnight', colors: '#1e1b4b,#6366f1' },
+      { id: 'rosegold', name: 'Blush', colors: '#be123c,#f9a8d4' },
+      { id: 'forest', name: 'Grove', colors: '#15803d,#4ade80' },
+    ];
+    themesGrid.innerHTML = themes.map(t => {
+      const [c1, c2] = t.colors.split(',');
+      return `<button class="settings-theme-btn-visual${bgPalette === t.id ? ' active' : ''}" style="--bg-color-1:${c1};--bg-color-2:${c2};" onclick="window.app.setPalette('${t.id}')"><div class="theme-label">${t.name}</div></button>`;
+    }).join('');
   }
 
   setPalette(id) {
@@ -320,6 +344,12 @@ class TodoApp {
 
   setBgColor(color) {
     _setBgColor(color);
+  }
+
+  setPrimaryColor(color) {
+    document.documentElement.style.setProperty('--primary', color);
+    localStorage.setItem('primaryColor', color);
+    this._updateSettingsMenuContent();
   }
 
   initGlassMode() {
