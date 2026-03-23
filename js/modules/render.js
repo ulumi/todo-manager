@@ -118,6 +118,7 @@ function _renderDayMiniWeek() {
 export function renderDayView(todos) {
   const navDate = state.navDate;
   const dateStr = DS(navDate);
+  const isToday = dateStr === DS(new Date());
   const allItems = getTodosForDate(navDate, todos);
 
   const prevDate = new Date(navDate); prevDate.setDate(prevDate.getDate() - 1);
@@ -399,8 +400,9 @@ export function renderDayView(todos) {
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
 
+  const punctualTitle = isToday ? state.T.groupOnce : (state.lang === 'fr' ? 'Ponctuel' : 'One-time');
   const punctualHeader = `<div class="day-col-title-row">
-    <div class="day-col-title">${state.T.groupOnce}</div>
+    <div class="day-col-title">${punctualTitle}</div>
     <div class="day-col-controls${ctrlsCollapsed ? ' collapsed' : ''}">
       <div class="day-ctrl-expandable${!sortCollapsed ? ' expanded' : ''}">
         <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">
