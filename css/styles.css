@@ -1110,6 +1110,10 @@ input:checked + .cal-sid-toggle-track::after {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.day-col-group--spacer {
+  margin-right: 20px;
+}
+
 .day-sort-group.hidden,
 .day-col-group.hidden {
   display: none;

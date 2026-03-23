@@ -193,12 +193,12 @@ export function renderDayView(todos) {
   const colCount = parseInt(localStorage.getItem('dayColCount') || '2');
   const colIcon = n => {
     const bars = Array.from({length: n}, () => `<rect/>`).map((_, i) => {
-      const w = Math.floor(11 / n);
-      const g = n > 1 ? Math.floor((11 - w * n) / (n - 1)) : 0;
+      const w = Math.floor(12 / n);
+      const g = n > 1 ? Math.floor((12 - w * n) / (n - 1)) : 0;
       const x = i * (w + g);
-      return `<rect x="${x}" y="1" width="${w}" height="14" rx="1.5" fill="currentColor" opacity="0.8"/>`;
+      return `<rect x="${x}" y="0" width="${w}" height="16" rx="2" fill="currentColor"/>`;
     }).join('');
-    return `<svg viewBox="0 0 12 16" width="11" height="14">${bars}</svg>`;
+    return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const colBtns = [1,2,3,4].map(n =>
     `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${colIcon(n)}</button>`
@@ -325,11 +325,13 @@ export function renderDayView(todos) {
       </button>
       <div class="day-ctrl-group day-sort-group${sortCollapsed ? ' hidden' : ''}">${sortBtns}</div>
 
+      <div style="flex: 0 0 20px;"></div>
+
       <button class="day-ctrl-toggle" onclick="window.app.toggleDayCol()" title="Colonnes">
         <span class="day-ctrl-label">Colonnes</span>
         <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="day-ctrl-group day-col-group${colCollapsed ? ' hidden' : ''}">${colBtns}</div>
+      <div class="day-ctrl-group day-col-group day-col-group--spacer${colCollapsed ? ' hidden' : ''}">${colBtns}</div>
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
