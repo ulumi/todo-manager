@@ -36,6 +36,10 @@
       <button class="view-tab" data-view="year" data-i18n="viewYear">Year</button>
     </div>
     <div class="header-spacer"></div>
+    <div class="quick-find-wrapper">
+      <input type="text" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." autocomplete="off" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
+      <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
+    </div>
     <div class="utility-tabs">
       <button class="view-tab inbox-tab" id="inboxTab" data-view="inbox">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
@@ -56,10 +60,6 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         <span>Projets</span>
       </button>
-    </div>
-    <div class="quick-find-wrapper">
-      <input type="text" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
-      <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
     </div>
     <select id="langSelect" class="lang-select" onchange="window.app.setLang(this.value)">
       <option value="en">EN</option>
