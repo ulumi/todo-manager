@@ -201,9 +201,9 @@ export function renderDayView(todos) {
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const colDropdown = `<div class="day-col-dropdown">
-    <button class="day-ctrl-btn day-col-dropdown-btn" onclick="window.app.toggleColDropdown()" title="Colonnes">
-      ${colIcon(colCount)}
-      <svg viewBox="0 0 12 12" width="8" height="8" style="margin-left:4px"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <button class="day-ctrl-toggle" onclick="window.app.toggleColDropdown()" title="Colonnes">
+      <span class="day-ctrl-label">Colonnes</span>
+      <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="day-col-dropdown-menu hidden" id="dayColDropdownMenu">
       ${[1,2,3,4].map(n => `<button class="day-col-dropdown-item${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n});window.app.toggleColDropdown()">${colIcon(n)} ${n}</button>`).join('')}
@@ -219,11 +219,10 @@ export function renderDayView(todos) {
     { id: 'priority', label: 'Priorité' },
     { id: 'tag',      label: 'Tag' },
   ];
-  const sortLabel = sortOpts.find(o => o.id === daySort)?.label || 'Manuel';
   const sortDropdown = `<div class="day-sort-dropdown">
-    <button class="day-ctrl-btn day-sort-dropdown-btn" onclick="window.app.toggleSortDropdown()" title="Tri">
-      ${sortLabel}
-      <svg viewBox="0 0 12 12" width="8" height="8" style="margin-left:4px"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <button class="day-ctrl-toggle" onclick="window.app.toggleSortDropdown()" title="Tri">
+      <span class="day-ctrl-label">Tri</span>
+      <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
     <div class="day-sort-dropdown-menu hidden" id="daySortDropdownMenu">
       ${sortOpts.map(o => `<button class="day-sort-dropdown-item${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}');window.app.toggleSortDropdown()">${o.label}</button>`).join('')}
@@ -334,19 +333,11 @@ export function renderDayView(todos) {
   const punctualHeader = `<div class="day-col-title-row">
     <div class="day-col-title">${state.T.groupOnce}</div>
     <div class="day-col-controls${ctrlsCollapsed ? ' collapsed' : ''}">
-      <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">
-        <span class="day-ctrl-label">Tri</span>
-        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div class="day-ctrl-group day-sort-group${sortCollapsed ? ' hidden' : ''}">${sortBtns}</div>
+      ${sortBtns}
 
       <div style="flex: 0 0 20px;"></div>
 
-      <button class="day-ctrl-toggle" onclick="window.app.toggleDayCol()" title="Colonnes">
-        <span class="day-ctrl-label">Colonnes</span>
-        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div class="day-ctrl-group day-col-group day-col-group--spacer${colCollapsed ? ' hidden' : ''}">${colBtns}</div>
+      ${colBtns}
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
