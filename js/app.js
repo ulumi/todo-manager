@@ -4360,8 +4360,22 @@ document.addEventListener('keydown', e => {
     }
   }
 
-  if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey && e.code === 'KeyE' && hoveredItem) {
-    e.preventDefault();
-    window.app.openEditModal(hoveredItem.id, hoveredItem.ds);
+  if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+    if (e.code === 'KeyE' && hoveredItem) {
+      e.preventDefault();
+      window.app.openEditModal(hoveredItem.id, hoveredItem.ds);
+    }
+    if (e.code === 'Delete' && hoveredItem) {
+      e.preventDefault();
+      window.app.openDeleteModal(hoveredItem.id, hoveredItem.ds);
+    }
+    if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      window.app.navigate(-1);
+    }
+    if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      window.app.navigate(1);
+    }
   }
 });
