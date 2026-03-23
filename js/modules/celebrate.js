@@ -413,7 +413,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
     filter:drop-shadow(0 0 80px rgba(255,100,220,0.95));
   `);
   ov.appendChild(unicornWrap);
-  unicornWrap.appendChild(Object.assign(el('div', `font-size:400px;line-height:1;display:block;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;image-rendering:smooth;`), { textContent: mascot }));
+  unicornWrap.appendChild(Object.assign(el('div', `font-size:240px;line-height:1;display:block;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;image-rendering:smooth;`), { textContent: mascot }));
 
   gsap.set(unicornWrap, {
     xPercent: -50, yPercent: -50,
@@ -499,7 +499,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
   // Thumbs down button — ban this quote
   const thumbsBtn = el('button', `
-    position:fixed;bottom:32px;right:36px;
+    position:fixed;bottom:120px;right:36px;
     background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
     border-radius:50%;width:52px;height:52px;
     font-size:24px;cursor:pointer;z-index:9999;opacity:0;
