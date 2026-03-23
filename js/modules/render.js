@@ -33,7 +33,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     if (hideCategoryBadge || !todo.projectId) return '';
     const cat = getCategories().find(p => p.id === todo.projectId);
     if (!cat) return '';
-    return `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
+    return `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
   })();
   const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
   const hasMeta = categoryBadge || rec;
@@ -287,26 +287,19 @@ export function renderDayView(todos) {
       let grouped = catGroups.map(c => {
         const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
         const items = itemsForRender.filter(t => t.projectId === c.id);
-        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
       if (untagged.length) {
         const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
-        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
       }
       rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
       const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
-      const flat = filteredItems.map(t => {
-        const catName = t.projectId ? categories.find(c => c.id === t.projectId)?.name || '' : '';
-        const catColor = t.projectId ? categories.find(c => c.id === t.projectId)?.color || '#999' : '#999';
-        const tagBadge = catName ? `<span class="day-tag-badge" style="background:${catColor}">${catName}</span>` : '';
-        const html = todoItemHTML(t, navDate, 'punctual');
-        // Insert badge before closing tag of todo-content
-        return html.replace('</span>', `</span>${tagBadge}`);
-      }).join('');
+      const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
       rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
 

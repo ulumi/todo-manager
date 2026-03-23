@@ -1152,22 +1152,23 @@ input:checked + .cal-sid-toggle-track::after {
   display: none;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
-  border: none;
+  padding: 2px 7px;
+  border: 1px solid transparent;
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 5px;
   transition: all 0.2s;
   white-space: nowrap;
 }
 .day-tag-cloud-item.selected {
   display: inline-flex;
   background: var(--tag-color);
+  border-color: var(--tag-color);
   color: #fff;
 }
 
@@ -1190,7 +1191,7 @@ input:checked + .cal-sid-toggle-track::after {
   font-weight: 700;
   letter-spacing: 0.03em;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 5px;
   transition: all 0.12s;
   white-space: nowrap;
   flex-shrink: 0;
@@ -1217,7 +1218,7 @@ input:checked + .cal-sid-toggle-track::after {
   font-weight: 600;
   margin-left: 6px;
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: 5px;
   color: #fff;
   vertical-align: middle;
 }
@@ -1372,7 +1373,7 @@ input:checked + .cal-sid-toggle-track::after {
   letter-spacing: 0.1em;
   background: var(--primary);
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: 5px;
   margin-bottom: 6px;
 }
 
@@ -1725,7 +1726,7 @@ input:checked + .cal-sid-toggle-track::after {
   font-size: 10px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 20px;
+  border-radius: 5px;
   border: 1px solid;
   white-space: nowrap;
   flex-shrink: 0;
@@ -6582,9 +6583,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--primary);
 }
 .glass-mode .todo-category-badge {
-  color: #f1f5f9 !important;
-  background: rgba(0, 0, 0, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #fff !important;
+  border-color: transparent !important;
 }
 .glass-mode .day-header-wrapper {
   background: color-mix(in srgb, var(--surface) 35%, transparent);
@@ -6604,6 +6604,20 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 .glass-mode .day-header {
   border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .day-mini-week {
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.glass-mode .day-mini-col {
+  border-right-color: rgba(255, 255, 255, 0.1);
+}
+.glass-mode .day-mini-col.week-end {
+  border-right-color: rgba(255, 255, 255, 0.15);
 }
 .glass-mode:not([data-theme=dark]) .cal-sid-day {
   color: #fff;
