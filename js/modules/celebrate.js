@@ -9,8 +9,8 @@ function _persist() { if (_onSave) _onSave(); }
 
 // ── Debug hook ─────
 let _onDebug = null;
-export function onCelebrateDebug(fn) { _onDebug = fn; }
-function _reportDebug(quote, mascot, font) { if (_onDebug) _onDebug({ quote, mascot, font, duration: 4.5 }); }
+export function onCelebrateDebug(fn) { _onDebug = fn; console.log('[celebrate] debug hook registered'); }
+function _reportDebug(quote, mascot, font) { console.log('[celebrate] reporting debug'); if (_onDebug) _onDebug({ quote, mascot, font, duration: 4.5 }); else console.log('[celebrate] no debug hook!'); }
 
 // ── Ban management (fonts & mascots) ───────
 export function getBannedFonts() {

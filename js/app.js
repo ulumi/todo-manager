@@ -184,7 +184,8 @@ class TodoApp {
     onQuoteSave(() => saveBackupToServer(getFullBackup(state.todos)));
 
     // Register debug panel for celebrate
-    onCelebrateDebug((data) => this._showCelebrateDebugPanel(data));
+    console.log('[app] registering celebrate debug hook');
+    onCelebrateDebug((data) => { console.log('[app] celebrate debug data received:', data); this._showCelebrateDebugPanel(data); });
 
     // Load global (shared) quotes from server — affects celebrate pool for all users
     this._loadGlobalQuotes();
@@ -732,8 +733,10 @@ class TodoApp {
   }
 
   _showCelebrateDebugPanel(data) {
+    console.log('[panel] showing debug panel with data:', data);
     const { quote, mascot, font, duration } = data;
     const fontName = font.replace(/['",]/g, '').split('sans-serif|serif')[0].trim();
+    console.log('[panel] fontName:', fontName);
 
     // Remove old panel if exists
     const old = document.getElementById('celebrateDebugPanel');
