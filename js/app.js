@@ -760,13 +760,17 @@ class TodoApp {
           margin-left: 8px; transition: background 0.2s; vertical-align: middle;
         }
         #celebrateDebugPanel button:hover { background: rgba(255,100,200,1); }
-        #celebrateDebugPanel .editable { cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        #celebrateDebugPanel .editable {
+          cursor: pointer; padding: 8px; border-radius: 4px; display: block;
+          min-height: 4.5em; white-space: pre-wrap; word-break: break-word;
+          background: rgba(0,0,0,0.2); font-family: monospace;
+        }
         #celebrateDebugPanel .editable:hover { background: rgba(255,100,200,0.15); }
         #celebrateDebugPanel .editable[contenteditable="true"] { background: rgba(255,100,200,0.2); border: 1px solid rgba(255,100,200,0.5); outline: none; }
       </style>
       <div style="margin-bottom: 16px;"><strong>🎉 Celebrate Debug</strong></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code class="editable" id="debugQuote" contenteditable="false">${quote.substring(0, 30)}...</code> <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code class="editable" id="debugMascot" contenteditable="false">${mascot}</code> <button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <div class="editable" id="debugQuote" contenteditable="false">${quote}</div><button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <div class="editable" id="debugMascot" contenteditable="false">${mascot}</div><button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
       <div style="margin-bottom: 16px; opacity: 0.8;">Font: <code>${fontName}</code></div>
       <div style="margin-bottom: 0; opacity: 0.8;">Duration: <code>${duration}s</code></div>
     `;
