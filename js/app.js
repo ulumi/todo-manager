@@ -810,12 +810,29 @@ class TodoApp {
     if (mascotEl) makeEditable(mascotEl);
 
     // Auto-fade after duration + 3.5s (so 3.5s after celebrate animation ends)
-    setTimeout(() => {
+    let dismissTimeout = setTimeout(() => {
       if (panel.parentNode) {
         panel.style.animation = 'fadeIn 0.25s ease-in reverse';
         setTimeout(() => panel.remove(), 250);
       }
     }, (duration + 3.5) * 1000);
+
+    // Cancel auto-dismiss if user starts editing
+    const cancelAutoClose = () => clearTimeout(dismissTimeout);
+    quoteEl?.addEventListener('click', cancelAutoClose);
+    mascotEl?.addEventListener('click', cancelAutoClose);
+
+    // Allow Escape to close panel manually
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        document.removeEventListener('keydown', onKeyDown);
+        if (panel.parentNode) {
+          panel.style.animation = 'fadeIn 0.25s ease-in reverse';
+          setTimeout(() => panel.remove(), 250);
+        }
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
   }
 
   _banQuote(quote) {
