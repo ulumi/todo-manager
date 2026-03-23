@@ -413,12 +413,12 @@ function buildScene(quote, stats, mascot, opts = {}) {
     filter:drop-shadow(0 0 80px rgba(255,100,220,0.95));
   `);
   ov.appendChild(unicornWrap);
-  unicornWrap.appendChild(Object.assign(el('div', `font-size:200px;line-height:1;display:block;`), { textContent: mascot }));
+  unicornWrap.appendChild(Object.assign(el('div', `font-size:500px;line-height:1;display:block;`), { textContent: mascot }));
 
   gsap.set(unicornWrap, {
     xPercent: -50, yPercent: -50,
     x: window.innerWidth * 0.75,
-    rotation: 18, scale: 0.4,
+    rotation: 18, scale: 1.0,
   });
 
   // Text block — quote + stats stacked in flex column to prevent overlap
@@ -527,10 +527,10 @@ function buildScene(quote, stats, mascot, opts = {}) {
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
 
   // Unicorn shoots in from right
-  tl.to(unicornWrap, { x: 0, rotation: -8, scale: 1.12, duration: 0.45, ease: 'power4.out' }, 0.05);
+  tl.to(unicornWrap, { x: 0, rotation: -8, scale: 2.8, duration: 0.45, ease: 'power4.out' }, 0.05);
 
   // Elastic settle + streaks fade
-  tl.to(unicornWrap, { scale: 1, rotation: 0, y: 0, duration: 0.65, ease: 'elastic.out(1.3,0.45)' });
+  tl.to(unicornWrap, { scale: 2.5, rotation: 0, y: 0, duration: 0.65, ease: 'elastic.out(1.3,0.45)' });
   tl.to(streaks, { opacity: 0, duration: 0.25, stagger: 0.02 }, '-=0.55');
 
   // Shockwave
