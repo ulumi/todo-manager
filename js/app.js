@@ -794,6 +794,14 @@ class TodoApp {
     selectYearDay(d);
   }
 
+  selectDayPeriod(period) {
+    const input = document.getElementById('taskDayPeriod');
+    if (input) input.value = period;
+    document.querySelectorAll('.day-period-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.period === period);
+    });
+  }
+
   setTaskDateToday() {
     document.getElementById('taskDate').value = DS(today());
   }
@@ -919,7 +927,16 @@ class TodoApp {
       this.dayOrder[dateStr] = newOrder;
       localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
     } else {
-      const items = getTodosForDate(state.navDate, state.todos).filter(t => t.recurrence === group);
+      // For daily sub-periods, filter by both recurrence and dayPeriod
+      const periodMap = { 'daily-morning': 'morning', 'daily-afternoon': 'afternoon', 'daily-evening': 'evening' };
+      const period = periodMap[group];
+      const recType = period ? 'daily' : group;
+      const items = getTodosForDate(state.navDate, state.todos).filter(t => {
+        if (t.recurrence !== recType) return false;
+        if (period) return t.dayPeriod === period;
+        if (recType === 'daily') return !t.dayPeriod;
+        return true;
+      });
       if (!this.recurringOrder[dateStr]) this.recurringOrder[dateStr] = {};
       let order = this.recurringOrder[dateStr][group] ? [...this.recurringOrder[dateStr][group]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
@@ -1225,9 +1242,35 @@ class TodoApp {
         return;
       }
 
-      // Hover on empty zone at bottom of column → drop after last item
+      // Hover on empty space inside a spacer group → drop at end of that group
+      const spacerGroup = e.target.closest('.day-spacer-group');
+      if (spacerGroup && !e.target.closest('.todo-item, .day-spacer')) {
+        const spacer = spacerGroup.querySelector('.day-spacer[draggable]');
+        if (spacer && spacer !== draggedEl) {
+          clearDropSpacer();
+          activeDropSpacer = spacer;
+          spacer.classList.add('drop-target');
+          const todoList = spacerGroup.querySelector('.todo-list[data-group="punctual"]');
+          const lastItem = todoList ? [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop() : null;
+          if (lastItem) {
+            dropTarget = lastItem.dataset.id;
+            lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
+          } else {
+            dropTarget = spacer.dataset.id;
+            if (todoList) todoList.appendChild(placeholder);
+            else spacer.parentNode.insertBefore(placeholder, spacer.nextSibling);
+          }
+          requestAnimationFrame(() => {
+            placeholder.style.height = draggedHeight + 'px';
+            placeholder.classList.add('visible');
+          });
+          return;
+        }
+      }
+
+      // Hover on empty zone at bottom of column → drop after last item/spacer
       const col = e.target.closest('.day-col--punctual');
-      if (col && !e.target.closest('.todo-item, .day-spacer, .day-auto-group-label, .day-col-title-row, .day-tag-controls')) {
+      if (col && !e.target.closest('.todo-item, .day-spacer, .day-spacer-group, .day-auto-group-label, .day-col-title-row, .day-tag-controls')) {
         const allItems = [...col.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl);
         const lastItem = allItems.pop();
         if (lastItem) {
@@ -3041,6 +3084,32 @@ class TodoApp {
 
   resetAutoCloseDayCol() {
     this.startAutoCloseDayCol();
+  }
+
+  setRecColCount(n) {
+    localStorage.setItem('recColCount', n);
+    this.render();
+  }
+
+  toggleRecCol() {
+    const cur = localStorage.getItem('recColCollapsed') !== 'false';
+    localStorage.setItem('recColCollapsed', !cur ? 'true' : 'false');
+    this.render();
+    if (!cur) this.startAutoCloseRecCol();
+  }
+
+  closeRecCol() {
+    localStorage.setItem('recColCollapsed', 'true');
+    this.render();
+  }
+
+  startAutoCloseRecCol() {
+    clearTimeout(this.autoCloseRecColTimer);
+    this.autoCloseRecColTimer = setTimeout(() => this.closeRecCol(), 3000);
+  }
+
+  resetAutoCloseRecCol() {
+    this.startAutoCloseRecCol();
   }
 
   toggleDayTagFilter(tagId) {

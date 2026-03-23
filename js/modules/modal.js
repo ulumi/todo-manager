@@ -35,6 +35,7 @@ function _saveDraft() {
     durationReal: document.getElementById('taskDurationReal')?.value || '',
     categoryId: document.getElementById('taskCategory')?.value || '',
     recurrence: state.selectedRecurrence,
+    dayPeriod: document.getElementById('taskDayPeriod')?.value || '',
     weekDays: [...state.selectedWeekDays],
     monthDays: [...state.selectedMonthDays],
     monthLastDay: state.selectedMonthLastDay,
@@ -208,6 +209,8 @@ export function openModal(date, todos, scheduleMode = 'date') {
   document.getElementById('taskFlexibleTime').checked = false;
   document.getElementById('taskDurationEstimated').value = '';
   document.getElementById('taskDurationReal').value = '';
+  const durationRealField = document.getElementById('durationRealField');
+  if (durationRealField) durationRealField.style.display = 'none';
   const recSel = document.getElementById('taskRecurrence');
   if (recSel) recSel.value = 'none';
   document.getElementById('recDetail').innerHTML = '';
@@ -291,6 +294,8 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskFlexibleTime').checked = t.flexibleTime || false;
   document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
   document.getElementById('taskDurationReal').value = t.durationReal || '';
+  const durationRealField = document.getElementById('durationRealField');
+  if (durationRealField) durationRealField.style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
   populateCategorySelect(t.projectId || '');
   selectPriority(t.priority || '');
@@ -313,7 +318,14 @@ export function openEditModal(id, dateStr, todos) {
   } else if (state.selectedRecurrence === 'daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    detail.innerHTML = '';
+    const editPeriod = t.dayPeriod || '';
+    detail.innerHTML = `<div class="day-period-select">
+      <button type="button" class="day-period-btn${editPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
+      <button type="button" class="day-period-btn${editPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
+      <button type="button" class="day-period-btn${editPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
+      <button type="button" class="day-period-btn${editPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
+      <input type="hidden" id="taskDayPeriod" value="${editPeriod}">
+    </div>`;
   } else if (state.selectedRecurrence === 'weekly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
@@ -377,7 +389,14 @@ export function selectRecurrence(rec) {
   } else if (rec==='daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    detail.innerHTML = '';
+    const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
+    detail.innerHTML = `<div class="day-period-select">
+      <button type="button" class="day-period-btn${curPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
+      <button type="button" class="day-period-btn${curPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
+      <button type="button" class="day-period-btn${curPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
+      <button type="button" class="day-period-btn${curPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
+      <input type="hidden" id="taskDayPeriod" value="${curPeriod}">
+    </div>`;
   } else if (rec==='weekly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
@@ -617,6 +636,10 @@ export function saveTaskLogic(todos) {
   const durationEstimated = document.getElementById('taskDurationEstimated')?.value ? parseInt(document.getElementById('taskDurationEstimated').value) : undefined;
   const durationReal      = document.getElementById('taskDurationReal')?.value ? parseInt(document.getElementById('taskDurationReal').value) : undefined;
 
+  const dayPeriod = state.selectedRecurrence === 'daily'
+    ? (document.getElementById('taskDayPeriod')?.value || undefined)
+    : undefined;
+
   const data = {
     title,
     recurrence: state.selectedRecurrence,
@@ -628,6 +651,7 @@ export function saveTaskLogic(todos) {
     flexibleTime: flexibleTime || undefined,
     durationEstimated,
     durationReal,
+    dayPeriod: dayPeriod || undefined,
   };
 
   if (state.selectedRecurrence==='none') {
@@ -666,7 +690,7 @@ export function saveTaskLogic(todos) {
       t.recurrence = data.recurrence;
       delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
       delete t.backlog; delete t.startTime; delete t.endTime; delete t.flexibleTime;
-      delete t.durationEstimated; delete t.durationReal;
+      delete t.durationEstimated; delete t.durationReal; delete t.dayPeriod;
       if (data.date !== undefined) t.date = data.date;
       if (data.recDays !== undefined) t.recDays = data.recDays;
       if (data.recDay !== undefined) t.recDay = data.recDay;
@@ -679,6 +703,7 @@ export function saveTaskLogic(todos) {
       if (data.flexibleTime) t.flexibleTime = data.flexibleTime;
       if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
+      if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
       t.projectId   = data.projectId;
       t.priority    = data.priority;
       t.description = data.description;
@@ -906,6 +931,9 @@ function _initCombobox(todos) {
     } else if (e.key === 'Enter' && _comboboxActiveIdx >= 0) {
       e.preventDefault();
       _comboboxSelect(items[_comboboxActiveIdx].textContent);
+    } else if (e.key === 'Enter' && box.classList.contains('hidden')) {
+      e.preventDefault();
+      document.getElementById('saveTask')?.click();
     } else if (e.key === 'Escape') {
       box.classList.add('hidden');
     }

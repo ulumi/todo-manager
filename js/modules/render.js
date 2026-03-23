@@ -161,7 +161,15 @@ export function renderDayView(todos) {
     if (ia < 0) return 1; if (ib < 0) return -1;
     return ia - ib;
   });
-  const sortedDaily   = sortByOrder(dailyItems,   recOrd.daily   || []);
+  const dailyMorning   = dailyItems.filter(t => t.dayPeriod === 'morning');
+  const dailyAfternoon = dailyItems.filter(t => t.dayPeriod === 'afternoon');
+  const dailyEvening   = dailyItems.filter(t => t.dayPeriod === 'evening');
+  const dailyNoPeriod  = dailyItems.filter(t => !t.dayPeriod);
+
+  const sortedDailyMorning   = sortByOrder(dailyMorning,   recOrd['daily-morning']   || []);
+  const sortedDailyAfternoon = sortByOrder(dailyAfternoon, recOrd['daily-afternoon'] || []);
+  const sortedDailyEvening   = sortByOrder(dailyEvening,   recOrd['daily-evening']   || []);
+  const sortedDailyNoPeriod  = sortByOrder(dailyNoPeriod,  recOrd['daily']           || []);
   const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
   const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
@@ -182,8 +190,45 @@ export function renderDayView(todos) {
   </div>` : '';
 
   // Always render ALL items (CSS hides .done items in stats-mode)
+  // Daily column count (only for daily group)
+  const recColCount = parseInt(localStorage.getItem('recColCount') || '1');
+  const recColStyle = `grid-template-columns:repeat(${recColCount},1fr)`;
+  const recColCollapsed = localStorage.getItem('recColCollapsed') !== 'false';
+  const recColIcon = n => {
+    const bars = Array.from({length: n}, (_, i) => {
+      const w = Math.floor(12 / n);
+      const g = n > 1 ? Math.floor((12 - w * n) / (n - 1)) : 0;
+      const x = i * (w + g);
+      return `<rect x="${x}" y="0" width="${w}" height="16" rx="2" fill="currentColor"/>`;
+    }).join('');
+    return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
+  };
+  const recColBtns = [1,2,3,4].map(n =>
+    `<button class="day-ctrl-btn${n===recColCount?' active':''}" onclick="window.app.setRecColCount(${n}); window.app.closeRecCol();" onmouseenter="window.app.resetAutoCloseRecCol()" title="${n} colonne${n>1?'s':''}">${recColIcon(n)}</button>`
+  ).join('');
+  const dailyColCtrl = `<div class="day-ctrl-expandable day-group-col-ctrl${!recColCollapsed ? ' expanded' : ''}">
+    <button class="day-ctrl-toggle" onclick="window.app.toggleRecCol()" title="Colonnes">
+      <span class="day-ctrl-label">Colonnes</span>
+      <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="day-ctrl-group day-rec-col-group" onmouseenter="window.app.resetAutoCloseRecCol()">${recColBtns}</div>
+  </div>`;
+
   let leftCol = '';
-  if (sortedDaily.length > 0)   leftCol += `<div class="day-group-label">${state.T.recDaily}</div><div class="todo-list" data-group="daily">${sortedDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+
+  // Daily items — split by period (only render non-empty sections)
+  const hasDailyPeriods = sortedDailyMorning.length > 0 || sortedDailyAfternoon.length > 0 || sortedDailyEvening.length > 0 || sortedDailyNoPeriod.length > 0;
+  if (hasDailyPeriods) {
+    leftCol += `<div class="day-group-label day-group-label--with-ctrl">${state.T.recDaily}${dailyColCtrl}</div>`;
+    if (sortedDailyNoPeriod.length > 0)
+      leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+    if (sortedDailyMorning.length > 0)
+      leftCol += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="daily-morning" style="${recColStyle}">${sortedDailyMorning.map(t => todoItemHTML(t, navDate, 'daily-morning', true)).join('')}</div>`;
+    if (sortedDailyAfternoon.length > 0)
+      leftCol += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="daily-afternoon" style="${recColStyle}">${sortedDailyAfternoon.map(t => todoItemHTML(t, navDate, 'daily-afternoon', true)).join('')}</div>`;
+    if (sortedDailyEvening.length > 0)
+      leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
+  }
   if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
   if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
   if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;

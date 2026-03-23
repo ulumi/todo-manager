@@ -932,6 +932,11 @@ main {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
+
+  &--recurring .todo-list {
+    display: grid;
+    gap: 10px;
+  }
 }
 
 .day-columns--three .day-col--punctual .todo-list {
@@ -1378,7 +1383,20 @@ main {
 .day-spacer-group {
   margin-top: 16px;
   padding-left: 16px;
-  padding-bottom: 64px;
+  min-height: 80px;
+
+  &:has(.todo-list .todo-item) { min-height: 0; }
+  &:not(:has(.todo-list .todo-item))::after {
+    content: '';
+    display: block;
+    margin-top: 8px;
+    padding: 24px 18px;
+    height: auto;
+    min-height: 1.4em;
+    border: 1.5px dashed rgba(255,255,255,.25);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+  }
 
   .todo-list { margin-top: 8px; }
 }
@@ -1412,7 +1430,7 @@ main {
   border: none;
   background: none;
   line-height: 1.4;
-  padding-top: 8px;
+  padding: 8px 0 12px;
   border-top: 2px solid rgba(255,255,255,.35);
 
   &:empty::before {
@@ -1646,6 +1664,94 @@ main {
   }
 
   &:first-child { margin-top: 0; }
+
+  &--with-ctrl {
+    &::after { display: none; }
+  }
+}
+
+.day-group-col-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+
+  .day-ctrl-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: rgba(255,255,255,.5);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: color .15s, background .15s;
+
+    &:hover { color: rgba(255,255,255,.85); background: rgba(255,255,255,.08); }
+
+    .day-ctrl-chevron {
+      opacity: .6;
+      transition: transform .2s;
+    }
+  }
+
+  &.expanded .day-ctrl-toggle .day-ctrl-chevron { transform: rotate(180deg); }
+
+  .day-ctrl-group {
+    display: none;
+    gap: 2px;
+  }
+
+  &.expanded .day-ctrl-group { display: flex; }
+}
+
+.day-period-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.45);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  margin-top: 14px;
+  margin-bottom: 6px;
+
+  &:first-child { margin-top: 0; }
+}
+
+// Modal — period selector buttons
+.day-period-select {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.day-period-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1.5px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+
+  &:hover {
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    border-color: rgba(255,255,255,.3);
+  }
+
+  &.active {
+    background: rgba(124,58,237,.25);
+    color: #c4b5fd;
+    border-color: rgba(124,58,237,.5);
+  }
 }
 
 .empty-state {
@@ -2854,14 +2960,14 @@ main {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 14px;
-  padding: 20px 22px 0;
+  padding: 24px 28px 0;
   box-shadow: 0 20px 48px rgba(0,0,0,.2);
   backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
 
-  .modal-header     { margin-bottom: 16px; }
-  .form-group       { margin-bottom: 12px; }
+  .modal-header     { margin-bottom: 20px; }
+  .form-group       { margin-bottom: 18px; }
 
   .modal-footer {
     position: sticky;
@@ -2881,7 +2987,7 @@ main {
 // Floating labels
 .fl-group {
   position: relative;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
 
 .fl-label {
@@ -5875,47 +5981,70 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   // ── Modals ──
   .modal {
-    background: rgba(20, 22, 35, .75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    color: #f1f5f9;
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    background: transparent;
+    backdrop-filter: none;
+    border: none;
+    box-shadow: none;
   }
 
   .modal-left,
   .modal-right,
   .modal-main {
-    background: rgba(20, 22, 35, .7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,.1);
+    background: rgba(255, 255, 255, .18);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255,255,255,.45);
+    box-shadow: 0 24px 64px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.5);
+    color: #1e2030;
   }
 
   .modal-main .modal-footer {
-    background: transparent;
+    background: rgba(255,255,255,.12);
+    border-top-color: rgba(255,255,255,.3);
+  }
+
+  .modal-header .modal-title,
+  .modal-close-btn,
+  .form-label,
+  .timing-icon {
+    color: #1e2030;
+  }
+
+  .form-input {
+    background: rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.3);
+    color: #1e2030;
+    box-shadow: none;
+    &::placeholder { color: rgba(30,32,48,.4); }
+    &:focus {
+      background: rgba(255,255,255,.28);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(91,94,247,.15);
+      transform: none;
+    }
   }
 
   .fl-label {
-    color: rgba(255,255,255,.4);
+    color: rgba(30,32,48,.5);
   }
 
   .fl-input:focus ~ .fl-label,
   .fl-input:not(:placeholder-shown) ~ .fl-label,
   select.fl-input ~ .fl-label,
   .fl-group .category-select-row ~ .fl-label {
-    background: rgba(20, 22, 35, .85);
-    color: rgba(255,255,255,.6);
+    background: rgba(255,255,255,.6);
+    color: rgba(30,32,48,.7);
   }
 
   .fl-input:focus ~ .fl-label { color: var(--primary); }
 
   .guided-container {
-    background: rgba(20, 22, 35, .85);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,.1);
-    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    background: rgba(255, 255, 255, .2);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border: 1px solid rgba(255,255,255,.4);
+    box-shadow: 0 24px 64px rgba(0,0,0,.15);
+    color: #1e2030;
   }
 
   .guided-card h3 { color: #f1f5f9; }
@@ -6230,7 +6359,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:not([data-theme="dark"]) {
     .cal-sid-day { color: #fff; }
     .cal-sid-dow { color: #f1f5f9; }
-    .cal-sid-day.today { color: #fff; }
+    .cal-sid-day.today { color: var(--primary); }
     .cal-sid-day.nav-date { color: #fff; }
     .mym-day { color: #fff; }
     .mym-dow { color: #f1f5f9; }
