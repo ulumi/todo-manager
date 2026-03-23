@@ -1380,8 +1380,8 @@ input:checked + .cal-sid-toggle-track::after {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   background: var(--primary);
-  padding: 5px 12px;
-  border-radius: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
   margin-bottom: 6px;
   margin-top: 6px;
 }
@@ -6601,6 +6601,25 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode select::placeholder {
   color: rgba(255, 255, 255, 0.4);
 }
+.glass-mode .week-day-col {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .week-day-col.is-today {
+  background: color-mix(in srgb, var(--today) 50%, transparent);
+}
+.glass-mode .week-day-col.is-today .week-day-header {
+  background: rgba(245, 158, 11, 0.15);
+}
+.glass-mode .week-day-header {
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .week-todo-item {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: var(--primary);
+}
 .glass-mode .month-cell,
 .glass-mode .month-year-mini,
 .glass-mode .year-month-card {
@@ -6608,6 +6627,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .month-todo-dot {
+  background: rgba(255, 255, 255, 0.15);
   color: #f1f5f9;
 }
 .glass-mode .profile-section,
