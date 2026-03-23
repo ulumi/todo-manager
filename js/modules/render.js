@@ -146,11 +146,14 @@ export function renderDayView(todos) {
 
   const isStatsMode = state.pastDisplayMode === 'stats';
 
-  const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
-  const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
-  const monthlyItems = allItems.filter(t => t.recurrence === 'monthly');
-  const yearlyItems  = allItems.filter(t => t.recurrence === 'yearly');
-  const punctualItems = allItems.filter(t => !t.recurrence || t.recurrence === 'none');
+  // Get items that apply to this date (recurrence-aware)
+  const recTodos = getTodosForDate(navDate, allItems.filter(t => t.recurrence && t.recurrence !== 'none'));
+  const punctualTodos = getTodosForDate(navDate, allItems.filter(t => !t.recurrence || t.recurrence === 'none'));
+
+  const dailyItems   = recTodos.filter(t => t.recurrence === 'daily');
+  const weeklyItems  = recTodos.filter(t => t.recurrence === 'weekly');
+  const monthlyItems = recTodos.filter(t => t.recurrence === 'monthly');
+  const yearlyItems  = recTodos.filter(t => t.recurrence === 'yearly');
 
   // Sort by stored order (recurring per-day, punctual per-day)
   const recOrd = window.app?.recurringOrder?.[dateStr] || {};
@@ -165,14 +168,14 @@ export function renderDayView(todos) {
   const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
   const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
-  const sortedPunctual = sortByOrder(punctualItems, dayOrd);
+  const sortedPunctual = sortByOrder(punctualTodos, dayOrd);
 
   const recAllItems = [...dailyItems, ...weeklyItems, ...monthlyItems, ...yearlyItems];
   const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
-  const punctDone = punctualItems.filter(t => isCompleted(t, navDate)).length;
+  const punctDone = punctualTodos.filter(t => isCompleted(t, navDate)).length;
 
   // Combined stats bar (single, in left column only)
-  const totalAll = punctualItems.length + recAllItems.length;
+  const totalAll = punctualTodos.length + recAllItems.length;
   const doneAll = punctDone + recDone;
   const statsPct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
   const combinedStats = totalAll > 0 ? `<div class="day-stats-summary">

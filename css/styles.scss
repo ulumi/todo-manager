@@ -3386,14 +3386,11 @@ select.fl-input ~ .fl-label {
   transition: all .24s cubic-bezier(.25, .46, .45, .94);
   outline: none;
   box-shadow: 0 1px 2px rgba(0,0,0,.02);
-  backdrop-filter: blur(8px);
 
   &:focus {
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(91, 94, 247, .15);
+    box-shadow: 0 0 0 2px rgba(91, 94, 247, .1);
     background: var(--surface);
-    backdrop-filter: blur(12px);
-    transform: scale(1.01);
   }
 
   &::placeholder { opacity: 0.5; }
@@ -5849,205 +5846,33 @@ body:has(.bottom-panel:not(.hidden))::before {
     color: #f1f5f9;
   }
 
-  // ── Modals ──
-  .modal {
-    background: rgba(20, 22, 35, .75);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    color: #f1f5f9;
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  // ── Modals — stay in light mode, reset glass overrides ──
+  .modal-overlay {
+    color: var(--text);
+
+    .modal,
+    .modal-left,
+    .modal-right,
+    .modal-main,
+    .guided-container {
+      color: var(--text);
+      background: var(--surface);
+    }
   }
 
-  .modal-left,
-  .modal-right,
-  .modal-main {
-    background: rgba(20, 22, 35, .7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,.1);
-  }
-
-  .modal-main .modal-footer {
-    background: transparent;
-  }
-
-  .fl-label {
-    color: rgba(255,255,255,.4);
-  }
-
-  .fl-input:focus ~ .fl-label,
-  .fl-input:not(:placeholder-shown) ~ .fl-label,
-  select.fl-input ~ .fl-label,
-  .fl-group .category-select-row ~ .fl-label {
-    background: rgba(20, 22, 35, .85);
-    color: rgba(255,255,255,.6);
-  }
-
-  .fl-input:focus ~ .fl-label { color: var(--primary); }
-
-  .guided-container {
-    background: rgba(20, 22, 35, .85);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255,255,255,.1);
-    box-shadow: 0 24px 64px rgba(0,0,0,.5);
-  }
-
-  .guided-card h3 { color: #f1f5f9; }
-  .guided-hint { color: rgba(255,255,255,.4); }
-
-  .guided-dest-btn {
-    border-color: rgba(255,255,255,.1);
-    color: #f1f5f9;
-    &:hover { border-color: var(--primary); background: rgba(245,158,11,.05); }
-    &.active { border-color: var(--primary); background: rgba(245,158,11,.1); box-shadow: 0 0 0 1px var(--primary); }
-  }
-  .guided-dest-icon {
-    background: rgba(255,255,255,.06);
-    color: rgba(255,255,255,.4);
-    .guided-dest-btn.active & { color: var(--primary); background: rgba(245,158,11,.12); }
-  }
-  .guided-dest-text span { color: rgba(255,255,255,.35); }
-
-  .guided-when-btn {
-    border-color: rgba(255,255,255,.12);
-    color: rgba(255,255,255,.5);
-    &:hover { border-color: var(--primary); color: var(--primary); }
-    &.active { background: rgba(245,158,11,.15); border-color: var(--primary); color: var(--primary); }
-  }
-
-  .guided-nav { border-top-color: rgba(255,255,255,.06); }
-
-  .guided-detail-item label { color: rgba(255,255,255,.4); }
-  .guided-section-label { color: rgba(255,255,255,.4); }
-  .guided-separator { background: rgba(255,255,255,.08); }
-  .guided-switch-link, .guided-link { color: rgba(255,255,255,.35); &:hover { color: var(--primary); } }
-  .guided-tip {
-    background: rgba(255,255,255,.1);
-    color: rgba(255,255,255,.4);
-    &:hover::after {
-      background: rgba(20, 22, 35, .95);
-      border-color: rgba(255,255,255,.12);
+  // ── Inputs (non-modal — header search, sidebar, etc.) ──
+  .app-header,
+  .cal-sid-month,
+  .cal-sid-options {
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    textarea,
+    select {
+      @include glass-surface(30%, 8px);
       color: #f1f5f9;
+      &::placeholder { color: rgba(255,255,255,.4); }
     }
-  }
-  .guided-summary {
-    background: rgba(255,255,255,.04);
-    border-color: rgba(255,255,255,.08);
-    .summary-label { color: rgba(255,255,255,.4); }
-    .summary-value { color: #f1f5f9; }
-  }
-  .guided-flex-label { color: rgba(255,255,255,.7); }
-
-  .modal-title {
-    color: #f1f5f9;
-  }
-
-  .modal-close-btn {
-    color: rgba(255,255,255,.5);
-    &:hover { background: rgba(255,255,255,.1); color: #f1f5f9; }
-  }
-
-  .modal-footer {
-    background: transparent;
-  }
-
-  .form-label {
-    color: rgba(255,255,255,.5);
-  }
-
-  .form-input,
-  .modal select,
-  .modal textarea {
-    background: rgba(255,255,255,.1);
-    border-color: rgba(255,255,255,.12);
-    color: #f1f5f9;
-    &::placeholder { color: rgba(255,255,255,.3); }
-    &:focus {
-      background: rgba(255,255,255,.15);
-      border-color: rgba(255,255,255,.25);
-      box-shadow: 0 0 0 3px rgba(255,255,255,.06);
-    }
-  }
-
-  .modal-select {
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  }
-
-  .add-cat-btn,
-  .today-btn {
-    background: rgba(255,255,255,.08);
-    border-color: rgba(255,255,255,.12);
-    color: rgba(255,255,255,.5);
-    &:hover { border-color: rgba(255,255,255,.25); color: #f1f5f9; }
-  }
-
-  .schedule-mode-option {
-    border-color: rgba(255,255,255,.12);
-    color: rgba(255,255,255,.45);
-    &:hover { background: rgba(255,255,255,.08); color: #f1f5f9; }
-    &.active {
-      background: rgba(255,255,255,.12);
-      border-color: rgba(255,255,255,.25);
-      color: #f1f5f9;
-    }
-  }
-
-  .priority-option {
-    border-color: rgba(255,255,255,.12);
-    color: rgba(255,255,255,.45);
-    &:hover { background: rgba(255,255,255,.08); }
-  }
-
-  .title-combobox {
-    background: rgba(20, 22, 35, .85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-color: rgba(255,255,255,.12);
-  }
-
-  .title-combobox-item {
-    color: #f1f5f9;
-    &:hover, &.active { background: rgba(255,255,255,.08); }
-    & + & { border-color: rgba(255,255,255,.08); }
-  }
-
-  .modal-detail-header {
-    color: rgba(255,255,255,.6);
-  }
-
-  .modal-detail-section {
-    border-color: rgba(255,255,255,.08);
-  }
-
-  .modal-detail-body {
-    color: rgba(255,255,255,.6);
-  }
-
-  .modal-detail-chevron {
-    color: rgba(255,255,255,.3);
-  }
-
-  .draft-banner {
-    background: rgba(255,255,255,.06);
-    border-color: rgba(255,255,255,.1);
-    color: rgba(255,255,255,.6);
-  }
-
-  .modal-timing-row {
-    color: rgba(255,255,255,.5);
-  }
-
-  // ── Inputs ──
-  input[type="text"],
-  input[type="date"],
-  input[type="time"],
-  textarea,
-  select {
-    @include glass-surface(30%, 8px);
-    color: #f1f5f9;
-    &::placeholder { color: rgba(255,255,255,.4); }
   }
 
   // ── Month / Year view cards ──
