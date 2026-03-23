@@ -347,6 +347,18 @@ class TodoApp {
     if (state.view === 'profile') this.render();
   }
 
+  selectBgColor() {
+    // Activate custom color mode by clicking the color input
+    const bgColorInput = document.getElementById('settingsBgColor');
+    if (bgColorInput) {
+      bgColorInput.click();
+      // Ensure custom color is selected (disable palette)
+      const currentColor = bgColorInput.value;
+      _setBgColor(currentColor);
+      this._updateSettingsMenuContent();
+    }
+  }
+
   setBgColor(color) {
     _setBgColor(color);
     this._updateSettingsMenuContent();

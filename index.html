@@ -130,7 +130,7 @@
           </div>
           <div class="settings-palettes-grid" id="settingsPalettesGrid"></div>
           <div class="settings-bg-color-section">
-            <label class="settings-bg-color-label">
+            <label class="settings-bg-color-label" onclick="window.app.selectBgColor()">
               <span>Color</span>
               <input type="color" id="settingsBgColor" class="settings-color-input" oninput="window.app.setBgColor(this.value)" onchange="window.app.setBgColor(this.value)">
             </label>
