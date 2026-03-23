@@ -407,13 +407,13 @@ function buildScene(quote, stats, mascot, opts = {}) {
     return s;
   });
 
-  // Left streaks (from left, different style - gradient/white)
-  const leftStreaks = RAINBOW.map((color, i) => {
+  // Left pulse dots (from left, totally different style - white dots)
+  const leftStreaks = Array.from({ length: 8 }, (_, i) => {
     const s = el('div', `
-      position:absolute;height:12px;width:0;left:0;
-      top:calc(38% + ${(i - 2.5) * 20}px);
-      background:linear-gradient(90deg, ${color}, transparent);
-      border-radius:6px;opacity:0;z-index:9990;
+      position:absolute;width:20px;height:20px;left:0;
+      top:calc(20% + ${i * 12}%);
+      background:rgba(255,255,255,0.3);border-radius:50%;
+      opacity:0;z-index:9990;box-shadow:0 0 15px rgba(255,255,255,0.5);
     `);
     ov.appendChild(s);
     return s;
@@ -537,8 +537,8 @@ function buildScene(quote, stats, mascot, opts = {}) {
   // Streaks flash (motion blur effect from right)
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
 
-  // Left streaks flash (motion blur effect from left) — appear later with gradient
-  tl.to(leftStreaks, { width: '80vw', opacity: 0.7, duration: 0.28, stagger: 0.022, ease: 'power4.out' }, 0.35);
+  // Left pulse dots flash (white glowing dots from left) — appear later
+  tl.to(leftStreaks, { x: '60vw', opacity: 0.8, duration: 0.4, stagger: 0.06, ease: 'power3.out' }, 0.3);
 
   // Unicorn shoots in from right
   tl.to(unicornWrap, { x: 0, rotation: -8, scale: 1.2, duration: 0.45, ease: 'power4.out' }, 0.05);
