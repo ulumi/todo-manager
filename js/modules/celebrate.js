@@ -544,8 +544,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   // Elastic settle
   tl.to(unicornWrap, { scale: 1.0, rotation: 0, y: 0, duration: 0.65, ease: 'elastic.out(1.3,0.45)' });
 
-  // Keep streaks visible longer, fade out near the end
-  tl.to(streaks, { opacity: 0, duration: 0.4, stagger: 0.02 }, '+=2.8');
+  // Keep streaks visible until dismiss (fade out in dismiss animation)
 
   // Shockwave
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
@@ -619,13 +618,11 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
       gsap.to(particles, { opacity: 0, duration: 0.18, ease: 'power2.in' });
       gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
     } else {
-      gsap.to(quoteEl,    { opacity: 0, scale: 1.15, duration: 0.35, ease: 'power2.in' });
-      if (statsEl) gsap.to(statsEl, { opacity: 0, duration: 0.25, ease: 'power2.in' });
-      gsap.to(unicornWrap, { opacity: 0, duration: 0.3, ease: 'power2.in' });
-      gsap.to(thumbsBtn,   { opacity: 0, duration: 0.2, ease: 'power2.in' });
-      gsap.to(particles, { opacity: 0, duration: 0.35, ease: 'power2.in' });
-      gsap.to(ov, { background: 'rgba(8,4,18,1)', duration: 0.28, ease: 'power1.in' });
-      gsap.to(ov, { opacity: 0, duration: 0.55, delay: 0.38, ease: 'power2.inOut', onComplete: () => ov.remove() });
+      // Mega zoom + fade out effect — diving into rainbow
+      const exitTl = gsap.timeline();
+      exitTl.to([quoteEl, statsEl, unicornWrap, thumbsBtn, particles, streaks],
+        { opacity: 0, scale: 4, duration: 0.6, ease: 'power2.in' }, 0);
+      exitTl.to(ov, { opacity: 0, duration: 0.6, ease: 'power2.in', onComplete: () => ov.remove() }, 0);
     }
   };
 
