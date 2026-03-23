@@ -6573,6 +6573,27 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: rgba(0, 0, 0, 0.4) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
+.glass-mode:not([data-theme=dark]) .cal-sid-day {
+  color: #334155;
+}
+.glass-mode:not([data-theme=dark]) .cal-sid-dow {
+  color: #64748b;
+}
+.glass-mode:not([data-theme=dark]) .cal-sid-day.today {
+  color: var(--primary);
+}
+.glass-mode:not([data-theme=dark]) .cal-sid-day.nav-date {
+  color: #fff;
+}
+.glass-mode:not([data-theme=dark]) .mym-day {
+  color: #334155;
+}
+.glass-mode:not([data-theme=dark]) .mym-dow {
+  color: #64748b;
+}
+.glass-mode:not([data-theme=dark]) .mym-label {
+  color: #64748b;
+}
 
 .app-toggle {
   position: relative;

@@ -6166,6 +6166,17 @@ body:has(.bottom-panel:not(.hidden))::before {
     background: rgba(0,0,0,.4) !important;
     border-color: rgba(255,255,255,.3) !important;
   }
+
+  // ── Light glass: restore dark text for minical numbers ──
+  &:not([data-theme="dark"]) {
+    .cal-sid-day { color: #334155; }
+    .cal-sid-dow { color: #64748b; }
+    .cal-sid-day.today { color: var(--primary); }
+    .cal-sid-day.nav-date { color: #fff; }
+    .mym-day { color: #334155; }
+    .mym-dow { color: #64748b; }
+    .mym-label { color: #64748b; }
+  }
 }
 
 // ─── App toggle (profil apparence) ───────────────────────────────────────
