@@ -382,6 +382,19 @@ class TodoApp {
       if (todo.completed) badges.push(`<span class="qf-badge done">✓ Fait</span>`);
     }
 
+    // Age depuis création (ID = timestamp ms)
+    const ts = parseInt(todo.id);
+    if (!isNaN(ts) && ts > 1000000000000) {
+      const days = Math.floor((Date.now() - ts) / 86400000);
+      let age;
+      if (days === 0)       age = "Aujourd'hui";
+      else if (days === 1)  age = 'Hier';
+      else if (days < 30)   age = `${days}j`;
+      else if (days < 365)  age = `${Math.floor(days / 30)} mois`;
+      else                  age = `${Math.floor(days / 365)} an${Math.floor(days / 365) > 1 ? 's' : ''}`;
+      badges.push(`<span class="qf-badge date" title="Créé il y a ${days} jours">🕐 ${age}</span>`);
+    }
+
     return badges.join('');
   }
 
