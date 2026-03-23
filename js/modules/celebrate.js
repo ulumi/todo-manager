@@ -499,7 +499,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
   // Thumbs down button — ban this quote
   const thumbsBtn = el('button', `
-    position:fixed;bottom:120px;right:36px;
+    position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
     background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
     border-radius:50%;width:52px;height:52px;
     font-size:24px;cursor:pointer;z-index:9999;opacity:0;
