@@ -4324,5 +4324,9 @@ document.addEventListener('keydown', e => {
       const next = localStorage.getItem('glassMode') !== '1';
       window.app.setGlassMode(next);
     }
+    if (e.code === 'KeyB') {
+      e.preventDefault();
+      window.app.setPalette('geo');
+    }
   }
 });
