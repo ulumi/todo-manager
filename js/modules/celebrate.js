@@ -410,10 +410,10 @@ function buildScene(quote, stats, mascot, opts = {}) {
   // Left pulse dots (from left, totally different style - white dots)
   const leftStreaks = Array.from({ length: 8 }, (_, i) => {
     const s = el('div', `
-      position:absolute;width:20px;height:20px;left:0;
-      top:calc(20% + ${i * 12}%);
-      background:rgba(255,255,255,0.3);border-radius:50%;
-      opacity:0;z-index:9990;box-shadow:0 0 15px rgba(255,255,255,0.5);
+      position:absolute;width:28px;height:28px;left:-50px;
+      top:calc(15% + ${i * 11}%);
+      background:rgba(255,255,255,0.6);border-radius:50%;
+      opacity:0;z-index:9992;box-shadow:0 0 25px rgba(255,255,255,0.8),inset 0 0 10px rgba(255,255,255,0.4);
     `);
     ov.appendChild(s);
     return s;
@@ -538,7 +538,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
 
   // Left pulse dots flash (white glowing dots from left) — appear later
-  tl.to(leftStreaks, { x: '60vw', opacity: 0.8, duration: 0.4, stagger: 0.06, ease: 'power3.out' }, 0.3);
+  tl.to(leftStreaks, { x: '70vw', opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power2.out' }, 0.25);
 
   // Unicorn shoots in from right
   tl.to(unicornWrap, { x: 0, rotation: -8, scale: 1.2, duration: 0.45, ease: 'power4.out' }, 0.05);
