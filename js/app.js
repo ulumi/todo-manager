@@ -4365,7 +4365,7 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       window.app.openEditModal(hoveredItem.id, hoveredItem.ds);
     }
-    if (e.code === 'Delete' && hoveredItem) {
+    if ((e.code === 'Delete' || e.code === 'Backspace') && hoveredItem) {
       e.preventDefault();
       window.app.deleteTodo(hoveredItem.id, hoveredItem.ds);
     }
