@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>300 Custom Vector Art — Zen Todo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 32px 24px;
+    }
+
+    .container { max-width: 1800px; margin: 0 auto; }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,.5);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+
+    .toolbar-label {
+      color: rgba(255,255,255,.4);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(167,139,250,.1);
+      color: #d8b4fe;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all .2s;
+    }
+
+    .btn:hover { background: rgba(167,139,250,.2); border-color: rgba(167,139,250,.4); }
+
+    .btn.secondary { background: rgba(255,255,255,.06); color: rgba(255,255,255,.6); border-color: rgba(255,255,255,.08); }
+    .btn.secondary:hover { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
+
+    .select-counter { margin-left: auto; color: rgba(255,255,255,.4); font-size: 12px; }
+    .select-counter strong { color: #a78bfa; }
+
+    .bg-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+
+    .bg-item {
+      position: relative;
+      cursor: pointer;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: all .3s cubic-bezier(.2,1,.3,1);
+      height: 160px;
+      background: #111;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    }
+
+    .bg-item:hover {
+      border-color: #a78bfa;
+      transform: translateY(-8px);
+      box-shadow: 0 16px 32px rgba(167,139,250,.25);
+    }
+
+    .bg-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .bg-checkbox {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #a78bfa;
+      z-index: 20;
+    }
+
+    .bg-item.selected {
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 2px rgba(167,139,250,.5), 0 16px 32px rgba(167,139,250,.25);
+    }
+
+    .bg-label {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(0,0,0,.7);
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 5;
+      backdrop-filter: blur(4px);
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.6);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      background: rgba(167,139,250,.15);
+      border-color: rgba(167,139,250,.4);
+      color: #d8b4fe;
+    }
+
+    .info-box {
+      background: rgba(59,130,246,.1);
+      border: 1px solid rgba(59,130,246,.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 40px;
+      color: rgba(255,255,255,.7);
+    }
+
+    .info-box h3 { color: #60a5fa; margin-bottom: 10px; font-size: 13px; }
+    .info-box p { font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+    .info-box code { background: rgba(0,0,0,.4); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 24px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .select-counter { margin-left: 0; }
+      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 300 Custom Vector Art</h1>
+    <p class="subtitle">Hand-crafted SVG illustrations — Beautiful colors & shapes</p>
+
+    <div class="toolbar">
+      <span class="toolbar-label">Select</span>
+      <button class="btn" id="selectAll">Select All</button>
+      <button class="btn secondary" id="deselectAll">Deselect</button>
+      <button class="btn" id="copyIds">📋 Copy IDs</button>
+      <div class="select-counter"><strong id="counter">0</strong> / 300 selected</div>
+    </div>
+
+    <div class="filters" id="filters"></div>
+
+    <div class="bg-grid" id="grid"></div>
+
+    <div class="info-box">
+      <h3>💡 How to use</h3>
+      <p><strong>1. Select variations</strong> you love</p>
+      <p><strong>2. Copy IDs</strong> → Clipboard ready</p>
+      <p><strong>3. Paste here</strong> → I'll refine your selection</p>
+      <p style="color: rgba(255,255,255,.4); margin-top: 12px;">Example: <code>abstract-001, organic-042, geometric-089</code></p>
+    </div>
+  </div>
+
+  <script>
+    const ARTISTS = {
+      abstract: { name: '🌀 Abstract', colors: ['#a78bfa', '#60a5fa', '#34d399', '#f59e0b', '#ec4899'] },
+      organic: { name: '🌿 Organic', colors: ['#34d399', '#10b981', '#059669', '#a78bfa', '#f59e0b'] },
+      geometric: { name: '🔷 Geometric', colors: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4'] },
+      minimal: { name: '◊ Minimal', colors: ['#6b7280', '#9ca3af', '#d1d5db', '#e5e7eb', '#f3f4f6'] },
+      fluid: { name: '〰️ Fluid', colors: ['#60a5fa', '#34d399', '#a78bfa', '#f59e0b', '#ec4899'] },
+      retro: { name: '✦ Retro', colors: ['#dc2626', '#ea580c', '#eab308', '#65a30d', '#0891b2'] },
+    };
+
+    const variations = [];
+    let selected = new Set();
+
+    // Generate SVG illustrations
+    function generateAbstractSVG(seed, color) {
+      const shapes = [];
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      for (let i = 0; i < 5; i++) {
+        const x = random(seed + i) * 200;
+        const y = random(seed + i + 100) * 200;
+        const size = random(seed + i + 200) * 80 + 20;
+        const opacity = random(seed + i + 300) * 0.7 + 0.3;
+        shapes.push({ x, y, size, opacity });
+      }
+
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="grad${seed}" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+              <stop offset="100%" style="stop-color:${color}33;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <rect width="200" height="200" fill="#0f172a"/>
+          ${shapes.map((s, i) => `
+            <circle cx="${s.x}" cy="${s.y}" r="${s.size}" fill="url(#grad${seed})" opacity="${s.opacity}"/>
+            <rect x="${s.x - s.size/2}" y="${s.y - s.size/2}" width="${s.size}" height="${s.size}"
+                  fill="none" stroke="${color}" stroke-width="1" opacity="${s.opacity * 0.5}"/>
+          `).join('')}
+        </svg>
+      `;
+    }
+
+    function generateOrganicSVG(seed, color) {
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="blur${seed}"><feGaussianBlur in="SourceGraphic" stdDeviation="2" /></filter>
+          </defs>
+          <rect width="200" height="200" fill="#0f2410"/>
+          <path d="M100,50 Q150,50 150,100 Q150,150 100,150 Q50,150 50,100 Q50,50 100,50"
+                fill="${color}22" stroke="${color}" stroke-width="2"/>
+          <circle cx="${80 + random(seed)*40}" cy="${80 + random(seed+1)*40}" r="15" fill="${color}44"/>
+          <circle cx="${120 + random(seed+2)*40}" cy="${120 + random(seed+3)*40}" r="20" fill="${color}33"/>
+          <path d="M60,100 Q80,80 120,90 Q140,100 130,130" fill="none" stroke="${color}" stroke-width="2" filter="url(#blur${seed})"/>
+        </svg>
+      `;
+    }
+
+    function generateGeometricSVG(seed, color) {
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      const angle = random(seed) * 360;
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#0a0e27"/>
+          <g transform="translate(100, 100) rotate(${angle})">
+            <polygon points="0,-70 70,70 -70,70" fill="${color}66" stroke="${color}" stroke-width="2"/>
+            <circle cx="0" cy="0" r="40" fill="none" stroke="${color}" stroke-width="1.5"/>
+            <rect x="-30" y="-30" width="60" height="60" fill="none" stroke="${color}88" stroke-width="1"/>
+          </g>
+          <circle cx="30" cy="30" r="3" fill="${color}"/>
+          <circle cx="170" cy="170" r="3" fill="${color}"/>
+          <circle cx="30" cy="170" r="3" fill="${color}"/>
+          <circle cx="170" cy="30" r="3" fill="${color}"/>
+        </svg>
+      `;
+    }
+
+    function generateMinimalSVG(seed, color) {
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      const x1 = random(seed) * 160 + 20;
+      const y1 = random(seed + 1) * 160 + 20;
+      const x2 = random(seed + 2) * 160 + 20;
+      const y2 = random(seed + 3) * 160 + 20;
+
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#f5f5f5"/>
+          <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="2"/>
+          <circle cx="${x1}" cy="${y1}" r="4" fill="${color}"/>
+          <circle cx="${x2}" cy="${y2}" r="3" fill="${color}99"/>
+        </svg>
+      `;
+    }
+
+    function generateFluidSVG(seed, color) {
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      const y1 = 40 + random(seed) * 60;
+      const y2 = 100 + random(seed + 1) * 60;
+
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="wave${seed}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:${color}00;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:${color};stop-opacity:0.8" />
+            </linearGradient>
+          </defs>
+          <rect width="200" height="200" fill="#0d1117"/>
+          <path d="M0,${y1} Q50,${y1-20} 100,${y1} T200,${y1}" stroke="${color}" stroke-width="2" fill="none"/>
+          <path d="M0,${y2} Q50,${y2+20} 100,${y2} T200,${y2}" stroke="${color}99" stroke-width="1.5" fill="none"/>
+          <path d="M0,${y1} Q50,${y1-20} 100,${y1} T200,${y1} L200,200 L0,200 Z" fill="url(#wave${seed})"/>
+        </svg>
+      `;
+    }
+
+    function generateRetroSVG(seed, color) {
+      const random = (s) => {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
+      };
+
+      return `
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="200" height="200" fill="#fffbf0"/>
+          <rect x="20" y="20" width="160" height="160" fill="none" stroke="${color}" stroke-width="2"/>
+          <circle cx="100" cy="100" r="50" fill="${color}22" stroke="${color}" stroke-width="2"/>
+          <line x1="100" y1="50" x2="100" y2="150" stroke="${color}" stroke-width="1" opacity="0.5"/>
+          <line x1="50" y1="100" x2="150" y2="100" stroke="${color}" stroke-width="1" opacity="0.5"/>
+          <rect x="140" y="20" width="30" height="30" fill="${color}44" stroke="${color}" stroke-width="1"/>
+          <rect x="40" y="140" width="30" height="30" fill="${color}22" stroke="${color}" stroke-width="1"/>
+        </svg>
+      `;
+    }
+
+    const generators = {
+      abstract: generateAbstractSVG,
+      organic: generateOrganicSVG,
+      geometric: generateGeometricSVG,
+      minimal: generateMinimalSVG,
+      fluid: generateFluidSVG,
+      retro: generateRetroSVG,
+    };
+
+    // Generate 300 variations (50 per category)
+    let id = 0;
+    Object.entries(ARTISTS).forEach(([category, meta]) => {
+      for (let i = 0; i < 50; i++) {
+        const colorIdx = i % meta.colors.length;
+        const color = meta.colors[colorIdx];
+        const svg = generators[category](id, color);
+
+        variations.push({
+          id: `${category}-${String(i + 1).padStart(3, '0')}`,
+          category,
+          label: `${meta.name.split(' ')[0]}${i + 1}`,
+          svg,
+        });
+        id++;
+      }
+    });
+
+    // Render grid
+    const gridEl = document.getElementById('grid');
+    variations.forEach(v => {
+      const item = document.createElement('div');
+      item.className = 'bg-item';
+      item.dataset.id = v.id;
+      item.dataset.category = v.category;
+      item.innerHTML = `
+        ${v.svg}
+        <input type="checkbox" class="bg-checkbox" data-id="${v.id}">
+        <div class="bg-label">${v.label}</div>
+      `;
+
+      gridEl.appendChild(item);
+
+      const checkbox = item.querySelector('input');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          selected.add(v.id);
+          item.classList.add('selected');
+        } else {
+          selected.delete(v.id);
+          item.classList.remove('selected');
+        }
+        updateCounter();
+      });
+
+      item.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    // Filters
+    const filtersEl = document.getElementById('filters');
+    ['All', ...Object.keys(ARTISTS)].forEach(cat => {
+      const chip = document.createElement('div');
+      chip.className = 'filter-chip';
+      if (cat === 'All') chip.classList.add('active');
+      const label = cat === 'All' ? 'All' : ARTISTS[cat].name;
+      chip.textContent = label;
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        document.querySelectorAll('.bg-item').forEach(item => {
+          item.style.display = (cat === 'All' || item.dataset.category === cat) ? '' : 'none';
+        });
+      });
+      filtersEl.appendChild(chip);
+    });
+
+    // Buttons
+    document.getElementById('selectAll').addEventListener('click', () => {
+      document.querySelectorAll('.bg-checkbox').forEach(cb => {
+        if (cb.offsetParent) {
+          cb.checked = true;
+          selected.add(cb.dataset.id);
+          cb.closest('.bg-item').classList.add('selected');
+        }
+      });
+      updateCounter();
+    });
+
+    document.getElementById('deselectAll').addEventListener('click', () => {
+      document.querySelectorAll('.bg-checkbox').forEach(cb => {
+        cb.checked = false;
+        selected.delete(cb.dataset.id);
+        cb.closest('.bg-item').classList.remove('selected');
+      });
+      updateCounter();
+    });
+
+    document.getElementById('copyIds').addEventListener('click', () => {
+      const ids = Array.from(selected).sort().join(', ');
+      navigator.clipboard.writeText(ids).then(() => {
+        const btn = document.getElementById('copyIds');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      });
+    });
+
+    function updateCounter() {
+      document.getElementById('counter').textContent = selected.size;
+    }
+  </script>
+</body>
+</html>

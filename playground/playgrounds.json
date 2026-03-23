@@ -1,6 +1,15 @@
 {
   "playgrounds": [
     {
+      "id": "background-images-300",
+      "title": "Vector Art — 300 Custom Illustrations",
+      "description": "Hand-crafted SVG art. 6 styles (Abstract, Organic, Geometric, Minimal, Fluid, Retro) × 50 variations each.",
+      "file": "background-images-300.html",
+      "prompt": "Create 300 beautiful custom SVG vector art illustrations across 6 categories (Abstract, Organic, Geometric, Minimal, Fluid, Retro). Each category has 50 variations with different color palettes. Use gradients, curves, and thoughtful design. All SVG-based, selectable, copyable IDs.",
+      "createdAt": "2026-03-22",
+      "tags": ["vector-art", "svg", "illustration", "300-variations"]
+    },
+    {
       "id": "background-images-200",
       "title": "Background Images — 200 Variations",
       "description": "200 selectable vector backgrounds (8 themes × 25 variations). Select, copy IDs, paste here.",
