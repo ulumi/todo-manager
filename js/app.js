@@ -484,6 +484,23 @@ class TodoApp {
     if (state.view === 'profile') this.render();
   }
 
+  toggleBgMode() {
+    const bgPalette = localStorage.getItem('bgPalette') || 'geo';
+    if (bgPalette === 'none') {
+      // Currently in uni mode — switch to poly (geo palette)
+      this.setPalette('geo');
+    } else {
+      // Currently in poly mode — switch to uni (solid color)
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const defaultColor = isDark ? '#0f1117' : '#f8f9fc';
+      _setBgColor(defaultColor);
+      localStorage.setItem('bgColor', defaultColor);
+      localStorage.setItem('bgPalette', 'none');
+      this._saveConfigChange();
+      if (state.view === 'profile') this.render();
+    }
+  }
+
   selectBgColor(e) {
     // Don't trigger if clicking the color input itself (let native behavior handle it)
     if (e?.target?.type === 'color') return;
@@ -4639,7 +4656,7 @@ document.addEventListener('keydown', e => {
     }
     if (e.code === 'KeyB') {
       e.preventDefault();
-      window.app.setPalette('geo');
+      window.app.toggleBgMode();
     }
   }
 
