@@ -44,7 +44,7 @@
   --bg-clear:      rgba(248, 249, 252, 0);
   --surface:       #ffffff;
   --surface2:      #f3f4f9;
-  --primary:       var(--primary);
+  --primary:       #f59e0b;
   --primary-dark:  #d97706;
   --primary-light: #fef3c7;
   --success:       #10b981;
@@ -53,7 +53,7 @@
   --text-muted:    #64748b;
   --border:        #e2e8f0;
   --today:         #fef3c7;
-  --today-border:  var(--primary);
+  --today-border:  #f59e0b;
   --radius:        12px;
   --shadow:        0 2px 4px rgba(0,0,0,.05);
   --shadow-md:     0 4px 12px rgba(0,0,0,.08);
@@ -65,7 +65,7 @@
   --bg-clear:      rgba(15, 17, 23, 0);
   --surface:       #1a1d27;
   --surface2:      #222636;
-  --primary:       var(--primary);
+  --primary:       #f59e0b;
   --primary-dark:  #d97706;
   --primary-light: #7c2d12;
   --success:       #4ade80;
@@ -74,7 +74,7 @@
   --text-muted:    #8b96a8;
   --border:        #2d3147;
   --today:         #2a2000;
-  --today-border:  var(--primary);
+  --today-border:  #f59e0b;
   --shadow:        0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
   --shadow-md:     0 4px 6px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.2);
   --shadow-lg:     0 10px 15px rgba(0,0,0,.35), 0 4px 6px rgba(0,0,0,.2);
@@ -182,7 +182,7 @@ header {
 
   .app-title:hover & {
     animation:  logo-warp .52s cubic-bezier(.2, 1, .25, 1) forwards;
-    box-shadow: 0 0 0 3px var(--primary), 0 0 22px color-mix(in srgb, var(--primary) 45%, transparent);
+    box-shadow: 0 0 0 3px #f59e0b, 0 0 22px color-mix(in srgb, #f59e0b 45%, transparent);
   }
 }
 
@@ -217,18 +217,18 @@ header {
     opacity:    0;
     transform:  scale(3);
     filter:     blur(8px);
-    box-shadow: 0 0 0 5px var(--primary), 0 0 30px var(--primary);
+    box-shadow: 0 0 0 5px #f59e0b, 0 0 30px #f59e0b;
   }
   28%  {
     opacity:    1;
     filter:     blur(0);
-    box-shadow: 0 0 0 3px var(--primary), 0 0 14px color-mix(in srgb, var(--primary) 60%, transparent);
+    box-shadow: 0 0 0 3px #f59e0b, 0 0 14px color-mix(in srgb, #f59e0b 60%, transparent);
   }
   75%  { transform: scale(.97); }
   100% {
     opacity:    1;
     transform:  none;
-    box-shadow: 0 0 0 3px var(--primary);
+    box-shadow: 0 0 0 3px #f59e0b;
   }
 }
 
@@ -438,7 +438,7 @@ header {
   box-shadow: 0 2px 8px rgba(245, 158, 11, .2);
 
   &:hover {
-    background: var(--primary);
+    background: #f59e0b;
     box-shadow: 0 8px 20px rgba(245, 158, 11, .3);
     transform: translateY(-2px);
   }
@@ -1153,7 +1153,7 @@ main {
   color: #000;
   text-transform: uppercase;
   letter-spacing: .1em;
-  background: var(--primary);
+  background: #f59e0b;
   padding: 5px 12px;
   border-radius: 6px;
   margin-bottom: 6px;
@@ -5703,7 +5703,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     color: rgba(255,255,255,.6);
   }
 
-  .fl-input:focus ~ .fl-label { color: var(--primary); }
+  .fl-input:focus ~ .fl-label { color: #f59e0b; }
 
   .guided-container {
     background: rgba(20, 22, 35, .85);
@@ -5719,21 +5719,21 @@ body:has(.bottom-panel:not(.hidden))::before {
   .guided-dest-btn {
     border-color: rgba(255,255,255,.1);
     color: #f1f5f9;
-    &:hover { border-color: var(--primary); background: rgba(245,158,11,.05); }
-    &.active { border-color: var(--primary); background: rgba(245,158,11,.1); box-shadow: 0 0 0 1px var(--primary); }
+    &:hover { border-color: #f59e0b; background: rgba(245,158,11,.05); }
+    &.active { border-color: #f59e0b; background: rgba(245,158,11,.1); box-shadow: 0 0 0 1px #f59e0b; }
   }
   .guided-dest-icon {
     background: rgba(255,255,255,.06);
     color: rgba(255,255,255,.4);
-    .guided-dest-btn.active & { color: var(--primary); background: rgba(245,158,11,.12); }
+    .guided-dest-btn.active & { color: #f59e0b; background: rgba(245,158,11,.12); }
   }
   .guided-dest-text span { color: rgba(255,255,255,.35); }
 
   .guided-when-btn {
     border-color: rgba(255,255,255,.12);
     color: rgba(255,255,255,.5);
-    &:hover { border-color: var(--primary); color: var(--primary); }
-    &.active { background: rgba(245,158,11,.15); border-color: var(--primary); color: var(--primary); }
+    &:hover { border-color: #f59e0b; color: #f59e0b; }
+    &.active { background: rgba(245,158,11,.15); border-color: #f59e0b; color: #f59e0b; }
   }
 
   .guided-nav { border-top-color: rgba(255,255,255,.06); }
@@ -5741,7 +5741,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .guided-detail-item label { color: rgba(255,255,255,.4); }
   .guided-section-label { color: rgba(255,255,255,.4); }
   .guided-separator { background: rgba(255,255,255,.08); }
-  .guided-switch-link, .guided-link { color: rgba(255,255,255,.35); &:hover { color: var(--primary); } }
+  .guided-switch-link, .guided-link { color: rgba(255,255,255,.35); &:hover { color: #f59e0b; } }
   .guided-tip {
     background: rgba(255,255,255,.1);
     color: rgba(255,255,255,.4);
@@ -5973,9 +5973,9 @@ body:has(.bottom-panel:not(.hidden))::before {
     }
 
     &.active {
-      background: color-mix(in srgb, var(--primary) 20%, transparent);
-      border-color: var(--primary);
-      color: var(--primary);
+      background: color-mix(in srgb, #f59e0b 20%, transparent);
+      border-color: #f59e0b;
+      color: #f59e0b;
     }
   }
 
@@ -6326,7 +6326,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .todo-item.prio-high   .todo-check,
 .inbox-item.prio-high   .todo-check { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, .15); }
 .todo-item.prio-medium .todo-check,
-.inbox-item.prio-medium .todo-check { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(245, 158, 11, .15); }
+.inbox-item.prio-medium .todo-check { border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, .15); }
 
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -8213,7 +8213,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .sa-quote-del:hover     { color: var(--danger) !important; }
 .sa-quote-ban:hover     { opacity: .7; }
 .sa-quote-edit:hover    { color: var(--primary) !important; }
-.sa-quote-play:hover    { color: var(--primary) !important; }
+.sa-quote-play:hover    { color: #f59e0b !important; }
 .sa-quote-promote:hover { color: #10b981 !important; }
 .sa-quote-demote:hover  { color: var(--primary) !important; }
 .sa-quote-restore       { font-weight: 600; }
