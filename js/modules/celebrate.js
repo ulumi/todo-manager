@@ -435,10 +435,31 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
   // Convert periods to line breaks, then handle both <br> and period-based breaks
   const processedQuote = quote.replace(/\. /g, '<br>');
-  const lines = processedQuote.split('<br>').map(s => s.trim());
+  let lines = processedQuote.split('<br>').map(s => s.trim());
+
+  // Enforce max 5 words per line for first line
+  lines = lines.map((line, idx) => {
+    if (idx !== 0) return line; // only process first line
+    const words = line.split(/\s+/);
+    if (words.length <= 5) return line;
+
+    // Split long first line into chunks of max 5 words
+    const chunks = [];
+    for (let i = 0; i < words.length; i += 5) {
+      chunks.push(words.slice(i, i + 5).join(' '));
+    }
+    return chunks.join('<br>');
+  });
+
+  // Flatten after splitting first line
+  const allLines = [];
+  lines.forEach(line => {
+    line.split('<br>').forEach(l => allLines.push(l.trim()));
+  });
+  const finalLines = allLines;
   let wordSpans = [];
 
-  lines.forEach((line, lineIdx) => {
+  finalLines.forEach((line, lineIdx) => {
     const lineSpans = line.split(' ').map((word, i, arr) => {
       const s = document.createElement('span');
       s.textContent = i < arr.length - 1 ? word + '\u00a0' : word;
@@ -448,7 +469,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
     });
     wordSpans.push(...lineSpans);
 
-    if (lineIdx < lines.length - 1) {
+    if (lineIdx < finalLines.length - 1) {
       // Add line break element
       const br = document.createElement('div');
       br.style.cssText = 'width:100%;height:0;line-height:0.6;';
