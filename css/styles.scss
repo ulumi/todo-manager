@@ -1138,14 +1138,12 @@ main {
   border-radius: 5px;
   transition: all .2s;
   white-space: nowrap;
-  text-decoration: line-through;
-  opacity: .5;
+  opacity: .4;
 
   &.selected {
     background: var(--tag-color);
     border-color: var(--tag-color);
     color: #fff;
-    text-decoration: none;
     opacity: 1;
   }
 }

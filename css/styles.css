@@ -1168,14 +1168,12 @@ input:checked + .cal-sid-toggle-track::after {
   border-radius: 5px;
   transition: all 0.2s;
   white-space: nowrap;
-  text-decoration: line-through;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 .day-tag-cloud-item.selected {
   background: var(--tag-color);
   border-color: var(--tag-color);
   color: #fff;
-  text-decoration: none;
   opacity: 1;
 }
 
