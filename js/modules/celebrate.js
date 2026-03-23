@@ -444,13 +444,12 @@ function buildScene(quote, stats, mascot, opts = {}) {
   const processedQuote = quote.replace(/\. /g, '<br>').replace(/, /g, '<br>');
   let lines = processedQuote.split('<br>').map(s => s.trim());
 
-  // Enforce max 5 words per line for first line
-  lines = lines.map((line, idx) => {
-    if (idx !== 0) return line; // only process first line
+  // Enforce max 5 words per line for all lines
+  lines = lines.map((line) => {
     const words = line.split(/\s+/);
     if (words.length <= 5) return line;
 
-    // Split long first line into chunks of max 5 words
+    // Split long line into chunks of max 5 words
     const chunks = [];
     for (let i = 0; i < words.length; i += 5) {
       chunks.push(words.slice(i, i + 5).join(' '));
@@ -489,11 +488,11 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
   // Stats (below quote, in same flex container)
   const statsEl = stats ? el('div', `
-    font-size:clamp(14px,2.2vw,24px);font-weight:700;
+    font-size:clamp(18px,3.0vw,32px);font-weight:700;
     color:rgba(255,220,100,0.92);text-align:center;
     letter-spacing:0.03em;opacity:0;
     text-shadow:0 2px 16px rgba(0,0,0,0.8);
-    font-family:system-ui,sans-serif;
+    font-family:${randomFont};
   `) : null;
   if (statsEl) { statsEl.textContent = stats; textBlock.appendChild(statsEl); }
 
@@ -546,12 +545,12 @@ function buildScene(quote, stats, mascot, opts = {}) {
     '-=0.2'
   );
 
-  // Stats fade up after quote settles
+  // Stats fade up after quote settles — appears later
   if (statsEl) {
     tl.fromTo(statsEl,
       { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' },
-      '-=0.15'
+      { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
+      '+=0.6'
     );
   }
 
@@ -589,7 +588,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
   if (counterEl) tl.to(counterEl, { opacity: 1, duration: 0.3 }, '<');
 
   // Auto-dismiss only in non-slideshow mode
-  if (!isSlideshow) tl.call(() => dismiss(), [], '+=3.0');
+  if (!isSlideshow) tl.call(() => dismiss(), [], '+=4.5');
 
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;
