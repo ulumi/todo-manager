@@ -42,6 +42,7 @@ export const DEFAULT_QUOTES_EN = [
   // classics
   "LET'S GOOO! 🔥", "ABSOLUTELY CRUSHING IT!", "UNSTOPPABLE! ⚡",
   "BOOM. DONE. 💥", "YOU'RE ON FIRE! 🔥", "TASK DESTROYED! 💀",
+  "ELITE ENERGY<br>ELITE RESULTS",
   "LEGENDARY! 🏆", "TOO EASY! 😎", "THAT'S THE WAY! ✨",
   "CHAMPION BEHAVIOUR! 👑", "ONE STEP CLOSER! 🚀", "GOAT STATUS! 🐐",
   "ANOTHER ONE BITES THE DUST!", "EFFICIENCY UNLOCKED! 🔓",
@@ -111,6 +112,7 @@ export const DEFAULT_QUOTES_FR = [
   // classics
   "TROP FORT(E)! 🔥", "C'EST DANS LA BOÎTE! 💥", "INARRÊTABLE! ⚡",
   "BOOM. FAIT. 💀", "TU DÉCHIRES! 🔥", "TÂCHE ATOMISÉE! 💥",
+  "ÉNERGIE D'ÉLITE<br>RÉSULTATS D'ÉLITE",
   "LÉGENDAIRE! 🏆", "TROP FACILE! 😎", "C'EST TOI LE BOSS! 👑",
   "EN PLEINE FORME! 🚀", "CHAMPION(NE)! 🐐", "RIEN NE T'ARRÊTE! ✨",
   "LA TÂCHE N'A RIEN VU VENIR!", "MODE BÊTE DE TRAVAIL ACTIVÉ! 🦁",
@@ -407,19 +409,35 @@ function buildScene(quote, stats, mascot, opts = {}) {
 
   // Quote (words stagger in from small scale)
   const quoteEl = el('div', `
-    font-size:clamp(28px,5.5vw,62px);font-weight:900;
+    font-size:clamp(32px,5.8vw,72px);font-weight:900;
     color:#fff;text-align:center;
-    line-height:1.15;letter-spacing:0.04em;
-    text-shadow:0 0 80px rgba(255,180,255,0.95),0 3px 28px rgba(0,0,0,0.9);
-    font-family:system-ui,sans-serif;
+    line-height:1.25;letter-spacing:-0.01em;
+    text-shadow:0 0 100px rgba(255,180,255,0.98),0 4px 40px rgba(0,0,0,0.95);
+    font-family:'Playfair Display','Space Grotesk','Poppins',sans-serif;
   `);
-  const wordSpans = quote.split(' ').map((word, i, arr) => {
-    const s = document.createElement('span');
-    s.textContent = i < arr.length - 1 ? word + '\u00a0' : word;
-    s.style.cssText = 'display:inline-block;white-space:nowrap;';
-    quoteEl.appendChild(s);
-    return s;
+
+  // Handle <br> for two-line quotes
+  const lines = quote.split('<br>').map(s => s.trim());
+  let wordSpans = [];
+
+  lines.forEach((line, lineIdx) => {
+    const lineSpans = line.split(' ').map((word, i, arr) => {
+      const s = document.createElement('span');
+      s.textContent = i < arr.length - 1 ? word + '\u00a0' : word;
+      s.style.cssText = 'display:inline-block;white-space:nowrap;';
+      quoteEl.appendChild(s);
+      return s;
+    });
+    wordSpans.push(...lineSpans);
+
+    if (lineIdx < lines.length - 1) {
+      // Add line break element
+      const br = document.createElement('div');
+      br.style.cssText = 'width:100%;height:0;line-height:0.6;';
+      quoteEl.appendChild(br);
+    }
   });
+
   textBlock.appendChild(quoteEl);
   gsap.set(wordSpans, { opacity: 0, scale: 0.55, y: 10 });
 
