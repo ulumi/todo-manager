@@ -1346,7 +1346,7 @@ main {
 
 // Auto-group label (priority / tag modes) — amber pill #47
 .day-auto-group-label {
-  display: block;
+  display: inline-block;
   font-size: 10px;
   font-weight: 800;
   color: #000;
@@ -1356,6 +1356,7 @@ main {
   padding: 5px 12px;
   border-radius: 5px;
   margin-bottom: 6px;
+  margin-top: 6px;
 }
 
 // Draggable tag sections
