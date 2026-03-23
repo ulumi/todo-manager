@@ -319,17 +319,21 @@ export function renderDayView(todos) {
   const punctualHeader = `<div class="day-col-title-row">
     <div class="day-col-title">${state.T.groupOnce}</div>
     <div class="day-col-controls${ctrlsCollapsed ? ' collapsed' : ''}">
-      <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">
-        <span class="day-ctrl-label">Tri</span>
-        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div class="day-ctrl-group day-sort-group${sortCollapsed ? ' hidden' : ''}">${sortBtns}</div>
+      <div class="day-ctrl-expandable${!sortCollapsed ? ' expanded' : ''}">
+        <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">
+          <span class="day-ctrl-label">Tri</span>
+          <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="day-ctrl-group day-sort-group">${sortBtns}</div>
+      </div>
 
-      <button class="day-ctrl-toggle" onclick="window.app.toggleDayCol()" title="Colonnes">
-        <span class="day-ctrl-label">Colonnes</span>
-        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <div class="day-ctrl-group day-col-group${colCollapsed ? ' hidden' : ''}">${colBtns}</div>
+      <div class="day-ctrl-expandable${!colCollapsed ? ' expanded' : ''}">
+        <button class="day-ctrl-toggle" onclick="window.app.toggleDayCol()" title="Colonnes">
+          <span class="day-ctrl-label">Colonnes</span>
+          <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="day-ctrl-group day-col-group">${colBtns}</div>
+      </div>
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
