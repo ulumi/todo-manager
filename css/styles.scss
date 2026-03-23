@@ -1110,27 +1110,26 @@ main {
 
 .day-tag-controls {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255,255,255,.1);
 }
 
-.day-tag-cloud {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
 .day-tag-cloud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 10px;
-  border: 1px solid rgba(255,255,255,.2);
+  border: 1px solid var(--tag-color, rgba(255,255,255,.2));
   background: transparent;
   color: rgba(255,255,255,.5);
   font-size: 11px;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .05em;
   cursor: pointer;
   border-radius: 12px;
   transition: all .2s;
@@ -1139,17 +1138,26 @@ main {
   &:hover {
     background: rgba(255,255,255,.08);
     color: rgba(255,255,255,.8);
-    border-color: rgba(255,255,255,.4);
   }
 
   &.selected {
-    background: rgba(255,255,255,.15);
-    color: rgba(255,255,255,1);
-    border-color: currentColor;
+    background: var(--tag-color);
+    color: #fff;
+    border-color: var(--tag-color);
   }
 }
 
+.day-tag-x {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: .7;
+}
+
 .day-tag-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 4px 10px;
   border: 1px solid rgba(255,255,255,.2);
   background: transparent;
@@ -1161,6 +1169,9 @@ main {
   transition: all .2s;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: auto;
+
+  svg { opacity: .6; }
 
   &:hover {
     background: rgba(255,255,255,.08);
@@ -1172,14 +1183,18 @@ main {
     background: rgba(255,255,255,.15);
     color: rgba(255,255,255,1);
     border-color: rgba(255,255,255,.5);
+    svg { opacity: 1; }
   }
 }
 
 .day-tag-badge {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 600;
   margin-left: 6px;
-  opacity: .7;
+  padding: 1px 6px;
+  border-radius: 8px;
+  color: #fff;
+  vertical-align: middle;
 }
 
 .day-tag-section.hidden {
@@ -6167,15 +6182,35 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-color: rgba(255,255,255,.3) !important;
   }
 
-  // ── Light glass: restore dark text for minical numbers ──
+  // ── Day header (dates bar) ──
+  .day-header-wrapper {
+    @include glass-surface(35%, 12px);
+    background: color-mix(in srgb, var(--surface) 35%, transparent);
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  }
+
+  .day-nav-btn {
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.6);
+    &:hover {
+      background: rgba(255,255,255,.15);
+      color: #f1f5f9;
+    }
+  }
+
+  .day-header {
+    border-color: rgba(255,255,255,.12);
+  }
+
+  // ── Light glass: keep white text for minical numbers ──
   &:not([data-theme="dark"]) {
-    .cal-sid-day { color: #334155; }
-    .cal-sid-dow { color: #64748b; }
-    .cal-sid-day.today { color: var(--primary); }
+    .cal-sid-day { color: #fff; }
+    .cal-sid-dow { color: #f1f5f9; }
+    .cal-sid-day.today { color: #fff; }
     .cal-sid-day.nav-date { color: #fff; }
-    .mym-day { color: #334155; }
-    .mym-dow { color: #64748b; }
-    .mym-label { color: #64748b; }
+    .mym-day { color: #fff; }
+    .mym-dow { color: #f1f5f9; }
+    .mym-label { color: #f1f5f9; }
   }
 }
 

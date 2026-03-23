@@ -250,23 +250,29 @@ export function renderDayView(todos) {
     // Group by category/tag — sections draggable to reorder
     const categories = getCategories();
     const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
-    const catGroups = categories; // Show all categories in tag cloud
+    const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
     const untagged = itemsForRender.filter(t => !t.projectId);
 
-    // Tag cloud filter — show ALL categories even if empty
+    // Tag cloud filter — only tags with items
     const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
     const allTags = [
-      ...catGroups.map(c => ({ id: c.id, name: c.name, color: c.color })),
-      ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999' }] : [])
+      ...catGroups.map(c => {
+        const count = itemsForRender.filter(t => t.projectId === c.id).length;
+        return { id: c.id, name: c.name, color: c.color, count };
+      }),
+      ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999', count: untagged.length }] : [])
     ];
     const tagCloud = allTags.map(tag => {
       const isSelected = selectedTags.length === 0 || selectedTags.includes(tag.id);
-      return `<button class="day-tag-cloud-item${isSelected ? ' selected' : ''}" style="border-color:${tag.color};" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}</button>`;
+      const countLabel = tag.count > 1 ? ` (${tag.count})` : '';
+      const xMark = isSelected && selectedTags.length > 0 ? '<span class="day-tag-x">\u00d7</span>' : '';
+      return `<button class="day-tag-cloud-item${isSelected ? ' selected' : ''}" style="--tag-color:${tag.color}" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}${countLabel}${xMark}</button>`;
     }).join('');
 
     // Grouping toggle
     const tagGrouped = localStorage.getItem('dayTagGrouped') !== 'false';
-    const groupToggle = `<button class="day-tag-group-toggle${tagGrouped ? ' active' : ''}" onclick="window.app.toggleDayTagGrouping()" title="Grouper par tag">Groupes</button>`;
+    const groupIconSvg = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="1" width="14" height="4" rx="1"/><rect x="1" y="7" width="14" height="4" rx="1"/><rect x="1" y="13" width="14" height="2" rx="1"/></svg>`;
+    const groupToggle = `<button class="day-tag-group-toggle${tagGrouped ? ' active' : ''}" onclick="window.app.toggleDayTagGrouping()" title="Grouper par tag">${groupIconSvg}</button>`;
 
     // Sort catGroups by stored order
     catGroups.sort((a, b) => {
@@ -276,14 +282,13 @@ export function renderDayView(todos) {
       return ia - ib;
     });
 
-    let rightColItems;
     if (tagGrouped) {
       // Grouped view
       let grouped = catGroups.map(c => {
         const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
         const items = itemsForRender.filter(t => t.projectId === c.id);
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-        return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
+        return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
       if (untagged.length) {
         const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
@@ -297,7 +302,7 @@ export function renderDayView(todos) {
       const flat = filteredItems.map(t => {
         const catName = t.projectId ? categories.find(c => c.id === t.projectId)?.name || '' : '';
         const catColor = t.projectId ? categories.find(c => c.id === t.projectId)?.color || '#999' : '#999';
-        const tagBadge = catName ? `<span class="day-tag-badge" style="color:${catColor}">[${catName}]</span>` : '';
+        const tagBadge = catName ? `<span class="day-tag-badge" style="background:${catColor}">${catName}</span>` : '';
         const html = todoItemHTML(t, navDate, 'punctual');
         // Insert badge before closing tag of todo-content
         return html.replace('</span>', `</span>${tagBadge}`);

@@ -1141,27 +1141,26 @@ input:checked + .cal-sid-toggle-track::after {
 
 .day-tag-controls {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.day-tag-cloud {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
 .day-tag-cloud-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--tag-color, rgba(255, 255, 255, 0.2));
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
   border-radius: 12px;
   transition: all 0.2s;
@@ -1170,15 +1169,24 @@ input:checked + .cal-sid-toggle-track::after {
 .day-tag-cloud-item:hover {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.8);
-  border-color: rgba(255, 255, 255, 0.4);
 }
 .day-tag-cloud-item.selected {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgb(255, 255, 255);
-  border-color: currentColor;
+  background: var(--tag-color);
+  color: #fff;
+  border-color: var(--tag-color);
+}
+
+.day-tag-x {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.7;
 }
 
 .day-tag-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 4px 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: transparent;
@@ -1190,6 +1198,10 @@ input:checked + .cal-sid-toggle-track::after {
   transition: all 0.2s;
   white-space: nowrap;
   flex-shrink: 0;
+  margin-left: auto;
+}
+.day-tag-group-toggle svg {
+  opacity: 0.6;
 }
 .day-tag-group-toggle:hover {
   background: rgba(255, 255, 255, 0.08);
@@ -1201,12 +1213,18 @@ input:checked + .cal-sid-toggle-track::after {
   color: rgb(255, 255, 255);
   border-color: rgba(255, 255, 255, 0.5);
 }
+.day-tag-group-toggle.active svg {
+  opacity: 1;
+}
 
 .day-tag-badge {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 9px;
+  font-weight: 600;
   margin-left: 6px;
-  opacity: 0.7;
+  padding: 1px 6px;
+  border-radius: 8px;
+  color: #fff;
+  vertical-align: middle;
 }
 
 .day-tag-section.hidden {
@@ -6573,26 +6591,45 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: rgba(0, 0, 0, 0.4) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
+.glass-mode .day-header-wrapper {
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--surface) 35%, transparent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.glass-mode .day-nav-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+.glass-mode .day-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+.glass-mode .day-header {
+  border-color: rgba(255, 255, 255, 0.12);
+}
 .glass-mode:not([data-theme=dark]) .cal-sid-day {
-  color: #334155;
+  color: #fff;
 }
 .glass-mode:not([data-theme=dark]) .cal-sid-dow {
-  color: #64748b;
+  color: #f1f5f9;
 }
 .glass-mode:not([data-theme=dark]) .cal-sid-day.today {
-  color: var(--primary);
+  color: #fff;
 }
 .glass-mode:not([data-theme=dark]) .cal-sid-day.nav-date {
   color: #fff;
 }
 .glass-mode:not([data-theme=dark]) .mym-day {
-  color: #334155;
+  color: #fff;
 }
 .glass-mode:not([data-theme=dark]) .mym-dow {
-  color: #64748b;
+  color: #f1f5f9;
 }
 .glass-mode:not([data-theme=dark]) .mym-label {
-  color: #64748b;
+  color: #f1f5f9;
 }
 
 .app-toggle {
