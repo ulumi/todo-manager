@@ -315,6 +315,7 @@ export function renderDayView(todos) {
   const punctualHeader = `<div class="day-col-title-row">
     <div class="day-col-title">${state.T.groupOnce}</div>
     <div class="day-col-controls">
+      <div class="day-ctrl-label">Tri</div>
       <div class="day-ctrl-group">${sortBtns}</div>
       <div class="day-ctrl-sep"></div>
       <div class="day-ctrl-group">${colBtns}</div>

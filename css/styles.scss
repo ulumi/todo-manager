@@ -988,6 +988,15 @@ main {
   align-items: center;
 }
 
+.day-ctrl-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-right: 6px;
+}
+
 .day-ctrl-sep {
   width: 1px;
   height: 14px;

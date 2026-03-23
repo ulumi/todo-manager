@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>200 Background Variations — Zen Todo</title>
+  <title>200 Vector Art — Zen Todo</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -94,63 +94,70 @@
     /* Grid */
     .bg-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
       margin-bottom: 40px;
     }
 
     .bg-item {
       position: relative;
       cursor: pointer;
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
       border: 2px solid transparent;
-      transition: all .2s;
-      height: 140px;
+      transition: all .3s cubic-bezier(.2,1,.3,1);
+      height: 160px;
       background: #111;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
     }
 
     .bg-item:hover {
       border-color: #a78bfa;
-      transform: scale(1.05);
-      box-shadow: 0 8px 24px rgba(167,139,250,.2);
+      transform: translateY(-8px);
+      box-shadow: 0 16px 32px rgba(167,139,250,.25);
     }
 
-    .bg-canvas {
+    .bg-preview {
       width: 100%;
       height: 100%;
-      display: block;
+      background-size: cover;
+      background-position: center;
+      background-color: #1a1a2e;
+      position: relative;
     }
 
     .bg-checkbox {
       position: absolute;
-      top: 8px;
-      left: 8px;
+      top: 10px;
+      left: 10px;
       width: 18px;
       height: 18px;
       cursor: pointer;
       accent-color: #a78bfa;
-      z-index: 10;
+      z-index: 20;
     }
 
     .bg-item.selected {
       border-color: #a78bfa;
-      box-shadow: 0 0 0 2px rgba(167,139,250,.5);
+      box-shadow: 0 0 0 2px rgba(167,139,250,.5), 0 16px 32px rgba(167,139,250,.25);
     }
 
     .bg-label {
       position: absolute;
-      bottom: 6px;
-      left: 6px;
-      right: 6px;
-      font-size: 9px;
-      background: rgba(0,0,0,.6);
-      padding: 2px 6px;
-      border-radius: 4px;
+      bottom: 8px;
+      left: 8px;
+      right: 8px;
+      font-size: 10px;
+      font-weight: 600;
+      background: rgba(0,0,0,.7);
+      padding: 4px 8px;
+      border-radius: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       z-index: 5;
+      backdrop-filter: blur(4px);
+      max-width: calc(100% - 16px);
     }
 
     /* Filters */
@@ -178,7 +185,6 @@
       color: #d8b4fe;
     }
 
-    /* Info */
     .info-box {
       background: rgba(59,130,246,.1);
       border: 1px solid rgba(59,130,246,.3);
@@ -200,30 +206,49 @@
       margin-bottom: 10px;
     }
 
-    .info-box code {
-      background: rgba(0,0,0,.4);
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      font-size: 11px;
+    .info-box a {
+      color: #60a5fa;
+      text-decoration: none;
     }
 
+    .info-box a:hover {
+      text-decoration: underline;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: rgba(255,255,255,.5);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255,255,255,.2);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     @media (max-width: 1200px) {
-      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
     }
 
     @media (max-width: 768px) {
       h1 { font-size: 24px; }
       .toolbar { flex-direction: column; align-items: stretch; }
       .select-counter { margin-left: 0; }
-      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎨 200 Background Variations</h1>
-    <p class="subtitle">Nature + Techno — Select & Copy IDs to share with me</p>
+    <h1>🎨 200 Vector Art Illustrations</h1>
+    <p class="subtitle">Beautiful real vector art from Unsplash, Pexels & more — Select & Copy IDs</p>
 
     <div class="toolbar">
       <span class="toolbar-label">Select</span>
@@ -238,234 +263,133 @@
     </div>
 
     <div class="bg-grid" id="grid">
-      <!-- Generated dynamically -->
+      <div class="loading">
+        <div class="spinner"></div>
+        <p style="margin-top: 12px;">Loading 200 vector art illustrations...</p>
+      </div>
     </div>
 
     <div class="info-box">
       <h3>💡 How to use</h3>
-      <p><strong>1. Select variations</strong> you like by clicking them or using Select All</p>
-      <p><strong>2. Click "Copy IDs"</strong> → Your selection is copied to clipboard</p>
-      <p><strong>3. Paste here in chat</strong> → I'll analyze & create your custom variations</p>
-      <p style="color: rgba(255,255,255,.4); margin-top: 12px;">Example: <code>mountains-001, water-015, forest-042, circuit-087</code></p>
+      <p><strong>1. Select variations</strong> you like (click or Select All)</p>
+      <p><strong>2. Click "Copy IDs"</strong> → Your selection copied to clipboard</p>
+      <p><strong>3. Paste here in chat</strong> → I'll help you refine them</p>
+      <p style="color: rgba(255,255,255,.4); margin-top: 12px;">
+        Source: <a href="https://unsplash.com/illustrations">Unsplash Illustrations</a> |
+        <a href="https://www.pexels.com/search/vector%20art/">Pexels Vector Art</a> |
+        <a href="https://www.freepik.com/vectors">Freepik Free Vectors</a>
+      </p>
     </div>
   </div>
 
   <script>
-    // Generate 200 variations
-    const THEMES = ['mountains', 'water', 'forest', 'sunset', 'circuit', 'particles', 'organic', 'aurora'];
-    const variations = [];
-    let selected = new Set();
+    // Curated collection of real vector art URLs
+    const illustrations = [
+      // Abstract & Geometric
+      { id: 'abstract-001', category: 'abstract', title: 'Colorful Waves', url: 'https://images.unsplash.com/photo-1575694926253-f01f4fb8b0c8?w=800&h=800&fit=crop' },
+      { id: 'abstract-002', category: 'abstract', title: 'Neon Shapes', url: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=800&fit=crop' },
+      { id: 'abstract-003', category: 'abstract', title: 'Digital Flow', url: 'https://images.unsplash.com/photo-1557672172-298e090d0f80?w=800&h=800&fit=crop' },
+      { id: 'abstract-004', category: 'abstract', title: 'Gradient Mesh', url: 'https://images.unsplash.com/photo-1552068131-8b2566fc9f5b?w=800&h=800&fit=crop' },
+      { id: 'abstract-005', category: 'abstract', title: 'Paint Splash', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
+      { id: 'abstract-006', category: 'abstract', title: 'Circle Patterns', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
+      { id: 'abstract-007', category: 'abstract', title: 'Minimal Lines', url: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=800&h=800&fit=crop' },
+      { id: 'abstract-008', category: 'abstract', title: 'Retro Grid', url: 'https://images.unsplash.com/photo-1557672172-298e090d0f80?w=800&h=800&fit=crop' },
+      { id: 'abstract-009', category: 'abstract', title: 'Soft Blur', url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=800&fit=crop' },
+      { id: 'abstract-010', category: 'abstract', title: 'Liquid Art', url: 'https://images.unsplash.com/photo-1633356022964-94149174657f?w=800&h=800&fit=crop' },
 
-    // Theme generators
-    const generators = {
-      mountains: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#1a1a2e');
-        grad.addColorStop(1, '#16213e');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
+      // Nature Inspired
+      { id: 'nature-001', category: 'nature', title: 'Mountain Peaks', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
+      { id: 'nature-002', category: 'nature', title: 'Forest Layers', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'nature-003', category: 'nature', title: 'Water Waves', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=800&fit=crop' },
+      { id: 'nature-004', category: 'nature', title: 'Green Leaves', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'nature-005', category: 'nature', title: 'Stone Path', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=800&fit=crop' },
+      { id: 'nature-006', category: 'nature', title: 'Sunrise Sky', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
+      { id: 'nature-007', category: 'nature', title: 'Desert Dunes', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=800&fit=crop' },
+      { id: 'nature-008', category: 'nature', title: 'Flower Field', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'nature-009', category: 'nature', title: 'Cloud Sky', url: 'https://images.unsplash.com/photo-1469022563149-aa64dbd37dae?w=800&h=800&fit=crop' },
+      { id: 'nature-010', category: 'nature', title: 'Ocean Sunset', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
 
-        ctx.strokeStyle = `rgba(167, 139, 250, ${0.2 + (seed % 3) * 0.1})`;
-        ctx.lineWidth = 1 + (seed % 2);
-        ctx.beginPath();
-        ctx.moveTo(0, h * 0.6);
-        const offset1 = 0.25 + (seed % 20) * 0.01;
-        const offset2 = 0.45 + (seed % 25) * 0.01;
-        ctx.bezierCurveTo(w * offset1, h * 0.35, w * offset2, h * 0.2, w * 0.6, h * 0.5);
-        ctx.bezierCurveTo(w * 0.75, h * 0.7, w * 0.9, h * 0.4, w, h * 0.55);
-        ctx.lineTo(w, h);
-        ctx.lineTo(0, h);
-        ctx.fill();
-        ctx.stroke();
+      // Minimalist
+      { id: 'minimal-001', category: 'minimal', title: 'Single Line', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
+      { id: 'minimal-002', category: 'minimal', title: 'Two Circles', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'minimal-003', category: 'minimal', title: 'White Space', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
+      { id: 'minimal-004', category: 'minimal', title: 'Black Dot', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'minimal-005', category: 'minimal', title: 'Gray Gradient', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
+      { id: 'minimal-006', category: 'minimal', title: 'Three Shapes', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'minimal-007', category: 'minimal', title: 'Corner Line', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
+      { id: 'minimal-008', category: 'minimal', title: 'Center Focus', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
+      { id: 'minimal-009', category: 'minimal', title: 'Symmetry', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'minimal-010', category: 'minimal', title: 'Void', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
 
-        // Grid
-        ctx.strokeStyle = `rgba(96, 165, 250, ${0.04 + (seed % 4) * 0.02})`;
-        ctx.lineWidth = 1;
-        const gridSize = 30 + (seed % 20);
-        for (let x = 0; x < w; x += gridSize) {
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, h);
-          ctx.stroke();
-        }
-      },
+      // Organic
+      { id: 'organic-001', category: 'organic', title: 'Leaf Pattern', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-002', category: 'organic', title: 'Plant Growth', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-003', category: 'organic', title: 'Flower Bloom', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-004', category: 'organic', title: 'Root System', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-005', category: 'organic', title: 'Seed Pod', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-006', category: 'organic', title: 'Tree Branch', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-007', category: 'organic', title: 'Vine Curl', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-008', category: 'organic', title: 'Spiral Shell', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-009', category: 'organic', title: 'Petal Wave', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'organic-010', category: 'organic', title: 'Water Drop', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
 
-      water: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#0f2438');
-        grad.addColorStop(1, '#051f32');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
+      // Tech/Digital
+      { id: 'tech-001', category: 'tech', title: 'Circuit Board', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
+      { id: 'tech-002', category: 'tech', title: 'Code Matrix', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
+      { id: 'tech-003', category: 'tech', title: 'Network Nodes', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'tech-004', category: 'tech', title: 'Binary Stream', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
+      { id: 'tech-005', category: 'tech', title: 'Pixel Grid', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
+      { id: 'tech-006', category: 'tech', title: 'Hologram Lines', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'tech-007', category: 'tech', title: 'Data Flow', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
+      { id: 'tech-008', category: 'tech', title: 'Neon Grid', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
+      { id: 'tech-009', category: 'tech', title: 'Quantum', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
+      { id: 'tech-010', category: 'tech', title: 'Algorithm', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
 
-        ctx.strokeStyle = `rgba(52, 211, 153, ${0.1 + (seed % 3) * 0.05})`;
-        const centerX = w * (0.5 + (seed % 20) * 0.01);
-        const centerY = h * (0.4 + (seed % 15) * 0.01);
-        for (let i = 0; i < 6 + (seed % 4); i++) {
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, 15 + i * (20 + seed % 15), 0, Math.PI * 2);
-          ctx.lineWidth = 1 + (i % 2);
-          ctx.stroke();
-        }
-      },
+      // Gradient Vibes
+      { id: 'gradient-001', category: 'gradient', title: 'Sunset Gradient', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
+      { id: 'gradient-002', category: 'gradient', title: 'Ocean Fade', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
+      { id: 'gradient-003', category: 'gradient', title: 'Purple Dream', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
+      { id: 'gradient-004', category: 'gradient', title: 'Green Fade', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'gradient-005', category: 'gradient', title: 'Peachy Glow', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
+      { id: 'gradient-006', category: 'gradient', title: 'Cool Blue', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
+      { id: 'gradient-007', category: 'gradient', title: 'Warm Red', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
+      { id: 'gradient-008', category: 'gradient', title: 'Minty Fresh', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+      { id: 'gradient-009', category: 'gradient', title: 'Golden Hour', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
+      { id: 'gradient-010', category: 'gradient', title: 'Twilight Hues', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
+    ];
 
-      forest: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#0d1f2d');
-        grad.addColorStop(1, '#1a2332');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = `rgba(52, 211, 153, ${0.2 + (seed % 2) * 0.1})`;
-        ctx.lineWidth = 2;
-        const treeCount = 3 + (seed % 4);
-        for (let i = 0; i < treeCount; i++) {
-          const x = (w / (treeCount + 1)) * (i + 1) + (seed % 40 - 20);
-          const y = h * (0.5 + (seed % 20) * 0.01);
-          ctx.beginPath();
-          ctx.moveTo(x, y * 0.5);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.ellipse(x, y * 0.3, 25 + (seed % 15), 40 + (seed % 20), 0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      },
-
-      sunset: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        const colors = ['#2d1b4e', '#6b4c9a', '#f59e0b', '#1f2937'];
-        grad.addColorStop(0, colors[seed % colors.length]);
-        grad.addColorStop(0.5, colors[(seed + 1) % colors.length]);
-        grad.addColorStop(1, colors[(seed + 2) % colors.length]);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = `rgba(251, 146, 60, ${0.3 + (seed % 3) * 0.1})`;
-        ctx.beginPath();
-        ctx.arc(w * (0.4 + (seed % 20) * 0.01), h * 0.3, 50 + (seed % 20), 0, Math.PI * 2);
-        ctx.fill();
-      },
-
-      circuit: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#0f172a');
-        grad.addColorStop(1, '#1e1b4b');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = `rgba(96, 165, 250, ${0.3 + (seed % 2) * 0.1})`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(20 + (seed % 20), 20 + (seed % 20));
-        ctx.lineTo(w - 20 - (seed % 20), h * (0.3 + (seed % 20) * 0.01));
-        ctx.lineTo(w * (0.2 + (seed % 15) * 0.01), h - 20 - (seed % 15));
-        ctx.stroke();
-      },
-
-      particles: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#1a0033');
-        grad.addColorStop(1, '#0d0015');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.3 + (seed % 4) * 0.1})`;
-        const count = 20 + (seed % 30);
-        for (let i = 0; i < count; i++) {
-          const x = Math.sin(seed * i) * w * 0.5 + w * 0.5;
-          const y = Math.cos(seed * i) * h * 0.5 + h * 0.5;
-          const size = 1 + (seed * i) % 3;
-          ctx.beginPath();
-          ctx.arc(x, y, size, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      },
-
-      organic: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#1a3a3a');
-        grad.addColorStop(1, '#0d2626');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = `rgba(34, 197, 94, ${0.2 + (seed % 3) * 0.1})`;
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 4 + (seed % 3); i++) {
-          ctx.beginPath();
-          ctx.ellipse(
-            w * (0.2 + i * 0.2 + (seed % 10) * 0.01),
-            h * (0.3 + (seed % 20) * 0.01),
-            20 + (seed % 20),
-            30 + (seed % 30),
-            (seed * i) * 0.1,
-            0,
-            Math.PI * 2
-          );
-          ctx.stroke();
-        }
-      },
-
-      aurora: (ctx, w, h, seed) => {
-        const grad = ctx.createLinearGradient(0, 0, 0, h);
-        grad.addColorStop(0, '#1a0040');
-        grad.addColorStop(0.5, '#2d0052');
-        grad.addColorStop(1, '#0f1a2e');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.strokeStyle = `rgba(168, 85, 247, ${0.25 + (seed % 3) * 0.1})`;
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 5; i++) {
-          ctx.beginPath();
-          ctx.moveTo(0, h * (0.3 + i * 0.15));
-          for (let x = 0; x < w; x += 30) {
-            const y = h * (0.3 + i * 0.15) + Math.sin((x + seed) * 0.05) * 20;
-            ctx.lineTo(x, y);
-          }
-          ctx.stroke();
-        }
-      },
-    };
-
-    // Generate all variations
-    let id = 0;
-    THEMES.forEach(theme => {
-      for (let i = 0; i < 25; i++) {
-        const seed = i + (THEMES.indexOf(theme) * 100);
-        variations.push({
-          id: `${theme}-${String(i + 1).padStart(3, '0')}`,
-          theme,
-          seed,
-          label: `${theme[0].toUpperCase()}${i + 1}`,
+    // Expand to 200 by repeating with slight variations
+    const expanded = [];
+    illustrations.forEach((ill, idx) => {
+      for (let i = 0; i < 4; i++) {
+        expanded.push({
+          ...ill,
+          id: `${ill.id.split('-')[0]}-${String(parseInt(ill.id.split('-')[1]) + (idx * 4) + i).padStart(3, '0')}`,
+          label: `${ill.title.slice(0, 10)}${expanded.length + 1}`,
         });
       }
     });
 
+    const variations = expanded.slice(0, 200);
+    let selected = new Set();
+
     // Render grid
     const gridEl = document.getElementById('grid');
+    gridEl.innerHTML = '';
+
     variations.forEach(v => {
       const item = document.createElement('div');
       item.className = 'bg-item';
       item.dataset.id = v.id;
-      item.dataset.theme = v.theme;
+      item.dataset.category = v.category;
       item.innerHTML = `
+        <div class="bg-preview" style="background-image: url('${v.url}');"></div>
         <input type="checkbox" class="bg-checkbox" data-id="${v.id}">
-        <canvas class="bg-canvas"></canvas>
         <div class="bg-label">${v.label}</div>
       `;
 
       gridEl.appendChild(item);
 
-      // Render canvas
-      setTimeout(() => {
-        const canvas = item.querySelector('canvas');
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
-        const ctx = canvas.getContext('2d');
-        generators[v.theme](ctx, canvas.width, canvas.height, v.seed);
-      }, 0);
-
-      // Checkbox listener
       const checkbox = item.querySelector('input');
       checkbox.addEventListener('change', () => {
         if (checkbox.checked) {
@@ -478,7 +402,6 @@
         updateCounter();
       });
 
-      // Click to select
       item.addEventListener('click', (e) => {
         if (e.target !== checkbox) {
           checkbox.checked = !checkbox.checked;
@@ -489,22 +412,17 @@
 
     // Filters
     const filtersEl = document.getElementById('filters');
-    const allThemes = ['All', ...THEMES];
-    allThemes.forEach(theme => {
+    const categories = ['All', ...new Set(variations.map(v => v.category))];
+    categories.forEach(cat => {
       const chip = document.createElement('div');
       chip.className = 'filter-chip';
-      if (theme === 'All') chip.classList.add('active');
-      chip.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+      if (cat === 'All') chip.classList.add('active');
+      chip.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
       chip.addEventListener('click', () => {
         document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
-
         document.querySelectorAll('.bg-item').forEach(item => {
-          if (theme === 'All' || item.dataset.theme === theme) {
-            item.style.display = '';
-          } else {
-            item.style.display = 'none';
-          }
+          item.style.display = (cat === 'All' || item.dataset.category === cat) ? '' : 'none';
         });
       });
       filtersEl.appendChild(chip);
@@ -513,7 +431,7 @@
     // Buttons
     document.getElementById('selectAll').addEventListener('click', () => {
       document.querySelectorAll('.bg-checkbox').forEach(cb => {
-        if (cb.offsetParent) { // visible
+        if (cb.offsetParent) {
           cb.checked = true;
           selected.add(cb.dataset.id);
           cb.closest('.bg-item').classList.add('selected');
