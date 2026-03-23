@@ -37,7 +37,8 @@
     </div>
     <div class="header-spacer"></div>
     <div class="quick-find-wrapper">
-      <input type="text" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." autocomplete="new-password" autocorrect="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly')" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
+      <input type="text" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" list="quick-find-empty" readonly onfocus="this.removeAttribute('readonly')" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
+      <datalist id="quick-find-empty"></datalist>
       <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
     </div>
     <div class="utility-tabs">
