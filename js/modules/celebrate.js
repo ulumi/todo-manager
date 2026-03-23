@@ -413,7 +413,7 @@ function buildScene(quote, stats, mascot, opts = {}) {
     filter:drop-shadow(0 0 80px rgba(255,100,220,0.95));
   `);
   ov.appendChild(unicornWrap);
-  unicornWrap.appendChild(Object.assign(el('div', `font-size:800px;line-height:1;display:block;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;image-rendering:smooth;`), { textContent: mascot }));
+  unicornWrap.appendChild(Object.assign(el('div', `font-size:400px;line-height:1;display:block;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;image-rendering:smooth;`), { textContent: mascot }));
 
   gsap.set(unicornWrap, {
     xPercent: -50, yPercent: -50,
