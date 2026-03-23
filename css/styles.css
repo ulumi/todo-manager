@@ -1146,7 +1146,6 @@ input:checked + .cal-sid-toggle-track::after {
   flex-wrap: wrap;
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .day-tag-cloud-item {
