@@ -1051,14 +1051,14 @@ input:checked + .cal-sid-toggle-track::after {
   border: none !important;
   border-radius: 0;
   background: transparent !important;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.3);
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.12s;
+  transition: color 0.15s ease-out;
   white-space: nowrap;
   text-decoration: none;
   gap: 2px;
@@ -1067,10 +1067,10 @@ input:checked + .cal-sid-toggle-track::after {
 .day-ctrl-btn:hover {
   background: transparent !important;
   border: none !important;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.7);
 }
 .day-ctrl-btn.active {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgb(255, 255, 255);
   background: transparent !important;
   border: none !important;
 }
@@ -1090,7 +1090,7 @@ input:checked + .cal-sid-toggle-track::after {
   display: inline-flex;
   align-items: center;
   overflow: hidden;
-  transition: width 0.3s ease;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .day-ctrl-expandable.expanded .day-ctrl-group {
   max-width: 100%;
@@ -1102,7 +1102,7 @@ input:checked + .cal-sid-toggle-track::after {
 .day-ctrl-expandable .day-ctrl-group {
   max-width: 0;
   opacity: 0;
-  transition: max-width 0.3s ease, opacity 0.3s ease;
+  transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease-out 0.05s;
   flex-shrink: 0;
 }
 
@@ -1128,7 +1128,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-ctrl-chevron {
-  transition: transform 0.2s;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   color: rgba(255, 255, 255, 0.4);
 }
 .day-ctrl-toggle:hover .day-ctrl-chevron {

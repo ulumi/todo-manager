@@ -1012,14 +1012,14 @@ main {
   border: none !important;
   border-radius: 0;
   background: transparent !important;
-  color: rgba(255,255,255,.5);
+  color: rgba(255,255,255,.3);
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all .12s;
+  transition: color .15s ease-out;
   white-space: nowrap;
   text-decoration: none;
   gap: 2px;
@@ -1028,10 +1028,10 @@ main {
   &:hover {
     background: transparent !important;
     border: none !important;
-    color: rgba(255,255,255,.8);
+    color: rgba(255,255,255,.7);
   }
   &.active {
-    color: rgba(255,255,255,.8);
+    color: rgba(255,255,255,1);
     background: transparent !important;
     border: none !important;
   }
@@ -1052,7 +1052,7 @@ main {
   display: inline-flex;
   align-items: center;
   overflow: hidden;
-  transition: width .3s ease;
+  transition: width .35s cubic-bezier(.4, .0, .2, 1);
 
   &.expanded {
     .day-ctrl-group {
@@ -1068,7 +1068,7 @@ main {
   .day-ctrl-group {
     max-width: 0;
     opacity: 0;
-    transition: max-width .3s ease, opacity .3s ease;
+    transition: max-width .35s cubic-bezier(.4, .0, .2, 1), opacity .25s ease-out .05s;
     flex-shrink: 0;
   }
 }
@@ -1096,7 +1096,7 @@ main {
 }
 
 .day-ctrl-chevron {
-  transition: transform .2s;
+  transition: transform .35s cubic-bezier(.4, .0, .2, 1);
   color: rgba(255,255,255,.4);
 
   .day-ctrl-toggle:hover & {
