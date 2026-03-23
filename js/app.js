@@ -733,10 +733,12 @@ class TodoApp {
   }
 
   _showCelebrateDebugPanel(data) {
+    // Only show if Option key is held
+    if (!isOptionHeld) return;
+
     console.log('[panel] showing debug panel with data:', data);
     const { quote, mascot, font, duration } = data;
     const fontName = font.replace(/['",]/g, '').split('sans-serif|serif')[0].trim();
-    console.log('[panel] fontName:', fontName);
 
     // Remove old panel if exists
     const old = document.getElementById('celebrateDebugPanel');
@@ -746,9 +748,9 @@ class TodoApp {
     panel.id = 'celebrateDebugPanel';
     panel.style.cssText = `
       position: fixed; top: 12px; left: 12px; z-index: 9995;
-      background: rgba(20,10,30,0.95); border: 1px solid rgba(255,180,255,0.5);
-      border-radius: 8px; padding: 12px 16px; max-width: 320px;
-      font-family: monospace; font-size: 12px; color: #ddd;
+      background: rgba(20,10,30,0.95); border: 2px solid rgba(255,180,255,0.5);
+      border-radius: 16px; padding: 24px 32px; max-width: 640px;
+      font-family: monospace; font-size: 24px; color: #ddd;
       backdrop-filter: blur(8px); animation: slideIn 0.25s ease-out;
       box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     `;
@@ -757,28 +759,28 @@ class TodoApp {
         @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         #celebrateDebugPanel button {
           background: rgba(255,100,200,0.7); border: none; color: #fff;
-          padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;
-          margin-top: 6px; margin-right: 6px; transition: background 0.2s;
+          padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 22px;
+          margin-top: 12px; margin-right: 12px; transition: background 0.2s;
         }
         #celebrateDebugPanel button:hover { background: rgba(255,100,200,1); }
       </style>
-      <div style="margin-bottom: 8px;"><strong>🎉 Celebrate Debug</strong></div>
-      <div style="margin-bottom: 6px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code></div>
-      <div style="margin-bottom: 6px; opacity: 0.8;">Mascot: <code>${mascot}</code></div>
-      <div style="margin-bottom: 6px; opacity: 0.8;">Font: <code>${fontName}</code></div>
-      <div style="margin-bottom: 8px; opacity: 0.8;">Duration: <code>${duration}s</code></div>
+      <div style="margin-bottom: 16px;"><strong>🎉 Celebrate Debug</strong></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code>${mascot}</code></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Font: <code>${fontName}</code></div>
+      <div style="margin-bottom: 16px; opacity: 0.8;">Duration: <code>${duration}s</code></div>
       <button onclick="window.app._banFont('${font.replace(/'/g, '"')}')">Ban Font</button>
       <button onclick="window.app._banMascot('${mascot}')">Ban Mascot</button>
     `;
     document.body.appendChild(panel);
 
-    // Auto-fade after duration + 2s
+    // Auto-fade after duration + 3.5s (so 3.5s after celebrate animation ends)
     setTimeout(() => {
       if (panel.parentNode) {
         panel.style.animation = 'slideIn 0.25s ease-in reverse';
         setTimeout(() => panel.remove(), 250);
       }
-    }, (duration + 2) * 1000);
+    }, (duration + 3.5) * 1000);
   }
 
   _banFont(font) {
@@ -4390,6 +4392,15 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 
 // Keyboard shortcuts
 let hoveredItem = null;
+let isOptionHeld = false;
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'AltLeft' || e.code === 'AltRight') isOptionHeld = true;
+});
+
+document.addEventListener('keyup', e => {
+  if (e.code === 'AltLeft' || e.code === 'AltRight') isOptionHeld = false;
+});
 
 document.addEventListener('mouseover', e => {
   const item = e.target.closest('.todo-item');
