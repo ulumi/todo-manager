@@ -2996,6 +2996,12 @@ class TodoApp {
     this.render();
   }
 
+  toggleDayTagGrouping() {
+    const cur = localStorage.getItem('dayTagGrouped') !== 'false';
+    localStorage.setItem('dayTagGrouped', !cur ? 'true' : 'false');
+    this.render();
+  }
+
   toggleColDropdown() {
     const menu = document.getElementById('dayColDropdownMenu');
     if (menu) menu.classList.toggle('hidden');

@@ -264,6 +264,10 @@ export function renderDayView(todos) {
       return `<button class="day-tag-cloud-item${isSelected ? ' selected' : ''}" style="border-color:${tag.color};" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}</button>`;
     }).join('');
 
+    // Grouping toggle
+    const tagGrouped = localStorage.getItem('dayTagGrouped') !== 'false';
+    const groupToggle = `<button class="day-tag-group-toggle${tagGrouped ? ' active' : ''}" onclick="window.app.toggleDayTagGrouping()" title="Grouper par tag">Groupes</button>`;
+
     // Sort catGroups by stored order
     catGroups.sort((a, b) => {
       const ia = tagOrder.indexOf(a.id), ib = tagOrder.indexOf(b.id);
@@ -271,18 +275,33 @@ export function renderDayView(todos) {
       if (ia < 0) return 1; if (ib < 0) return -1;
       return ia - ib;
     });
-    let grouped = catGroups.map(c => {
-      const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
-      const items = itemsForRender.filter(t => t.projectId === c.id);
-      const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
-    }).join('');
-    if (untagged.length) {
-      const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
-      const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
+
+    let rightColItems;
+    if (tagGrouped) {
+      // Grouped view
+      let grouped = catGroups.map(c => {
+        const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
+        const items = itemsForRender.filter(t => t.projectId === c.id);
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+        return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
+      }).join('');
+      if (untagged.length) {
+        const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+        grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
+      }
+      rightColItems = `<div class="day-tag-controls">${tagCloud}${groupToggle}</div><div class="day-tag-sections">${grouped}</div>`;
+    } else {
+      // Flat view with tag indicator
+      const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
+      const flat = filteredItems.map(t => {
+        const catName = t.projectId ? categories.find(c => c.id === t.projectId)?.name || '' : '';
+        const tagBadge = catName ? `<span class="day-tag-badge" style="color:${categories.find(c => c.id === t.projectId)?.color}">[${catName}]</span>` : '';
+        const item = todoItemHTML(t, navDate, 'punctual');
+        return item.replace('</div>', `${tagBadge}</div>`);
+      }).join('');
+      rightColItems = `<div class="day-tag-controls">${tagCloud}${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
-    rightColItems = `<div class="day-tag-cloud">${tagCloud}</div><div class="day-tag-sections">${grouped}</div>` || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   } else {
     // Manual mode — with spacers

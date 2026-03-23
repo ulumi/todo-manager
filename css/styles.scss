@@ -1108,13 +1108,20 @@ main {
   margin-right: 20px;
 }
 
+.day-tag-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
 .day-tag-cloud {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,.1);
+  flex: 1;
 }
 
 .day-tag-cloud-item {
@@ -1140,6 +1147,39 @@ main {
     color: rgba(255,255,255,1);
     border-color: currentColor;
   }
+}
+
+.day-tag-group-toggle {
+  padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,.2);
+  background: transparent;
+  color: rgba(255,255,255,.5);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255,255,255,.08);
+    color: rgba(255,255,255,.8);
+    border-color: rgba(255,255,255,.4);
+  }
+
+  &.active {
+    background: rgba(255,255,255,.15);
+    color: rgba(255,255,255,1);
+    border-color: rgba(255,255,255,.5);
+  }
+}
+
+.day-tag-badge {
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 6px;
+  opacity: .7;
 }
 
 .day-tag-section.hidden {

@@ -1139,13 +1139,20 @@ input:checked + .cal-sid-toggle-track::after {
   margin-right: 20px;
 }
 
+.day-tag-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .day-tag-cloud {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
 }
 
 .day-tag-cloud-item {
@@ -1169,6 +1176,37 @@ input:checked + .cal-sid-toggle-track::after {
   background: rgba(255, 255, 255, 0.15);
   color: rgb(255, 255, 255);
   border-color: currentColor;
+}
+
+.day-tag-group-toggle {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.day-tag-group-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.day-tag-group-toggle.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgb(255, 255, 255);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.day-tag-badge {
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 6px;
+  opacity: 0.7;
 }
 
 .day-tag-section.hidden {

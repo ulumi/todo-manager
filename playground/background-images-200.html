@@ -1,469 +1,966 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>200 Vector Art — Zen Todo</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0a0a0a;
-      color: #fff;
-      padding: 32px 24px;
-    }
-
-    .container { max-width: 1800px; margin: 0 auto; }
-
-    h1 {
-      font-size: 36px;
-      font-weight: 900;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .subtitle {
-      color: rgba(255,255,255,.5);
-      font-size: 14px;
-      margin-bottom: 24px;
-    }
-
-    /* Toolbar */
-    .toolbar {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      align-items: center;
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 12px;
-      padding: 12px 16px;
-    }
-
-    .toolbar-label {
-      color: rgba(255,255,255,.4);
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .04em;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,.15);
-      background: rgba(167,139,250,.1);
-      color: #d8b4fe;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 12px;
-      transition: all .2s;
-    }
-
-    .btn:hover {
-      background: rgba(167,139,250,.2);
-      border-color: rgba(167,139,250,.4);
-    }
-
-    .btn.secondary {
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.6);
-      border-color: rgba(255,255,255,.08);
-    }
-
-    .btn.secondary:hover {
-      background: rgba(255,255,255,.1);
-      color: rgba(255,255,255,.8);
-    }
-
-    .select-counter {
-      margin-left: auto;
-      color: rgba(255,255,255,.4);
-      font-size: 12px;
-    }
-
-    .select-counter strong {
-      color: #a78bfa;
-    }
-
-    /* Grid */
-    .bg-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 14px;
-      margin-bottom: 40px;
-    }
-
-    .bg-item {
-      position: relative;
-      cursor: pointer;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 2px solid transparent;
-      transition: all .3s cubic-bezier(.2,1,.3,1);
-      height: 160px;
-      background: #111;
-      box-shadow: 0 4px 12px rgba(0,0,0,.4);
-    }
-
-    .bg-item:hover {
-      border-color: #a78bfa;
-      transform: translateY(-8px);
-      box-shadow: 0 16px 32px rgba(167,139,250,.25);
-    }
-
-    .bg-preview {
-      width: 100%;
-      height: 100%;
-      background-size: cover;
-      background-position: center;
-      background-color: #1a1a2e;
-      position: relative;
-    }
-
-    .bg-checkbox {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: #a78bfa;
-      z-index: 20;
-    }
-
-    .bg-item.selected {
-      border-color: #a78bfa;
-      box-shadow: 0 0 0 2px rgba(167,139,250,.5), 0 16px 32px rgba(167,139,250,.25);
-    }
-
-    .bg-label {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      right: 8px;
-      font-size: 10px;
-      font-weight: 600;
-      background: rgba(0,0,0,.7);
-      padding: 4px 8px;
-      border-radius: 6px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      z-index: 5;
-      backdrop-filter: blur(4px);
-      max-width: calc(100% - 16px);
-    }
-
-    /* Filters */
-    .filters {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .filter-chip {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(255,255,255,.15);
-      background: rgba(255,255,255,.04);
-      color: rgba(255,255,255,.6);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all .2s;
-    }
-
-    .filter-chip:hover, .filter-chip.active {
-      background: rgba(167,139,250,.15);
-      border-color: rgba(167,139,250,.4);
-      color: #d8b4fe;
-    }
-
-    .info-box {
-      background: rgba(59,130,246,.1);
-      border: 1px solid rgba(59,130,246,.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 40px;
-      color: rgba(255,255,255,.7);
-    }
-
-    .info-box h3 {
-      color: #60a5fa;
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-
-    .info-box p {
-      font-size: 12px;
-      line-height: 1.6;
-      margin-bottom: 10px;
-    }
-
-    .info-box a {
-      color: #60a5fa;
-      text-decoration: none;
-    }
-
-    .info-box a:hover {
-      text-decoration: underline;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: rgba(255,255,255,.5);
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 32px;
-      height: 32px;
-      border: 3px solid rgba(255,255,255,.2);
-      border-top-color: #a78bfa;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    @media (max-width: 1200px) {
-      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-    }
-
-    @media (max-width: 768px) {
-      h1 { font-size: 24px; }
-      .toolbar { flex-direction: column; align-items: stretch; }
-      .select-counter { margin-left: 0; }
-      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>◉ 200 Sacred Geometry</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#08060e;color:#e2e0ea;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;min-height:100vh}
+  .header{text-align:center;padding:2.5rem 1rem 1rem}
+  .header h1{font-size:2rem;font-weight:300;letter-spacing:.12em;color:#c4b5fd}
+  .header p{font-size:.95rem;color:#7c7a8a;margin-top:.4rem;font-style:italic}
+  .toolbar{display:flex;justify-content:center;flex-wrap:wrap;gap:.5rem;padding:.8rem 1rem 1.2rem}
+  .toolbar button{background:#1a1726;border:1px solid #2a2640;color:#a09cb0;padding:.35rem .85rem;border-radius:6px;cursor:pointer;font-size:.78rem;transition:all .2s}
+  .toolbar button:hover,.toolbar button.active{background:#2d2850;color:#c4b5fd;border-color:#5b4fa0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:0 1rem 3rem}
+  .card{position:relative;border-radius:8px;overflow:hidden;background:#0c0a14;border:1px solid #1a1730;height:180px;cursor:pointer;transition:border-color .25s,transform .25s}
+  .card:hover{border-color:#5b4fa0;transform:translateY(-2px)}
+  .card svg{width:100%;height:100%;display:block}
+  .card .label{position:absolute;bottom:0;left:0;right:0;padding:3px 6px;background:linear-gradient(transparent,rgba(5,5,8,.88));font-size:.62rem;color:#8a87a0;text-align:right;pointer-events:none}
+  .card .cb{position:absolute;top:5px;left:5px;width:16px;height:16px;border-radius:3px;border:1.5px solid #3a3660;background:rgba(10,8,18,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .card .cb.checked{background:#7c3aed;border-color:#7c3aed}
+  .card .cb.checked::after{content:'✓';color:#fff;font-size:10px}
+  .copy-bar{position:fixed;bottom:0;left:0;right:0;background:#1a1726;border-top:1px solid #2a2640;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;transform:translateY(100%);transition:transform .3s}
+  .copy-bar.show{transform:translateY(0)}
+  .copy-bar span{color:#a09cb0;font-size:.82rem}
+  .copy-bar button{background:#7c3aed;color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+  .hidden{display:none!important}
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎨 200 Vector Art Illustrations</h1>
-    <p class="subtitle">Beautiful real vector art from Unsplash, Pexels & more — Select & Copy IDs</p>
 
-    <div class="toolbar">
-      <span class="toolbar-label">Select</span>
-      <button class="btn" id="selectAll">Select All</button>
-      <button class="btn secondary" id="deselectAll">Deselect</button>
-      <button class="btn" id="copyIds">📋 Copy IDs</button>
-      <div class="select-counter"><strong id="counter">0</strong> / 200 selected</div>
-    </div>
+<div class="header">
+  <h1>◉ 200 Sacred Geometry</h1>
+  <p>φ = 1.618 — Douceur, nature, connexion</p>
+</div>
+<div class="toolbar" id="toolbar"></div>
+<div class="grid" id="grid"></div>
+<div class="copy-bar" id="copyBar">
+  <span id="selCount">0 selected</span>
+  <button onclick="copySelected()">Copy IDs</button>
+</div>
 
-    <div class="filters" id="filters">
-      <!-- Generated dynamically -->
-    </div>
+<script>
+// ─── UTILITIES ──────────────────────────────────────────────
+const PHI = 1.618033988749895;
+const TAU = Math.PI * 2;
+const sin = Math.sin, cos = Math.cos, sqrt = Math.sqrt, abs = Math.abs, floor = Math.floor;
 
-    <div class="bg-grid" id="grid">
-      <div class="loading">
-        <div class="spinner"></div>
-        <p style="margin-top: 12px;">Loading 200 vector art illustrations...</p>
-      </div>
-    </div>
+function seededRandom(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
 
-    <div class="info-box">
-      <h3>💡 How to use</h3>
-      <p><strong>1. Select variations</strong> you like (click or Select All)</p>
-      <p><strong>2. Click "Copy IDs"</strong> → Your selection copied to clipboard</p>
-      <p><strong>3. Paste here in chat</strong> → I'll help you refine them</p>
-      <p style="color: rgba(255,255,255,.4); margin-top: 12px;">
-        Source: <a href="https://unsplash.com/illustrations">Unsplash Illustrations</a> |
-        <a href="https://www.pexels.com/search/vector%20art/">Pexels Vector Art</a> |
-        <a href="https://www.freepik.com/vectors">Freepik Free Vectors</a>
-      </p>
-    </div>
-  </div>
+function fib(n) { let a=0,b=1; for(let i=0;i<n;i++){[a,b]=[b,a+b]} return a; }
 
-  <script>
-    // Curated collection of real vector art URLs
-    const illustrations = [
-      // Abstract & Geometric
-      { id: 'abstract-001', category: 'abstract', title: 'Colorful Waves', url: 'https://images.unsplash.com/photo-1575694926253-f01f4fb8b0c8?w=800&h=800&fit=crop' },
-      { id: 'abstract-002', category: 'abstract', title: 'Neon Shapes', url: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=800&fit=crop' },
-      { id: 'abstract-003', category: 'abstract', title: 'Digital Flow', url: 'https://images.unsplash.com/photo-1557672172-298e090d0f80?w=800&h=800&fit=crop' },
-      { id: 'abstract-004', category: 'abstract', title: 'Gradient Mesh', url: 'https://images.unsplash.com/photo-1552068131-8b2566fc9f5b?w=800&h=800&fit=crop' },
-      { id: 'abstract-005', category: 'abstract', title: 'Paint Splash', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
-      { id: 'abstract-006', category: 'abstract', title: 'Circle Patterns', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
-      { id: 'abstract-007', category: 'abstract', title: 'Minimal Lines', url: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=800&h=800&fit=crop' },
-      { id: 'abstract-008', category: 'abstract', title: 'Retro Grid', url: 'https://images.unsplash.com/photo-1557672172-298e090d0f80?w=800&h=800&fit=crop' },
-      { id: 'abstract-009', category: 'abstract', title: 'Soft Blur', url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=800&fit=crop' },
-      { id: 'abstract-010', category: 'abstract', title: 'Liquid Art', url: 'https://images.unsplash.com/photo-1633356022964-94149174657f?w=800&h=800&fit=crop' },
+const PALETTES = [
+  { bg:'#07050d', colors:['#a78bfa','#c4b5fd','#7c3aed','#8b5cf6','#ddd6fe'], glow:'#a78bfa' },
+  { bg:'#050a12', colors:['#60a5fa','#93c5fd','#3b82f6','#38bdf8','#bae6fd'], glow:'#60a5fa' },
+  { bg:'#050d0a', colors:['#34d399','#86efac','#10b981','#6ee7b7','#a7f3d0'], glow:'#34d399' },
+  { bg:'#0d0804', colors:['#f59e0b','#fbbf24','#d97706','#fcd34d','#fef3c7'], glow:'#f59e0b' },
+  { bg:'#0d0510', colors:['#ec4899','#f9a8d4','#db2777','#f472b6','#fce7f3'], glow:'#ec4899' },
+  { bg:'#08060e', colors:['#a78bfa','#60a5fa','#34d399','#c4b5fd','#93c5fd'], glow:'#818cf8' },
+];
 
-      // Nature Inspired
-      { id: 'nature-001', category: 'nature', title: 'Mountain Peaks', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
-      { id: 'nature-002', category: 'nature', title: 'Forest Layers', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'nature-003', category: 'nature', title: 'Water Waves', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=800&fit=crop' },
-      { id: 'nature-004', category: 'nature', title: 'Green Leaves', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'nature-005', category: 'nature', title: 'Stone Path', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=800&fit=crop' },
-      { id: 'nature-006', category: 'nature', title: 'Sunrise Sky', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
-      { id: 'nature-007', category: 'nature', title: 'Desert Dunes', url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=800&fit=crop' },
-      { id: 'nature-008', category: 'nature', title: 'Flower Field', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'nature-009', category: 'nature', title: 'Cloud Sky', url: 'https://images.unsplash.com/photo-1469022563149-aa64dbd37dae?w=800&h=800&fit=crop' },
-      { id: 'nature-010', category: 'nature', title: 'Ocean Sunset', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
+function grad(id, c1, c2, x1=0,y1=0,x2=1,y2=1) {
+  return `<linearGradient id="${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient>`;
+}
+function rGrad(id, c1, c2, cx=400,cy=250,r=300) {
+  return `<radialGradient id="${id}" cx="${cx}" cy="${cy}" r="${r}" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></radialGradient>`;
+}
+function glowFilter(id, color, std=8) {
+  return `<filter id="${id}"><feGaussianBlur in="SourceGraphic" stdDeviation="${std}"/></filter>`;
+}
 
-      // Minimalist
-      { id: 'minimal-001', category: 'minimal', title: 'Single Line', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
-      { id: 'minimal-002', category: 'minimal', title: 'Two Circles', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'minimal-003', category: 'minimal', title: 'White Space', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
-      { id: 'minimal-004', category: 'minimal', title: 'Black Dot', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'minimal-005', category: 'minimal', title: 'Gray Gradient', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
-      { id: 'minimal-006', category: 'minimal', title: 'Three Shapes', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'minimal-007', category: 'minimal', title: 'Corner Line', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
-      { id: 'minimal-008', category: 'minimal', title: 'Center Focus', url: 'https://images.unsplash.com/photo-1552821206-d0be9c26e0c4?w=800&h=800&fit=crop' },
-      { id: 'minimal-009', category: 'minimal', title: 'Symmetry', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'minimal-010', category: 'minimal', title: 'Void', url: 'https://images.unsplash.com/photo-1552593905-5fefe8c9ef14?w=800&h=800&fit=crop' },
+function svgWrap(bg, defs, content) {
+  return `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg"><defs>${defs}</defs><rect width="800" height="500" fill="${bg}"/>${content}</svg>`;
+}
 
-      // Organic
-      { id: 'organic-001', category: 'organic', title: 'Leaf Pattern', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-002', category: 'organic', title: 'Plant Growth', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-003', category: 'organic', title: 'Flower Bloom', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-004', category: 'organic', title: 'Root System', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-005', category: 'organic', title: 'Seed Pod', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-006', category: 'organic', title: 'Tree Branch', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-007', category: 'organic', title: 'Vine Curl', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-008', category: 'organic', title: 'Spiral Shell', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-009', category: 'organic', title: 'Petal Wave', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'organic-010', category: 'organic', title: 'Water Drop', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
+// ─── THEME GENERATORS ───────────────────────────────────────
 
-      // Tech/Digital
-      { id: 'tech-001', category: 'tech', title: 'Circuit Board', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
-      { id: 'tech-002', category: 'tech', title: 'Code Matrix', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
-      { id: 'tech-003', category: 'tech', title: 'Network Nodes', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'tech-004', category: 'tech', title: 'Binary Stream', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
-      { id: 'tech-005', category: 'tech', title: 'Pixel Grid', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
-      { id: 'tech-006', category: 'tech', title: 'Hologram Lines', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'tech-007', category: 'tech', title: 'Data Flow', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
-      { id: 'tech-008', category: 'tech', title: 'Neon Grid', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=800&fit=crop' },
-      { id: 'tech-009', category: 'tech', title: 'Quantum', url: 'https://images.unsplash.com/photo-1557821552-17105176677c?w=800&h=800&fit=crop' },
-      { id: 'tech-010', category: 'tech', title: 'Algorithm', url: 'https://images.unsplash.com/photo-1533000971552-74f7b2dc5d4e?w=800&h=800&fit=crop' },
+const themes = {};
 
-      // Gradient Vibes
-      { id: 'gradient-001', category: 'gradient', title: 'Sunset Gradient', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
-      { id: 'gradient-002', category: 'gradient', title: 'Ocean Fade', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
-      { id: 'gradient-003', category: 'gradient', title: 'Purple Dream', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
-      { id: 'gradient-004', category: 'gradient', title: 'Green Fade', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'gradient-005', category: 'gradient', title: 'Peachy Glow', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
-      { id: 'gradient-006', category: 'gradient', title: 'Cool Blue', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
-      { id: 'gradient-007', category: 'gradient', title: 'Warm Red', url: 'https://images.unsplash.com/photo-1541961017774-22e37a6fed17?w=800&h=800&fit=crop' },
-      { id: 'gradient-008', category: 'gradient', title: 'Minty Fresh', url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=800&fit=crop' },
-      { id: 'gradient-009', category: 'gradient', title: 'Golden Hour', url: 'https://images.unsplash.com/photo-1495995424756-f1591ad47330?w=800&h=800&fit=crop' },
-      { id: 'gradient-010', category: 'gradient', title: 'Twilight Hues', url: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?w=800&h=800&fit=crop' },
-    ];
-
-    // Expand to 200 by repeating with slight variations
-    const expanded = [];
-    illustrations.forEach((ill, idx) => {
-      for (let i = 0; i < 4; i++) {
-        expanded.push({
-          ...ill,
-          id: `${ill.id.split('-')[0]}-${String(parseInt(ill.id.split('-')[1]) + (idx * 4) + i).padStart(3, '0')}`,
-          label: `${ill.title.slice(0, 10)}${expanded.length + 1}`,
-        });
+// 1. FLOWER OF LIFE
+themes['Flower of Life'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const baseR = 30 + R() * 40;
+  const cx = 400, cy = 250;
+  const layers = 2 + floor(R() * 3);
+  const rotation = R() * 30;
+  let defs = glowFilter('g1', p.glow, 6) + rGrad('bg1', p.colors[0] + '15', 'transparent', cx, cy, 350);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="${350}" fill="url(#bg1)"/>`;
+  const circles = [];
+  circles.push([cx, cy]);
+  for (let layer = 1; layer <= layers; layer++) {
+    const count = 6 * layer;
+    for (let i = 0; i < count; i++) {
+      const angle = (TAU * i / count) + rotation * Math.PI / 180;
+      for (let r = 1; r <= layer; r++) {
+        const x = cx + cos(angle) * baseR * r * 1.0;
+        const y = cy + sin(angle) * baseR * r * 1.0;
+        circles.push([x, y]);
       }
-    });
-
-    const variations = expanded.slice(0, 200);
-    let selected = new Set();
-
-    // Render grid
-    const gridEl = document.getElementById('grid');
-    gridEl.innerHTML = '';
-
-    variations.forEach(v => {
-      const item = document.createElement('div');
-      item.className = 'bg-item';
-      item.dataset.id = v.id;
-      item.dataset.category = v.category;
-      item.innerHTML = `
-        <div class="bg-preview" style="background-image: url('${v.url}');"></div>
-        <input type="checkbox" class="bg-checkbox" data-id="${v.id}">
-        <div class="bg-label">${v.label}</div>
-      `;
-
-      gridEl.appendChild(item);
-
-      const checkbox = item.querySelector('input');
-      checkbox.addEventListener('change', () => {
-        if (checkbox.checked) {
-          selected.add(v.id);
-          item.classList.add('selected');
-        } else {
-          selected.delete(v.id);
-          item.classList.remove('selected');
-        }
-        updateCounter();
-      });
-
-      item.addEventListener('click', (e) => {
-        if (e.target !== checkbox) {
-          checkbox.checked = !checkbox.checked;
-          checkbox.dispatchEvent(new Event('change'));
-        }
-      });
-    });
-
-    // Filters
-    const filtersEl = document.getElementById('filters');
-    const categories = ['All', ...new Set(variations.map(v => v.category))];
-    categories.forEach(cat => {
-      const chip = document.createElement('div');
-      chip.className = 'filter-chip';
-      if (cat === 'All') chip.classList.add('active');
-      chip.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
-      chip.addEventListener('click', () => {
-        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        document.querySelectorAll('.bg-item').forEach(item => {
-          item.style.display = (cat === 'All' || item.dataset.category === cat) ? '' : 'none';
-        });
-      });
-      filtersEl.appendChild(chip);
-    });
-
-    // Buttons
-    document.getElementById('selectAll').addEventListener('click', () => {
-      document.querySelectorAll('.bg-checkbox').forEach(cb => {
-        if (cb.offsetParent) {
-          cb.checked = true;
-          selected.add(cb.dataset.id);
-          cb.closest('.bg-item').classList.add('selected');
-        }
-      });
-      updateCounter();
-    });
-
-    document.getElementById('deselectAll').addEventListener('click', () => {
-      document.querySelectorAll('.bg-checkbox').forEach(cb => {
-        cb.checked = false;
-        selected.delete(cb.dataset.id);
-        cb.closest('.bg-item').classList.remove('selected');
-      });
-      updateCounter();
-    });
-
-    document.getElementById('copyIds').addEventListener('click', () => {
-      const ids = Array.from(selected).sort().join(', ');
-      navigator.clipboard.writeText(ids).then(() => {
-        const btn = document.getElementById('copyIds');
-        const originalText = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => {
-          btn.textContent = originalText;
-        }, 2000);
-      });
-    });
-
-    function updateCounter() {
-      document.getElementById('counter').textContent = selected.size;
     }
-  </script>
+  }
+  circles.forEach(([x, y], i) => {
+    const col = p.colors[i % p.colors.length];
+    const op = 0.12 + R() * 0.2;
+    paths += `<circle cx="${x}" cy="${y}" r="${baseR}" fill="none" stroke="${col}" stroke-width="${0.5 + R()*0.8}" opacity="${op}"/>`;
+  });
+  // glow center
+  paths += `<circle cx="${cx}" cy="${cy}" r="${baseR * 0.6}" fill="none" stroke="${p.glow}" stroke-width="1" opacity="0.4" filter="url(#g1)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 2. GOLDEN SPIRAL
+themes['Golden Spiral'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const ox = 300 + R() * 200, oy = 200 + R() * 100;
+  const startAngle = R() * TAU;
+  const dir = R() > 0.5 ? 1 : -1;
+  let defs = glowFilter('gs', p.glow, 4) + rGrad('gbg', p.colors[1] + '10', 'transparent', ox, oy, 400);
+  let paths = `<circle cx="${ox}" cy="${oy}" r="400" fill="url(#gbg)"/>`;
+  // spiral
+  let d = `M ${ox} ${oy}`;
+  const steps = 200 + floor(R() * 200);
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps * 6 * Math.PI;
+    const r = 3 * Math.pow(PHI, t / (2 * Math.PI)) * (0.8 + R() * 0.01);
+    const x = ox + cos(startAngle + t * dir) * r;
+    const y = oy + sin(startAngle + t * dir) * r;
+    d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }
+  paths += `<path d="${d}" fill="none" stroke="${p.colors[0]}" stroke-width="0.8" opacity="0.5"/>`;
+  paths += `<path d="${d}" fill="none" stroke="${p.glow}" stroke-width="2" opacity="0.15" filter="url(#gs)"/>`;
+  // golden rectangles
+  let w = 120 * (0.7 + R() * 0.6);
+  for (let i = 0; i < 7; i++) {
+    const h = w / PHI;
+    const op = 0.08 + i * 0.03;
+    paths += `<rect x="${ox - w/2}" y="${oy - h/2}" width="${w}" height="${h}" fill="none" stroke="${p.colors[2]}" stroke-width="0.4" opacity="${op}" transform="rotate(${i * 90 + R()*5},${ox},${oy})"/>`;
+    w = h;
+  }
+  // fibonacci dots
+  for (let i = 0; i < 12; i++) {
+    const fn = fib(i + 3);
+    const a = startAngle + i * TAU / PHI;
+    const x = ox + cos(a) * fn * 0.6;
+    const y = oy + sin(a) * fn * 0.6;
+    paths += `<circle cx="${x}" cy="${y}" r="2" fill="${p.colors[i%p.colors.length]}" opacity="0.5"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 3. METATRON'S CUBE
+themes["Metatron's Cube"] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const outerR = 140 + R() * 60;
+  const innerR = outerR / PHI;
+  const rot = R() * 60;
+  let defs = glowFilter('mc', p.glow, 5) + rGrad('mbg', p.colors[0] + '0c', 'transparent', cx, cy, outerR * 1.5);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="${outerR*1.5}" fill="url(#mbg)"/>`;
+  // 13 circles: center + 6 inner + 6 outer
+  const pts = [[cx, cy]];
+  for (let i = 0; i < 6; i++) {
+    const a = TAU * i / 6 + rot * Math.PI / 180;
+    pts.push([cx + cos(a) * innerR, cy + sin(a) * innerR]);
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = TAU * i / 6 + rot * Math.PI / 180 + TAU / 12;
+    pts.push([cx + cos(a) * outerR, cy + sin(a) * outerR]);
+  }
+  // connect all points
+  for (let i = 0; i < pts.length; i++) {
+    for (let j = i + 1; j < pts.length; j++) {
+      const op = 0.06 + R() * 0.1;
+      paths += `<line x1="${pts[i][0].toFixed(1)}" y1="${pts[i][1].toFixed(1)}" x2="${pts[j][0].toFixed(1)}" y2="${pts[j][1].toFixed(1)}" stroke="${p.colors[j % p.colors.length]}" stroke-width="0.3" opacity="${op}"/>`;
+    }
+  }
+  // circles at each point
+  pts.forEach(([x, y], i) => {
+    const r = (i === 0 ? innerR * 0.4 : innerR * 0.3) * (0.8 + R() * 0.4);
+    paths += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="none" stroke="${p.colors[i%p.colors.length]}" stroke-width="0.6" opacity="0.25"/>`;
+  });
+  // glow center
+  paths += `<circle cx="${cx}" cy="${cy}" r="${innerR * 0.15}" fill="${p.glow}" opacity="0.2" filter="url(#mc)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 4. VESICA PISCIS
+themes['Vesica Piscis'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const r = 100 + R() * 60;
+  const sep = r * (0.8 + R() * 0.4);
+  const rot = R() * 180;
+  const layers = 1 + floor(R() * 3);
+  let defs = glowFilter('vp', p.glow, 8) + rGrad('vbg', p.colors[1] + '0a', 'transparent', cx, cy, 300);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="300" fill="url(#vbg)"/>`;
+  for (let L = 0; L < layers; L++) {
+    const scale = 1 - L * 0.25;
+    const rr = r * scale, ss = sep * scale;
+    const a = (rot + L * 30) * Math.PI / 180;
+    const x1 = cx + cos(a) * ss / 2, y1 = cy + sin(a) * ss / 2;
+    const x2 = cx - cos(a) * ss / 2, y2 = cy - sin(a) * ss / 2;
+    const op = 0.2 + L * 0.1;
+    paths += `<circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="${rr}" fill="none" stroke="${p.colors[L % p.colors.length]}" stroke-width="0.8" opacity="${op}"/>`;
+    paths += `<circle cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" r="${rr}" fill="none" stroke="${p.colors[(L+1) % p.colors.length]}" stroke-width="0.8" opacity="${op}"/>`;
+  }
+  // vesica intersection glow
+  paths += `<ellipse cx="${cx}" cy="${cy}" rx="${r*0.3}" ry="${r*0.6}" fill="${p.glow}" opacity="0.06" filter="url(#vp)" transform="rotate(${rot},${cx},${cy})"/>`;
+  // decorative rings
+  for (let i = 0; i < 3; i++) {
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r * (0.5 + i * 0.6)}" fill="none" stroke="${p.colors[3]}" stroke-width="0.3" opacity="0.1" stroke-dasharray="${3 + i*2} ${6 + i*3}"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 5. HEXAGONAL GRID
+themes['Hexagonal Grid'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const size = 20 + R() * 30;
+  const w = size * 2, h = size * sqrt(3);
+  const fade = R() > 0.5;
+  let defs = glowFilter('hx', p.glow, 3) + rGrad('hbg', p.colors[0] + '12', 'transparent', 400, 250, 350);
+  let paths = `<circle cx="400" cy="250" r="350" fill="url(#hbg)"/>`;
+  function hex(cx, cy, s) {
+    let pts = [];
+    for (let i = 0; i < 6; i++) {
+      const a = TAU * i / 6 - Math.PI / 6;
+      pts.push(`${(cx + cos(a) * s).toFixed(1)},${(cy + sin(a) * s).toFixed(1)}`);
+    }
+    return pts.join(' ');
+  }
+  for (let row = -1; row < 500 / h + 1; row++) {
+    for (let col = -1; col < 800 / (w * 0.75) + 1; col++) {
+      const x = col * w * 0.75;
+      const y = row * h + (col % 2 ? h / 2 : 0);
+      const dist = sqrt((x - 400) ** 2 + (y - 250) ** 2);
+      if (dist > 380) continue;
+      let op = fade ? Math.max(0.05, 0.35 - dist / 800) : 0.15 + R() * 0.12;
+      const ci = floor(R() * p.colors.length);
+      paths += `<polygon points="${hex(x, y, size * 0.92)}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.4" opacity="${op.toFixed(2)}"/>`;
+      if (R() > 0.85) {
+        paths += `<polygon points="${hex(x, y, size * 0.5)}" fill="${p.colors[ci]}" opacity="0.05"/>`;
+      }
+    }
+  }
+  // center glow
+  paths += `<circle cx="400" cy="250" r="${size * 2}" fill="${p.glow}" opacity="0.08" filter="url(#hx)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 6. FRACTAL FERN
+themes['Fractal Fern'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const startX = 350 + R() * 100, startY = 480;
+  const lean = -0.3 + R() * 0.6;
+  let defs = glowFilter('ff', p.glow, 4) + grad('fg', p.colors[0] + '20', p.colors[2] + '05', 0, 1, 0, 0);
+  let paths = `<rect width="800" height="500" fill="url(#fg)"/>`;
+  // Barnsley fern via IFS
+  let x = 0, y = 0;
+  const points = [];
+  const rng = seededRandom(seed + 7);
+  for (let i = 0; i < 8000; i++) {
+    const r = rng();
+    let nx, ny;
+    if (r < 0.01) { nx = 0; ny = 0.16 * y; }
+    else if (r < 0.86) { nx = 0.85 * x + (0.04 + lean * 0.05) * y; ny = -0.04 * x + 0.85 * y + 1.6; }
+    else if (r < 0.93) { nx = 0.2 * x - 0.26 * y; ny = 0.23 * x + 0.22 * y + 1.6; }
+    else { nx = -0.15 * x + 0.28 * y; ny = 0.26 * x + 0.24 * y + 0.44; }
+    x = nx; y = ny;
+    if (i > 20) points.push([x, y]);
+  }
+  const minX = Math.min(...points.map(p=>p[0])), maxX = Math.max(...points.map(p=>p[0]));
+  const minY = Math.min(...points.map(p=>p[1])), maxY = Math.max(...points.map(p=>p[1]));
+  const scaleX = 300 / (maxX - minX), scaleY = 420 / (maxY - minY);
+  const scale = Math.min(scaleX, scaleY);
+  points.forEach(([px, py], i) => {
+    const sx = startX + (px - (minX + maxX) / 2) * scale;
+    const sy = startY - (py - minY) * scale;
+    if (sx < 0 || sx > 800 || sy < 0 || sy > 500) return;
+    const ci = floor((py - minY) / (maxY - minY) * (p.colors.length - 1));
+    const op = 0.15 + (py - minY) / (maxY - minY) * 0.4;
+    if (i % 3 === 0) paths += `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="0.8" fill="${p.colors[ci]}" opacity="${op.toFixed(2)}"/>`;
+  });
+  // stem glow
+  paths += `<line x1="${startX}" y1="${startY}" x2="${startX}" y2="${startY - 350}" stroke="${p.glow}" stroke-width="1.5" opacity="0.1" filter="url(#ff)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 7. SACRED TREE
+themes['Sacred Tree'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, base = 250;
+  let defs = glowFilter('st', p.glow, 6) + grad('tbg', p.colors[2] + '08', 'transparent', 0, 0.5, 0, 1);
+  let paths = `<rect width="800" height="500" fill="url(#tbg)"/>`;
+
+  function branch(x, y, angle, length, depth, dir) {
+    if (depth <= 0 || length < 3) return;
+    const nx = x + cos(angle) * length;
+    const ny = y + sin(angle) * length * dir;
+    const op = 0.15 + depth * 0.06;
+    const sw = 0.3 + depth * 0.2;
+    const ci = depth % p.colors.length;
+    paths += `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${p.colors[ci]}" stroke-width="${sw}" opacity="${op}" stroke-linecap="round"/>`;
+    const spread = 0.4 + R() * 0.4;
+    const shrink = 0.6 + R() * 0.15;
+    branch(nx, ny, angle - spread, length * shrink, depth - 1, dir);
+    branch(nx, ny, angle + spread, length * shrink, depth - 1, dir);
+    if (R() > 0.6) branch(nx, ny, angle + (R()-0.5)*0.3, length * shrink * 0.8, depth - 1, dir);
+  }
+
+  const trunkLen = 40 + R() * 30;
+  const branchDepth = 7 + floor(R() * 3);
+  // trunk
+  paths += `<line x1="${cx}" y1="${base}" x2="${cx}" y2="${base - trunkLen}" stroke="${p.colors[0]}" stroke-width="1.5" opacity="0.3"/>`;
+  paths += `<line x1="${cx}" y1="${base}" x2="${cx}" y2="${base + trunkLen}" stroke="${p.colors[0]}" stroke-width="1.5" opacity="0.3"/>`;
+  // branches up
+  branch(cx, base - trunkLen, -Math.PI/2, trunkLen * 0.8, branchDepth, 1);
+  // roots down (mirror)
+  branch(cx, base + trunkLen, Math.PI/2, trunkLen * 0.8, branchDepth, 1);
+  // center glow
+  paths += `<circle cx="${cx}" cy="${base}" r="15" fill="${p.glow}" opacity="0.12" filter="url(#st)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 8. WATER RIPPLES
+themes['Water Ripples'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 300 + R() * 200, cy = 200 + R() * 100;
+  const numRings = 12 + floor(R() * 10);
+  let defs = glowFilter('wr', p.glow, 10) + rGrad('wbg', p.colors[1] + '0d', 'transparent', cx, cy, 400);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="400" fill="url(#wbg)"/>`;
+  // fibonacci-spaced rings
+  for (let i = 0; i < numRings; i++) {
+    const r = fib(i + 3) * (1.5 + R() * 0.5);
+    if (r > 400) break;
+    const op = Math.max(0.05, 0.35 - i * 0.025);
+    const sw = Math.max(0.3, 1.2 - i * 0.06);
+    const ci = i % p.colors.length;
+    // slight ellipse for perspective
+    const ry = r * (0.5 + R() * 0.15);
+    paths += `<ellipse cx="${cx}" cy="${cy}" rx="${r}" ry="${ry}" fill="none" stroke="${p.colors[ci]}" stroke-width="${sw}" opacity="${op}"/>`;
+  }
+  // secondary drop
+  if (R() > 0.4) {
+    const cx2 = cx + (R()-0.5) * 300, cy2 = cy + (R()-0.5) * 100;
+    for (let i = 0; i < 6; i++) {
+      const r = fib(i + 3) * 1.2;
+      paths += `<ellipse cx="${cx2}" cy="${cy2}" rx="${r}" ry="${r*0.5}" fill="none" stroke="${p.colors[2]}" stroke-width="0.3" opacity="0.1"/>`;
+    }
+  }
+  // center glow
+  paths += `<circle cx="${cx}" cy="${cy}" r="8" fill="${p.glow}" opacity="0.25" filter="url(#wr)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 9. MANDALA
+themes['Mandala'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const sym = 6 + floor(R() * 12);
+  const rings = 4 + floor(R() * 5);
+  let defs = glowFilter('mn', p.glow, 5) + rGrad('mbg2', p.colors[0] + '0e', 'transparent', cx, cy, 280);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="280" fill="url(#mbg2)"/>`;
+
+  for (let ring = 1; ring <= rings; ring++) {
+    const r = ring * (35 + R() * 15);
+    const petalType = floor(R() * 3);
+    for (let i = 0; i < sym; i++) {
+      const a = TAU * i / sym + ring * 0.1;
+      const ci = (ring + i) % p.colors.length;
+      const op = 0.12 + R() * 0.18;
+      if (petalType === 0) {
+        const px = cx + cos(a) * r, py = cy + sin(a) * r;
+        const pr = 8 + ring * 3;
+        paths += `<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${pr * 0.4}" ry="${pr}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.5" opacity="${op}" transform="rotate(${a*180/Math.PI},${px.toFixed(1)},${py.toFixed(1)})"/>`;
+      } else if (petalType === 1) {
+        const px = cx + cos(a) * r, py = cy + sin(a) * r;
+        const s = 6 + ring * 2;
+        const da = a * 180 / Math.PI;
+        paths += `<rect x="${px-s/2}" y="${py-s/2}" width="${s}" height="${s}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.4" opacity="${op}" transform="rotate(${da+45},${px.toFixed(1)},${py.toFixed(1)})"/>`;
+      } else {
+        const px = cx + cos(a) * r, py = cy + sin(a) * r;
+        paths += `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${2 + ring}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.5" opacity="${op}"/>`;
+      }
+    }
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${p.colors[ring % p.colors.length]}" stroke-width="0.3" opacity="0.1"/>`;
+  }
+  for (let i = 0; i < sym; i++) {
+    const a = TAU * i / sym;
+    const maxR = rings * 50;
+    paths += `<line x1="${cx}" y1="${cy}" x2="${(cx+cos(a)*maxR).toFixed(1)}" y2="${(cy+sin(a)*maxR).toFixed(1)}" stroke="${p.colors[3]}" stroke-width="0.2" opacity="0.08"/>`;
+  }
+  paths += `<circle cx="${cx}" cy="${cy}" r="6" fill="${p.glow}" opacity="0.2" filter="url(#mn)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 10. MOUNTAIN LAYERS
+themes['Mountain Layers'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const layers = 5 + floor(R() * 4);
+  let defs = glowFilter('ml', p.glow, 12) + grad('sky', p.colors[0] + '08', 'transparent', 0, 0, 0, 1);
+  let paths = `<rect width="800" height="500" fill="url(#sky)"/>`;
+  // stars
+  for (let i = 0; i < 30 + floor(R()*40); i++) {
+    const x = R() * 800, y = R() * 200;
+    paths += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${0.3+R()*1}" fill="${p.colors[floor(R()*p.colors.length)]}" opacity="${0.2+R()*0.4}"/>`;
+  }
+  // moon
+  const moonX = 150 + R() * 500, moonY = 50 + R() * 80;
+  paths += `<circle cx="${moonX}" cy="${moonY}" r="${12+R()*15}" fill="${p.glow}" opacity="0.12" filter="url(#ml)"/>`;
+  paths += `<circle cx="${moonX}" cy="${moonY}" r="${8+R()*8}" fill="${p.colors[4]}" opacity="0.08"/>`;
+
+  for (let L = 0; L < layers; L++) {
+    const baseY = 200 + L * (250 / layers);
+    const op = 0.06 + L * 0.04;
+    const ci = L % p.colors.length;
+    let d = `M 0 ${baseY + 50}`;
+    const peaks = 3 + floor(R() * 5);
+    const segW = 800 / peaks;
+    for (let j = 0; j <= peaks; j++) {
+      const x = j * segW;
+      const peakH = 30 + R() * (80 - L * 8);
+      const y = baseY - peakH + R() * 20;
+      if (j === 0) d += ` L 0 ${y.toFixed(0)}`;
+      else {
+        const cpx = x - segW * 0.5;
+        const cpy = y - 10 + R() * 20;
+        d += ` Q ${cpx.toFixed(0)} ${cpy.toFixed(0)} ${x.toFixed(0)} ${(baseY - peakH * 0.3 + R()*20).toFixed(0)}`;
+      }
+    }
+    d += ` L 800 500 L 0 500 Z`;
+    paths += `<path d="${d}" fill="${p.colors[ci]}" opacity="${op}"/>`;
+    paths += `<path d="${d.split(' L 800')[0]}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.6" opacity="${op + 0.1}"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 11. DANDELION SEEDS
+themes['Dandelion Seeds'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const stemX = 200 + R() * 400, stemBase = 480, headY = 120 + R() * 80;
+  let defs = glowFilter('ds', p.glow, 3);
+  let paths = '';
+  paths += `<rect width="800" height="500" fill="${p.bg}"/>`;
+  const curve = (R()-0.5) * 60;
+  paths += `<path d="M ${stemX} ${stemBase} Q ${stemX+curve} ${(stemBase+headY)/2} ${stemX} ${headY}" fill="none" stroke="${p.colors[2]}" stroke-width="0.8" opacity="0.25"/>`;
+  // seed head
+  const numSeeds = 20 + floor(R() * 20);
+  for (let i = 0; i < numSeeds; i++) {
+    const a = TAU * i / numSeeds + R() * 0.2;
+    const len = 15 + R() * 25;
+    const ex = stemX + cos(a) * len, ey = headY + sin(a) * len;
+    paths += `<line x1="${stemX}" y1="${headY}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" stroke="${p.colors[0]}" stroke-width="0.3" opacity="0.2"/>`;
+    for (let f = 0; f < 4; f++) {
+      const fa = a + (f - 1.5) * 0.4;
+      const fl = 4 + R() * 6;
+      paths += `<line x1="${ex.toFixed(1)}" y1="${ey.toFixed(1)}" x2="${(ex+cos(fa)*fl).toFixed(1)}" y2="${(ey+sin(fa)*fl).toFixed(1)}" stroke="${p.colors[1]}" stroke-width="0.2" opacity="0.15"/>`;
+    }
+  }
+  // floating seeds
+  const numFloating = 8 + floor(R() * 12);
+  for (let i = 0; i < numFloating; i++) {
+    const fx = R() * 800, fy = R() * 400;
+    const fSize = 3 + R() * 8;
+    const op = 0.08 + R() * 0.2;
+    paths += `<ellipse cx="${fx.toFixed(0)}" cy="${fy.toFixed(0)}" rx="1" ry="${fSize*0.3}" fill="${p.colors[3]}" opacity="${op}" transform="rotate(${R()*360},${fx.toFixed(0)},${fy.toFixed(0)})"/>`;
+    for (let f = 0; f < 5; f++) {
+      const fa = -Math.PI/2 + (f - 2) * 0.5 + R() * 0.3;
+      paths += `<line x1="${fx.toFixed(0)}" y1="${fy.toFixed(0)}" x2="${(fx+cos(fa)*fSize).toFixed(0)}" y2="${(fy+sin(fa)*fSize).toFixed(0)}" stroke="${p.colors[1]}" stroke-width="0.2" opacity="${op*0.7}"/>`;
+    }
+  }
+  // wind curves
+  for (let i = 0; i < 3; i++) {
+    const wy = 100 + R() * 300;
+    let d = `M 0 ${wy}`;
+    for (let x = 50; x <= 800; x += 50) {
+      d += ` Q ${x-25} ${wy + sin(x*0.02+i)*20} ${x} ${wy + sin(x*0.015+i*2)*15}`;
+    }
+    paths += `<path d="${d}" fill="none" stroke="${p.colors[0]}" stroke-width="0.2" opacity="0.06"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 12. CRYSTAL GROWTH
+themes['Crystal Growth'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 480;
+  const numCrystals = 4 + floor(R() * 6);
+  let defs = glowFilter('cg', p.glow, 5) + grad('cbg', 'transparent', p.colors[0] + '08', 0, 0, 0, 1);
+  let paths = `<rect width="800" height="500" fill="url(#cbg)"/>`;
+
+  for (let c = 0; c < numCrystals; c++) {
+    const bx = 100 + R() * 600;
+    const by = cy;
+    const h = 100 + R() * 300;
+    const w = 15 + R() * 40;
+    const tilt = (R() - 0.5) * 20;
+    const ci = c % p.colors.length;
+    const op = 0.1 + R() * 0.2;
+    const top = by - h;
+    const pts = [
+      [bx - w/2, by],
+      [bx - w/3, top + h*0.15],
+      [bx, top],
+      [bx + w/3, top + h*0.15],
+      [bx + w/2, by],
+    ].map(([x,y]) => `${(x + tilt * (by-y)/h).toFixed(1)},${y.toFixed(1)}`).join(' ');
+    paths += `<polygon points="${pts}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.7" opacity="${op}"/>`;
+    paths += `<line x1="${bx + tilt}" y1="${top}" x2="${bx}" y2="${by}" stroke="${p.colors[ci]}" stroke-width="0.3" opacity="${op*0.5}"/>`;
+    paths += `<line x1="${(bx - w/3 + tilt*0.85).toFixed(1)}" y1="${(top + h*0.15).toFixed(1)}" x2="${bx + tilt}" y2="${top}" stroke="${p.colors[(ci+1)%p.colors.length]}" stroke-width="0.5" opacity="${op + 0.1}"/>`;
+    if (R() > 0.5) paths += `<circle cx="${bx + tilt}" cy="${top}" r="4" fill="${p.glow}" opacity="0.15" filter="url(#cg)"/>`;
+  }
+  paths += `<line x1="0" y1="${cy}" x2="800" y2="${cy}" stroke="${p.colors[3]}" stroke-width="0.3" opacity="0.1"/>`;
+  for (let i = 0; i < 15; i++) {
+    const sx = R() * 800, sy = R() * 400;
+    paths += `<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="0.6" fill="${p.colors[floor(R()*p.colors.length)]}" opacity="${0.15+R()*0.3}"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 13. MYCELIUM NETWORK
+themes['Mycelium Network'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const numNodes = 30 + floor(R() * 40);
+  const nodes = [];
+  let defs = glowFilter('my', p.glow, 4) + rGrad('mybg', p.colors[0] + '08', 'transparent', 400, 250, 400);
+  let paths = `<circle cx="400" cy="250" r="400" fill="url(#mybg)"/>`;
+
+  for (let i = 0; i < numNodes; i++) {
+    nodes.push({ x: 50 + R() * 700, y: 50 + R() * 400, r: 1.5 + R() * 4 });
+  }
+  const maxDist = 120 + R() * 80;
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i + 1; j < nodes.length; j++) {
+      const d = sqrt((nodes[i].x - nodes[j].x)**2 + (nodes[i].y - nodes[j].y)**2);
+      if (d < maxDist) {
+        const op = 0.05 + (1 - d / maxDist) * 0.2;
+        const mx = (nodes[i].x + nodes[j].x) / 2 + (R() - 0.5) * 30;
+        const my = (nodes[i].y + nodes[j].y) / 2 + (R() - 0.5) * 30;
+        paths += `<path d="M ${nodes[i].x.toFixed(0)} ${nodes[i].y.toFixed(0)} Q ${mx.toFixed(0)} ${my.toFixed(0)} ${nodes[j].x.toFixed(0)} ${nodes[j].y.toFixed(0)}" fill="none" stroke="${p.colors[i % p.colors.length]}" stroke-width="0.4" opacity="${op.toFixed(2)}"/>`;
+      }
+    }
+  }
+  nodes.forEach((n, i) => {
+    const ci = i % p.colors.length;
+    paths += `<circle cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="${n.r.toFixed(1)}" fill="${p.colors[ci]}" opacity="0.15"/>`;
+    paths += `<circle cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="${n.r * 0.4}" fill="${p.colors[ci]}" opacity="0.35"/>`;
+  });
+  for (let i = 0; i < 3; i++) {
+    const n = nodes[floor(R() * nodes.length)];
+    paths += `<circle cx="${n.x.toFixed(0)}" cy="${n.y.toFixed(0)}" r="${n.r * 2}" fill="${p.glow}" opacity="0.1" filter="url(#my)"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 14. AURORA WAVES
+themes['Aurora Waves'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const numWaves = 6 + floor(R() * 6);
+  let defs = glowFilter('aw', p.glow, 15);
+  defs += grad('abg', '#050510', p.bg, 0, 0, 0, 1);
+  let paths = `<rect width="800" height="500" fill="url(#abg)"/>`;
+  // stars
+  for (let i = 0; i < 50; i++) {
+    const x = R() * 800, y = R() * 250;
+    paths += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${0.3+R()*0.8}" fill="#fff" opacity="${0.1+R()*0.3}"/>`;
+  }
+  for (let w = 0; w < numWaves; w++) {
+    const baseY = 80 + w * 35 + R() * 30;
+    const amp = 20 + R() * 50;
+    const freq = 0.003 + R() * 0.006;
+    const phase = R() * TAU;
+    let d = `M 0 ${baseY}`;
+    for (let x = 0; x <= 800; x += 5) {
+      const y = baseY + sin(x * freq + phase) * amp + sin(x * freq * 2.3 + phase * 1.5) * amp * 0.3;
+      d += ` L ${x} ${y.toFixed(1)}`;
+    }
+    const ci = w % p.colors.length;
+    const op = 0.08 + R() * 0.12;
+    paths += `<path d="${d}" fill="none" stroke="${p.colors[ci]}" stroke-width="${1 + R()*2}" opacity="${op}"/>`;
+    paths += `<path d="${d}" fill="none" stroke="${p.glow}" stroke-width="${4 + R()*6}" opacity="${op * 0.3}" filter="url(#aw)"/>`;
+    paths += `<path d="${d} L 800 ${baseY + 80} L 0 ${baseY + 80} Z" fill="${p.colors[ci]}" opacity="${op * 0.15}"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 15. LOTUS BLOOM
+themes['Lotus Bloom'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const petalLayers = 3 + floor(R() * 3);
+  const petalsPerLayer = 6 + floor(R() * 8);
+  let defs = glowFilter('lb', p.glow, 6) + rGrad('lbg', p.colors[0] + '0c', 'transparent', cx, cy, 250);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="250" fill="url(#lbg)"/>`;
+
+  for (let L = petalLayers; L >= 1; L--) {
+    const r = 30 + L * (25 + R() * 15);
+    const openAngle = 0.3 + L * 0.15;
+    for (let i = 0; i < petalsPerLayer; i++) {
+      const a = TAU * i / petalsPerLayer + L * 0.15;
+      const ci = (L + i) % p.colors.length;
+      const op = 0.08 + L * 0.04;
+      const tipX = cx + cos(a) * r;
+      const tipY = cy + sin(a) * r;
+      const leftA = a - openAngle;
+      const rightA = a + openAngle;
+      const baseR = r * 0.15;
+      const bx1 = cx + cos(leftA) * baseR, by1 = cy + sin(leftA) * baseR;
+      const bx2 = cx + cos(rightA) * baseR, by2 = cy + sin(rightA) * baseR;
+      const cp1x = cx + cos(a - openAngle * 0.5) * r * 0.7;
+      const cp1y = cy + sin(a - openAngle * 0.5) * r * 0.7;
+      const cp2x = cx + cos(a + openAngle * 0.5) * r * 0.7;
+      const cp2y = cy + sin(a + openAngle * 0.5) * r * 0.7;
+      paths += `<path d="M ${bx1.toFixed(1)} ${by1.toFixed(1)} Q ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${tipX.toFixed(1)} ${tipY.toFixed(1)} Q ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${bx2.toFixed(1)} ${by2.toFixed(1)}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.6" opacity="${op}"/>`;
+    }
+  }
+  // center seed of life
+  const sr = 12 + R() * 8;
+  paths += `<circle cx="${cx}" cy="${cy}" r="${sr}" fill="none" stroke="${p.colors[0]}" stroke-width="0.4" opacity="0.25"/>`;
+  for (let i = 0; i < 6; i++) {
+    const a = TAU * i / 6;
+    const sx = cx + cos(a) * sr, sy = cy + sin(a) * sr;
+    paths += `<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="${sr}" fill="none" stroke="${p.colors[1]}" stroke-width="0.3" opacity="0.15"/>`;
+  }
+  paths += `<circle cx="${cx}" cy="${cy}" r="5" fill="${p.glow}" opacity="0.2" filter="url(#lb)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 16. COSMIC DUST
+themes['Cosmic Dust'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const nebCx = 300 + R()*200, nebCy = 150+R()*200;
+  let defs = glowFilter('cd', p.glow, 8);
+  defs += rGrad('nebula', p.colors[0] + '10', 'transparent', nebCx, nebCy, 250);
+  let paths = `<circle cx="${nebCx}" cy="${nebCy}" r="250" fill="url(#nebula)"/>`;
+  for (let layer = 0; layer < 3; layer++) {
+    const count = 40 + floor(R() * 60);
+    for (let i = 0; i < count; i++) {
+      const x = R() * 800, y = R() * 500;
+      const size = (0.2 + R() * 1.5) * (1 - layer * 0.25);
+      const op = (0.1 + R() * 0.5) * (1 - layer * 0.2);
+      const ci = floor(R() * p.colors.length);
+      paths += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${size.toFixed(1)}" fill="${p.colors[ci]}" opacity="${op.toFixed(2)}"/>`;
+    }
+  }
+  const geomType = floor(R() * 3);
+  const gcx = 400, gcy = 250;
+  if (geomType === 0) {
+    const s = 100 + R() * 80;
+    for (let i = 0; i < 3; i++) {
+      const a1 = TAU * i / 3 - Math.PI/2, a2 = TAU * (i+1) / 3 - Math.PI/2;
+      paths += `<line x1="${(gcx+cos(a1)*s).toFixed(0)}" y1="${(gcy+sin(a1)*s).toFixed(0)}" x2="${(gcx+cos(a2)*s).toFixed(0)}" y2="${(gcy+sin(a2)*s).toFixed(0)}" stroke="${p.colors[3]}" stroke-width="0.4" opacity="0.12"/>`;
+    }
+  } else if (geomType === 1) {
+    const r = 80 + R() * 60;
+    paths += `<circle cx="${gcx}" cy="${gcy}" r="${r}" fill="none" stroke="${p.colors[3]}" stroke-width="0.3" opacity="0.1"/>`;
+    paths += `<line x1="${gcx}" y1="${gcy-r}" x2="${gcx}" y2="${gcy+r}" stroke="${p.colors[3]}" stroke-width="0.2" opacity="0.08"/>`;
+    paths += `<line x1="${gcx-r}" y1="${gcy}" x2="${gcx+r}" y2="${gcy}" stroke="${p.colors[3]}" stroke-width="0.2" opacity="0.08"/>`;
+  } else {
+    const s = 90 + R() * 60;
+    for (let i = 0; i < 5; i++) {
+      const a1 = TAU * i / 5 - Math.PI/2, a2 = TAU * (i+1) / 5 - Math.PI/2;
+      paths += `<line x1="${(gcx+cos(a1)*s).toFixed(0)}" y1="${(gcy+sin(a1)*s).toFixed(0)}" x2="${(gcx+cos(a2)*s).toFixed(0)}" y2="${(gcy+sin(a2)*s).toFixed(0)}" stroke="${p.colors[3]}" stroke-width="0.3" opacity="0.1"/>`;
+    }
+  }
+  const bx = 100 + R() * 600, by = 50 + R() * 400;
+  paths += `<circle cx="${bx}" cy="${by}" r="2" fill="#fff" opacity="0.6"/>`;
+  paths += `<circle cx="${bx}" cy="${by}" r="8" fill="${p.glow}" opacity="0.15" filter="url(#cd)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 17. SAND PATTERNS
+themes['Sand Patterns'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const pattern = floor(R() * 3);
+  let defs = glowFilter('sp', p.glow, 3);
+  let paths = `<rect width="800" height="500" fill="${p.bg}"/>`;
+
+  if (pattern === 0) {
+    const stones = 1 + floor(R() * 3);
+    for (let s = 0; s < stones; s++) {
+      const sx = 200 + R() * 400, sy = 150 + R() * 200;
+      const numRings = 10 + floor(R() * 15);
+      paths += `<ellipse cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" rx="${8+R()*12}" ry="${6+R()*8}" fill="${p.colors[0]}" opacity="0.15"/>`;
+      for (let i = 1; i <= numRings; i++) {
+        const r = 15 + i * (8 + R() * 4);
+        const op = Math.max(0.04, 0.2 - i * 0.01);
+        paths += `<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="${r}" fill="none" stroke="${p.colors[i%p.colors.length]}" stroke-width="0.4" opacity="${op}"/>`;
+      }
+    }
+  } else if (pattern === 1) {
+    const angle = R() * Math.PI;
+    const spacing = 6 + R() * 8;
+    const wobble = 1 + R() * 4;
+    for (let i = -20; i < 60; i++) {
+      const offset = i * spacing;
+      let d = '';
+      for (let t = 0; t <= 1000; t += 5) {
+        const x = t - 100;
+        const y = offset + sin(t * 0.01 + i * 0.5) * wobble;
+        const rx = cos(angle) * x - sin(angle) * y + cx;
+        const ry = sin(angle) * x + cos(angle) * y + cy;
+        d += (t === 0 ? 'M' : 'L') + ` ${rx.toFixed(0)} ${ry.toFixed(0)}`;
+      }
+      const op = 0.06 + R() * 0.08;
+      paths += `<path d="${d}" fill="none" stroke="${p.colors[i > 0 ? i % p.colors.length : 0]}" stroke-width="0.35" opacity="${op}"/>`;
+    }
+    paths += `<ellipse cx="${cx}" cy="${cy}" rx="${15+R()*20}" ry="${10+R()*12}" fill="${p.colors[3]}" opacity="0.1"/>`;
+  } else {
+    const turns = 4 + R() * 4;
+    const numLines = 8 + floor(R() * 10);
+    for (let L = 0; L < numLines; L++) {
+      const startA = TAU * L / numLines;
+      let d = '';
+      for (let t = 0; t < turns * TAU; t += 0.05) {
+        const r = 10 + t * (6 + R() * 0.5);
+        const x = cx + cos(t + startA) * r;
+        const y = cy + sin(t + startA) * r;
+        if (x < -10 || x > 810 || y < -10 || y > 510) break;
+        d += (t === 0 ? 'M' : 'L') + ` ${x.toFixed(0)} ${y.toFixed(0)}`;
+      }
+      const op = 0.06 + R() * 0.08;
+      paths += `<path d="${d}" fill="none" stroke="${p.colors[L%p.colors.length]}" stroke-width="0.35" opacity="${op}"/>`;
+    }
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 18. FIRE DANCE
+themes['Fire Dance'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const numFlames = 5 + floor(R() * 8);
+  let defs = glowFilter('fd', p.glow, 8) + grad('fire', p.colors[0] + '15', 'transparent', 0, 1, 0, 0);
+  let paths = `<rect width="800" height="500" fill="url(#fire)"/>`;
+
+  for (let f = 0; f < numFlames; f++) {
+    const bx = 80 + R() * 640;
+    const by = 480;
+    const h = 100 + R() * 300;
+    const w = 20 + R() * 50;
+    const numTongues = 3 + floor(R() * 4);
+    for (let t = 0; t < numTongues; t++) {
+      const ox = (R() - 0.5) * w;
+      const peakY = by - h * (0.5 + R() * 0.5);
+      const sway = (R() - 0.5) * 40;
+      const ci = (f + t) % p.colors.length;
+      const op = 0.08 + R() * 0.15;
+      paths += `<path d="M ${bx + ox} ${by} C ${bx + ox - w*0.3} ${by - h*0.3} ${bx + sway - w*0.1} ${peakY + h*0.2} ${bx + sway} ${peakY} C ${bx + sway + w*0.1} ${peakY + h*0.2} ${bx + ox + w*0.3} ${by - h*0.3} ${bx + ox} ${by}" fill="${p.colors[ci]}" opacity="${op}" stroke="${p.colors[ci]}" stroke-width="0.3"/>`;
+    }
+    paths += `<ellipse cx="${bx}" cy="${by}" rx="${w*0.6}" ry="5" fill="${p.glow}" opacity="0.1" filter="url(#fd)"/>`;
+  }
+  for (let i = 0; i < 20; i++) {
+    const ex = R() * 800, ey = R() * 400;
+    const er = 0.5 + R() * 2;
+    paths += `<circle cx="${ex.toFixed(0)}" cy="${ey.toFixed(0)}" r="${er}" fill="${p.colors[floor(R()*3)]}" opacity="${0.15+R()*0.35}"/>`;
+  }
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 19. TORUS FIELD
+themes['Torus Field'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const majorR = 100 + R() * 80;
+  const minorR = 50 + R() * 40;
+  const numLines = 15 + floor(R() * 15);
+  const tilt = 0.3 + R() * 0.5;
+  let defs = glowFilter('tf', p.glow, 6) + rGrad('tbg2', p.colors[0] + '0a', 'transparent', cx, cy, majorR * 2);
+  let paths = `<circle cx="${cx}" cy="${cy}" r="${majorR*2}" fill="url(#tbg2)"/>`;
+
+  for (let i = 0; i < numLines; i++) {
+    const theta = TAU * i / numLines;
+    let d = '';
+    for (let phi = 0; phi <= TAU; phi += 0.05) {
+      const r = majorR + minorR * cos(phi);
+      const x = cx + r * cos(theta);
+      const z = minorR * sin(phi);
+      const y = cy + z * tilt + r * sin(theta) * (1 - tilt);
+      d += (phi === 0 ? 'M' : 'L') + ` ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    d += ' Z';
+    const ci = i % p.colors.length;
+    const op = 0.08 + R() * 0.1;
+    paths += `<path d="${d}" fill="none" stroke="${p.colors[ci]}" stroke-width="0.4" opacity="${op}"/>`;
+  }
+  for (let i = 0; i < 8; i++) {
+    const phi = TAU * i / 8;
+    let d = '';
+    for (let theta = 0; theta <= TAU; theta += 0.05) {
+      const r = majorR + minorR * cos(phi);
+      const x = cx + r * cos(theta);
+      const z = minorR * sin(phi);
+      const y = cy + z * tilt + r * sin(theta) * (1 - tilt);
+      d += (theta === 0 ? 'M' : 'L') + ` ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    d += ' Z';
+    paths += `<path d="${d}" fill="none" stroke="${p.colors[2]}" stroke-width="0.3" opacity="0.06"/>`;
+  }
+  paths += `<line x1="${cx}" y1="${cy - majorR}" x2="${cx}" y2="${cy + majorR}" stroke="${p.glow}" stroke-width="0.5" opacity="0.1"/>`;
+  paths += `<circle cx="${cx}" cy="${cy}" r="4" fill="${p.glow}" opacity="0.25" filter="url(#tf)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// 20. DNA HELIX
+themes['DNA Helix'] = (seed, pal) => {
+  const R = seededRandom(seed);
+  const p = PALETTES[pal % PALETTES.length];
+  const cx = 400, cy = 250;
+  const helixH = 400;
+  const helixW = 60 + R() * 60;
+  const turns = 2 + R() * 3;
+  const rotation = R() * TAU;
+  const tiltX = (R() - 0.5) * 0.5;
+  let defs = glowFilter('dh', p.glow, 4) + grad('dbg', p.colors[0] + '08', p.colors[2] + '05', 0, 0, 0, 1);
+  let paths = `<rect width="800" height="500" fill="url(#dbg)"/>`;
+
+  const strandPts1 = [], strandPts2 = [];
+  const steps = 100;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const y = cy - helixH / 2 + t * helixH;
+    const angle = rotation + t * turns * TAU;
+    const x1 = cx + cos(angle) * helixW + tiltX * (y - cy);
+    const x2 = cx + cos(angle + Math.PI) * helixW + tiltX * (y - cy);
+    const depth1 = sin(angle);
+    const depth2 = sin(angle + Math.PI);
+    strandPts1.push({ x: x1, y, depth: depth1 });
+    strandPts2.push({ x: x2, y, depth: depth2 });
+  }
+
+  let d1 = '', d2 = '';
+  strandPts1.forEach((pt, i) => { d1 += (i === 0 ? 'M' : 'L') + ` ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`; });
+  strandPts2.forEach((pt, i) => { d2 += (i === 0 ? 'M' : 'L') + ` ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`; });
+
+  paths += `<path d="${d1}" fill="none" stroke="${p.colors[0]}" stroke-width="1" opacity="0.2"/>`;
+  paths += `<path d="${d2}" fill="none" stroke="${p.colors[1]}" stroke-width="1" opacity="0.2"/>`;
+
+  const rungInterval = floor(steps / (turns * 10));
+  for (let i = 0; i < steps; i += Math.max(1, rungInterval)) {
+    const p1 = strandPts1[i], p2 = strandPts2[i];
+    const midDepth = (p1.depth + p2.depth) / 2;
+    const op = 0.06 + abs(midDepth) * 0.12;
+    const ci = floor(i / Math.max(1, rungInterval)) % p.colors.length;
+    paths += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="${p.colors[ci]}" stroke-width="0.4" opacity="${op.toFixed(2)}"/>`;
+    const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    paths += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="1" fill="${p.colors[ci]}" opacity="${op * 1.5}"/>`;
+  }
+
+  paths += `<ellipse cx="${cx}" cy="${cy}" rx="${helixW * 0.5}" ry="${helixH * 0.1}" fill="${p.glow}" opacity="0.06" filter="url(#dh)"/>`;
+  return svgWrap(p.bg, defs, paths);
+};
+
+// ─── GENERATE ALL 200 ──────────────────────────────────────
+
+const themeNames = Object.keys(themes);
+const allImages = [];
+
+// Each theme gets 10 variations = 20 themes * 10 = 200
+themeNames.forEach((name, ti) => {
+  const gen = themes[name];
+  const variationsNeeded = 10;
+  for (let v = 0; v < variationsNeeded; v++) {
+    const seed = (ti + 1) * 1000 + v * 137 + v * v * 3;
+    const palIdx = v % PALETTES.length + floor(v / PALETTES.length);
+    allImages.push({
+      id: `bg-${ti * 10 + v + 1}`,
+      theme: name,
+      seed,
+      svg: gen(seed, palIdx)
+    });
+  }
+});
+
+// ─── RENDER UI ──────────────────────────────────────────────
+
+const selected = new Set();
+
+// Toolbar filters
+const toolbar = document.getElementById('toolbar');
+const allBtn = document.createElement('button');
+allBtn.textContent = 'All';
+allBtn.classList.add('active');
+allBtn.onclick = () => filterTheme(null);
+toolbar.appendChild(allBtn);
+
+themeNames.forEach(name => {
+  const btn = document.createElement('button');
+  btn.textContent = name;
+  btn.dataset.theme = name;
+  btn.onclick = () => filterTheme(name);
+  toolbar.appendChild(btn);
+});
+
+let activeFilter = null;
+
+function filterTheme(name) {
+  activeFilter = name;
+  document.querySelectorAll('.toolbar button').forEach(b => {
+    b.classList.toggle('active', name ? b.dataset.theme === name : b.textContent === 'All');
+  });
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const items = activeFilter ? allImages.filter(img => img.theme === activeFilter) : allImages;
+  items.forEach(img => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `${img.svg}<div class="label">${img.id} — ${img.theme}</div><div class="cb ${selected.has(img.id)?'checked':''}" data-id="${img.id}"></div>`;
+    card.querySelector('.cb').addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSelect(img.id, e.currentTarget);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function toggleSelect(id, el) {
+  if (selected.has(id)) { selected.delete(id); el.classList.remove('checked'); }
+  else { selected.add(id); el.classList.add('checked'); }
+  const bar = document.getElementById('copyBar');
+  const cnt = document.getElementById('selCount');
+  bar.classList.toggle('show', selected.size > 0);
+  cnt.textContent = `${selected.size} selected`;
+}
+
+function copySelected() {
+  const ids = [...selected].sort();
+  navigator.clipboard.writeText(ids.join('\n')).then(() => {
+    const btn = document.querySelector('.copy-bar button');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy IDs', 1500);
+  });
+}
+
+renderGrid();
+</script>
 </body>
 </html>
