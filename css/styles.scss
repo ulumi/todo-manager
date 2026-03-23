@@ -1127,25 +1127,23 @@ main {
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  border: 1.5px solid rgba(255,255,255,.2);
-  background: transparent;
-  color: rgba(255,255,255,.35);
+  border: 1.5px solid var(--tag-color);
+  background: var(--tag-color);
+  color: #fff;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .02em;
   cursor: pointer;
   border-radius: 5px;
-  transition: background .15s, border-color .15s, color .15s;
+  transition: opacity .15s;
   white-space: nowrap;
+  opacity: .35;
 
   .day-tag-x { visibility: hidden; }
 
   &.selected {
-    background: var(--tag-color);
-    border-color: var(--tag-color);
-    color: #fff;
-
+    opacity: 1;
     .day-tag-x { visibility: visible; }
   }
 }
