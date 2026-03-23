@@ -1049,6 +1049,31 @@ main {
   letter-spacing: .03em;
 }
 
+.day-ctrl-expandable {
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  transition: width .3s ease;
+
+  &.expanded {
+    .day-ctrl-group {
+      max-width: 100%;
+      opacity: 1;
+    }
+
+    .day-ctrl-chevron {
+      transform: rotate(180deg);
+    }
+  }
+
+  .day-ctrl-group {
+    max-width: 0;
+    opacity: 0;
+    transition: max-width .3s ease, opacity .3s ease;
+    flex-shrink: 0;
+  }
+}
+
 .day-ctrl-toggle {
   display: flex;
   align-items: center;
