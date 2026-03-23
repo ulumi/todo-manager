@@ -440,8 +440,8 @@ function buildScene(quote, stats, mascot, opts = {}) {
     font-family:${randomFont};
   `);
 
-  // Convert periods to line breaks, then handle both <br> and period-based breaks
-  const processedQuote = quote.replace(/\. /g, '<br>');
+  // Convert periods and commas to line breaks
+  const processedQuote = quote.replace(/\. /g, '<br>').replace(/, /g, '<br>');
   let lines = processedQuote.split('<br>').map(s => s.trim());
 
   // Enforce max 5 words per line for first line
