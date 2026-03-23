@@ -480,6 +480,10 @@ class TodoApp {
     // Close color picker if open
     document.getElementById('settingsBgColor')?.blur();
     _setBgPalette(id);
+    // Remember this palette for toggle restore
+    if (id !== 'none') {
+      localStorage.setItem('lastBgPalette', id);
+    }
     if (sync) this._saveConfigChange();
     if (state.view === 'profile') this.render();
   }
@@ -487,10 +491,13 @@ class TodoApp {
   toggleBgMode() {
     const bgPalette = localStorage.getItem('bgPalette') || 'geo';
     if (bgPalette === 'none') {
-      // Currently in uni mode — switch to poly (geo palette)
-      this.setPalette('geo');
+      // Currently in uni mode — switch to poly (restore last palette)
+      const lastPalette = localStorage.getItem('lastBgPalette') || 'geo';
+      this.setPalette(lastPalette);
     } else {
       // Currently in poly mode — switch to uni (solid color)
+      // Save current palette for restoration later
+      localStorage.setItem('lastBgPalette', bgPalette);
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const defaultColor = isDark ? '#0f1117' : '#f8f9fc';
       _setBgColor(defaultColor);
