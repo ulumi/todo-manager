@@ -1012,7 +1012,7 @@ main {
   border: none !important;
   border-radius: 0;
   background: transparent !important;
-  color: rgba(255,255,255,.4);
+  color: rgba(255,255,255,.5);
   font-size: 10px;
   font-weight: 500;
   cursor: pointer;
@@ -1028,11 +1028,10 @@ main {
   &:hover {
     background: transparent !important;
     border: none !important;
+    color: rgba(255,255,255,.8);
   }
   &.active {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 4px;
+    color: rgba(255,255,255,.8);
     background: transparent !important;
     border: none !important;
   }
