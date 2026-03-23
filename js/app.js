@@ -109,6 +109,9 @@ class TodoApp {
       state.setView(savedView);
     }
     this.render();
+    // Clear quick find input to avoid browser autofill
+    const quickFindInput = document.getElementById('quickFindInput');
+    if (quickFindInput) quickFindInput.value = '';
     this._syncServer();
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
@@ -484,8 +487,11 @@ class TodoApp {
     ).join('');
     document.getElementById('settingsPalettesGrid').innerHTML = palettesHtml;
 
-    // Update bg color picker
-    document.getElementById('settingsBgColor').value = bgColor;
+    // Update bg color picker (skip if the input is currently active to avoid closing the native picker)
+    const _bgColorInput = document.getElementById('settingsBgColor');
+    if (_bgColorInput && _bgColorInput !== document.activeElement) {
+      _bgColorInput.value = bgColor;
+    }
   }
 
   setPalette(id, { sync = true } = {}) {
