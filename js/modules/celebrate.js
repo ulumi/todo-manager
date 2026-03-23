@@ -644,10 +644,9 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
       gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
     } else {
       // Mega zoom + fade out effect — diving into rainbow
-      const exitTl = gsap.timeline();
-      exitTl.to([quoteEl, statsEl, unicornWrap, thumbsBtn, particles, streaks],
-        { opacity: 0, scale: 4, duration: 0.6, ease: 'power2.in' }, 0);
-      exitTl.to(ov, { opacity: 0, duration: 0.6, ease: 'power2.in', onComplete: () => ov.remove() }, 0);
+      gsap.to([quoteEl, statsEl, unicornWrap, thumbsBtn, particles], { opacity: 0, duration: 0.1, ease: 'none' });
+      gsap.to([quoteEl, statsEl, unicornWrap, streaks], { scale: 3, duration: 0.25, ease: 'power2.in' });
+      gsap.to(ov, { opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: () => ov.remove() });
     }
   };
 
