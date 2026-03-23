@@ -296,9 +296,11 @@ export function renderDayView(todos) {
       const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
       const flat = filteredItems.map(t => {
         const catName = t.projectId ? categories.find(c => c.id === t.projectId)?.name || '' : '';
-        const tagBadge = catName ? `<span class="day-tag-badge" style="color:${categories.find(c => c.id === t.projectId)?.color}">[${catName}]</span>` : '';
-        const item = todoItemHTML(t, navDate, 'punctual');
-        return item.replace('</div>', `${tagBadge}</div>`);
+        const catColor = t.projectId ? categories.find(c => c.id === t.projectId)?.color || '#999' : '#999';
+        const tagBadge = catName ? `<span class="day-tag-badge" style="color:${catColor}">[${catName}]</span>` : '';
+        const html = todoItemHTML(t, navDate, 'punctual');
+        // Insert badge before closing tag of todo-content
+        return html.replace('</span>', `</span>${tagBadge}`);
       }).join('');
       rightColItems = `<div class="day-tag-controls">${tagCloud}${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
