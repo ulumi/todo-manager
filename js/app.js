@@ -2942,6 +2942,48 @@ class TodoApp {
     this.render();
   }
 
+  toggleDaySort() {
+    const cur = localStorage.getItem('daySortCollapsed') !== 'false';
+    localStorage.setItem('daySortCollapsed', !cur ? 'true' : 'false');
+    this.render();
+    if (!cur) this.startAutoCloseDaySort();
+  }
+
+  toggleDayCol() {
+    const cur = localStorage.getItem('dayColCollapsed') !== 'false';
+    localStorage.setItem('dayColCollapsed', !cur ? 'true' : 'false');
+    this.render();
+    if (!cur) this.startAutoCloseDayCol();
+  }
+
+  closeDaySort() {
+    localStorage.setItem('daySortCollapsed', 'true');
+    this.render();
+  }
+
+  closeDayCol() {
+    localStorage.setItem('dayColCollapsed', 'true');
+    this.render();
+  }
+
+  startAutoCloseDaySort() {
+    clearTimeout(this.autoCloseDaySortTimer);
+    this.autoCloseDaySortTimer = setTimeout(() => this.closeDaySort(), 3000);
+  }
+
+  startAutoCloseDayCol() {
+    clearTimeout(this.autoCloseDayColTimer);
+    this.autoCloseDayColTimer = setTimeout(() => this.closeDayCol(), 3000);
+  }
+
+  resetAutoCloseDaySort() {
+    this.startAutoCloseDaySort();
+  }
+
+  resetAutoCloseDayCol() {
+    this.startAutoCloseDayCol();
+  }
+
   toggleColDropdown() {
     const menu = document.getElementById('dayColDropdownMenu');
     if (menu) menu.classList.toggle('hidden');

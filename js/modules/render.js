@@ -201,7 +201,7 @@ export function renderDayView(todos) {
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const colBtns = [2,3,4,6].map(n =>
-    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonnes">${n} cols</button>`
+    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n}); window.app.closeDayCol();" onmouseenter="window.app.resetAutoCloseDayCol()" title="${n} colonnes">${n} cols</button>`
   ).join('');
   const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 12 12" width="12" height="12"><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></svg> Spacer</button>`;
 
@@ -213,7 +213,7 @@ export function renderDayView(todos) {
     { id: 'tag',      label: 'Tag' },
   ];
   const sortBtns = sortOpts.map(o =>
-    `<button class="day-ctrl-btn day-sort-btn${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}')">${o.label}</button>`
+    `<button class="day-ctrl-btn day-sort-btn${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}'); window.app.closeDaySort();" onmouseenter="window.app.resetAutoCloseDaySort()">${o.label}</button>`
   ).join('');
 
   // Auto-prioritize checkbox
@@ -324,7 +324,7 @@ export function renderDayView(todos) {
           <span class="day-ctrl-label">Tri</span>
           <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div class="day-ctrl-group day-sort-group">${sortBtns}</div>
+        <div class="day-ctrl-group day-sort-group" onmouseenter="window.app.resetAutoCloseDaySort()">${sortBtns}</div>
       </div>
 
       <div class="day-ctrl-expandable${!colCollapsed ? ' expanded' : ''}">
@@ -332,7 +332,7 @@ export function renderDayView(todos) {
           <span class="day-ctrl-label">Colonnes</span>
           <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div class="day-ctrl-group day-col-group">${colBtns}</div>
+        <div class="day-ctrl-group day-col-group" onmouseenter="window.app.resetAutoCloseDayCol()">${colBtns}</div>
       </div>
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
