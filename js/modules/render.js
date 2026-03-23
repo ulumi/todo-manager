@@ -316,8 +316,7 @@ export function renderDayView(todos) {
     const tagCloud = allTags.map(tag => {
       const isVisible = !excludedTags.includes(tag.id);
       const countLabel = tag.count > 1 ? ` (${tag.count})` : '';
-      const xMark = isVisible ? `<span class="day-tag-x">\u00d7</span>` : '';
-      return `<button class="day-tag-cloud-item${isVisible ? ' selected' : ''}" style="--tag-color:${tag.color}" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}${countLabel}${xMark}</button>`;
+      return `<button class="day-tag-cloud-item${isVisible ? ' selected' : ''}" style="--tag-color:${tag.color}" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}${countLabel}<span class="day-tag-x">\u00d7</span></button>`;
     }).join('');
 
     // Grouping toggle

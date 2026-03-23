@@ -1157,24 +1157,28 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   background: transparent;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.35);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   cursor: pointer;
   border-radius: 5px;
-  transition: all 0.2s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
-  opacity: 0.4;
+}
+.day-tag-cloud-item .day-tag-x {
+  visibility: hidden;
 }
 .day-tag-cloud-item.selected {
   background: var(--tag-color);
   border-color: var(--tag-color);
   color: #fff;
-  opacity: 1;
+}
+.day-tag-cloud-item.selected .day-tag-x {
+  visibility: visible;
 }
 
 .day-tag-x {
