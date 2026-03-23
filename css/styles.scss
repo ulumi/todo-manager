@@ -1376,9 +1376,9 @@ main {
 
 // Spacer group — indented block with spacer header + children
 .day-spacer-group {
-  margin-top: 6px;
+  margin-top: 16px;
   padding-left: 16px;
-  min-height: 48px;
+  padding-bottom: 64px;
 
   .todo-list { margin-top: 8px; }
 }

@@ -462,9 +462,6 @@ class TodoApp {
 
   async setView(v) {
     state.setView(v);
-    if (v === 'day') {
-      state.setNavDate(today());
-    }
     localStorage.setItem('view', v);
     this._pushHistory();
     await this._animateViewChange();
