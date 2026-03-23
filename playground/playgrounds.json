@@ -1,6 +1,15 @@
 {
   "playgrounds": [
     {
+      "id": "background-images-200",
+      "title": "Background Images — 200 Variations",
+      "description": "200 selectable vector backgrounds (8 themes × 25 variations). Select, copy IDs, paste here.",
+      "file": "background-images-200.html",
+      "prompt": "Create a mega-playground with 200 vector background variations across 8 themes (mountains, water, forest, sunset, circuit, particles, organic, aurora). Each theme has 25 seeded variations. Users can filter by theme, select variations with checkboxes, copy selected IDs to clipboard, and paste them in chat for analysis.",
+      "createdAt": "2026-03-22",
+      "tags": ["background", "vector-art", "selection", "mega-playground"]
+    },
+    {
       "id": "background-images",
       "title": "Background Images — Zen todo app",
       "description": "6 custom vector art backgrounds + royalty-free sources. Nature inspired with subtle tech overlays, light/dark modes, and glassmorphism-ready.",

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>200 Background Variations — Zen Todo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 32px 24px;
+    }
+
+    .container { max-width: 1800px; margin: 0 auto; }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,.5);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+
+    .toolbar-label {
+      color: rgba(255,255,255,.4);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(167,139,250,.1);
+      color: #d8b4fe;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 12px;
+      transition: all .2s;
+    }
+
+    .btn:hover {
+      background: rgba(167,139,250,.2);
+      border-color: rgba(167,139,250,.4);
+    }
+
+    .btn.secondary {
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.6);
+      border-color: rgba(255,255,255,.08);
+    }
+
+    .btn.secondary:hover {
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.8);
+    }
+
+    .select-counter {
+      margin-left: auto;
+      color: rgba(255,255,255,.4);
+      font-size: 12px;
+    }
+
+    .select-counter strong {
+      color: #a78bfa;
+    }
+
+    /* Grid */
+    .bg-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .bg-item {
+      position: relative;
+      cursor: pointer;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: all .2s;
+      height: 140px;
+      background: #111;
+    }
+
+    .bg-item:hover {
+      border-color: #a78bfa;
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(167,139,250,.2);
+    }
+
+    .bg-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .bg-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      accent-color: #a78bfa;
+      z-index: 10;
+    }
+
+    .bg-item.selected {
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 2px rgba(167,139,250,.5);
+    }
+
+    .bg-label {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      right: 6px;
+      font-size: 9px;
+      background: rgba(0,0,0,.6);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      z-index: 5;
+    }
+
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.6);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      background: rgba(167,139,250,.15);
+      border-color: rgba(167,139,250,.4);
+      color: #d8b4fe;
+    }
+
+    /* Info */
+    .info-box {
+      background: rgba(59,130,246,.1);
+      border: 1px solid rgba(59,130,246,.3);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 40px;
+      color: rgba(255,255,255,.7);
+    }
+
+    .info-box h3 {
+      color: #60a5fa;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .info-box p {
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .info-box code {
+      background: rgba(0,0,0,.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    @media (max-width: 1200px) {
+      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 24px; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .select-counter { margin-left: 0; }
+      .bg-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 200 Background Variations</h1>
+    <p class="subtitle">Nature + Techno — Select & Copy IDs to share with me</p>
+
+    <div class="toolbar">
+      <span class="toolbar-label">Select</span>
+      <button class="btn" id="selectAll">Select All</button>
+      <button class="btn secondary" id="deselectAll">Deselect</button>
+      <button class="btn" id="copyIds">📋 Copy IDs</button>
+      <div class="select-counter"><strong id="counter">0</strong> / 200 selected</div>
+    </div>
+
+    <div class="filters" id="filters">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div class="bg-grid" id="grid">
+      <!-- Generated dynamically -->
+    </div>
+
+    <div class="info-box">
+      <h3>💡 How to use</h3>
+      <p><strong>1. Select variations</strong> you like by clicking them or using Select All</p>
+      <p><strong>2. Click "Copy IDs"</strong> → Your selection is copied to clipboard</p>
+      <p><strong>3. Paste here in chat</strong> → I'll analyze & create your custom variations</p>
+      <p style="color: rgba(255,255,255,.4); margin-top: 12px;">Example: <code>mountains-001, water-015, forest-042, circuit-087</code></p>
+    </div>
+  </div>
+
+  <script>
+    // Generate 200 variations
+    const THEMES = ['mountains', 'water', 'forest', 'sunset', 'circuit', 'particles', 'organic', 'aurora'];
+    const variations = [];
+    let selected = new Set();
+
+    // Theme generators
+    const generators = {
+      mountains: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1a1a2e');
+        grad.addColorStop(1, '#16213e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(167, 139, 250, ${0.2 + (seed % 3) * 0.1})`;
+        ctx.lineWidth = 1 + (seed % 2);
+        ctx.beginPath();
+        ctx.moveTo(0, h * 0.6);
+        const offset1 = 0.25 + (seed % 20) * 0.01;
+        const offset2 = 0.45 + (seed % 25) * 0.01;
+        ctx.bezierCurveTo(w * offset1, h * 0.35, w * offset2, h * 0.2, w * 0.6, h * 0.5);
+        ctx.bezierCurveTo(w * 0.75, h * 0.7, w * 0.9, h * 0.4, w, h * 0.55);
+        ctx.lineTo(w, h);
+        ctx.lineTo(0, h);
+        ctx.fill();
+        ctx.stroke();
+
+        // Grid
+        ctx.strokeStyle = `rgba(96, 165, 250, ${0.04 + (seed % 4) * 0.02})`;
+        ctx.lineWidth = 1;
+        const gridSize = 30 + (seed % 20);
+        for (let x = 0; x < w; x += gridSize) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+      },
+
+      water: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#0f2438');
+        grad.addColorStop(1, '#051f32');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(52, 211, 153, ${0.1 + (seed % 3) * 0.05})`;
+        const centerX = w * (0.5 + (seed % 20) * 0.01);
+        const centerY = h * (0.4 + (seed % 15) * 0.01);
+        for (let i = 0; i < 6 + (seed % 4); i++) {
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 15 + i * (20 + seed % 15), 0, Math.PI * 2);
+          ctx.lineWidth = 1 + (i % 2);
+          ctx.stroke();
+        }
+      },
+
+      forest: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#0d1f2d');
+        grad.addColorStop(1, '#1a2332');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(52, 211, 153, ${0.2 + (seed % 2) * 0.1})`;
+        ctx.lineWidth = 2;
+        const treeCount = 3 + (seed % 4);
+        for (let i = 0; i < treeCount; i++) {
+          const x = (w / (treeCount + 1)) * (i + 1) + (seed % 40 - 20);
+          const y = h * (0.5 + (seed % 20) * 0.01);
+          ctx.beginPath();
+          ctx.moveTo(x, y * 0.5);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.ellipse(x, y * 0.3, 25 + (seed % 15), 40 + (seed % 20), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      },
+
+      sunset: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        const colors = ['#2d1b4e', '#6b4c9a', '#f59e0b', '#1f2937'];
+        grad.addColorStop(0, colors[seed % colors.length]);
+        grad.addColorStop(0.5, colors[(seed + 1) % colors.length]);
+        grad.addColorStop(1, colors[(seed + 2) % colors.length]);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = `rgba(251, 146, 60, ${0.3 + (seed % 3) * 0.1})`;
+        ctx.beginPath();
+        ctx.arc(w * (0.4 + (seed % 20) * 0.01), h * 0.3, 50 + (seed % 20), 0, Math.PI * 2);
+        ctx.fill();
+      },
+
+      circuit: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(1, '#1e1b4b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(96, 165, 250, ${0.3 + (seed % 2) * 0.1})`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(20 + (seed % 20), 20 + (seed % 20));
+        ctx.lineTo(w - 20 - (seed % 20), h * (0.3 + (seed % 20) * 0.01));
+        ctx.lineTo(w * (0.2 + (seed % 15) * 0.01), h - 20 - (seed % 15));
+        ctx.stroke();
+      },
+
+      particles: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1a0033');
+        grad.addColorStop(1, '#0d0015');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = `rgba(139, 92, 246, ${0.3 + (seed % 4) * 0.1})`;
+        const count = 20 + (seed % 30);
+        for (let i = 0; i < count; i++) {
+          const x = Math.sin(seed * i) * w * 0.5 + w * 0.5;
+          const y = Math.cos(seed * i) * h * 0.5 + h * 0.5;
+          const size = 1 + (seed * i) % 3;
+          ctx.beginPath();
+          ctx.arc(x, y, size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      },
+
+      organic: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1a3a3a');
+        grad.addColorStop(1, '#0d2626');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(34, 197, 94, ${0.2 + (seed % 3) * 0.1})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 4 + (seed % 3); i++) {
+          ctx.beginPath();
+          ctx.ellipse(
+            w * (0.2 + i * 0.2 + (seed % 10) * 0.01),
+            h * (0.3 + (seed % 20) * 0.01),
+            20 + (seed % 20),
+            30 + (seed % 30),
+            (seed * i) * 0.1,
+            0,
+            Math.PI * 2
+          );
+          ctx.stroke();
+        }
+      },
+
+      aurora: (ctx, w, h, seed) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#1a0040');
+        grad.addColorStop(0.5, '#2d0052');
+        grad.addColorStop(1, '#0f1a2e');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.strokeStyle = `rgba(168, 85, 247, ${0.25 + (seed % 3) * 0.1})`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, h * (0.3 + i * 0.15));
+          for (let x = 0; x < w; x += 30) {
+            const y = h * (0.3 + i * 0.15) + Math.sin((x + seed) * 0.05) * 20;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      },
+    };
+
+    // Generate all variations
+    let id = 0;
+    THEMES.forEach(theme => {
+      for (let i = 0; i < 25; i++) {
+        const seed = i + (THEMES.indexOf(theme) * 100);
+        variations.push({
+          id: `${theme}-${String(i + 1).padStart(3, '0')}`,
+          theme,
+          seed,
+          label: `${theme[0].toUpperCase()}${i + 1}`,
+        });
+      }
+    });
+
+    // Render grid
+    const gridEl = document.getElementById('grid');
+    variations.forEach(v => {
+      const item = document.createElement('div');
+      item.className = 'bg-item';
+      item.dataset.id = v.id;
+      item.dataset.theme = v.theme;
+      item.innerHTML = `
+        <input type="checkbox" class="bg-checkbox" data-id="${v.id}">
+        <canvas class="bg-canvas"></canvas>
+        <div class="bg-label">${v.label}</div>
+      `;
+
+      gridEl.appendChild(item);
+
+      // Render canvas
+      setTimeout(() => {
+        const canvas = item.querySelector('canvas');
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+        const ctx = canvas.getContext('2d');
+        generators[v.theme](ctx, canvas.width, canvas.height, v.seed);
+      }, 0);
+
+      // Checkbox listener
+      const checkbox = item.querySelector('input');
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          selected.add(v.id);
+          item.classList.add('selected');
+        } else {
+          selected.delete(v.id);
+          item.classList.remove('selected');
+        }
+        updateCounter();
+      });
+
+      // Click to select
+      item.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    // Filters
+    const filtersEl = document.getElementById('filters');
+    const allThemes = ['All', ...THEMES];
+    allThemes.forEach(theme => {
+      const chip = document.createElement('div');
+      chip.className = 'filter-chip';
+      if (theme === 'All') chip.classList.add('active');
+      chip.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        document.querySelectorAll('.bg-item').forEach(item => {
+          if (theme === 'All' || item.dataset.theme === theme) {
+            item.style.display = '';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+      filtersEl.appendChild(chip);
+    });
+
+    // Buttons
+    document.getElementById('selectAll').addEventListener('click', () => {
+      document.querySelectorAll('.bg-checkbox').forEach(cb => {
+        if (cb.offsetParent) { // visible
+          cb.checked = true;
+          selected.add(cb.dataset.id);
+          cb.closest('.bg-item').classList.add('selected');
+        }
+      });
+      updateCounter();
+    });
+
+    document.getElementById('deselectAll').addEventListener('click', () => {
+      document.querySelectorAll('.bg-checkbox').forEach(cb => {
+        cb.checked = false;
+        selected.delete(cb.dataset.id);
+        cb.closest('.bg-item').classList.remove('selected');
+      });
+      updateCounter();
+    });
+
+    document.getElementById('copyIds').addEventListener('click', () => {
+      const ids = Array.from(selected).sort().join(', ');
+      navigator.clipboard.writeText(ids).then(() => {
+        const btn = document.getElementById('copyIds');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      });
+    });
+
+    function updateCounter() {
+      document.getElementById('counter').textContent = selected.size;
+    }
+  </script>
+</body>
+</html>
