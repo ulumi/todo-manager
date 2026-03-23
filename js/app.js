@@ -2900,6 +2900,24 @@ class TodoApp {
     this.render();
   }
 
+  toggleDaySort() {
+    const cur = localStorage.getItem('daySortCollapsed') === 'true';
+    localStorage.setItem('daySortCollapsed', String(!cur));
+    this.render();
+  }
+
+  toggleDayCol() {
+    const cur = localStorage.getItem('dayColCollapsed') === 'true';
+    localStorage.setItem('dayColCollapsed', String(!cur));
+    this.render();
+  }
+
+  toggleDayControls() {
+    const cur = localStorage.getItem('dayCtrlsCollapsed') === 'true';
+    localStorage.setItem('dayCtrlsCollapsed', String(!cur));
+    this.render();
+  }
+
   addDaySpacer() {
     const dateStr = DS(state.navDate);
     const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');

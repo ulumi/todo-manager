@@ -312,17 +312,34 @@ export function renderDayView(todos) {
     }
   }
 
+  const sortCollapsed = localStorage.getItem('daySortCollapsed') === 'true';
+  const colCollapsed = localStorage.getItem('dayColCollapsed') === 'true';
+  const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') === 'true';
+
   const punctualHeader = `<div class="day-col-title-row">
     <div class="day-col-title">${state.T.groupOnce}</div>
-    <div class="day-col-controls">
-      <div class="day-ctrl-label">Tri</div>
-      <div class="day-ctrl-group">${sortBtns}</div>
-      <div class="day-ctrl-sep"></div>
-      <div class="day-ctrl-group">${colBtns}</div>
-      <div class="day-ctrl-sep"></div>
-      ${spacerBtn}
-      <div class="day-ctrl-sep"></div>
-      ${autoPrioCheck}
+    <div class="day-col-controls${ctrlsCollapsed ? ' collapsed' : ''}">
+      <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">
+        <span class="day-ctrl-label">Tri</span>
+        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="day-ctrl-group day-sort-group${sortCollapsed ? ' hidden' : ''}">${sortBtns}</div>
+
+      <button class="day-ctrl-toggle" onclick="window.app.toggleDayCol()" title="Colonnes">
+        <span class="day-ctrl-label">Colonnes</span>
+        <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="day-ctrl-group day-col-group${colCollapsed ? ' hidden' : ''}">${colBtns}</div>
+
+      <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
+        ${spacerBtn}
+        <div class="day-ctrl-sep"></div>
+        ${autoPrioCheck}
+      </div>
+
+      <button class="day-ctrl-gear" onclick="window.app.toggleDayControls()" title="Options">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m2.12-2.12l4.24-4.24M19.78 4.22l-4.24 4.24m-2.12 2.12l-4.24 4.24M23 12h-6m-6 0H5M19.78 19.78l-4.24-4.24m-2.12-2.12l-4.24-4.24"/></svg>
+      </button>
     </div>
   </div>`;
 

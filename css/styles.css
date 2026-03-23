@@ -1081,6 +1081,89 @@ input:checked + .cal-sid-toggle-track::after {
   letter-spacing: 0.03em;
 }
 
+.day-ctrl-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.day-ctrl-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.day-ctrl-chevron {
+  transition: transform 0.2s;
+  color: rgba(255, 255, 255, 0.4);
+}
+.day-ctrl-toggle:hover .day-ctrl-chevron {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.day-sort-group.hidden,
+.day-col-group.hidden {
+  display: none;
+}
+
+.day-ctrl-other {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: opacity 0.2s;
+}
+.day-ctrl-other.hidden {
+  display: none;
+}
+
+.day-ctrl-gear {
+  height: 22px;
+  width: 22px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  margin-left: auto;
+}
+.day-ctrl-gear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.day-col-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  transition: gap 0.2s;
+}
+.day-col-controls.collapsed {
+  gap: 3px;
+}
+
+.day-ctrl-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .day-ctrl-check {
   display: flex;
   align-items: center;
