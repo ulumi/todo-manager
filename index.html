@@ -92,8 +92,10 @@
               <span class="settings-sublabel">Accent</span>
               <span class="settings-help-icon" title="Choose your accent color">?</span>
             </div>
-            <div class="settings-accent-picker" id="settingsAccentPicker"></div>
-            <div class="settings-accent-preview" id="settingsAccentPreview"></div>
+            <div class="settings-accent-controls">
+              <div class="settings-accent-picker" id="settingsAccentPicker"></div>
+              <input type="color" id="settingsAccentColor" class="settings-color-input" onchange="window.app.setPrimaryColor(this.value)">
+            </div>
           </div>
 
           <!-- Glass Mode Toggle -->
@@ -124,9 +126,15 @@
         <div class="settings-menu-section">
           <div class="settings-section-header">
             <div class="settings-menu-title">Background</div>
-            <span class="settings-help-icon" title="Choose background polygon image">?</span>
+            <span class="settings-help-icon" title="Choose background polygon image or color">?</span>
           </div>
           <div class="settings-palettes-grid" id="settingsPalettesGrid"></div>
+          <div class="settings-bg-color-section">
+            <label class="settings-bg-color-label">
+              <span>Color</span>
+              <input type="color" id="settingsBgColor" class="settings-color-input" onchange="window.app.setBgColor(this.value)">
+            </label>
+          </div>
         </div>
       </div>
     </div>

@@ -4378,12 +4378,23 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
-.settings-accent-preview {
-  height: 28px;
-  border-radius: 6px;
+.settings-accent-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-color-input {
+  width: 48px;
+  height: 40px;
   border: 1.5px solid var(--border);
-  background: var(--primary);
-  transition: all .2s;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+
+  &:hover {
+    border-color: var(--text-muted);
+  }
 }
 
 // Glass mode toggle
@@ -4459,8 +4470,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Background image (palettes) selector
 .settings-palettes-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+  margin-bottom: 12px;
 }
 
 .settings-palette-btn {
@@ -4502,6 +4514,25 @@ body:has(.bottom-panel:not(.hidden))::before {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+}
+
+// Background color picker
+.settings-bg-color-section {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-bg-color-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+
+  .settings-color-input {
+    margin-left: auto;
   }
 }
 

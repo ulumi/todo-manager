@@ -303,6 +303,7 @@ class TodoApp {
     const glassMode = localStorage.getItem('glassMode') === '1';
     const primaryColor = localStorage.getItem('primaryColor') || (isDark ? '#fbbf24' : '#f59e0b');
     const bgPalette = localStorage.getItem('bgPalette') || 'geo';
+    const bgColor = localStorage.getItem('bgColor') || (isDark ? '#0f1117' : '#f8f9fc');
 
     // Update theme buttons
     document.getElementById('settingsLightBtn').classList.toggle('active', !isDark);
@@ -317,7 +318,7 @@ class TodoApp {
     // Update glass mode checkbox
     document.getElementById('settingsGlassInput').checked = glassMode;
 
-    // Update accent color picker
+    // Update accent color picker (presets + custom input)
     const accentColors = isDark
       ? ['#fbbf24', '#f87171', '#4ade80', '#60a5fa', '#a78bfa', '#f472b6']
       : ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
@@ -325,18 +326,20 @@ class TodoApp {
       `<button class="settings-accent-btn${primaryColor === c ? ' active' : ''}" style="background:${c};" onclick="window.app.setPrimaryColor('${c}')" title="${c}"></button>`
     ).join('');
     document.getElementById('settingsAccentPicker').innerHTML = pickerHtml;
-    document.getElementById('settingsAccentPreview').style.background = primaryColor;
+    document.getElementById('settingsAccentColor').value = primaryColor;
 
-    // Update background (palettes) buttons
+    // Update background (palettes) buttons (only geo & aurora, no 'none')
     const paletteOpts = [
       { id: 'geo', emoji: '🌋', name: 'Géo' },
       { id: 'aurora', emoji: '🌊', name: 'Aurora' },
-      { id: 'none', emoji: '⬜', name: 'None' },
     ];
     const palettesHtml = paletteOpts.map(p =>
       `<button class="settings-palette-btn${bgPalette === p.id ? ' active' : ''}" onclick="window.app.setPalette('${p.id}')" title="${p.name}"><span style="font-size:24px;">${p.emoji}</span><div class="palette-label">${p.name}</div></button>`
     ).join('');
     document.getElementById('settingsPalettesGrid').innerHTML = palettesHtml;
+
+    // Update bg color picker
+    document.getElementById('settingsBgColor').value = bgColor;
   }
 
   setPalette(id) {
@@ -346,6 +349,7 @@ class TodoApp {
 
   setBgColor(color) {
     _setBgColor(color);
+    this._updateSettingsMenuContent();
   }
 
   setPrimaryColor(color) {
