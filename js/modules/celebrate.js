@@ -396,12 +396,24 @@ function buildScene(quote, stats, mascot, opts = {}) {
   `);
   ov.appendChild(ring);
 
-  // Rainbow motion streaks
+  // Rainbow motion streaks (from right)
   const streaks = RAINBOW.map((color, i) => {
     const s = el('div', `
       position:absolute;height:8px;width:0;right:0;
       top:calc(38% + ${(i - 2.5) * 16}px);
       background:${color};border-radius:4px;opacity:0;z-index:9991;
+    `);
+    ov.appendChild(s);
+    return s;
+  });
+
+  // Left streaks (from left, different style - gradient/white)
+  const leftStreaks = RAINBOW.map((color, i) => {
+    const s = el('div', `
+      position:absolute;height:12px;width:0;left:0;
+      top:calc(38% + ${(i - 2.5) * 20}px);
+      background:linear-gradient(90deg, ${color}, transparent);
+      border-radius:6px;opacity:0;z-index:9990;
     `);
     ov.appendChild(s);
     return s;
@@ -522,15 +534,20 @@ function buildScene(quote, stats, mascot, opts = {}) {
   // Dim overlay
   tl.to(ov, { background: 'rgba(8,4,18,0.92)', duration: 0.18, ease: 'power2.out' });
 
-  // Streaks flash (motion blur effect)
+  // Streaks flash (motion blur effect from right)
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
+
+  // Left streaks flash (motion blur effect from left) — appear later with gradient
+  tl.to(leftStreaks, { width: '80vw', opacity: 0.7, duration: 0.28, stagger: 0.022, ease: 'power4.out' }, 0.35);
 
   // Unicorn shoots in from right
   tl.to(unicornWrap, { x: 0, rotation: -8, scale: 1.2, duration: 0.45, ease: 'power4.out' }, 0.05);
 
-  // Elastic settle + streaks fade
+  // Elastic settle
   tl.to(unicornWrap, { scale: 1.0, rotation: 0, y: 0, duration: 0.65, ease: 'elastic.out(1.3,0.45)' });
-  tl.to(streaks, { opacity: 0, duration: 0.25, stagger: 0.02 }, '-=0.55');
+
+  // Keep streaks visible longer, fade out near the end
+  tl.to([streaks, leftStreaks], { opacity: 0, duration: 0.4, stagger: 0.02 }, '+=2.8');
 
   // Shockwave
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
