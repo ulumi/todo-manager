@@ -768,50 +768,43 @@ class TodoApp {
         #celebrateDebugPanel .editable:hover { background: rgba(255,100,200,0.15); }
         #celebrateDebugPanel .editable[contenteditable="true"] { background: rgba(255,100,200,0.2); border: 1px solid rgba(255,100,200,0.5); outline: none; }
       </style>
-      <div style="margin-bottom: 16px;"><strong>🎉 Celebrate Debug</strong></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <div class="editable" id="debugQuote" contenteditable="false">${quote}</div><button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <div class="editable" id="debugMascot" contenteditable="false">${mascot}</div><button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
-      <div style="margin-bottom: 16px; opacity: 0.8;">Font: <code>${fontName}</code></div>
+      <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <strong>🎉 Celebrate Debug</strong>
+        <button id="closePanel" style="background: rgba(255,100,200,0.5); padding: 2px 8px; font-size: 16px; cursor: pointer; border: none; color: #fff; border-radius: 4px;">✕</button>
+      </div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <div class="editable" id="debugQuote" contenteditable="false">${quote}</div><button id="updateQuoteBtn" style="display: none;" onclick="window.app._updateQuote()">Update</button><button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <span style="font-size: 48px;">${mascot}</span> <button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
+      <div style="margin-bottom: 16px; opacity: 0.8;">Font: <code>${fontName}</code> <button onclick="window.app._banFont('${font.replace(/'/g, '"')}')">Ban</button></div>
       <div style="margin-bottom: 0; opacity: 0.8;">Duration: <code>${duration}s</code></div>
     `;
     document.body.appendChild(panel);
 
-    // Enable quick edit for quote and mascot
+    // Enable quick edit for quote only
     const quoteEl = panel.querySelector('#debugQuote');
-    const mascotEl = panel.querySelector('#debugMascot');
+    const updateBtn = panel.querySelector('#updateQuoteBtn');
 
-    const makeEditable = (el) => {
-      el.addEventListener('click', () => {
-        if (el.getAttribute('contenteditable') === 'false') {
-          el.setAttribute('contenteditable', 'true');
-          el.focus();
-          // Select all text
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          window.getSelection().removeAllRanges();
-          window.getSelection().addRange(range);
-        }
-      });
+    quoteEl?.addEventListener('click', () => {
+      if (quoteEl.getAttribute('contenteditable') === 'false') {
+        quoteEl.setAttribute('contenteditable', 'true');
+        updateBtn.style.display = 'inline-block';
+        quoteEl.focus();
+      }
+    });
 
-      el.addEventListener('blur', () => {
-        el.setAttribute('contenteditable', 'false');
-      });
+    quoteEl?.addEventListener('keydown', (e) => {
+      // Ctrl+Enter or Shift+Enter to save
+      if ((e.ctrlKey || e.shiftKey) && e.key === 'Enter') {
+        e.preventDefault();
+        window.app._updateQuote();
+      }
+    });
 
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          el.blur();
-        }
-        // Allow Shift+Enter for <br>
-        if (e.key === 'Enter' && e.shiftKey) {
-          e.preventDefault();
-          document.execCommand('insertHTML', false, '<br>');
-        }
-      });
+    window.app._updateQuote = function() {
+      if (quoteEl) {
+        quoteEl.setAttribute('contenteditable', 'false');
+        updateBtn.style.display = 'none';
+      }
     };
-
-    if (quoteEl) makeEditable(quoteEl);
-    if (mascotEl) makeEditable(mascotEl);
 
     // Auto-fade after duration + 3.5s (so 3.5s after celebrate animation ends)
     let dismissTimeout = setTimeout(() => {
@@ -824,7 +817,16 @@ class TodoApp {
     // Cancel auto-dismiss if user starts editing
     const cancelAutoClose = () => clearTimeout(dismissTimeout);
     quoteEl?.addEventListener('click', cancelAutoClose);
-    mascotEl?.addEventListener('click', cancelAutoClose);
+
+    // Close button
+    const closeBtn = panel.querySelector('#closePanel');
+    closeBtn?.addEventListener('click', () => {
+      document.removeEventListener('keydown', onKeyDown);
+      if (panel.parentNode) {
+        panel.style.animation = 'fadeIn 0.25s ease-in reverse';
+        setTimeout(() => panel.remove(), 250);
+      }
+    });
 
     // Allow Escape to close panel manually
     const onKeyDown = (e) => {
