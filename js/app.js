@@ -4376,11 +4376,19 @@ document.addEventListener('keydown', e => {
     }
     if (e.code === 'ArrowLeft') {
       e.preventDefault();
-      window.app.navigate(-1);
+      const d = new Date(window.app.getNavDate());
+      d.setDate(d.getDate() - 1);
+      state.setNavDate(d);
+      window.app._pushHistory();
+      window.app._animateViewChange(-1);
     }
     if (e.code === 'ArrowRight') {
       e.preventDefault();
-      window.app.navigate(1);
+      const d = new Date(window.app.getNavDate());
+      d.setDate(d.getDate() + 1);
+      state.setNavDate(d);
+      window.app._pushHistory();
+      window.app._animateViewChange(1);
     }
   }
 });
