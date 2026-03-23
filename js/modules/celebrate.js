@@ -417,17 +417,8 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
     return s;
   });
 
-  // Left pulse dots (from left, totally different style - white dots)
-  const leftStreaks = Array.from({ length: 8 }, (_, i) => {
-    const s = el('div', `
-      position:absolute;width:28px;height:28px;left:-50px;
-      top:calc(15% + ${i * 11}%);
-      background:rgba(255,255,255,0.6);border-radius:50%;
-      opacity:0;z-index:9992;box-shadow:0 0 25px rgba(255,255,255,0.8),inset 0 0 10px rgba(255,255,255,0.4);
-    `);
-    ov.appendChild(s);
-    return s;
-  });
+  // Left streaks removed - not needed
+  const leftStreaks = [];
 
   // Unicorn (upper area)
   const unicornWrap = el('div', `
@@ -546,8 +537,6 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   // Streaks flash (motion blur effect from right)
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
 
-  // Left pulse dots flash (white glowing dots from left) — appear later
-  tl.to(leftStreaks, { x: '70vw', opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power2.out' }, 0.25);
 
   // Unicorn shoots in from right
   tl.to(unicornWrap, { x: 0, rotation: -8, scale: 1.2, duration: 0.45, ease: 'power4.out' }, 0.05);
@@ -556,7 +545,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   tl.to(unicornWrap, { scale: 1.0, rotation: 0, y: 0, duration: 0.65, ease: 'elastic.out(1.3,0.45)' });
 
   // Keep streaks visible longer, fade out near the end
-  tl.to([streaks, leftStreaks], { opacity: 0, duration: 0.4, stagger: 0.02 }, '+=2.8');
+  tl.to(streaks, { opacity: 0, duration: 0.4, stagger: 0.02 }, '+=2.8');
 
   // Shockwave
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
@@ -568,15 +557,15 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   // ── Quote: words stagger in from small scale ──────────
   tl.to(wordSpans,
     { opacity: 1, scale: 1, y: 0, duration: 0.38, ease: 'back.out(2.2)', stagger: 0.06 },
-    '-=0.2'
+    '0.2'
   );
 
-  // Stats fade up after quote settles — appears later
+  // Stats fade up after quote settles — appears sooner
   if (statsEl) {
     tl.fromTo(statsEl,
       { opacity: 0, y: 12 },
       { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' },
-      '+=0.6'
+      '+=0.2'
     );
   }
 
