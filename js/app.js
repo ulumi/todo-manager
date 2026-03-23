@@ -116,6 +116,10 @@ class TodoApp {
     const vl = document.getElementById('versionLabel');
     if (vl) vl.textContent = 'v' + VERSION;
     setupEventListeners(this);
+
+    // Register celebrate debug panel (independent of server sync)
+    onCelebrateDebug((data) => { this._showCelebrateDebugPanel(data); });
+
     // Kill browser autocomplete on all inputs except auth fields (email/password)
     document.addEventListener('focusin', e => {
       if (e.target.tagName === 'INPUT' && !e.target.getAttribute('autocomplete'))
@@ -182,10 +186,6 @@ class TodoApp {
 
     // Register auto-save: any quote mutation pushes to server
     onQuoteSave(() => saveBackupToServer(getFullBackup(state.todos)));
-
-    // Register debug panel for celebrate
-    console.log('[app] registering celebrate debug hook');
-    onCelebrateDebug((data) => { console.log('[app] celebrate debug data received:', data); this._showCelebrateDebugPanel(data); });
 
     // Load global (shared) quotes from server — affects celebrate pool for all users
     this._loadGlobalQuotes();
