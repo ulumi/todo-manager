@@ -168,7 +168,10 @@ export function setPalette(id) {
 
 export function setBgColor(color) {
   localStorage.setItem('bgColor', color);
-  if (!PALETTES[_currentId]?.light) {
-    document.documentElement.style.backgroundColor = color;
+  // If currently showing a palette, hide it to show custom color instead
+  if (PALETTES[_currentId]?.light) {
+    _currentId = 'none';
+    localStorage.setItem('bgPalette', 'none');
   }
+  document.documentElement.style.backgroundColor = color;
 }

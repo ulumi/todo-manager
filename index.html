@@ -94,7 +94,7 @@
             </div>
             <div class="settings-accent-controls">
               <div class="settings-accent-picker" id="settingsAccentPicker"></div>
-              <input type="color" id="settingsAccentColor" class="settings-color-input" onchange="window.app.setPrimaryColor(this.value)">
+              <input type="color" id="settingsAccentColor" class="settings-color-input" oninput="window.app.setPrimaryColor(this.value)" onchange="window.app.setPrimaryColor(this.value)">
             </div>
           </div>
 
@@ -132,7 +132,7 @@
           <div class="settings-bg-color-section">
             <label class="settings-bg-color-label">
               <span>Color</span>
-              <input type="color" id="settingsBgColor" class="settings-color-input" onchange="window.app.setBgColor(this.value)">
+              <input type="color" id="settingsBgColor" class="settings-color-input" oninput="window.app.setBgColor(this.value)" onchange="window.app.setBgColor(this.value)">
             </label>
           </div>
         </div>
