@@ -2903,20 +2903,20 @@ class TodoApp {
   }
 
   toggleDaySort() {
-    const cur = localStorage.getItem('daySortCollapsed') === 'true';
-    localStorage.setItem('daySortCollapsed', String(!cur));
+    const cur = localStorage.getItem('daySortCollapsed') !== 'false';
+    localStorage.setItem('daySortCollapsed', !cur ? 'true' : 'false');
     this.render();
   }
 
   toggleDayCol() {
-    const cur = localStorage.getItem('dayColCollapsed') === 'true';
-    localStorage.setItem('dayColCollapsed', String(!cur));
+    const cur = localStorage.getItem('dayColCollapsed') !== 'false';
+    localStorage.setItem('dayColCollapsed', !cur ? 'true' : 'false');
     this.render();
   }
 
   toggleDayControls() {
-    const cur = localStorage.getItem('dayCtrlsCollapsed') === 'true';
-    localStorage.setItem('dayCtrlsCollapsed', String(!cur));
+    const cur = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
+    localStorage.setItem('dayCtrlsCollapsed', !cur ? 'true' : 'false');
     this.render();
   }
 
