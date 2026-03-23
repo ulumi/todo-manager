@@ -182,6 +182,13 @@ const FONTS = [
   "'Playfair Display', serif",
   "'Space Grotesk', sans-serif",
   "'Poppins', sans-serif",
+  "'Inter', sans-serif",
+  "'Raleway', sans-serif",
+  "'Montserrat', sans-serif",
+  "'Crimson Text', serif",
+  "'Bebas Neue', sans-serif",
+  "'Oswald', sans-serif",
+  "'Fredoka', sans-serif",
 ];
 
 const MASCOTS = [
