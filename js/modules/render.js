@@ -272,7 +272,7 @@ export function renderDayView(todos) {
     // Grouping toggle
     const tagGrouped = localStorage.getItem('dayTagGrouped') !== 'false';
     const groupIconSvg = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="1" y="1" width="14" height="4" rx="1"/><rect x="1" y="7" width="14" height="4" rx="1"/><rect x="1" y="13" width="14" height="2" rx="1"/></svg>`;
-    const groupToggle = `<button class="day-tag-group-toggle${tagGrouped ? ' active' : ''}" onclick="window.app.toggleDayTagGrouping()" title="Grouper par tag">${groupIconSvg}</button>`;
+    const groupToggle = `<button class="day-tag-group-toggle${tagGrouped ? ' active' : ''}" onclick="window.app.toggleDayTagGrouping()" title="Grouper par tag">${groupIconSvg} GROUPER</button>`;
 
     // Sort catGroups by stored order
     catGroups.sort((a, b) => {
@@ -295,7 +295,7 @@ export function renderDayView(todos) {
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
         grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
       }
-      rightColItems = `<div class="day-tag-controls">${tagCloud}${groupToggle}</div><div class="day-tag-sections">${grouped}</div>`;
+      rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
       const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
@@ -307,7 +307,7 @@ export function renderDayView(todos) {
         // Insert badge before closing tag of todo-content
         return html.replace('</span>', `</span>${tagBadge}`);
       }).join('');
-      rightColItems = `<div class="day-tag-controls">${tagCloud}${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
+      rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
 
   } else {
