@@ -250,10 +250,10 @@ export function renderDayView(todos) {
     // Group by category/tag — sections draggable to reorder
     const categories = getCategories();
     const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
-    const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
+    const catGroups = categories; // Show all categories in tag cloud
     const untagged = itemsForRender.filter(t => !t.projectId);
 
-    // Tag cloud filter
+    // Tag cloud filter — show ALL categories even if empty
     const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
     const allTags = [
       ...catGroups.map(c => ({ id: c.id, name: c.name, color: c.color })),
