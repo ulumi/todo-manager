@@ -533,26 +533,6 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   `) : null;
   if (statsEl) { statsEl.textContent = stats; textBlock.appendChild(statsEl); }
 
-  // Thumbs down button — ban this quote
-  const thumbsBtn = el('button', `
-    position:fixed;bottom:120px;left:50%;transform:translateX(-50%);
-    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-    border-radius:50%;width:52px;height:52px;
-    font-size:24px;cursor:pointer;z-index:9999;opacity:0;
-    display:flex;align-items:center;justify-content:center;
-    backdrop-filter:blur(6px);transition:background 0.2s,transform 0.15s;
-  `);
-  thumbsBtn.textContent = '👎';
-  thumbsBtn.title = 'Ne plus afficher ce message';
-  thumbsBtn.addEventListener('mouseenter', () => { thumbsBtn.style.background = 'rgba(220,50,50,0.45)'; thumbsBtn.style.transform = 'scale(1.1)'; });
-  thumbsBtn.addEventListener('mouseleave', () => { thumbsBtn.style.background = 'rgba(255,255,255,0.1)'; thumbsBtn.style.transform = 'scale(1)'; });
-  thumbsBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    banQuote(quote);
-    dismiss();
-  });
-  ov.appendChild(thumbsBtn);
-
   // ── Timeline ──────────────────────────────────────────
   const tl = gsap.timeline();
 
@@ -618,10 +598,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
     b.addEventListener('mouseleave', () => { b.style.background = 'rgba(255,255,255,0.1)';  b.style.transform = 'scale(1)'; })
   ));
 
-  // Thumbs button fades in after quote is readable
-  tl.to(thumbsBtn, { opacity: 1, duration: 0.3, ease: 'power2.out' }, '-=1.5');
-
-  // Slideshow nav fades in with thumbs
+  // Slideshow nav fades in
   if (prevBtn)   tl.to(prevBtn,   { opacity: 1, duration: 0.3 }, '<');
   if (nextBtn)   tl.to(nextBtn,   { opacity: 1, duration: 0.3 }, '<');
   if (counterEl) tl.to(counterEl, { opacity: 1, duration: 0.3 }, '<');
@@ -644,7 +621,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
       gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
     } else {
       // Mega zoom + fade out effect — diving into rainbow
-      gsap.to([quoteEl, statsEl, unicornWrap, thumbsBtn, particles], { opacity: 0, duration: 0.1, ease: 'none' });
+      gsap.to([quoteEl, statsEl, unicornWrap, particles], { opacity: 0, duration: 0.1, ease: 'none' });
       gsap.to([quoteEl, statsEl, unicornWrap, streaks], { scale: 3, duration: 0.25, ease: 'power2.in' });
       gsap.to(ov, { opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: () => ov.remove() });
     }

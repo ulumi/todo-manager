@@ -766,6 +766,7 @@ class TodoApp {
       <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code>${mascot}</code></div>
       <div style="margin-bottom: 12px; opacity: 0.8;">Font: <code>${fontName}</code></div>
       <div style="margin-bottom: 16px; opacity: 0.8;">Duration: <code>${duration}s</code></div>
+      <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban Quote</button>
       <button onclick="window.app._banFont('${font.replace(/'/g, '"')}')">Ban Font</button>
       <button onclick="window.app._banMascot('${mascot}')">Ban Mascot</button>
     `;
@@ -780,11 +781,24 @@ class TodoApp {
     }, (duration + 3.5) * 1000);
   }
 
+  _banQuote(quote) {
+    banQuote(quote);
+    const panel = document.getElementById('celebrateDebugPanel');
+    if (panel) {
+      const btns = panel.querySelectorAll('button');
+      const btn = btns[0];
+      const orig = btn.textContent;
+      btn.textContent = '✓ Banned!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
+  }
+
   _banFont(font) {
     banFont(font);
     const panel = document.getElementById('celebrateDebugPanel');
     if (panel) {
-      const btn = panel.querySelector('button');
+      const btns = panel.querySelectorAll('button');
+      const btn = btns[1];
       const orig = btn.textContent;
       btn.textContent = '✓ Banned!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
