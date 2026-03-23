@@ -3113,14 +3113,14 @@ class TodoApp {
   }
 
   toggleDayTagFilter(tagId) {
-    const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
-    const idx = selectedTags.indexOf(tagId);
+    const excludedTags = JSON.parse(localStorage.getItem('dayTagExcluded') || '[]');
+    const idx = excludedTags.indexOf(tagId);
     if (idx >= 0) {
-      selectedTags.splice(idx, 1);
+      excludedTags.splice(idx, 1); // re-show
     } else {
-      selectedTags.push(tagId);
+      excludedTags.push(tagId); // hide
     }
-    localStorage.setItem('dayTagFilter', JSON.stringify(selectedTags));
+    localStorage.setItem('dayTagExcluded', JSON.stringify(excludedTags));
     this.render();
   }
 

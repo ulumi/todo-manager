@@ -298,8 +298,8 @@ export function renderDayView(todos) {
     const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
     const untagged = itemsForRender.filter(t => !t.projectId);
 
-    // Tag cloud filter — only tags with items
-    const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
+    // Tag cloud filter — excluded tags are hidden
+    const excludedTags = JSON.parse(localStorage.getItem('dayTagExcluded') || '[]');
     const allTags = [
       ...catGroups.map(c => {
         const count = itemsForRender.filter(t => t.projectId === c.id).length;
@@ -308,10 +308,10 @@ export function renderDayView(todos) {
       ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999', count: untagged.length }] : [])
     ];
     const tagCloud = allTags.map(tag => {
-      const isSelected = selectedTags.length === 0 || selectedTags.includes(tag.id);
+      const isVisible = !excludedTags.includes(tag.id);
       const countLabel = tag.count > 1 ? ` (${tag.count})` : '';
-      const xMark = isSelected && selectedTags.length > 0 ? '<span class="day-tag-x">\u00d7</span>' : '';
-      return `<button class="day-tag-cloud-item${isSelected ? ' selected' : ''}" style="--tag-color:${tag.color}" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}${countLabel}${xMark}</button>`;
+      const xMark = isVisible ? `<span class="day-tag-x">\u00d7</span>` : '';
+      return `<button class="day-tag-cloud-item${isVisible ? ' selected' : ''}" style="--tag-color:${tag.color}" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}${countLabel}${xMark}</button>`;
     }).join('');
 
     // Grouping toggle
@@ -330,20 +330,20 @@ export function renderDayView(todos) {
     if (tagGrouped) {
       // Grouped view
       let grouped = catGroups.map(c => {
-        const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
+        const isVisible = !excludedTags.includes(c.id);
         const items = itemsForRender.filter(t => t.projectId === c.id);
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
       if (untagged.length) {
-        const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
+        const isVisible = !excludedTags.includes('none');
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
       }
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
-      const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
+      const filteredItems = itemsForRender.filter(t => !excludedTags.includes(t.projectId || 'none'));
       const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
