@@ -343,24 +343,67 @@ class TodoApp {
     }
   }
 
+  _quickFindItemMeta(todo) {
+    const badges = [];
+    const cats = getCategories();
+    const today = DS(new Date());
+
+    // Category
+    if (todo.projectId) {
+      const cat = cats.find(c => c.id === todo.projectId);
+      if (cat) badges.push(`<span class="qf-badge" style="background:${cat.color}22;border-color:${cat.color}88;color:${cat.color}">${esc(cat.name.toUpperCase())}</span>`);
+    }
+
+    // Priority
+    if (todo.priority === 'high')   badges.push(`<span class="qf-badge prio-high">↑ Urgent</span>`);
+    if (todo.priority === 'medium') badges.push(`<span class="qf-badge prio-medium">→ Moyen</span>`);
+    if (todo.priority === 'low')    badges.push(`<span class="qf-badge prio-low">↓ Bas</span>`);
+
+    const isRec = todo.recurrence && todo.recurrence !== 'none';
+
+    if (isRec) {
+      // Recurrence label
+      const recLabels = { daily: '↻ Quotidien', weekly: '↻ Hebdo', monthly: '↻ Mensuel', yearly: '↻ Annuel' };
+      badges.push(`<span class="qf-badge rec">${recLabels[todo.recurrence] || '↻'}</span>`);
+      // Completion rate
+      const completed = (todo.completedDates || []).length;
+      const total = (todo.dates || []).length;
+      if (total > 0) badges.push(`<span class="qf-badge completion">✓ ${completed}/${total}</span>`);
+    } else {
+      // Next upcoming date
+      const upcoming = (todo.dates || []).filter(d => d >= today).sort()[0];
+      const lastDate = (todo.dates || []).sort().slice(-1)[0];
+      const dateToShow = upcoming || lastDate;
+      if (dateToShow) {
+        const [y, m, d] = dateToShow.split('-');
+        badges.push(`<span class="qf-badge date">📅 ${d}/${m}/${y}</span>`);
+      }
+      // Done status
+      if (todo.completed) badges.push(`<span class="qf-badge done">✓ Fait</span>`);
+    }
+
+    return badges.join('');
+  }
+
   _renderQuickFindDropdown(results, query) {
     const dropdown = document.getElementById('quickFindDropdown');
+    const qEsc = query.replace(/'/g, "\\'");
     let html = '';
 
     results.forEach(todo => {
-      const dateStr = todo.dates && todo.dates[0] ? todo.dates[0] : '';
+      const meta = this._quickFindItemMeta(todo);
       html += `
-        <div class="quick-find-item" data-id="${todo.id}" draggable="true" onclick="window.app.openSearchView('${query.replace(/'/g, "\\'")}')">
-          <div class="quick-find-drag-handle">⋮</div>
-          <div class="quick-find-item-text">
+        <div class="quick-find-item" data-id="${todo.id}" draggable="true" onclick="window.app.openSearchView('${qEsc}')">
+          <div class="quick-find-drag-handle">⠿</div>
+          <div class="quick-find-item-body">
             <div class="quick-find-item-title">${esc(todo.title)}</div>
-            ${dateStr ? `<div class="quick-find-item-date">${dateStr}</div>` : ''}
+            ${meta ? `<div class="quick-find-item-meta">${meta}</div>` : ''}
           </div>
         </div>
       `;
     });
 
-    html += `<div class="quick-find-view-all" onclick="window.app.openSearchView('${query.replace(/'/g, "\\'")}')">Voir tous les résultats</div>`;
+    html += `<div class="quick-find-view-all" onclick="window.app.openSearchView('${qEsc}')">Voir tous les résultats</div>`;
 
     dropdown.innerHTML = html;
     this._initQuickFindDragDrop();

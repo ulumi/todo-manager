@@ -4878,8 +4878,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   border: 1.5px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  min-width: 280px;
-  max-height: 320px;
+  min-width: 300px;
+  max-height: 380px;
+  padding: 2px 0;
   overflow-y: auto;
   z-index: 999;
   opacity: 0;
@@ -4894,28 +4895,41 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .quick-find-item {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border-subtle);
+  margin: 4px 6px;
+  padding: 9px 10px 9px 8px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   cursor: grab;
-  transition: background-color 0.1s;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-}
-.quick-find-item:last-of-type {
-  border-bottom: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 .quick-find-item:hover {
-  background-color: var(--bg-hover);
-  cursor: grab;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary);
 }
 .quick-find-item.dragging {
-  opacity: 0.5;
+  opacity: 0.4;
+  cursor: grabbing;
 }
-.quick-find-item .quick-find-item-text {
+.quick-find-item:active {
+  cursor: grabbing;
+}
+.quick-find-item .quick-find-drag-handle {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.45;
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+}
+.quick-find-item .quick-find-item-body {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
 .quick-find-item .quick-find-item-title {
   font-size: 12px;
@@ -4924,20 +4938,58 @@ body:has(.bottom-panel:not(.hidden))::before {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
-.quick-find-item .quick-find-item-date {
+.quick-find-item .quick-find-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+.quick-find-item .qf-badge {
   font-size: 10px;
-  color: var(--text-muted);
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
-.quick-find-item .quick-find-drag-handle {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  opacity: 0;
-  transition: opacity 0.15s;
+.quick-find-item .qf-badge.prio-high {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
 }
-.quick-find-item:hover .quick-find-drag-handle {
-  opacity: 1;
+.quick-find-item .qf-badge.prio-medium {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+.quick-find-item .qf-badge.prio-low {
+  color: var(--primary);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.07);
+}
+.quick-find-item .qf-badge.date {
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: transparent;
+}
+.quick-find-item .qf-badge.rec {
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: var(--border-subtle);
+}
+.quick-find-item .qf-badge.done {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+}
+.quick-find-item .qf-badge.completion {
+  color: var(--text-muted);
+  border-color: var(--border);
+  background: transparent;
 }
 
 .quick-find-view-all {
