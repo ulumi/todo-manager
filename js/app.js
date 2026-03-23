@@ -28,7 +28,8 @@ import {
   toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection,
   cancelModal, clearDraft, discardDraft,
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
-  guidedSelectWhen, guidedSetToday, guidedSetTomorrow
+  guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
+  guidedToggleNewCat, guidedAddCategory
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -240,6 +241,76 @@ class TodoApp {
   updateThemeBtn() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  toggleSettingsMenu() {
+    const menu = document.getElementById('settingsMenu');
+    const isHidden = menu.classList.contains('hidden');
+    if (isHidden) {
+      this.openSettingsMenu();
+    } else {
+      this.closeSettingsMenu();
+    }
+  }
+
+  openSettingsMenu() {
+    const menu = document.getElementById('settingsMenu');
+    menu.classList.remove('hidden');
+    this._updateSettingsMenuContent();
+    // Close when clicking outside
+    if (!this._settingsMenuCloser) {
+      this._settingsMenuCloser = (e) => {
+        const btn = document.getElementById('menuSettingsBtn');
+        if (!menu.contains(e.target) && !btn.contains(e.target)) {
+          this.closeSettingsMenu();
+        }
+      };
+      document.addEventListener('click', this._settingsMenuCloser);
+    }
+  }
+
+  closeSettingsMenu() {
+    const menu = document.getElementById('settingsMenu');
+    menu.classList.add('hidden');
+    if (this._settingsMenuCloser) {
+      document.removeEventListener('click', this._settingsMenuCloser);
+      this._settingsMenuCloser = null;
+    }
+  }
+
+  _updateSettingsMenuContent() {
+    const isStats = state.pastDisplayMode === 'stats';
+    const viz = state.statsViz;
+    const label = state.lang === 'fr' ? 'Complétés' : 'Completed';
+    const stateLabel = isStats ? 'stats' : 'visible';
+
+    // Update toggle state
+    document.getElementById('settingsCompletedLabel').textContent = label;
+    document.getElementById('settingsToggleInput').checked = isStats;
+    document.getElementById('settingsToggleState').textContent = stateLabel;
+
+    // Update viz picker
+    const vizRow = document.getElementById('settingsVizRow');
+    const vizPick = document.getElementById('settingsVizPick');
+    if (isStats) {
+      vizRow.style.display = 'block';
+      const vizOpts = [
+        { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
+        { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
+        { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
+      ];
+      vizPick.innerHTML = vizOpts.map(o =>
+        `<button class="settings-viz-btn${viz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')">${state.lang==='fr'?o.fr:o.en}</button>`
+      ).join('');
+    } else {
+      vizRow.style.display = 'none';
+    }
+
+    // Update language buttons
+    const langBtns = document.querySelectorAll('.settings-lang-btn');
+    langBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === state.lang);
+    });
   }
 
   setPalette(id) {
@@ -696,8 +767,11 @@ class TodoApp {
   guidedBack() { guidedBack(); }
   guidedFinish() { guidedFinish(); }
   guidedSelectWhen(mode) { guidedSelectWhen(mode); }
+  guidedSelectRecurrence(val) { guidedSelectRecurrence(val); }
   guidedSetToday() { guidedSetToday(); }
   guidedSetTomorrow() { guidedSetTomorrow(); }
+  guidedToggleNewCat() { guidedToggleNewCat(); }
+  guidedAddCategory() { guidedAddCategory(); }
 
   saveTask() {
     const before = JSON.parse(JSON.stringify(state.todos));

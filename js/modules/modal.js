@@ -976,7 +976,9 @@ function _destroyContextReveal() {
 
 // ─── Guided Cards ─────────────────────────────────────────────────────────
 
+const GUIDED_TOTAL_STEPS = 4;
 let _guidedStep = 0;
+let _guidedKeyHandler = null;
 
 export function openGuidedCards() {
   const overlay = document.getElementById('guidedOverlay');
@@ -992,6 +994,8 @@ export function openGuidedCards() {
   if (gDate) gDate.value = document.getElementById('taskDate')?.value || '';
   const gPrio = document.getElementById('guidedPriority');
   if (gPrio) gPrio.value = document.getElementById('taskPriority')?.value || '';
+  const gRec = document.getElementById('guidedRecurrence');
+  if (gRec) gRec.value = state.selectedRecurrence || 'none';
   // Populate guided category from main category
   const gCat = document.getElementById('guidedCategory');
   const mainCat = document.getElementById('taskCategory');
@@ -1005,6 +1009,15 @@ export function openGuidedCards() {
   if (gTime) gTime.value = document.getElementById('taskStartTime')?.value || '';
   const gDur = document.getElementById('guidedDuration');
   if (gDur) gDur.value = document.getElementById('taskDurationEstimated')?.value || '';
+  const gFlex = document.getElementById('guidedFlexibleTime');
+  if (gFlex) gFlex.checked = document.getElementById('taskFlexibleTime')?.checked || false;
+
+  // Set correct destination based on current scheduleMode
+  const currentMode = state.scheduleMode || 'inbox';
+  document.querySelectorAll('.guided-dest-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+  document.querySelectorAll('.guided-when-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+  const guidedDateRow = document.getElementById('guidedDateRow');
+  if (guidedDateRow) guidedDateRow.style.display = currentMode === 'date' ? '' : 'none';
 
   // Hide main, show guided
   if (main) gsap.to(main, { opacity: 0, x: -20, duration: 0.2, onComplete: () => main.style.display = 'none' });
@@ -1016,6 +1029,19 @@ export function openGuidedCards() {
 
   _guidedStep = 0;
   _showGuidedStep(0);
+
+  // Enter key handler for guided mode
+  _guidedKeyHandler = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      const tag = e.target.tagName;
+      if (tag === 'TEXTAREA') return; // allow newlines in textarea
+      e.preventDefault();
+      if (_guidedStep < GUIDED_TOTAL_STEPS - 1) guidedNext();
+      else guidedFinish();
+    }
+  };
+  overlay.addEventListener('keydown', _guidedKeyHandler);
+
   setTimeout(() => document.getElementById('guidedTitle')?.focus(), 100);
 }
 
@@ -1025,6 +1051,10 @@ export function closeGuidedCards() {
 
   // Sync guided values back to main form
   _syncGuidedToMain();
+
+  // Remove key handler
+  if (overlay && _guidedKeyHandler) overlay.removeEventListener('keydown', _guidedKeyHandler);
+  _guidedKeyHandler = null;
 
   if (overlay) gsap.to(overlay, { opacity: 0, scale: 0.96, duration: 0.2, onComplete: () => overlay.style.display = 'none' });
   if (main) {
@@ -1037,7 +1067,7 @@ export function closeGuidedCards() {
 }
 
 export function guidedNext() {
-  if (_guidedStep >= 3) return;
+  if (_guidedStep >= GUIDED_TOTAL_STEPS - 1) return;
   // Validate title on step 0
   if (_guidedStep === 0) {
     const t = document.getElementById('guidedTitle')?.value.trim();
@@ -1060,6 +1090,8 @@ export function guidedFinish() {
 }
 
 export function guidedSelectWhen(mode) {
+  // Update all destination and when buttons
+  document.querySelectorAll('.guided-dest-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.querySelectorAll('.guided-when-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   const dateRow = document.getElementById('guidedDateRow');
   if (dateRow) dateRow.style.display = mode === 'date' ? '' : 'none';
@@ -1069,6 +1101,30 @@ export function guidedSelectWhen(mode) {
   state.setScheduleMode(mode);
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = mode === 'date' ? '' : 'none';
+}
+
+export function guidedSelectRecurrence(rec) {
+  selectRecurrence(rec);
+  // Show recurrence detail in guided mode
+  const detail = document.getElementById('guidedRecDetail');
+  if (!detail) return;
+  if (rec === 'none' || rec === 'daily') {
+    detail.innerHTML = '';
+  } else if (rec === 'weekly') {
+    state.setSelectedWeekDays([today().getDay()]);
+    detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
+      ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
+        onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
+    </div>`;
+  } else if (rec === 'monthly') {
+    state.setSelectedMonthDays([state.navDate.getDate()]);
+    state.setSelectedMonthLastDay(false);
+    detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
+  } else if (rec === 'yearly') {
+    state.setSelectedYearMonth(state.navDate.getMonth());
+    state.setSelectedYearDay(state.navDate.getDate());
+    detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
+  }
 }
 
 export function guidedSetToday() {
@@ -1082,6 +1138,38 @@ export function guidedSetTomorrow() {
   if (d) d.value = DS(tmr);
 }
 
+export function guidedToggleNewCat() {
+  const row = document.getElementById('guidedNewCatRow');
+  if (!row) return;
+  const visible = row.style.display !== 'none';
+  row.style.display = visible ? 'none' : '';
+  if (!visible) document.getElementById('guidedNewCatInput')?.focus();
+}
+
+export function guidedAddCategory() {
+  const input = document.getElementById('guidedNewCatInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  // Add to admin categories
+  const cats = getCategories();
+  const id = name.toLowerCase().replace(/\s+/g, '-');
+  if (!cats.find(c => c.id === id)) {
+    cats.push({ id, name, color: CATEGORY_COLORS[cats.length % CATEGORY_COLORS.length] });
+    saveCategories(cats);
+  }
+  // Refresh both selects
+  populateCategorySelect(id);
+  // Also refresh guided select
+  const gCat = document.getElementById('guidedCategory');
+  const mainCat = document.getElementById('taskCategory');
+  if (gCat && mainCat) {
+    gCat.innerHTML = mainCat.innerHTML;
+    gCat.value = id;
+  }
+  input.value = '';
+  document.getElementById('guidedNewCatRow').style.display = 'none';
+}
+
 function _showGuidedStep(step) {
   const cards = document.querySelectorAll('.guided-card');
   cards.forEach((c, i) => {
@@ -1093,7 +1181,52 @@ function _showGuidedStep(step) {
     }
   });
   const indicator = document.getElementById('guidedStepIndicator');
-  if (indicator) indicator.textContent = `${step + 1} / 4`;
+  if (indicator) indicator.textContent = `${step + 1} / ${GUIDED_TOTAL_STEPS}`;
+
+  // Build summary on last step
+  if (step === GUIDED_TOTAL_STEPS - 1) _buildGuidedSummary();
+}
+
+function _buildGuidedSummary() {
+  const el = document.getElementById('guidedSummary');
+  if (!el) return;
+  const title = document.getElementById('guidedTitle')?.value || '—';
+  const date = document.getElementById('guidedDate')?.value || '';
+  const prio = document.getElementById('guidedPriority')?.value || '';
+  const cat = document.getElementById('guidedCategory');
+  const catName = cat?.selectedOptions[0]?.textContent || '';
+  const desc = document.getElementById('guidedDescription')?.value || '';
+  const time = document.getElementById('guidedStartTime')?.value || '';
+  const dur = document.getElementById('guidedDuration')?.value || '';
+  const rec = document.getElementById('guidedRecurrence')?.value || 'none';
+  const flex = document.getElementById('guidedFlexibleTime')?.checked;
+
+  const mode = state.scheduleMode;
+  let whenText = '';
+  if (mode === 'inbox') whenText = 'Inbox';
+  else if (mode === 'backlog') whenText = 'Backlog';
+  else if (date) {
+    const d = new Date(date + 'T00:00:00');
+    whenText = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' });
+  } else whenText = '—';
+
+  const prioLabels = { low: 'Basse', medium: 'Moyenne', high: 'Haute' };
+  const recLabels = { none: '', daily: 'Quotidien', weekly: 'Hebdomadaire', monthly: 'Mensuel', yearly: 'Annuel' };
+
+  const rows = [
+    ['Titre', title],
+    ['Quand', whenText],
+  ];
+  if (rec !== 'none') rows.push(['Répétition', recLabels[rec] || '']);
+  if (prio) rows.push(['Priorité', prioLabels[prio] || prio]);
+  if (catName && catName !== '— Aucune catégorie —') rows.push(['Catégorie', catName]);
+  if (time) rows.push(['Heure', time + (flex ? ' (flexible)' : '')]);
+  if (dur) rows.push(['Durée', dur + ' min']);
+  if (desc) rows.push(['Notes', desc.length > 50 ? desc.slice(0, 50) + '...' : desc]);
+
+  el.innerHTML = rows.map(([label, value]) =>
+    `<div class="summary-row"><span class="summary-label">${label}</span><span class="summary-value">${esc(value)}</span></div>`
+  ).join('');
 }
 
 function _syncGuidedToMain() {
@@ -1114,6 +1247,14 @@ function _syncGuidedToMain() {
   // Sync priority to state
   const p = document.getElementById('taskPriority')?.value || '';
   selectPriority(p);
+  // Sync recurrence
+  const gRec = document.getElementById('guidedRecurrence')?.value || 'none';
+  const mainRec = document.getElementById('taskRecurrence');
+  if (mainRec) mainRec.value = gRec;
+  // Sync flexible time
+  const gFlex = document.getElementById('guidedFlexibleTime');
+  const mFlex = document.getElementById('taskFlexibleTime');
+  if (gFlex && mFlex) mFlex.checked = gFlex.checked;
   // Ensure context fields are revealed
   const ctx = document.getElementById('contextFields');
   if (ctx && document.getElementById('taskTitle')?.value.trim()) {
