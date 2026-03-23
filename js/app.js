@@ -80,6 +80,7 @@ class TodoApp {
     this.dayOrder = JSON.parse(localStorage.getItem('dayOrder') || '{}');
     this.daySpacer = JSON.parse(localStorage.getItem('daySpacer') || '{}');
     this.recurringOrder = JSON.parse(localStorage.getItem('recurringOrder') || '{}');
+    this.punctualPeriodOrder = JSON.parse(localStorage.getItem('punctualPeriodOrder') || '{}');
     this._clickTimer = null;
     this._quickAddInDayMode = false;
     this.init();
@@ -211,7 +212,7 @@ class TodoApp {
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
-      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette);
+      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette, { sync: false });
       if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
       if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
     }
@@ -222,6 +223,15 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // THEME & ZOOM
   // ═══════════════════════════════════════════════════
+
+  // Call after any user-triggered config change so Firestore stays in sync
+  // and the local config timestamp prevents Firestore from overwriting it on reload.
+  _saveConfigChange() {
+    localStorage.setItem('_localConfigTime', Date.now().toString());
+    pushToFirestore(getFullBackup(state.todos)).catch(() => {});
+    saveBackupToServer(getFullBackup(state.todos));
+  }
+
   initTheme() {
     const saved = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -240,12 +250,12 @@ class TodoApp {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
     this.updateThemeBtn();
+    this._saveConfigChange();
     if (state.view === 'profile') this.render();
   }
 
   updateThemeBtn() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+    // themeBtn removed — theme state managed by settingsLightBtn/settingsDarkBtn
   }
 
   toggleSettingsMenu() {
@@ -261,6 +271,7 @@ class TodoApp {
   openSettingsMenu() {
     const menu = document.getElementById('settingsMenu');
     menu.classList.remove('hidden');
+    document.getElementById('menuSettingsBtn')?.classList.add('open');
     this._updateSettingsMenuContent();
     // Close when clicking outside
     if (!this._settingsMenuCloser) {
@@ -277,6 +288,7 @@ class TodoApp {
   closeSettingsMenu() {
     const menu = document.getElementById('settingsMenu');
     menu.classList.add('hidden');
+    document.getElementById('menuSettingsBtn')?.classList.remove('open');
     if (this._settingsMenuCloser) {
       document.removeEventListener('click', this._settingsMenuCloser);
       this._settingsMenuCloser = null;
@@ -287,6 +299,7 @@ class TodoApp {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
     this.updateThemeBtn();
+    this._saveConfigChange();
     this._updateSettingsMenuContent();
     if (state.view === 'profile') this.render();
   }
@@ -295,6 +308,7 @@ class TodoApp {
     const enabled = document.getElementById('settingsGlassInput').checked;
     localStorage.setItem('glassMode', enabled ? '1' : '0');
     document.documentElement.classList.toggle('glass-mode', enabled);
+    this._saveConfigChange();
   }
 
   _updateSettingsMenuContent() {
@@ -342,10 +356,11 @@ class TodoApp {
     document.getElementById('settingsBgColor').value = bgColor;
   }
 
-  setPalette(id) {
+  setPalette(id, { sync = true } = {}) {
     // Close color picker if open
     document.getElementById('settingsBgColor')?.blur();
     _setBgPalette(id);
+    if (sync) this._saveConfigChange();
     if (state.view === 'profile') this.render();
   }
 
@@ -367,12 +382,14 @@ class TodoApp {
 
   setBgColor(color) {
     _setBgColor(color);
+    this._saveConfigChange();
     this._updateSettingsMenuContent();
   }
 
   setPrimaryColor(color) {
     document.documentElement.style.setProperty('--primary', color);
     localStorage.setItem('primaryColor', color);
+    this._saveConfigChange();
     this._updateSettingsMenuContent();
   }
 
@@ -383,6 +400,7 @@ class TodoApp {
   setGlassMode(enabled) {
     localStorage.setItem('glassMode', enabled ? '1' : '0');
     document.documentElement.classList.toggle('glass-mode', enabled);
+    this._saveConfigChange();
   }
 
   applyZoom() {
@@ -407,7 +425,8 @@ class TodoApp {
     const quickAddInput = document.getElementById('quickAddInput');
     if (quickAddInput) quickAddInput.placeholder = state.T.quickAddPlaceholder;
     document.getElementById('taskTitle').placeholder = state.T.taskPlaceholder;
-    document.querySelector('.zoom-group').title = state.T.zoomButtonTitle;
+    const zoomGroup = document.querySelector('.zoom-group');
+    if (zoomGroup) zoomGroup.title = state.T.zoomButtonTitle;
     const quickAddSubmit = document.getElementById('quickAddSubmit');
     if (quickAddSubmit) quickAddSubmit.textContent = state.T.addMore;
     document.getElementById('deleteOneTitle').textContent = state.T.deleteOneOccurrence;
@@ -538,14 +557,17 @@ class TodoApp {
 
     // 6. Stagger todo items
     setTimeout(() => {
-      gsap.from('.todo-item', {
-        opacity: 0,
-        y: 8,
-        duration: 0.2,
-        stagger: { amount: 0.08 },
-        ease: 'power3.out',
-        overwrite: 'auto'
-      });
+      const todoItems = document.querySelectorAll('.todo-item');
+      if (todoItems.length) {
+        gsap.from(todoItems, {
+          opacity: 0,
+          y: 8,
+          duration: 0.2,
+          stagger: { amount: 0.08 },
+          ease: 'power3.out',
+          overwrite: 'auto'
+        });
+      }
     }, 220);
 
     // Setup hover animations
@@ -916,7 +938,7 @@ class TodoApp {
     if (draggedId === targetId) return;
     const dateStr = DS(state.navDate);
     if (group === 'punctual') {
-      const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');
+      const items = getTodosForDate(state.navDate, state.todos).filter(t => (!t.recurrence || t.recurrence === 'none') && !t.dayPeriod);
       let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => id.startsWith('spacer-') || items.some(t => t.id === id));
@@ -926,6 +948,20 @@ class TodoApp {
       newOrder.splice(before ? idx : idx + 1, 0, draggedId);
       this.dayOrder[dateStr] = newOrder;
       localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
+    } else if (group.startsWith('punctual-')) {
+      const periodMap = { 'punctual-morning': 'morning', 'punctual-afternoon': 'afternoon', 'punctual-evening': 'evening' };
+      const period = periodMap[group];
+      const items = getTodosForDate(state.navDate, state.todos).filter(t => (!t.recurrence || t.recurrence === 'none') && t.dayPeriod === period);
+      if (!this.punctualPeriodOrder[dateStr]) this.punctualPeriodOrder[dateStr] = {};
+      let order = this.punctualPeriodOrder[dateStr][period] ? [...this.punctualPeriodOrder[dateStr][period]] : items.map(t => t.id);
+      items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
+      order = order.filter(id => items.some(t => t.id === id));
+      const newOrder = order.filter(id => id !== draggedId);
+      const idx = newOrder.indexOf(targetId);
+      if (idx < 0) return;
+      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      this.punctualPeriodOrder[dateStr][period] = newOrder;
+      localStorage.setItem('punctualPeriodOrder', JSON.stringify(this.punctualPeriodOrder));
     } else {
       // For daily sub-periods, filter by both recurrence and dayPeriod
       const periodMap = { 'daily-morning': 'morning', 'daily-afternoon': 'afternoon', 'daily-evening': 'evening' };
@@ -3026,6 +3062,12 @@ class TodoApp {
     this.render();
   }
 
+  toggleDayPeriodGroups() {
+    const cur = localStorage.getItem('dayPeriodGroups') !== 'false';
+    localStorage.setItem('dayPeriodGroups', String(!cur));
+    this.render();
+  }
+
   toggleDaySort() {
     const cur = localStorage.getItem('daySortCollapsed') !== 'false';
     localStorage.setItem('daySortCollapsed', !cur ? 'true' : 'false');
@@ -3694,6 +3736,16 @@ class TodoApp {
     }
 
     const { _firestoreUpdatedAt, ...cleanBackup } = backup;
+
+    // If local config was changed after the last Firestore push, preserve it.
+    // This prevents BrowserSync reloads (or any page reload) from reverting
+    // theme, palette, glass mode, etc. to a stale Firestore snapshot.
+    const localConfigTime = parseInt(localStorage.getItem('_localConfigTime') || '0');
+    const firestoreConfigTime = _firestoreUpdatedAt || 0;
+    if (localConfigTime > firestoreConfigTime) {
+      delete cleanBackup.config;
+    }
+
     this._applyBackup(cleanBackup, { silent: false });
   }
 
@@ -3725,7 +3777,7 @@ class TodoApp {
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
-      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette);
+      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette, { sync: false });
       if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
       if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
     }
@@ -4257,5 +4309,20 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
   if (!localStorage.getItem('theme')) {
     document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
     window.app.updateThemeBtn();
+  }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
+    if (e.code === 'KeyD') {
+      e.preventDefault();
+      window.app.toggleTheme();
+    }
+    if (e.code === 'KeyG') {
+      e.preventDefault();
+      const next = localStorage.getItem('glassMode') !== '1';
+      window.app.setGlassMode(next);
+    }
   }
 });

@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modal Glass — 10 variantes</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 40%, #f093fb 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+h1 {
+  text-align: center;
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.subtitle {
+  text-align: center;
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+  margin-bottom: 40px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.variant-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.variant-label {
+  color: rgba(255,255,255,.9);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+
+/* ── Base modal shell (same structure for all) ── */
+.modal-shell {
+  border-radius: 16px;
+  padding: 24px 26px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Shared field styles ── */
+.m-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.m-title {
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.m-close {
+  width: 26px; height: 26px;
+  border: none; background: transparent;
+  border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; opacity: .5;
+  transition: opacity .15s, background .15s;
+}
+.m-close:hover { opacity: 1; }
+
+.fl-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+.fl-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  transition: all .2s;
+  font-family: inherit;
+}
+.fl-label {
+  position: absolute;
+  left: 12px; top: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+  transition: all .2s;
+  padding: 0 4px;
+  margin-left: -4px;
+  z-index: 1;
+}
+.fl-input:focus ~ .fl-label,
+.fl-input:not(:placeholder-shown) ~ .fl-label {
+  top: -8px;
+  font-size: 11px;
+}
+
+.fl-row {
+  display: flex;
+  gap: 12px;
+}
+.fl-row .fl-group { flex: 1; }
+
+.m-timing {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.t-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.t-icon { font-size: 13px; flex-shrink: 0; }
+.t-input {
+  flex: 1; min-width: 0;
+  padding: 5px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+}
+.t-flex {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; white-space: nowrap; flex-shrink: 0;
+}
+
+.m-schedule {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.m-sch-opt {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  border: 1.5px solid;
+}
+
+.m-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  margin-top: 4px;
+}
+.m-footer-actions { display: flex; gap: 8px; }
+.m-btn {
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all .15s;
+}
+.m-link {
+  font-size: 12px; cursor: pointer;
+  text-decoration: none; transition: opacity .15s;
+}
+.m-link:hover { opacity: .7; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 0 — Design actuel (référence)
+   Fond: rgba(255,255,255,.18) + blur(32px) saturate(180%)
+   Texte: #1e2030 sombre, inputs semi-transparents blancs
+══════════════════════════════════════════════════════ */
+.v0 .modal-shell {
+  background: rgba(255,255,255,.18);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.45);
+  box-shadow: 0 24px 64px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.5);
+  color: #1e2030;
+}
+.v0 .m-title { color: #1e2030; }
+.v0 .m-close { color: #1e2030; }
+.v0 .m-close:hover { background: rgba(0,0,0,.08); }
+.v0 .fl-input {
+  background: rgba(255,255,255,.35);
+  border: 1.5px solid rgba(255,255,255,.5);
+  color: #1e2030;
+}
+.v0 .fl-input::placeholder { color: rgba(30,32,48,.35); }
+.v0 .fl-input:focus { border-color: #5b5ef7; box-shadow: 0 0 0 3px rgba(91,94,247,.18); }
+.v0 .fl-label { color: rgba(30,32,48,.5); }
+.v0 .fl-input:focus ~ .fl-label,
+.v0 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #5b5ef7; background: rgba(255,255,255,.7); }
+.v0 .t-input { background: rgba(255,255,255,.35); border: 1.5px solid rgba(255,255,255,.5); color: #1e2030; }
+.v0 .m-sch-opt { border-color: rgba(255,255,255,.4); color: rgba(30,32,48,.6); background: rgba(255,255,255,.2); }
+.v0 .m-sch-opt.active { border-color: #5b5ef7; background: rgba(91,94,247,.12); color: #5b5ef7; }
+.v0 .m-footer { border-top: 1px solid rgba(255,255,255,.3); }
+.v0 .m-link { color: rgba(30,32,48,.5); }
+.v0 .m-btn.ghost { background: rgba(255,255,255,.3); color: #1e2030; border: 1.5px solid rgba(255,255,255,.45); }
+.v0 .m-btn.ghost:hover { background: rgba(255,255,255,.5); }
+.v0 .m-btn.primary { background: #5b5ef7; color: white; }
+.v0 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 1 — Blanc pur givré, opacité haute
+   Très blanc, presque solide, léger blur
+══════════════════════════════════════════════════════ */
+.v1 .modal-shell {
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,.9);
+  box-shadow: 0 20px 60px rgba(0,0,0,.14);
+  color: #0f172a;
+}
+.v1 .m-title { color: #0f172a; }
+.v1 .m-close { color: #64748b; }
+.v1 .m-close:hover { background: rgba(0,0,0,.06); }
+.v1 .fl-input { background: rgba(255,255,255,.6); border: 1.5px solid #e2e8f0; color: #0f172a; }
+.v1 .fl-input::placeholder { color: #94a3b8; }
+.v1 .fl-input:focus { border-color: #5b5ef7; box-shadow: 0 0 0 3px rgba(91,94,247,.12); background: white; }
+.v1 .fl-label { color: #64748b; }
+.v1 .fl-input:focus ~ .fl-label,
+.v1 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #5b5ef7; background: rgba(255,255,255,.85); }
+.v1 .t-input { background: rgba(255,255,255,.6); border: 1.5px solid #e2e8f0; color: #0f172a; }
+.v1 .m-sch-opt { border-color: #e2e8f0; color: #64748b; background: rgba(255,255,255,.4); }
+.v1 .m-sch-opt.active { border-color: rgba(91,94,247,.5); background: rgba(91,94,247,.08); color: #5b5ef7; }
+.v1 .m-footer { border-top: 1px solid #e2e8f0; }
+.v1 .m-link { color: #94a3b8; }
+.v1 .m-btn.ghost { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
+.v1 .m-btn.ghost:hover { background: #f8fafc; }
+.v1 .m-btn.primary { background: #5b5ef7; color: white; }
+.v1 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 2 — Verre sombre givré (milk glass dark)
+   Fond charbon translucide, texte blanc
+══════════════════════════════════════════════════════ */
+.v2 .modal-shell {
+  background: rgba(15,20,40,.55);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 24px 64px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
+  color: #f1f5f9;
+}
+.v2 .m-title { color: #f1f5f9; }
+.v2 .m-close { color: rgba(255,255,255,.5); }
+.v2 .m-close:hover { background: rgba(255,255,255,.1); }
+.v2 .fl-input { background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12); color: #f1f5f9; }
+.v2 .fl-input::placeholder { color: rgba(255,255,255,.25); }
+.v2 .fl-input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.2); background: rgba(255,255,255,.1); }
+.v2 .fl-label { color: rgba(255,255,255,.35); }
+.v2 .fl-input:focus ~ .fl-label,
+.v2 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #818cf8; background: rgba(15,20,40,.8); }
+.v2 .t-input { background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.12); color: #f1f5f9; }
+.v2 .m-sch-opt { border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.45); background: rgba(255,255,255,.05); }
+.v2 .m-sch-opt.active { border-color: #818cf8; background: rgba(129,140,248,.15); color: #818cf8; }
+.v2 .m-footer { border-top: 1px solid rgba(255,255,255,.1); }
+.v2 .m-link { color: rgba(255,255,255,.35); }
+.v2 .m-btn.ghost { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); border: 1.5px solid rgba(255,255,255,.12); }
+.v2 .m-btn.ghost:hover { background: rgba(255,255,255,.14); }
+.v2 .m-btn.primary { background: #5b5ef7; color: white; }
+.v2 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 3 — Givré rosé / pêche
+   Teinte chaude légèrement rosée, blur fort
+══════════════════════════════════════════════════════ */
+.v3 .modal-shell {
+  background: rgba(255,240,235,.45);
+  backdrop-filter: blur(30px) saturate(200%);
+  -webkit-backdrop-filter: blur(30px) saturate(200%);
+  border: 1px solid rgba(255,200,180,.5);
+  box-shadow: 0 20px 56px rgba(180,80,60,.12), inset 0 1px 0 rgba(255,255,255,.6);
+  color: #2d1a14;
+}
+.v3 .m-title { color: #2d1a14; }
+.v3 .m-close { color: rgba(45,26,20,.5); }
+.v3 .m-close:hover { background: rgba(0,0,0,.06); }
+.v3 .fl-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(255,190,160,.4); color: #2d1a14; }
+.v3 .fl-input::placeholder { color: rgba(45,26,20,.3); }
+.v3 .fl-input:focus { border-color: #e86a4a; box-shadow: 0 0 0 3px rgba(232,106,74,.15); }
+.v3 .fl-label { color: rgba(45,26,20,.45); }
+.v3 .fl-input:focus ~ .fl-label,
+.v3 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #e86a4a; background: rgba(255,245,240,.8); }
+.v3 .t-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(255,190,160,.4); color: #2d1a14; }
+.v3 .m-sch-opt { border-color: rgba(255,190,160,.4); color: rgba(45,26,20,.5); background: rgba(255,255,255,.3); }
+.v3 .m-sch-opt.active { border-color: #e86a4a; background: rgba(232,106,74,.1); color: #e86a4a; }
+.v3 .m-footer { border-top: 1px solid rgba(255,190,160,.3); }
+.v3 .m-link { color: rgba(45,26,20,.4); }
+.v3 .m-btn.ghost { background: rgba(255,255,255,.4); color: #2d1a14; border: 1.5px solid rgba(255,190,160,.4); }
+.v3 .m-btn.ghost:hover { background: rgba(255,255,255,.65); }
+.v3 .m-btn.primary { background: #e86a4a; color: white; }
+.v3 .m-btn.primary:hover { background: #d45535; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 4 — Cristal bleu glacier
+   Teinte bleue froide, blur intense, bordure lumineuse
+══════════════════════════════════════════════════════ */
+.v4 .modal-shell {
+  background: rgba(220,235,255,.28);
+  backdrop-filter: blur(36px) saturate(220%) brightness(105%);
+  -webkit-backdrop-filter: blur(36px) saturate(220%) brightness(105%);
+  border: 1px solid rgba(150,200,255,.5);
+  box-shadow: 0 20px 60px rgba(30,80,200,.15), inset 0 1px 0 rgba(255,255,255,.6);
+  color: #0c1a3a;
+}
+.v4 .m-title { color: #0c1a3a; }
+.v4 .m-close { color: rgba(12,26,58,.4); }
+.v4 .m-close:hover { background: rgba(12,26,58,.06); }
+.v4 .fl-input { background: rgba(255,255,255,.45); border: 1.5px solid rgba(150,200,255,.45); color: #0c1a3a; }
+.v4 .fl-input::placeholder { color: rgba(12,26,58,.3); }
+.v4 .fl-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.18); }
+.v4 .fl-label { color: rgba(12,26,58,.45); }
+.v4 .fl-input:focus ~ .fl-label,
+.v4 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #3b82f6; background: rgba(230,242,255,.85); }
+.v4 .t-input { background: rgba(255,255,255,.45); border: 1.5px solid rgba(150,200,255,.45); color: #0c1a3a; }
+.v4 .m-sch-opt { border-color: rgba(150,200,255,.4); color: rgba(12,26,58,.5); background: rgba(255,255,255,.25); }
+.v4 .m-sch-opt.active { border-color: #3b82f6; background: rgba(59,130,246,.1); color: #3b82f6; }
+.v4 .m-footer { border-top: 1px solid rgba(150,200,255,.3); }
+.v4 .m-link { color: rgba(12,26,58,.4); }
+.v4 .m-btn.ghost { background: rgba(255,255,255,.35); color: #0c1a3a; border: 1.5px solid rgba(150,200,255,.45); }
+.v4 .m-btn.ghost:hover { background: rgba(255,255,255,.6); }
+.v4 .m-btn.primary { background: #3b82f6; color: white; }
+.v4 .m-btn.primary:hover { background: #2563eb; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 5 — Opaque blanc pur, no blur
+   Solide, propre, sans backdrop-filter — look classique
+══════════════════════════════════════════════════════ */
+.v5 .modal-shell {
+  background: #ffffff;
+  backdrop-filter: none;
+  border: none;
+  box-shadow: 0 24px 80px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.08);
+  color: #0f172a;
+}
+.v5 .m-title { color: #0f172a; }
+.v5 .m-close { color: #94a3b8; }
+.v5 .m-close:hover { background: #f1f5f9; color: #0f172a; }
+.v5 .fl-input { background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; }
+.v5 .fl-input::placeholder { color: #94a3b8; }
+.v5 .fl-input:focus { border-color: #5b5ef7; box-shadow: 0 0 0 3px rgba(91,94,247,.12); background: white; }
+.v5 .fl-label { color: #94a3b8; }
+.v5 .fl-input:focus ~ .fl-label,
+.v5 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #5b5ef7; background: white; }
+.v5 .t-input { background: #f8fafc; border: 1.5px solid #e2e8f0; color: #0f172a; }
+.v5 .m-sch-opt { border-color: #e2e8f0; color: #64748b; background: #f8fafc; }
+.v5 .m-sch-opt.active { border-color: rgba(91,94,247,.5); background: rgba(91,94,247,.07); color: #5b5ef7; }
+.v5 .m-footer { border-top: 1px solid #f1f5f9; }
+.v5 .m-link { color: #94a3b8; }
+.v5 .m-btn.ghost { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
+.v5 .m-btn.ghost:hover { background: #f8fafc; }
+.v5 .m-btn.primary { background: #5b5ef7; color: white; }
+.v5 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 6 — Slate givré sombre neutre
+   Gris ardoise, opaque-ish, sobre
+══════════════════════════════════════════════════════ */
+.v6 .modal-shell {
+  background: rgba(30,41,59,.78);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(100,116,139,.25);
+  box-shadow: 0 24px 64px rgba(0,0,0,.35);
+  color: #e2e8f0;
+}
+.v6 .m-title { color: #f8fafc; }
+.v6 .m-close { color: rgba(226,232,240,.4); }
+.v6 .m-close:hover { background: rgba(255,255,255,.08); color: #f8fafc; }
+.v6 .fl-input { background: rgba(15,23,42,.45); border: 1.5px solid rgba(100,116,139,.3); color: #e2e8f0; }
+.v6 .fl-input::placeholder { color: rgba(148,163,184,.35); }
+.v6 .fl-input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.18); background: rgba(15,23,42,.6); }
+.v6 .fl-label { color: rgba(148,163,184,.6); }
+.v6 .fl-input:focus ~ .fl-label,
+.v6 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #818cf8; background: rgba(30,41,59,.9); }
+.v6 .t-input { background: rgba(15,23,42,.45); border: 1.5px solid rgba(100,116,139,.3); color: #e2e8f0; }
+.v6 .m-sch-opt { border-color: rgba(100,116,139,.25); color: rgba(148,163,184,.6); background: rgba(255,255,255,.04); }
+.v6 .m-sch-opt.active { border-color: #818cf8; background: rgba(129,140,248,.12); color: #818cf8; }
+.v6 .m-footer { border-top: 1px solid rgba(100,116,139,.2); }
+.v6 .m-link { color: rgba(148,163,184,.45); }
+.v6 .m-btn.ghost { background: rgba(255,255,255,.06); color: #94a3b8; border: 1.5px solid rgba(100,116,139,.25); }
+.v6 .m-btn.ghost:hover { background: rgba(255,255,255,.1); color: #e2e8f0; }
+.v6 .m-btn.primary { background: #5b5ef7; color: white; }
+.v6 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 7 — Verre vert menthe
+   Teinte verte légère, fraîche
+══════════════════════════════════════════════════════ */
+.v7 .modal-shell {
+  background: rgba(220,255,240,.32);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(100,220,160,.4);
+  box-shadow: 0 20px 56px rgba(10,100,60,.12), inset 0 1px 0 rgba(255,255,255,.55);
+  color: #0d2b1f;
+}
+.v7 .m-title { color: #0d2b1f; }
+.v7 .m-close { color: rgba(13,43,31,.4); }
+.v7 .m-close:hover { background: rgba(0,0,0,.05); }
+.v7 .fl-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(100,220,160,.4); color: #0d2b1f; }
+.v7 .fl-input::placeholder { color: rgba(13,43,31,.3); }
+.v7 .fl-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,.18); }
+.v7 .fl-label { color: rgba(13,43,31,.45); }
+.v7 .fl-input:focus ~ .fl-label,
+.v7 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #10b981; background: rgba(230,255,245,.85); }
+.v7 .t-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(100,220,160,.4); color: #0d2b1f; }
+.v7 .m-sch-opt { border-color: rgba(100,220,160,.35); color: rgba(13,43,31,.5); background: rgba(255,255,255,.25); }
+.v7 .m-sch-opt.active { border-color: #10b981; background: rgba(16,185,129,.1); color: #10b981; }
+.v7 .m-footer { border-top: 1px solid rgba(100,220,160,.25); }
+.v7 .m-link { color: rgba(13,43,31,.4); }
+.v7 .m-btn.ghost { background: rgba(255,255,255,.4); color: #0d2b1f; border: 1.5px solid rgba(100,220,160,.4); }
+.v7 .m-btn.ghost:hover { background: rgba(255,255,255,.6); }
+.v7 .m-btn.primary { background: #10b981; color: white; }
+.v7 .m-btn.primary:hover { background: #059669; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 8 — Neige brumeuse (très haute opacité)
+   Quasi blanc, flou léger, bordures à peine visibles
+══════════════════════════════════════════════════════ */
+.v8 .modal-shell {
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.95);
+  box-shadow: 0 16px 48px rgba(100,120,180,.15), 0 2px 8px rgba(0,0,0,.06);
+  color: #1e293b;
+}
+.v8 .m-title { color: #1e293b; }
+.v8 .m-close { color: #94a3b8; }
+.v8 .m-close:hover { background: #f1f5f9; color: #1e293b; }
+.v8 .fl-input { background: rgba(248,250,252,.8); border: 1.5px solid #e2e8f0; color: #1e293b; }
+.v8 .fl-input::placeholder { color: #94a3b8; }
+.v8 .fl-input:focus { border-color: #5b5ef7; box-shadow: 0 0 0 3px rgba(91,94,247,.1); background: white; }
+.v8 .fl-label { color: #94a3b8; }
+.v8 .fl-input:focus ~ .fl-label,
+.v8 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #5b5ef7; background: rgba(255,255,255,.9); }
+.v8 .t-input { background: rgba(248,250,252,.8); border: 1.5px solid #e2e8f0; color: #1e293b; }
+.v8 .m-sch-opt { border-color: #e2e8f0; color: #64748b; background: rgba(248,250,252,.7); }
+.v8 .m-sch-opt.active { border-color: rgba(91,94,247,.4); background: rgba(91,94,247,.07); color: #5b5ef7; }
+.v8 .m-footer { border-top: 1px solid #f1f5f9; }
+.v8 .m-link { color: #94a3b8; }
+.v8 .m-btn.ghost { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
+.v8 .m-btn.ghost:hover { background: #f8fafc; }
+.v8 .m-btn.primary { background: #5b5ef7; color: white; }
+.v8 .m-btn.primary:hover { background: #4a4de6; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 9 — Chrome / Miroir
+   Reflets argentés, très haute saturation
+══════════════════════════════════════════════════════ */
+.v9 .modal-shell {
+  background: rgba(255,255,255,.22);
+  backdrop-filter: blur(40px) saturate(280%) brightness(108%);
+  -webkit-backdrop-filter: blur(40px) saturate(280%) brightness(108%);
+  border: 1px solid rgba(255,255,255,.7);
+  box-shadow: 0 24px 64px rgba(0,0,0,.16), inset 0 2px 0 rgba(255,255,255,.8), inset 0 -1px 0 rgba(0,0,0,.06);
+  color: #111827;
+}
+.v9 .m-title { color: #111827; font-style: italic; }
+.v9 .m-close { color: rgba(17,24,39,.4); }
+.v9 .m-close:hover { background: rgba(0,0,0,.06); }
+.v9 .fl-input { background: rgba(255,255,255,.55); border: 1.5px solid rgba(200,210,230,.6); color: #111827; }
+.v9 .fl-input::placeholder { color: rgba(17,24,39,.3); }
+.v9 .fl-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.14); background: rgba(255,255,255,.75); }
+.v9 .fl-label { color: rgba(17,24,39,.4); }
+.v9 .fl-input:focus ~ .fl-label,
+.v9 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #7c3aed; background: rgba(255,255,255,.8); }
+.v9 .t-input { background: rgba(255,255,255,.55); border: 1.5px solid rgba(200,210,230,.6); color: #111827; }
+.v9 .m-sch-opt { border-color: rgba(200,210,230,.5); color: rgba(17,24,39,.45); background: rgba(255,255,255,.3); }
+.v9 .m-sch-opt.active { border-color: #7c3aed; background: rgba(124,58,237,.08); color: #7c3aed; }
+.v9 .m-footer { border-top: 1px solid rgba(200,210,230,.4); }
+.v9 .m-link { color: rgba(17,24,39,.4); }
+.v9 .m-btn.ghost { background: rgba(255,255,255,.4); color: #374151; border: 1.5px solid rgba(200,210,230,.5); }
+.v9 .m-btn.ghost:hover { background: rgba(255,255,255,.7); }
+.v9 .m-btn.primary { background: #7c3aed; color: white; }
+.v9 .m-btn.primary:hover { background: #6d28d9; }
+
+/* ══════════════════════════════════════════════════════
+   VARIANTE 10 — Ambre / Miel givré
+   Tons chauds dorés
+══════════════════════════════════════════════════════ */
+.v10 .modal-shell {
+  background: rgba(255,245,210,.38);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(245,200,80,.45);
+  box-shadow: 0 20px 56px rgba(160,100,0,.14), inset 0 1px 0 rgba(255,255,255,.6);
+  color: #292004;
+}
+.v10 .m-title { color: #292004; }
+.v10 .m-close { color: rgba(41,32,4,.4); }
+.v10 .m-close:hover { background: rgba(0,0,0,.05); }
+.v10 .fl-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(220,170,40,.35); color: #292004; }
+.v10 .fl-input::placeholder { color: rgba(41,32,4,.3); }
+.v10 .fl-input:focus { border-color: #d97706; box-shadow: 0 0 0 3px rgba(217,119,6,.16); }
+.v10 .fl-label { color: rgba(41,32,4,.45); }
+.v10 .fl-input:focus ~ .fl-label,
+.v10 .fl-input:not(:placeholder-shown) ~ .fl-label { color: #d97706; background: rgba(255,248,220,.85); }
+.v10 .t-input { background: rgba(255,255,255,.5); border: 1.5px solid rgba(220,170,40,.35); color: #292004; }
+.v10 .m-sch-opt { border-color: rgba(220,170,40,.35); color: rgba(41,32,4,.5); background: rgba(255,255,255,.25); }
+.v10 .m-sch-opt.active { border-color: #d97706; background: rgba(217,119,6,.1); color: #d97706; }
+.v10 .m-footer { border-top: 1px solid rgba(220,170,40,.25); }
+.v10 .m-link { color: rgba(41,32,4,.4); }
+.v10 .m-btn.ghost { background: rgba(255,255,255,.4); color: #292004; border: 1.5px solid rgba(220,170,40,.35); }
+.v10 .m-btn.ghost:hover { background: rgba(255,255,255,.65); }
+.v10 .m-btn.primary { background: #d97706; color: white; }
+.v10 .m-btn.primary:hover { background: #b45309; }
+</style>
+</head>
+<body>
+
+<h1>Modal Glass — 10 variantes</h1>
+<p class="subtitle">Design actuel = V0 (référence) · Cliquer dans les inputs pour tester l'interaction</p>
+
+<div class="grid">
+
+  <!-- V0 — Référence actuelle -->
+  <div class="variant-wrap v0">
+    <div class="variant-label">V0 — Actuel (référence)</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>— Aucune</option>
+            <option>Haute</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>Aucune répétition</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V1 — Blanc pur givré -->
+  <div class="variant-wrap v1">
+    <div class="variant-label">V1 — Blanc pur givré (opacité haute)</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>— Aucune</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>Aucune répétition</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2 — Milk glass dark -->
+  <div class="variant-wrap v2">
+    <div class="variant-label">V2 — Milk glass sombre</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>— Aucune</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input">
+            <option>Aucune répétition</option>
+          </select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V3 — Givré rosé -->
+  <div class="variant-wrap v3">
+    <div class="variant-label">V3 — Givré rosé / pêche</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V4 — Cristal bleu -->
+  <div class="variant-wrap v4">
+    <div class="variant-label">V4 — Cristal bleu glacier</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V5 — Blanc opaque -->
+  <div class="variant-wrap v5">
+    <div class="variant-label">V5 — Blanc opaque (no blur)</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V6 — Slate sombre -->
+  <div class="variant-wrap v6">
+    <div class="variant-label">V6 — Slate givré sombre</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V7 — Menthe -->
+  <div class="variant-wrap v7">
+    <div class="variant-label">V7 — Verre vert menthe</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V8 — Neige brumeuse -->
+  <div class="variant-wrap v8">
+    <div class="variant-label">V8 — Neige brumeuse (quasi-solide)</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V9 — Chrome miroir -->
+  <div class="variant-wrap v9">
+    <div class="variant-label">V9 — Chrome / Miroir (saturation max)</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V10 — Ambre miel -->
+  <div class="variant-wrap v10">
+    <div class="variant-label">V10 — Ambre / Miel givré</div>
+    <div class="modal-shell">
+      <div class="m-header">
+        <div class="m-title">Nouvelle tâche</div>
+        <button class="m-close">✕</button>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Quoi faire ?</label>
+      </div>
+      <div class="fl-row">
+        <div class="fl-group">
+          <select class="fl-input"><option>— Aucune</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Priorité</label>
+        </div>
+        <div class="fl-group">
+          <select class="fl-input"><option>Aucune répétition</option></select>
+          <label class="fl-label" style="top:-8px;font-size:11px">Répétition</label>
+        </div>
+      </div>
+      <div class="m-schedule">
+        <div class="m-sch-opt">Inbox</div>
+        <div class="m-sch-opt active">Date</div>
+        <div class="m-sch-opt">Backlog</div>
+      </div>
+      <div class="fl-group">
+        <input class="fl-input" placeholder=" " type="text">
+        <label class="fl-label">Catégorie</label>
+      </div>
+      <div class="m-timing">
+        <div class="t-field"><span class="t-icon">🕐</span><input class="t-input" type="time"></div>
+        <div class="t-field"><span class="t-icon">⏱</span><input class="t-input" type="number" placeholder="est."></div>
+        <label class="t-flex"><input type="checkbox"> <span>Flex</span></label>
+      </div>
+      <div class="m-footer">
+        <a class="m-link">Besoin d'aide ?</a>
+        <div class="m-footer-actions">
+          <button class="m-btn ghost">Annuler</button>
+          <button class="m-btn primary">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

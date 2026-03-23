@@ -104,6 +104,7 @@ function _tryRestoreDraft() {
     if (d.yearDay !== undefined) state.setSelectedYearDay(d.yearDay);
     selectRecurrence(d.recurrence);
   }
+  if (d.dayPeriod) window.app?.selectDayPeriod(d.dayPeriod);
   return true;
 }
 
@@ -314,7 +315,14 @@ export function openEditModal(id, dateStr, todos) {
     if (scheduleModeGroup) scheduleModeGroup.style.display = '';
     dateGroup.style.display = schedMode === 'date' ? '' : 'none';
     document.getElementById('taskDate').value = t.date || dateStr || '';
-    detail.innerHTML = '';
+    const editPeriod = t.dayPeriod || '';
+    detail.innerHTML = `<div class="day-period-select">
+      <button type="button" class="day-period-btn${editPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
+      <button type="button" class="day-period-btn${editPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
+      <button type="button" class="day-period-btn${editPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
+      <button type="button" class="day-period-btn${editPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
+      <input type="hidden" id="taskDayPeriod" value="${editPeriod}">
+    </div>`;
   } else if (state.selectedRecurrence === 'daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
@@ -330,8 +338,8 @@ export function openEditModal(id, dateStr, todos) {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
-      ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
-        onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
+      ${state.DAYS.map((d,i) => { const dow=(i+1)%7; return `<div class="day-checkbox${state.selectedWeekDays.includes(dow)?' selected':''}" data-day="${dow}"
+        onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
     </div>`;
   } else if (state.selectedRecurrence === 'monthly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
@@ -385,7 +393,14 @@ export function selectRecurrence(rec) {
   if (rec==='none') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = '';
     dateGroup.style.display = state.scheduleMode === 'date' ? '' : 'none';
-    detail.innerHTML = '';
+    const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
+    detail.innerHTML = `<div class="day-period-select">
+      <button type="button" class="day-period-btn${curPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
+      <button type="button" class="day-period-btn${curPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
+      <button type="button" class="day-period-btn${curPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
+      <button type="button" class="day-period-btn${curPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
+      <input type="hidden" id="taskDayPeriod" value="${curPeriod}">
+    </div>`;
   } else if (rec==='daily') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
@@ -400,10 +415,12 @@ export function selectRecurrence(rec) {
   } else if (rec==='weekly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    state.setSelectedWeekDays([today().getDay()]);
+    if (!state.selectedWeekDays.length) {
+      state.setSelectedWeekDays([state.navDate.getDay()]);
+    }
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
-      ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
-        onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
+      ${state.DAYS.map((d,i) => { const dow=(i+1)%7; return `<div class="day-checkbox${state.selectedWeekDays.includes(dow)?' selected':''}" data-day="${dow}"
+        onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
     </div>`;
   } else if (rec==='monthly') {
     if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
@@ -513,6 +530,7 @@ export function toggleWeekDay(i) {
   document.querySelectorAll('#weekDayBoxes .day-checkbox').forEach(el => {
     el.classList.toggle('selected', state.selectedWeekDays.includes(+el.dataset.day));
   });
+  _scheduleDraftSave();
 }
 
 // ─── Collapsible cloud sections ───────────────────────────────────────────
@@ -636,7 +654,7 @@ export function saveTaskLogic(todos) {
   const durationEstimated = document.getElementById('taskDurationEstimated')?.value ? parseInt(document.getElementById('taskDurationEstimated').value) : undefined;
   const durationReal      = document.getElementById('taskDurationReal')?.value ? parseInt(document.getElementById('taskDurationReal').value) : undefined;
 
-  const dayPeriod = state.selectedRecurrence === 'daily'
+  const dayPeriod = (state.selectedRecurrence === 'daily' || state.selectedRecurrence === 'none')
     ? (document.getElementById('taskDayPeriod')?.value || undefined)
     : undefined;
 
@@ -1147,8 +1165,8 @@ export function guidedSelectRecurrence(rec) {
   } else if (rec === 'weekly') {
     state.setSelectedWeekDays([today().getDay()]);
     detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
-      ${state.DAYS.map((d,i) => `<div class="day-checkbox${state.selectedWeekDays.includes(i)?' selected':''}" data-day="${i}"
-        onclick="window.app.toggleWeekDay(${i})">${d[0]}</div>`).join('')}
+      ${state.DAYS.map((d,i) => { const dow=(i+1)%7; return `<div class="day-checkbox${state.selectedWeekDays.includes(dow)?' selected':''}" data-day="${dow}"
+        onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
     </div>`;
   } else if (rec === 'monthly') {
     state.setSelectedMonthDays([state.navDate.getDate()]);

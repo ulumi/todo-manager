@@ -23,7 +23,7 @@
   --text: #0f172a;
   --text-muted: #64748b;
   --border: #e2e8f0;
-  --today: #fef3c7;
+  --today: color-mix(in srgb, var(--primary) 10%, transparent);
   --today-border: var(--primary);
   --radius: 12px;
   --shadow: 0 2px 4px rgba(0,0,0,.05);
@@ -44,7 +44,7 @@
   --text: #f1f5f9;
   --text-muted: #8b96a8;
   --border: #2d3147;
-  --today: #2a2000;
+  --today: color-mix(in srgb, var(--primary) 16%, transparent);
   --today-border: var(--primary);
   --shadow: 0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
   --shadow-md: 0 4px 6px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.2);
@@ -411,6 +411,77 @@ header.scrolled {
   color: var(--primary);
   backdrop-filter: blur(10px);
   transform: scale(1.05);
+}
+
+@keyframes flask-pour {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  15% {
+    transform: rotate(-18deg) scale(1.12);
+  }
+  35% {
+    transform: rotate(22deg) scale(1.1);
+  }
+  55% {
+    transform: rotate(-10deg) scale(1.08);
+  }
+  72% {
+    transform: rotate(8deg) scale(1.05);
+  }
+  85% {
+    transform: rotate(-4deg) scale(1.02);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+.playground-link {
+  text-decoration: none;
+  overflow: visible;
+}
+.playground-link .playground-icon {
+  transition: color 0.2s;
+  transform-origin: 50% 65%;
+}
+.playground-link:hover {
+  background: rgba(91, 94, 247, 0.12);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.playground-link:hover .playground-icon {
+  animation: flask-pour 0.65s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  color: var(--primary);
+}
+
+.hbtn-v26 {
+  flex-direction: column;
+  gap: 4px;
+}
+.hbtn-v26 .hbar {
+  display: block;
+  width: 16px;
+  height: 2px;
+  min-height: 2px;
+  flex-shrink: 0;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform 0.3s cubic-bezier(0.77, 0, 0.18, 1), opacity 0.2s;
+  transform-origin: center;
+}
+.hbtn-v26.open {
+  background: rgba(91, 94, 247, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.hbtn-v26.open .hbar:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.hbtn-v26.open .hbar:nth-child(2) {
+  opacity: 0;
+}
+.hbtn-v26.open .hbar:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .today-btn {
@@ -1518,9 +1589,7 @@ input:checked + .cal-sid-toggle-track::after {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--surface);
 }
 
 .day-mini-week-row {
@@ -1613,9 +1682,7 @@ input:checked + .cal-sid-toggle-track::after {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent !important;
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
@@ -1830,27 +1897,19 @@ input:checked + .cal-sid-toggle-track::after {
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-areas: "check content" "check actions";
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: start;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .todo-item:hover {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
   border-color: var(--primary);
-}
-.todo-item:hover .todo-delete {
-  opacity: 1;
-}
-.todo-item:hover .todo-edit {
-  opacity: 1;
-}
-.todo-item:hover .todo-duplicate {
-  opacity: 1;
-}
-.todo-item:hover .todo-add-after {
-  opacity: 1;
 }
 .todo-item:hover .todo-reorder-btn {
   opacity: 0.5;
@@ -1862,7 +1921,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-content {
-  flex: 1;
+  grid-area: content;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
@@ -1878,41 +1937,27 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: nowrap;
   gap: 2px;
-  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
-.todo-item--multiline .todo-actions {
-  align-self: flex-start;
-  display: grid;
-  grid-template-columns: 26px 26px;
-  gap: 2px;
-}
-.todo-item--multiline .todo-actions .todo-add-after {
-  grid-area: 1/1;
-  margin-left: 0;
-}
-.todo-item--multiline .todo-actions .todo-edit {
-  grid-area: 1/2;
-  margin-left: 0;
-}
-.todo-item--multiline .todo-actions .todo-duplicate {
-  grid-area: 2/1;
-}
-.todo-item--multiline .todo-actions .todo-delete {
-  grid-area: 2/2;
+.todo-item:hover .todo-actions {
+  opacity: 1;
 }
 
 .todo-check {
+  grid-area: check;
+  align-self: start;
+  margin-top: 2px;
   width: 22px;
   height: 22px;
   border: 2px solid var(--border);
   border-radius: 50%;
   cursor: pointer;
-  flex-shrink: 0;
-  align-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1998,12 +2043,14 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-drag-handle {
-  flex-shrink: 0;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
   cursor: grab;
   color: var(--text-muted);
   opacity: 0.2;
@@ -2107,70 +2154,12 @@ input:checked + .cal-sid-toggle-track::after {
   content: "⬇" !important;
 }
 
+.todo-add-after,
 .todo-duplicate,
-.todo-add-after {
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  opacity: 0;
-  transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.todo-duplicate {
-  order: 2;
-}
-.todo-duplicate:hover {
-  background: rgba(16, 185, 129, 0.12);
-  color: var(--success);
-  transform: scale(1.1);
-}
-
-.todo-add-after {
-  order: 1;
-  font-size: 15px;
-}
-.todo-add-after:hover {
-  background: rgba(91, 94, 247, 0.12);
-  color: var(--primary);
-  transform: scale(1.1);
-}
-
+.todo-edit,
 .todo-delete {
-  order: 4;
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  opacity: 0;
-  transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.todo-delete:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: var(--danger);
-  backdrop-filter: blur(8px);
-  transform: scale(1.05);
-}
-
-.todo-edit {
-  order: 3;
-  margin-left: 6px;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -2180,14 +2169,32 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  opacity: 0;
+  padding: 0;
   transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+
+.todo-add-after:hover {
+  background: rgba(91, 94, 247, 0.12);
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.todo-duplicate:hover {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  transform: scale(1.1);
+}
+
 .todo-edit:hover {
   background: rgba(91, 94, 247, 0.15);
   color: var(--primary);
-  backdrop-filter: blur(8px);
   transform: scale(1.1);
+}
+
+.todo-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  transform: scale(1.05);
 }
 
 @keyframes weekSlideIn {
@@ -2260,18 +2267,19 @@ input:checked + .cal-sid-toggle-track::after {
 }
 .week-day-col.is-today {
   flex: 1.8;
-  border-color: var(--today-border);
+  border-color: var(--primary);
   background: var(--today);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 40%, transparent), var(--shadow-md);
 }
 .week-day-col.is-today:hover, .week-day-col.is-today:active {
   flex: 2;
-  border-color: var(--today-border);
+  border-color: var(--primary);
 }
 .week-day-col.is-today .week-day-header {
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 .week-day-col.is-today .week-day-num {
-  color: var(--today-border);
+  color: var(--primary);
 }
 .week-day-col.empty:hover {
   flex: 1;
@@ -2301,7 +2309,7 @@ input:checked + .cal-sid-toggle-track::after {
 .week-day-num {
   font-size: 34px;
   font-weight: 800;
-  color: var(--today-border);
+  color: var(--text-muted);
   line-height: 1.1;
 }
 
@@ -6356,8 +6364,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: #1e2030;
 }
 .glass-mode .modal-main .modal-footer {
-  background: rgba(255, 255, 255, 0.12);
-  border-top-color: rgba(255, 255, 255, 0.3);
+  background: transparent;
+  border-top-color: rgba(255, 255, 255, 0.18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .glass-mode .modal-header .modal-title,
 .glass-mode .modal-close-btn,
@@ -6610,10 +6620,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   background-color: color-mix(in srgb, var(--surface) 50%, transparent);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f1f5f9' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   border-color: rgba(255, 255, 255, 0.25);
-  color: #f1f5f9;
 }
 .glass-mode .lang-select option {
-  color: #1e293b;
+  color: #1e293b !important;
   background: #fff;
 }
 .glass-mode .sticky-header-wrap {
@@ -6622,37 +6631,46 @@ body:has(.bottom-panel:not(.hidden))::before {
   -webkit-backdrop-filter: none;
 }
 .glass-mode .week-day-col {
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-color: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #f1f5f9;
 }
 .glass-mode .week-day-col.is-today {
-  background: color-mix(in srgb, var(--today) 60%, transparent);
-  border-color: rgba(245, 158, 11, 0.4);
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 0 24px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 .glass-mode .week-day-col.is-today .week-day-header {
-  background: rgba(245, 158, 11, 0.2);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .glass-mode .week-day-col.past {
-  opacity: 0.65;
+  opacity: 0.55;
 }
 .glass-mode .week-day-header {
-  border-bottom-color: rgba(255, 255, 255, 0.15);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
 }
-.glass-mode .week-day-name,
+.glass-mode .week-day-name {
+  color: rgba(255, 255, 255, 0.7);
+}
 .glass-mode .week-day-num {
-  color: #f1f5f9;
+  color: rgba(255, 255, 255, 0.85);
+}
+.glass-mode .week-day-col.is-today .week-day-name {
+  color: rgba(255, 255, 255, 0.85);
 }
 .glass-mode .week-day-col.is-today .week-day-num {
-  color: #f1f5f9;
+  color: var(--primary);
 }
 .glass-mode .week-todo-item {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.22);
   border-left-color: var(--primary);
   color: #f1f5f9;
+}
+.glass-mode .week-todo-item:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 .glass-mode .week-todo-text {
   color: #f1f5f9;
@@ -6667,6 +6685,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .month-cell.is-today,
+.glass-mode .year-month-card.has-today {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 0 16px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .glass-mode .month-todo-dot {
   background: rgba(255, 255, 255, 0.15);
@@ -10240,3 +10264,5 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex: 1;
   min-width: 0;
 }
+
+/*# sourceMappingURL=styles.css.map */

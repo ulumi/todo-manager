@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamburger Icons Playground</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #94a3b8; letter-spacing: .05em; text-transform: uppercase; }
+  p  { font-size: 12px; color: #64748b; margin-bottom: 32px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .2s, background .2s;
+  }
+  .card:hover { border-color: #6366f1; background: #1e2540; }
+
+  .label {
+    font-size: 10px;
+    color: #64748b;
+    text-align: center;
+    letter-spacing: .03em;
+    line-height: 1.4;
+  }
+
+  /* ── Base button reset ── */
+  .hbtn {
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all .25s;
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════
+     1. 3-bars classique
+  ══════════════════════════════════════════ */
+  .v01 .hbtn {
+    width: 36px; height: 36px;
+    background: transparent;
+    border: 1.5px solid #334155 !important;
+    border-radius: 8px;
+    flex-direction: column; gap: 5px; padding: 0;
+  }
+  .v01 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .28s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v01 .hbtn.open { border-color: #6366f1 !important; background: rgba(99,102,241,.12); }
+  .v01 .hbtn.open .bar { background: #6366f1; }
+  .v01 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v01 .hbtn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .v01 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     2. 3-bars → X, barres plus longues
+  ══════════════════════════════════════════ */
+  .v02 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px; padding: 0;
+  }
+  .v02 .bar { display: block; width: 20px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s; transform-origin: center; }
+  .v02 .hbtn.open .bar { background: #6366f1; }
+  .v02 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v02 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v02 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     3. 3-bars → X, overshoot élastique
+  ══════════════════════════════════════════ */
+  .v03 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 10px;
+    flex-direction: column; gap: 5px; padding: 0;
+  }
+  .v03 .bar { display: block; width: 18px; height: 2.5px; background: #94a3b8; border-radius: 3px; transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .2s, width .3s; transform-origin: center; }
+  .v03 .hbtn.open .bar { background: #f43f5e; }
+  .v03 .hbtn.open .bar:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+  .v03 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v03 .hbtn.open .bar:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     4. 3-bars → X, rotation du bouton entier
+  ══════════════════════════════════════════ */
+  .v04 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px; padding: 0;
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s;
+  }
+  .v04 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s, opacity .2s; transform-origin: center; }
+  .v04 .hbtn.open { transform: rotate(90deg); border-color: #6366f1 !important; background: rgba(99,102,241,.12); }
+  .v04 .hbtn.open .bar { background: #6366f1; }
+  .v04 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v04 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v04 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     5. Sans bordure, pill
+  ══════════════════════════════════════════ */
+  .v05 .hbtn {
+    width: 40px; height: 28px; background: rgba(255,255,255,.07);
+    border: none !important; border-radius: 20px;
+    flex-direction: column; gap: 4px; padding: 0;
+  }
+  .v05 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s, width .25s; transform-origin: center; }
+  .v05 .hbtn.open { background: rgba(99,102,241,.2); }
+  .v05 .hbtn.open .bar { background: #6366f1; }
+  .v05 .hbtn.open .bar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .v05 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v05 .hbtn.open .bar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     6. Cercle
+  ══════════════════════════════════════════ */
+  .v06 .hbtn {
+    width: 36px; height: 36px; background: rgba(255,255,255,.06);
+    border: none !important; border-radius: 50%;
+    flex-direction: column; gap: 5px;
+  }
+  .v06 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v06 .hbtn.open { background: rgba(99,102,241,.18); }
+  .v06 .hbtn.open .bar { background: #6366f1; }
+  .v06 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v06 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v06 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     7. Barres avec décalage (staggered)
+  ══════════════════════════════════════════ */
+  .v07 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v07 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transform-origin: left center; }
+  .v07 .bar:nth-child(1) { width: 16px; transition: transform .3s .0s cubic-bezier(.77,0,.18,1), opacity .2s, width .25s .0s; }
+  .v07 .bar:nth-child(2) { width: 12px; transition: transform .3s .05s cubic-bezier(.77,0,.18,1), opacity .2s .05s, width .25s .05s; }
+  .v07 .bar:nth-child(3) { width: 16px; transition: transform .3s .1s cubic-bezier(.77,0,.18,1), opacity .2s, width .25s .1s; }
+  .v07 .hbtn.open .bar { background: #6366f1; width: 16px; }
+  .v07 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v07 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v07 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     8. Barres → flèche gauche
+  ══════════════════════════════════════════ */
+  .v08 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v08 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), width .3s, opacity .2s; transform-origin: right center; }
+  .v08 .hbtn.open .bar { background: #6366f1; }
+  .v08 .hbtn.open .bar:nth-child(1) { transform: rotate(-40deg) translateX(2px); width: 10px; }
+  .v08 .hbtn.open .bar:nth-child(2) { width: 16px; }
+  .v08 .hbtn.open .bar:nth-child(3) { transform: rotate(40deg) translateX(2px); width: 10px; }
+
+  /* ══════════════════════════════════════════
+     9. Barres → flèche droite (chevron)
+  ══════════════════════════════════════════ */
+  .v09 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v09 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), width .3s; transform-origin: left center; }
+  .v09 .hbtn.open .bar { background: #6366f1; }
+  .v09 .hbtn.open .bar:nth-child(1) { transform: rotate(40deg); width: 10px; }
+  .v09 .hbtn.open .bar:nth-child(2) { /* unchanged */ }
+  .v09 .hbtn.open .bar:nth-child(3) { transform: rotate(-40deg); width: 10px; }
+
+  /* ══════════════════════════════════════════
+     10. Barres glissantes vers le bas
+  ══════════════════════════════════════════ */
+  .v10 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px; overflow: hidden;
+  }
+  .v10 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), opacity .25s; }
+  .v10 .hbtn.open .bar { background: #6366f1; }
+  .v10 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v10 .hbtn.open .bar:nth-child(2) { transform: translateY(0) rotate(-45deg); opacity: 0; }
+  .v10 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     11. 4 barres → X
+  ══════════════════════════════════════════ */
+  .v11 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 4px;
+  }
+  .v11 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v11 .hbtn.open .bar { background: #6366f1; }
+  .v11 .hbtn.open .bar:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+  .v11 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v11 .hbtn.open .bar:nth-child(3) { opacity: 0; }
+  .v11 .hbtn.open .bar:nth-child(4) { transform: translateY(-9px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     12. Squeeze (barres s'écrasent avant X)
+  ══════════════════════════════════════════ */
+  .v12 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v12 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .4s cubic-bezier(.23,1,.32,1), opacity .3s, background .2s; transform-origin: center; }
+  .v12 .hbtn.open .bar { background: #10b981; }
+  .v12 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v12 .hbtn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .v12 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     13. Icône + (plus) au lieu de X
+  ══════════════════════════════════════════ */
+  .v13 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1), border-color .2s, background .2s;
+  }
+  .v13 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .2s, width .3s; transform-origin: center; }
+  .v13 .bar:nth-child(1) { width: 16px; }
+  .v13 .bar:nth-child(2) { width: 16px; }
+  .v13 .bar:nth-child(3) { width: 16px; }
+  .v13 .hbtn.open { transform: rotate(45deg); border-color: #10b981 !important; background: rgba(16,185,129,.1); }
+  .v13 .hbtn.open .bar { background: #10b981; }
+  .v13 .hbtn.open .bar:nth-child(1) { transform: translateY(7px); }
+  .v13 .hbtn.open .bar:nth-child(2) { width: 0; opacity: 0; }
+  .v13 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px); }
+
+  /* ══════════════════════════════════════════
+     14. Menu → check mark
+  ══════════════════════════════════════════ */
+  .v14 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v14 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), width .3s, opacity .2s; transform-origin: left center; }
+  .v14 .bar:nth-child(1) { width: 16px; }
+  .v14 .bar:nth-child(2) { width: 14px; margin-left: 1px; }
+  .v14 .bar:nth-child(3) { width: 10px; margin-left: 3px; }
+  .v14 .hbtn.open .bar { background: #10b981; }
+  .v14 .hbtn.open .bar:nth-child(1) { transform: rotate(-45deg) scaleX(0.7); }
+  .v14 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v14 .hbtn.open .bar:nth-child(3) { transform: rotate(30deg) scaleX(1.4); }
+
+  /* ══════════════════════════════════════════
+     15. SVG inline – morph 3 barres → X
+  ══════════════════════════════════════════ */
+  .v15 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+  }
+  .v15 svg { overflow: visible; }
+  .v15 .l1, .v15 .l2, .v15 .l3 { transition: transform .35s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: 12px 12px; stroke: #94a3b8; stroke-width: 2; stroke-linecap: round; }
+  .v15 .hbtn.open .l1, .v15 .hbtn.open .l2, .v15 .hbtn.open .l3 { stroke: #6366f1; }
+  .v15 .hbtn.open .l1 { transform: rotate(45deg) translateY(0px); }
+  .v15 .hbtn.open .l2 { opacity: 0; }
+  .v15 .hbtn.open .l3 { transform: rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     16. Dot grid 3x3 → X
+  ══════════════════════════════════════════ */
+  .v16 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    display: grid; grid-template-columns: repeat(3, 6px); gap: 3px;
+  }
+  .v16 .dot { width: 5px; height: 5px; border-radius: 50%; background: #94a3b8; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .25s, background .2s; }
+  .v16 .hbtn.open .dot { background: #6366f1; }
+  .v16 .hbtn.open .dot:nth-child(1) { transform: translate(8px, 8px) rotate(45deg) scaleX(2.5) scaleY(.4); border-radius: 2px; }
+  .v16 .hbtn.open .dot:nth-child(2) { opacity: 0; transform: scale(0); }
+  .v16 .hbtn.open .dot:nth-child(3) { transform: translate(-8px, 8px) rotate(-45deg) scaleX(2.5) scaleY(.4); border-radius: 2px; }
+  .v16 .hbtn.open .dot:nth-child(4) { opacity: 0; transform: scale(0); }
+  .v16 .hbtn.open .dot:nth-child(5) { opacity: 0; transform: scale(0); }
+  .v16 .hbtn.open .dot:nth-child(6) { opacity: 0; transform: scale(0); }
+  .v16 .hbtn.open .dot:nth-child(7) { transform: translate(8px, -8px) rotate(-45deg) scaleX(2.5) scaleY(.4); border-radius: 2px; }
+  .v16 .hbtn.open .dot:nth-child(8) { opacity: 0; transform: scale(0); }
+  .v16 .hbtn.open .dot:nth-child(9) { transform: translate(-8px, -8px) rotate(45deg) scaleX(2.5) scaleY(.4); border-radius: 2px; }
+
+  /* ══════════════════════════════════════════
+     17. 2 barres → X (minimaliste)
+  ══════════════════════════════════════════ */
+  .v17 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 8px;
+  }
+  .v17 .bar { display: block; width: 18px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1); transform-origin: center; }
+  .v17 .hbtn.open .bar { background: #6366f1; }
+  .v17 .hbtn.open .bar:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+  .v17 .hbtn.open .bar:nth-child(2) { transform: translateY(-5px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     18. Barres → X avec scale bounce
+  ══════════════════════════════════════════ */
+  .v18 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), border-color .2s;
+  }
+  .v18 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .2s; transform-origin: center; }
+  .v18 .hbtn.open { transform: scale(1.15); border-color: #f59e0b !important; }
+  .v18 .hbtn.open .bar { background: #f59e0b; }
+  .v18 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v18 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v18 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     19. Ghost (pas de bordure, barres épaisses)
+  ══════════════════════════════════════════ */
+  .v19 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: none !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v19 .bar { display: block; width: 20px; height: 3px; background: #64748b; border-radius: 3px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v19 .hbtn.open .bar { background: #f1f5f9; }
+  .v19 .hbtn.open .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .v19 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v19 .hbtn.open .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     20. Barres → X, gradient accent
+  ══════════════════════════════════════════ */
+  .v20 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v20 .bar { display: block; width: 16px; height: 2px; background: linear-gradient(90deg, #6366f1, #a855f7); border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v20 .hbtn.open { border-color: #a855f7 !important; background: rgba(168,85,247,.1); }
+  .v20 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v20 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v20 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     21. Barres grossissantes → X
+  ══════════════════════════════════════════ */
+  .v21 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v21 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s, width .25s, height .2s; transform-origin: center; }
+  .v21 .bar:nth-child(1) { width: 16px; }
+  .v21 .bar:nth-child(2) { width: 12px; }
+  .v21 .bar:nth-child(3) { width: 16px; }
+  .v21 .hbtn.open .bar { width: 16px; height: 2.5px; background: #6366f1; }
+  .v21 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v21 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v21 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     22. Spin 180° + morph
+  ══════════════════════════════════════════ */
+  .v22 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: transform .4s cubic-bezier(.77,0,.18,1), border-color .2s, background .2s;
+  }
+  .v22 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v22 .hbtn.open { transform: rotate(180deg); border-color: #6366f1 !important; background: rgba(99,102,241,.1); }
+  .v22 .hbtn.open .bar { background: #6366f1; }
+  .v22 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v22 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v22 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     23. Barres → X, coins arrondis ouverts
+  ══════════════════════════════════════════ */
+  .v23 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: border-radius .3s, border-color .2s, background .2s;
+  }
+  .v23 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v23 .hbtn.open { border-radius: 50%; border-color: #6366f1 !important; background: rgba(99,102,241,.12); }
+  .v23 .hbtn.open .bar { background: #6366f1; }
+  .v23 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v23 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v23 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     24. Barres courtes centrées → X
+  ══════════════════════════════════════════ */
+  .v24 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v24 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s, opacity .2s, width .25s; transform-origin: center; }
+  .v24 .bar:nth-child(1) { width: 10px; }
+  .v24 .bar:nth-child(2) { width: 16px; }
+  .v24 .bar:nth-child(3) { width: 10px; }
+  .v24 .hbtn.open .bar { width: 16px; background: #6366f1; }
+  .v24 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v24 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v24 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     25. Barres → X, transition par étapes
+  ══════════════════════════════════════════ */
+  .v25 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v25 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transform-origin: center; }
+  .v25 .bar:nth-child(1) { transition: transform .25s .1s cubic-bezier(.77,0,.18,1), opacity .2s .1s; }
+  .v25 .bar:nth-child(2) { transition: opacity .15s 0s, transform .25s 0s; }
+  .v25 .bar:nth-child(3) { transition: transform .25s .05s cubic-bezier(.77,0,.18,1), opacity .2s .05s; }
+  .v25 .hbtn.open .bar { background: #6366f1; }
+  .v25 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v25 .hbtn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .v25 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     26. Solid fill + X blanc
+  ══════════════════════════════════════════ */
+  .v26 .hbtn {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,.08);
+    border: none !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: background .25s;
+  }
+  .v26 .bar { display: block; width: 16px; height: 2px; background: #f1f5f9; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v26 .hbtn.open { background: #6366f1; }
+  .v26 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v26 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v26 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     27. Barres → X, barres très épaisses
+  ══════════════════════════════════════════ */
+  .v27 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v27 .bar { display: block; width: 16px; height: 3px; background: #94a3b8; border-radius: 3px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v27 .hbtn.open .bar { background: #6366f1; }
+  .v27 .hbtn.open .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .v27 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v27 .hbtn.open .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     28. Barres minces → X, coins arrondis fermés
+  ══════════════════════════════════════════ */
+  .v28 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 4px;
+    flex-direction: column; gap: 5px;
+    transition: border-radius .25s, border-color .2s;
+  }
+  .v28 .bar { display: block; width: 16px; height: 1.5px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v28 .hbtn.open { border-radius: 10px; border-color: #6366f1 !important; }
+  .v28 .hbtn.open .bar { background: #6366f1; }
+  .v28 .hbtn.open .bar:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .v28 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v28 .hbtn.open .bar:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     29. Barres → X, fond dégradé ouvert
+  ══════════════════════════════════════════ */
+  .v29 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: background .3s, border-color .2s;
+  }
+  .v29 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s, background .3s; transform-origin: center; }
+  .v29 .hbtn.open { background: linear-gradient(135deg, rgba(99,102,241,.25), rgba(168,85,247,.25)); border-color: #a855f7 !important; }
+  .v29 .hbtn.open .bar { background: #fff; }
+  .v29 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v29 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v29 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     30. Barres → espace (slide out)
+  ══════════════════════════════════════════ */
+  .v30 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px; overflow: hidden;
+  }
+  .v30 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .35s cubic-bezier(.77,0,.18,1), opacity .25s; transform-origin: center; }
+  .v30 .hbtn.open .bar { background: #6366f1; }
+  .v30 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v30 .hbtn.open .bar:nth-child(2) { transform: translateX(36px); opacity: 0; }
+  .v30 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     31. SVG path morph (ham → X)
+  ══════════════════════════════════════════ */
+  .v31 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+  }
+  .v31 svg line { transition: transform .35s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: 12px 12px; stroke: #94a3b8; stroke-width: 2; stroke-linecap: round; }
+  .v31 .hbtn.open svg line { stroke: #6366f1; }
+  .v31 .hbtn.open .l1 { transform: rotate(45deg); }
+  .v31 .hbtn.open .l2 { opacity: 0; }
+  .v31 .hbtn.open .l3 { transform: rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     32. Hamburger → égal (=)
+  ══════════════════════════════════════════ */
+  .v32 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v32 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s, opacity .2s, width .3s; transform-origin: center; }
+  .v32 .bar:nth-child(1) { width: 16px; }
+  .v32 .bar:nth-child(2) { width: 16px; }
+  .v32 .bar:nth-child(3) { width: 16px; }
+  .v32 .hbtn.open .bar { background: #6366f1; }
+  .v32 .hbtn.open .bar:nth-child(1) { transform: translateY(3.5px); width: 14px; }
+  .v32 .hbtn.open .bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .v32 .hbtn.open .bar:nth-child(3) { transform: translateY(-3.5px); width: 14px; }
+
+  /* ══════════════════════════════════════════
+     33. Barres → X, shimmer au clic
+  ══════════════════════════════════════════ */
+  .v33 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px; position: relative; overflow: hidden;
+  }
+  .v33 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; position: relative; z-index: 1; }
+  .v33 .hbtn::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(99,102,241,.4) 0%, transparent 70%); opacity: 0; transition: opacity .3s; border-radius: inherit; }
+  .v33 .hbtn.open::after { opacity: 1; }
+  .v33 .hbtn.open { border-color: #6366f1 !important; }
+  .v33 .hbtn.open .bar { background: #6366f1; }
+  .v33 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v33 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v33 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     34. Barres → X, glow shadow
+  ══════════════════════════════════════════ */
+  .v34 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: box-shadow .3s, border-color .2s;
+  }
+  .v34 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s, background .3s; transform-origin: center; }
+  .v34 .hbtn.open { border-color: #6366f1 !important; box-shadow: 0 0 12px rgba(99,102,241,.5); }
+  .v34 .hbtn.open .bar { background: #6366f1; }
+  .v34 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v34 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v34 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     35. Barres → X, animation rebond
+  ══════════════════════════════════════════ */
+  .v35 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v35 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .45s cubic-bezier(.34,1.56,.64,1), opacity .25s; transform-origin: center; }
+  .v35 .hbtn.open .bar { background: #f43f5e; }
+  .v35 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v35 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v35 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     36. Barres → ∞ (infini stylisé)
+  ══════════════════════════════════════════ */
+  .v36 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    transition: border-color .2s, background .2s;
+  }
+  .v36 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .4s cubic-bezier(.77,0,.18,1), opacity .25s, width .3s; transform-origin: center; }
+  .v36 .bar:nth-child(1) { width: 16px; }
+  .v36 .bar:nth-child(2) { width: 10px; }
+  .v36 .bar:nth-child(3) { width: 16px; }
+  .v36 .hbtn.open { border-color: #a855f7 !important; background: rgba(168,85,247,.08); }
+  .v36 .hbtn.open .bar { background: #a855f7; width: 16px; }
+  .v36 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v36 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v36 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     37. Barres épaisses, petites → X compact
+  ══════════════════════════════════════════ */
+  .v37 .hbtn {
+    width: 32px; height: 32px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 6px;
+    flex-direction: column; gap: 4px;
+  }
+  .v37 .bar { display: block; width: 14px; height: 2.5px; background: #94a3b8; border-radius: 3px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v37 .hbtn.open .bar { background: #6366f1; }
+  .v37 .hbtn.open .bar:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .v37 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v37 .hbtn.open .bar:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     38. Grand bouton → X
+  ══════════════════════════════════════════ */
+  .v38 .hbtn {
+    width: 44px; height: 44px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 10px;
+    flex-direction: column; gap: 6px;
+  }
+  .v38 .bar { display: block; width: 20px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s; transform-origin: center; }
+  .v38 .hbtn.open .bar { background: #6366f1; }
+  .v38 .hbtn.open .bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  .v38 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v38 .hbtn.open .bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     39. Barres inégales → X centré
+  ══════════════════════════════════════════ */
+  .v39 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 1.5px solid #334155 !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+  }
+  .v39 .bar { display: block; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .32s cubic-bezier(.77,0,.18,1), opacity .2s, width .28s; transform-origin: center; }
+  .v39 .bar:nth-child(1) { width: 16px; }
+  .v39 .bar:nth-child(2) { width: 11px; align-self: flex-end; }
+  .v39 .bar:nth-child(3) { width: 16px; }
+  .v39 .hbtn.open .bar { width: 16px; align-self: center; background: #6366f1; }
+  .v39 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v39 .hbtn.open .bar:nth-child(2) { opacity: 0; width: 0; }
+  .v39 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ══════════════════════════════════════════
+     40. Barres → X, avec bordure animée
+  ══════════════════════════════════════════ */
+  .v40 .hbtn {
+    width: 36px; height: 36px; background: transparent;
+    border: 2px solid transparent !important; border-radius: 8px;
+    flex-direction: column; gap: 5px;
+    outline: 1.5px solid #334155;
+    transition: outline-color .2s, background .2s;
+  }
+  .v40 .bar { display: block; width: 16px; height: 2px; background: #94a3b8; border-radius: 2px; transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s, background .2s; transform-origin: center; }
+  .v40 .hbtn.open { outline-color: #6366f1; background: rgba(99,102,241,.1); }
+  .v40 .hbtn.open .bar { background: #6366f1; }
+  .v40 .hbtn.open .bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .v40 .hbtn.open .bar:nth-child(2) { opacity: 0; }
+  .v40 .hbtn.open .bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+</style>
+</head>
+<body>
+
+<h1>Hamburger Icons</h1>
+<p>Clique sur un bouton pour toggle open/close</p>
+
+<div class="grid">
+
+  <!-- 01 -->
+  <div class="card v01">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">01 · Classique</div>
+  </div>
+
+  <!-- 02 -->
+  <div class="card v02">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">02 · Longues barres</div>
+  </div>
+
+  <!-- 03 -->
+  <div class="card v03">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">03 · Overshoot rose</div>
+  </div>
+
+  <!-- 04 -->
+  <div class="card v04">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">04 · Rotation 90°</div>
+  </div>
+
+  <!-- 05 -->
+  <div class="card v05">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">05 · Pill sans bordure</div>
+  </div>
+
+  <!-- 06 -->
+  <div class="card v06">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">06 · Cercle</div>
+  </div>
+
+  <!-- 07 -->
+  <div class="card v07">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">07 · Staggered</div>
+  </div>
+
+  <!-- 08 -->
+  <div class="card v08">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">08 · Flèche gauche</div>
+  </div>
+
+  <!-- 09 -->
+  <div class="card v09">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">09 · Chevron droite</div>
+  </div>
+
+  <!-- 10 -->
+  <div class="card v10">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">10 · Slide down</div>
+  </div>
+
+  <!-- 11 -->
+  <div class="card v11">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">11 · 4 barres → X</div>
+  </div>
+
+  <!-- 12 -->
+  <div class="card v12">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">12 · Squeeze vert</div>
+  </div>
+
+  <!-- 13 -->
+  <div class="card v13">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">13 · Rotation + (plus)</div>
+  </div>
+
+  <!-- 14 -->
+  <div class="card v14">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">14 · Check mark</div>
+  </div>
+
+  <!-- 15 -->
+  <div class="card v15">
+    <button class="hbtn" onclick="toggle(this)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <line class="l1" x1="4" y1="6" x2="20" y2="6"/>
+        <line class="l2" x1="4" y1="12" x2="20" y2="12"/>
+        <line class="l3" x1="4" y1="18" x2="20" y2="18"/>
+      </svg>
+    </button>
+    <div class="label">15 · SVG lignes</div>
+  </div>
+
+  <!-- 16 -->
+  <div class="card v16">
+    <button class="hbtn" onclick="toggle(this)">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </button>
+    <div class="label">16 · Dot grid 3×3</div>
+  </div>
+
+  <!-- 17 -->
+  <div class="card v17">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">17 · 2 barres → X</div>
+  </div>
+
+  <!-- 18 -->
+  <div class="card v18">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">18 · Scale bounce ambre</div>
+  </div>
+
+  <!-- 19 -->
+  <div class="card v19">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">19 · Ghost épais</div>
+  </div>
+
+  <!-- 20 -->
+  <div class="card v20">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">20 · Gradient violet</div>
+  </div>
+
+  <!-- 21 -->
+  <div class="card v21">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">21 · Barres inégales</div>
+  </div>
+
+  <!-- 22 -->
+  <div class="card v22">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">22 · Spin 180°</div>
+  </div>
+
+  <!-- 23 -->
+  <div class="card v23">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">23 · Carré → cercle</div>
+  </div>
+
+  <!-- 24 -->
+  <div class="card v24">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">24 · Barres courtes</div>
+  </div>
+
+  <!-- 25 -->
+  <div class="card v25">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">25 · Stagger delay</div>
+  </div>
+
+  <!-- 26 -->
+  <div class="card v26">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">26 · Solid fill → X</div>
+  </div>
+
+  <!-- 27 -->
+  <div class="card v27">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">27 · Épais 3px</div>
+  </div>
+
+  <!-- 28 -->
+  <div class="card v28">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">28 · Radius 4→10</div>
+  </div>
+
+  <!-- 29 -->
+  <div class="card v29">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">29 · Dégradé fond ouvert</div>
+  </div>
+
+  <!-- 30 -->
+  <div class="card v30">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">30 · Slide out barre 2</div>
+  </div>
+
+  <!-- 31 -->
+  <div class="card v31">
+    <button class="hbtn" onclick="toggle(this)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <line class="l1" x1="4" y1="7" x2="20" y2="7"/>
+        <line class="l2" x1="4" y1="12" x2="20" y2="12"/>
+        <line class="l3" x1="4" y1="17" x2="20" y2="17"/>
+      </svg>
+    </button>
+    <div class="label">31 · SVG rotate</div>
+  </div>
+
+  <!-- 32 -->
+  <div class="card v32">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">32 · → Égal (=)</div>
+  </div>
+
+  <!-- 33 -->
+  <div class="card v33">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">33 · Shimmer radial</div>
+  </div>
+
+  <!-- 34 -->
+  <div class="card v34">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">34 · Glow shadow</div>
+  </div>
+
+  <!-- 35 -->
+  <div class="card v35">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">35 · Bounce rose</div>
+  </div>
+
+  <!-- 36 -->
+  <div class="card v36">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">36 · Barre centre fine</div>
+  </div>
+
+  <!-- 37 -->
+  <div class="card v37">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">37 · Compact 32px</div>
+  </div>
+
+  <!-- 38 -->
+  <div class="card v38">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">38 · Grand 44px</div>
+  </div>
+
+  <!-- 39 -->
+  <div class="card v39">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">39 · Barre 2 décalée</div>
+  </div>
+
+  <!-- 40 -->
+  <div class="card v40">
+    <button class="hbtn" onclick="toggle(this)"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
+    <div class="label">40 · Outline animée</div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(btn) {
+    btn.classList.toggle('open');
+  }
+</script>
+</body>
+</html>

@@ -334,7 +334,8 @@ const MIME = {
 };
 
 http.createServer((req, res) => {
-  let filePath = path.join(APP_DIR, req.url === '/' ? 'index.html' : req.url);
+  const urlPath = req.url.endsWith('/') ? req.url + 'index.html' : req.url;
+  let filePath = path.join(APP_DIR, urlPath === '/' ? 'index.html' : urlPath);
   if (!filePath.startsWith(APP_DIR)) { res.writeHead(403); res.end(); return; }
   const ext = path.extname(filePath);
   fs.readFile(filePath, (err, data) => {

@@ -64,6 +64,42 @@
       "tags": ["priority", "design-system", "UI-patterns"]
     },
     {
+      "id": "hamburger-icons",
+      "title": "Hamburger Icons — 40 variantes",
+      "description": "40 variantes d'icônes hamburger animées open/close. Barres, cercles, flèches, SVG, dot grid, gradient, glow, spin, bounce...",
+      "file": "hamburger-icons.html",
+      "prompt": "40 hamburger menu icon variants animated open/close",
+      "createdAt": "2026-03-23",
+      "tags": ["animation", "icon", "UI-patterns"]
+    },
+    {
+      "id": "modal-glass-variants",
+      "title": "Modal — Glass Variants",
+      "description": "Exploration de styles glassmorphism pour les modals.",
+      "file": "modal-glass-variants.html",
+      "prompt": "Glass modal variants",
+      "createdAt": "2026-03-23",
+      "tags": ["modal", "glass", "design-system"]
+    },
+    {
+      "id": "settings-icon",
+      "title": "Settings Icon",
+      "description": "Exploration d'icônes et styles pour le bouton de settings.",
+      "file": "settings-icon.html",
+      "prompt": "Settings icon exploration",
+      "createdAt": "2026-03-23",
+      "tags": ["icon", "UI-patterns"]
+    },
+    {
+      "id": "section-titles",
+      "title": "Section Titles",
+      "description": "Styles de titres de section pour la vue jour.",
+      "file": "section-titles.html",
+      "prompt": "Section title styles",
+      "createdAt": "2026-03-23",
+      "tags": ["typography", "design-system"]
+    },
+    {
       "id": "add-screen-concepts",
       "title": "Add Screen — 100 concepts",
       "description": "100 innovative approaches for the add-task screen: command palette, progressive disclosure, spatial, conversational, step-by-step, minimal, gesture, hybrid, immersive, and experimental.",

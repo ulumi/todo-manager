@@ -52,7 +52,7 @@
   --text:          #0f172a;
   --text-muted:    #64748b;
   --border:        #e2e8f0;
-  --today:         #fef3c7;
+  --today:         color-mix(in srgb, var(--primary) 10%, transparent);
   --today-border:  var(--primary);
   --radius:        12px;
   --shadow:        0 2px 4px rgba(0,0,0,.05);
@@ -73,7 +73,7 @@
   --text:          #f1f5f9;
   --text-muted:    #8b96a8;
   --border:        #2d3147;
-  --today:         #2a2000;
+  --today:         color-mix(in srgb, var(--primary) 16%, transparent);
   --today-border:  var(--primary);
   --shadow:        0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
   --shadow-md:     0 4px 6px rgba(0,0,0,.25), 0 2px 4px rgba(0,0,0,.2);
@@ -388,6 +388,66 @@ header {
     color: var(--primary);
     backdrop-filter: blur(10px);
     transform: scale(1.05);
+  }
+}
+
+// ── Playground link ───────────────────────────────────────────────────────
+@keyframes flask-pour {
+  0%   { transform: rotate(0deg) scale(1); }
+  15%  { transform: rotate(-18deg) scale(1.12); }
+  35%  { transform: rotate(22deg) scale(1.1); }
+  55%  { transform: rotate(-10deg) scale(1.08); }
+  72%  { transform: rotate(8deg) scale(1.05); }
+  85%  { transform: rotate(-4deg) scale(1.02); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.playground-link {
+  text-decoration: none;
+  overflow: visible;
+
+  .playground-icon {
+    transition: color .2s;
+    transform-origin: 50% 65%; // pivot near bottom of flask
+  }
+
+  &:hover {
+    background: rgba(91, 94, 247, .12);
+    border-color: var(--primary);
+    color: var(--primary);
+
+    .playground-icon {
+      animation: flask-pour .65s cubic-bezier(.36, .07, .19, .97) both;
+      color: var(--primary);
+    }
+  }
+}
+
+// ── Hamburger V26 ─────────────────────────────────────────────────────────
+.hbtn-v26 {
+  flex-direction: column;
+  gap: 4px;
+
+  .hbar {
+    display: block;
+    width: 16px;
+    height: 2px;
+    min-height: 2px;
+    flex-shrink: 0;
+    background: currentColor;
+    border-radius: 1px;
+    transition: transform .3s cubic-bezier(.77,0,.18,1), opacity .2s;
+    transform-origin: center;
+  }
+
+  &.open {
+    background: rgba(91,94,247,.15);
+    border-color: var(--primary);
+    color: var(--primary);
+
+    .hbar:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+    .hbar:nth-child(2) { opacity: 0; }
+    .hbar:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
   }
 }
 
@@ -1481,9 +1541,7 @@ main {
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--surface);
 }
 
 .day-mini-week-row {
@@ -1570,9 +1628,7 @@ main {
   position: sticky;
   top: var(--header-h);
   z-index: 50;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: transparent !important;
   margin-top: -32px;
   padding-top: 32px;
   padding-bottom: 4px;
@@ -1783,9 +1839,15 @@ main {
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-areas:
+    "check content"
+    "check actions";
+  column-gap: 12px;
+  row-gap: 6px;
+  align-items: start;
   box-shadow: 0 1px 3px rgba(0,0,0,.05);
   transition: all .2s cubic-bezier(.4, 0, .2, 1);
 
@@ -1793,10 +1855,6 @@ main {
     box-shadow: 0 8px 20px rgba(0,0,0,.12);
     border-color: var(--primary);
 
-    .todo-delete      { opacity: 1; }
-    .todo-edit        { opacity: 1; }
-    .todo-duplicate   { opacity: 1; }
-    .todo-add-after   { opacity: 1; }
     .todo-reorder-btn { opacity: 0.5; }
   }
 
@@ -1806,7 +1864,7 @@ main {
 }
 
 .todo-content {
-  flex: 1;
+  grid-area: content;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
@@ -1822,32 +1880,28 @@ main {
 }
 
 .todo-actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: nowrap;
   gap: 2px;
-  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .2s;
 }
 
-.todo-item--multiline .todo-actions {
-  align-self: flex-start;
-  display: grid;
-  grid-template-columns: 26px 26px;
-  gap: 2px;
-
-  .todo-add-after { grid-area: 1 / 1; margin-left: 0; }
-  .todo-edit      { grid-area: 1 / 2; margin-left: 0; }
-  .todo-duplicate { grid-area: 2 / 1; }
-  .todo-delete    { grid-area: 2 / 2; }
+.todo-item:hover .todo-actions {
+  opacity: 1;
 }
+
 
 .todo-check {
+  grid-area: check;
+  align-self: start;
+  margin-top: 2px;
   width: 22px;
   height: 22px;
   border: 2px solid var(--border);
   border-radius: 50%;
   cursor: pointer;
-  flex-shrink: 0;
-  align-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1931,12 +1985,14 @@ main {
 }
 
 .todo-drag-handle {
-  flex-shrink: 0;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: center;
   cursor: grab;
   color: var(--text-muted);
   opacity: 0.2;
@@ -2037,58 +2093,12 @@ main {
   }
 }
 
+.todo-add-after,
 .todo-duplicate,
-.todo-add-after {
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  opacity: 0;
-  transition: all .24s cubic-bezier(.25, .46, .45, .94);
-}
-
-.todo-duplicate {
-  order: 2;
-  &:hover { background: rgba(16,185,129,.12); color: var(--success); transform: scale(1.1); }
-}
-
-.todo-add-after {
-  order: 1;
-  font-size: 15px;
-  &:hover { background: rgba(91,94,247,.12); color: var(--primary); transform: scale(1.1); }
-}
-
+.todo-edit,
 .todo-delete {
-  order: 4;
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  opacity: 0;
-  transition: all .24s cubic-bezier(.25, .46, .45, .94);
-
-  &:hover { background: rgba(239, 68, 68, .15); color: var(--danger); backdrop-filter: blur(8px); transform: scale(1.05); }
-}
-
-.todo-edit {
-  order: 3;
-  margin-left: 6px;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -2098,10 +2108,24 @@ main {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  opacity: 0;
+  padding: 0;
   transition: all .24s cubic-bezier(.25, .46, .45, .94);
+}
 
-  &:hover { background: rgba(91, 94, 247, .15); color: var(--primary); backdrop-filter: blur(8px); transform: scale(1.1); }
+.todo-add-after {
+  &:hover { background: rgba(91,94,247,.12); color: var(--primary); transform: scale(1.1); }
+}
+
+.todo-duplicate {
+  &:hover { background: rgba(16,185,129,.12); color: var(--success); transform: scale(1.1); }
+}
+
+.todo-edit {
+  &:hover { background: rgba(91, 94, 247, .15); color: var(--primary); transform: scale(1.1); }
+}
+
+.todo-delete {
+  &:hover { background: rgba(239, 68, 68, .15); color: var(--danger); transform: scale(1.05); }
 }
 
 
@@ -2172,13 +2196,14 @@ main {
 
   &.is-today {
     flex: 1.8;
-    border-color: var(--today-border);
+    border-color: var(--primary);
     background: var(--today);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 40%, transparent), var(--shadow-md);
 
-    &:hover, &:active { flex: 2; border-color: var(--today-border); }
+    &:hover, &:active { flex: 2; border-color: var(--primary); }
 
-    .week-day-header { background: rgba(245,158,11,.12); }
-    .week-day-num    { color: var(--today-border); }
+    .week-day-header { background: color-mix(in srgb, var(--primary) 10%, transparent); }
+    .week-day-num    { color: var(--primary); }
   }
 
   &.empty:hover { flex: 1; border-color: var(--border); box-shadow: var(--shadow); }
@@ -2206,7 +2231,7 @@ main {
 .week-day-num {
   font-size: 34px;
   font-weight: 800;
-  color: var(--today-border);
+  color: var(--text-muted);
   line-height: 1.1;
 }
 
@@ -5984,8 +6009,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   .modal-main .modal-footer {
-    background: rgba(255,255,255,.12);
-    border-top-color: rgba(255,255,255,.3);
+    background: transparent;
+    border-top-color: rgba(255,255,255,.18);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .modal-header .modal-title,
@@ -6192,8 +6219,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     background-color: color-mix(in srgb, var(--surface) 50%, transparent);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23f1f5f9' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     border-color: rgba(255,255,255,.25);
-    color: #f1f5f9;
-    option { color: #1e293b; background: #fff; }
+    //color: #f1f5f9;
+    option { color: #1e293b !important; background: #fff; }
   }
 
   // ── Sticky day/week header ──
@@ -6205,30 +6232,33 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   // ── Week view ──
   .week-day-col {
-    @include glass-surface(55%, 16px);
-    border-color: rgba(255,255,255,.2);
+    @include glass-surface(70%, 16px);
+    border-color: rgba(255,255,255,.18);
     color: #f1f5f9;
     &.is-today {
-      background: color-mix(in srgb, var(--today) 60%, transparent);
-      border-color: rgba(245,158,11,.4);
-      .week-day-header { background: rgba(245,158,11,.2); }
+      background: color-mix(in srgb, var(--primary) 28%, transparent);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary), 0 0 24px color-mix(in srgb, var(--primary) 22%, transparent);
+      .week-day-header { background: color-mix(in srgb, var(--primary) 18%, transparent); }
     }
-    &.past { opacity: .65; }
+    &.past { opacity: .55; }
   }
   .week-day-header {
-    border-bottom-color: rgba(255,255,255,.15);
+    border-bottom-color: rgba(255,255,255,.14);
   }
-  .week-day-name,
+  .week-day-name {
+    color: rgba(255,255,255,.7);
+  }
   .week-day-num {
-    color: #f1f5f9;
+    color: rgba(255,255,255,.85);
   }
-  .week-day-col.is-today .week-day-num {
-    color: #f1f5f9;
-  }
+  .week-day-col.is-today .week-day-name { color: rgba(255,255,255,.85); }
+  .week-day-col.is-today .week-day-num  { color: var(--primary); }
   .week-todo-item {
-    background: rgba(255,255,255,.18);
+    background: rgba(255,255,255,.22);
     border-left-color: var(--primary);
     color: #f1f5f9;
+    &:hover { background: rgba(255,255,255,.32); }
   }
   .week-todo-text { color: #f1f5f9; }
   .week-done-count { color: rgba(255,255,255,.6); }
@@ -6238,6 +6268,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   .month-year-mini,
   .year-month-card {
     @include glass-surface(80%, 12px);
+  }
+  .month-cell.is-today,
+  .year-month-card.has-today {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px var(--primary), 0 0 16px color-mix(in srgb, var(--primary) 18%, transparent);
   }
   .month-todo-dot {
     background: rgba(255,255,255,.15);

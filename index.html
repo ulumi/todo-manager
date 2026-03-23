@@ -58,11 +58,9 @@
       <option value="en">EN</option>
       <option value="fr">FR</option>
     </select>
-    <a class="nav-btn" href="playground/modal-glass-variants.html" target="_blank" title="Playground — Modal glass variants">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.374 3.374 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-    </a>
+    <div style="position:relative">
     <button class="nav-btn" id="menuSettingsBtn" onclick="window.app.toggleSettingsMenu()" title="Theme & appearance">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="10"/><circle cx="12" cy="13" r="6" fill="none"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><circle cx="9" cy="11" r="1.5" fill="currentColor"/><circle cx="13" cy="15" r="1.5" fill="currentColor"/></svg>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     </button>
     <div class="settings-menu hidden" id="settingsMenu">
       <div class="settings-menu-content">
@@ -135,13 +133,16 @@
         </div>
       </div>
     </div>
-    <div class="hamburger-wrap">
-      <button class="hamburger-btn" id="hamburgerBtn" onclick="window.app.toggleHamburger()" aria-label="Menu">
-        <span class="hbg-bar"></span>
-        <span class="hbg-bar"></span>
-        <span class="hbg-bar"></span>
-      </button>
     </div>
+    <a class="nav-btn playground-link" href="/playground/" target="_blank" title="Playground">
+      <svg class="playground-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 3h6M9 3v6l-4 9a1 1 0 0 0 .9 1.45h12.2A1 1 0 0 0 19 18l-4-9V3"/>
+        <path d="M6.5 14.5h11"/>
+      </svg>
+    </a>
+    <button class="nav-btn hbtn-v26" id="hamburgerBtn" onclick="window.app.toggleHamburger()" aria-label="Menu" title="Menu">
+      <span class="hbar"></span><span class="hbar"></span><span class="hbar"></span>
+    </button>
     <div id="offlineBadge" class="offline-badge" hidden>Hors ligne</div>
     <button class="user-btn" id="userBtn" onclick="window.app.openUserArea()" title="Compte">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

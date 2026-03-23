@@ -174,7 +174,17 @@ export function renderDayView(todos) {
   const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
   const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
-  const sortedPunctual = sortByOrder(punctualItems, dayOrd);
+
+  const punctualPeriodOrd = window.app?.punctualPeriodOrder?.[dateStr] || {};
+  const punctualMorning   = punctualItems.filter(t => t.dayPeriod === 'morning');
+  const punctualAfternoon = punctualItems.filter(t => t.dayPeriod === 'afternoon');
+  const punctualEvening   = punctualItems.filter(t => t.dayPeriod === 'evening');
+  const punctualNoPeriod  = punctualItems.filter(t => !t.dayPeriod);
+
+  const sortedPunctualMorning   = sortByOrder(punctualMorning,   punctualPeriodOrd['morning']   || []);
+  const sortedPunctualAfternoon = sortByOrder(punctualAfternoon, punctualPeriodOrd['afternoon'] || []);
+  const sortedPunctualEvening   = sortByOrder(punctualEvening,   punctualPeriodOrd['evening']   || []);
+  const sortedPunctual = sortByOrder(punctualNoPeriod, dayOrd);
 
   const recAllItems = [...dailyItems, ...weeklyItems, ...monthlyItems, ...yearlyItems];
   const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
@@ -272,8 +282,14 @@ export function renderDayView(todos) {
   const autoPrio = localStorage.getItem('dayAutoPrio') === 'true';
   const autoPrioCheck = `<label class="day-ctrl-check" title="Remonter automatiquement les tâches prioritaires"><input type="checkbox" ${autoPrio?'checked':''} onchange="window.app.toggleDayAutoPrio()"><span>Auto-prio</span></label>`;
 
+  const dayPeriodGroupsForRender = localStorage.getItem('dayPeriodGroups') !== 'false';
+  const periodGroupsCheck = `<label class="day-ctrl-check" title="Grouper les tâches par moment de la journée"><input type="checkbox" ${dayPeriodGroupsForRender?'checked':''} onchange="window.app.toggleDayPeriodGroups()"><span>Moments</span></label>`;
+
   // Apply auto-prioritize: sort by priority weight before manual order
-  let itemsForRender = [...sortedPunctual];
+  // When period groups are disabled, include period items in the flat list
+  let itemsForRender = dayPeriodGroupsForRender
+    ? [...sortedPunctual]
+    : sortByOrder([...punctualNoPeriod, ...punctualMorning, ...punctualAfternoon, ...punctualEvening], dayOrd);
   if (autoPrio) {
     const prioW = { high: 0, medium: 1, low: 2 };
     itemsForRender.sort((a, b) => (prioW[a.priority] ?? 3) - (prioW[b.priority] ?? 3));
@@ -281,6 +297,16 @@ export function renderDayView(todos) {
 
   const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
   let rightColItems = '';
+
+  // Punctual period sections (rendered before sort-mode items)
+  const hasPunctualPeriods = sortedPunctualMorning.length > 0 || sortedPunctualAfternoon.length > 0 || sortedPunctualEvening.length > 0;
+  let punctualPeriodSections = '';
+  if (sortedPunctualMorning.length > 0)
+    punctualPeriodSections += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="punctual-morning" style="${colStyle}">${sortedPunctualMorning.map(t => todoItemHTML(t, navDate, 'punctual-morning')).join('')}</div>`;
+  if (sortedPunctualAfternoon.length > 0)
+    punctualPeriodSections += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="punctual-afternoon" style="${colStyle}">${sortedPunctualAfternoon.map(t => todoItemHTML(t, navDate, 'punctual-afternoon')).join('')}</div>`;
+  if (sortedPunctualEvening.length > 0)
+    punctualPeriodSections += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="punctual-evening" style="${colStyle}">${sortedPunctualEvening.map(t => todoItemHTML(t, navDate, 'punctual-evening')).join('')}</div>`;
 
   if (daySort === 'priority') {
     // Group by priority
@@ -396,6 +422,13 @@ export function renderDayView(todos) {
     }
   }
 
+  // Append period sections after no-period items (period groups shown last)
+  if (hasPunctualPeriods && dayPeriodGroupsForRender) {
+    const emptyMsg = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+    const noPeriodHtml = rightColItems !== emptyMsg ? rightColItems : '';
+    rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
+  }
+
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
@@ -424,6 +457,7 @@ export function renderDayView(todos) {
         ${spacerBtn}
         <div class="day-ctrl-sep"></div>
         ${autoPrioCheck}
+        ${periodGroupsCheck}
       </div>
 
       <button class="day-ctrl-gear" onclick="window.app.toggleDayControls()" title="Options">
