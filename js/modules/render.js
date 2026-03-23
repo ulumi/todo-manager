@@ -206,12 +206,18 @@ export function renderDayView(todos) {
   const recColBtns = [1,2,3,4].map(n =>
     `<button class="day-ctrl-btn${n===recColCount?' active':''}" onclick="window.app.setRecColCount(${n}); window.app.closeRecCol();" onmouseenter="window.app.resetAutoCloseRecCol()" title="${n} colonne${n>1?'s':''}">${n} col${n>1?'s':''}</button>`
   ).join('');
-  const dailyColCtrl = `<div class="day-ctrl-expandable day-group-col-ctrl${!recColCollapsed ? ' expanded' : ''}">
-    <button class="day-ctrl-toggle" onclick="window.app.toggleRecCol()" title="Colonnes">
-      <span class="day-ctrl-label">Colonnes</span>
-      <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <div class="day-ctrl-group day-rec-col-group" onmouseenter="window.app.resetAutoCloseRecCol()">${recColBtns}</div>
+  const dailyGroupLabel = `<div class="day-group-label day-group-label--with-ctrl">
+    <span>${state.T.recDaily}</span>
+    <div class="day-group-label-line"></div>
+    <div class="day-col-controls">
+      <div class="day-ctrl-expandable${!recColCollapsed ? ' expanded' : ''}">
+        <button class="day-ctrl-toggle" onclick="window.app.toggleRecCol()" title="Colonnes" onmouseenter="window.app.resetAutoCloseRecCol()">
+          <span class="day-ctrl-label">Colonnes</span>
+          <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="day-ctrl-group" onmouseenter="window.app.resetAutoCloseRecCol()">${recColBtns}</div>
+      </div>
+    </div>
   </div>`;
 
   let leftCol = '';
@@ -219,7 +225,7 @@ export function renderDayView(todos) {
   // Daily items — split by period (only render non-empty sections)
   const hasDailyPeriods = sortedDailyMorning.length > 0 || sortedDailyAfternoon.length > 0 || sortedDailyEvening.length > 0 || sortedDailyNoPeriod.length > 0;
   if (hasDailyPeriods) {
-    leftCol += `<div class="day-group-label day-group-label--with-ctrl">${state.T.recDaily}${dailyColCtrl}</div>`;
+    leftCol += dailyGroupLabel;
     if (sortedDailyNoPeriod.length > 0)
       leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
     if (sortedDailyMorning.length > 0)
