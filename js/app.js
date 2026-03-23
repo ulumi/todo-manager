@@ -2936,6 +2936,16 @@ class TodoApp {
     this.render();
   }
 
+  toggleColDropdown() {
+    const menu = document.getElementById('dayColDropdownMenu');
+    if (menu) menu.classList.toggle('hidden');
+  }
+
+  toggleSortDropdown() {
+    const menu = document.getElementById('daySortDropdownMenu');
+    if (menu) menu.classList.toggle('hidden');
+  }
+
   addDaySpacer() {
     const dateStr = DS(state.navDate);
     const items = getTodosForDate(state.navDate, state.todos).filter(t => !t.recurrence || t.recurrence === 'none');

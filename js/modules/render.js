@@ -200,9 +200,16 @@ export function renderDayView(todos) {
     }).join('');
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
-  const colBtns = [1,2,3,4].map(n =>
-    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${colIcon(n)}</button>`
-  ).join('');
+  const colDropdown = `<div class="day-col-dropdown">
+    <button class="day-ctrl-btn day-col-dropdown-btn" onclick="window.app.toggleColDropdown()" title="Colonnes">
+      ${colIcon(colCount)}
+      <svg viewBox="0 0 12 12" width="8" height="8" style="margin-left:4px"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="day-col-dropdown-menu hidden" id="dayColDropdownMenu">
+      ${[1,2,3,4].map(n => `<button class="day-col-dropdown-item${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n});window.app.toggleColDropdown()">${colIcon(n)} ${n}</button>`).join('')}
+    </div>
+  </div>`;
+  const colBtns = colDropdown;
   const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 12 12" width="12" height="12"><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></svg> Spacer</button>`;
 
   // Sort / group mode
@@ -212,9 +219,17 @@ export function renderDayView(todos) {
     { id: 'priority', label: 'Priorité' },
     { id: 'tag',      label: 'Tag' },
   ];
-  const sortBtns = sortOpts.map(o =>
-    `<button class="day-ctrl-btn day-sort-btn${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}')">${o.label}</button>`
-  ).join('');
+  const sortLabel = sortOpts.find(o => o.id === daySort)?.label || 'Manuel';
+  const sortDropdown = `<div class="day-sort-dropdown">
+    <button class="day-ctrl-btn day-sort-dropdown-btn" onclick="window.app.toggleSortDropdown()" title="Tri">
+      ${sortLabel}
+      <svg viewBox="0 0 12 12" width="8" height="8" style="margin-left:4px"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <div class="day-sort-dropdown-menu hidden" id="daySortDropdownMenu">
+      ${sortOpts.map(o => `<button class="day-sort-dropdown-item${daySort===o.id?' active':''}" onclick="window.app.setDaySort('${o.id}');window.app.toggleSortDropdown()">${o.label}</button>`).join('')}
+    </div>
+  </div>`;
+  const sortBtns = sortDropdown;
 
   // Auto-prioritize checkbox
   const autoPrio = localStorage.getItem('dayAutoPrio') === 'true';

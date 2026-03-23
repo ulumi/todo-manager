@@ -1149,6 +1149,68 @@ input:checked + .cal-sid-toggle-track::after {
   color: rgba(255, 255, 255, 0.7);
 }
 
+.day-col-dropdown,
+.day-sort-dropdown {
+  position: relative;
+  display: flex;
+}
+
+.day-col-dropdown-btn,
+.day-sort-dropdown-btn {
+  display: flex;
+  align-items: center;
+}
+
+.day-col-dropdown-menu,
+.day-sort-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 120px;
+  z-index: 1000;
+}
+.day-col-dropdown-menu.hidden,
+.day-sort-dropdown-menu.hidden {
+  display: none;
+}
+
+.day-col-dropdown-item,
+.day-sort-dropdown-item {
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.12s;
+}
+.day-col-dropdown-item:hover,
+.day-sort-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.day-col-dropdown-item.active,
+.day-sort-dropdown-item.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .day-col-controls {
   display: flex;
   gap: 6px;
