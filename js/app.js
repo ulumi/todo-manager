@@ -733,9 +733,6 @@ class TodoApp {
   }
 
   _showCelebrateDebugPanel(data) {
-    // Only show if Option key is held
-    if (!isOptionHeld) return;
-
     console.log('[panel] showing debug panel with data:', data);
     const { quote, mascot, font, duration } = data;
     const fontName = font.replace(/['",]/g, '').split('sans-serif|serif')[0].trim();
@@ -4392,15 +4389,6 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 
 // Keyboard shortcuts
 let hoveredItem = null;
-let isOptionHeld = false;
-
-document.addEventListener('keydown', e => {
-  if (e.code === 'AltLeft' || e.code === 'AltRight') isOptionHeld = true;
-});
-
-document.addEventListener('keyup', e => {
-  if (e.code === 'AltLeft' || e.code === 'AltRight') isOptionHeld = false;
-});
 
 document.addEventListener('mouseover', e => {
   const item = e.target.closest('.todo-item');
