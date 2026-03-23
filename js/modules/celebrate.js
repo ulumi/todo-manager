@@ -433,8 +433,9 @@ function buildScene(quote, stats, mascot, opts = {}) {
     font-family:${randomFont};
   `);
 
-  // Handle <br> for two-line quotes
-  const lines = quote.split('<br>').map(s => s.trim());
+  // Convert periods to line breaks, then handle both <br> and period-based breaks
+  const processedQuote = quote.replace(/\. /g, '<br>');
+  const lines = processedQuote.split('<br>').map(s => s.trim());
   let wordSpans = [];
 
   lines.forEach((line, lineIdx) => {
