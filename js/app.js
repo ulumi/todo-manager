@@ -39,7 +39,7 @@ import {
   renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave } from './modules/celebrate.js';
+import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -182,6 +182,9 @@ class TodoApp {
 
     // Register auto-save: any quote mutation pushes to server
     onQuoteSave(() => saveBackupToServer(getFullBackup(state.todos)));
+
+    // Register debug panel for celebrate
+    onCelebrateDebug((data) => this._showCelebrateDebugPanel(data));
 
     // Load global (shared) quotes from server — affects celebrate pool for all users
     this._loadGlobalQuotes();
@@ -726,6 +729,63 @@ class TodoApp {
 
   openEditModal(id, dateStr) {
     openEditModal(id, dateStr, state.todos);
+  }
+
+  _showCelebrateDebugPanel(data) {
+    const { quote, mascot, font, duration } = data;
+    const fontName = font.replace(/['",]/g, '').split('sans-serif|serif')[0].trim();
+
+    // Remove old panel if exists
+    const old = document.getElementById('celebrateDebugPanel');
+    if (old) old.remove();
+
+    const panel = document.createElement('div');
+    panel.id = 'celebrateDebugPanel';
+    panel.style.cssText = `
+      position: fixed; top: 12px; left: 12px; z-index: 9995;
+      background: rgba(20,10,30,0.95); border: 1px solid rgba(255,180,255,0.5);
+      border-radius: 8px; padding: 12px 16px; max-width: 320px;
+      font-family: monospace; font-size: 12px; color: #ddd;
+      backdrop-filter: blur(8px); animation: slideIn 0.25s ease-out;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    `;
+    panel.innerHTML = `
+      <style>
+        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        #celebrateDebugPanel button {
+          background: rgba(255,100,200,0.7); border: none; color: #fff;
+          padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;
+          margin-top: 6px; margin-right: 6px; transition: background 0.2s;
+        }
+        #celebrateDebugPanel button:hover { background: rgba(255,100,200,1); }
+      </style>
+      <div style="margin-bottom: 8px;"><strong>🎉 Celebrate Debug</strong></div>
+      <div style="margin-bottom: 6px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code></div>
+      <div style="margin-bottom: 6px; opacity: 0.8;">Mascot: <code>${mascot}</code></div>
+      <div style="margin-bottom: 6px; opacity: 0.8;">Font: <code>${fontName}</code></div>
+      <div style="margin-bottom: 8px; opacity: 0.8;">Duration: <code>${duration}s</code></div>
+      <button onclick="window.app._banFont('${font.replace(/'/g, '"')}')">Ban Font</button>
+      <button onclick="window.app._banMascot('${mascot}')">Ban Mascot</button>
+    `;
+    document.body.appendChild(panel);
+
+    // Auto-fade after duration + 2s
+    setTimeout(() => {
+      if (panel.parentNode) {
+        panel.style.animation = 'slideIn 0.25s ease-in reverse';
+        setTimeout(() => panel.remove(), 250);
+      }
+    }, (duration + 2) * 1000);
+  }
+
+  _banFont(font) {
+    console.log('Banned font:', font);
+    alert('Font ban not yet implemented');
+  }
+
+  _banMascot(mascot) {
+    console.log('Banned mascot:', mascot);
+    alert('Mascot ban not yet implemented');
   }
 
   // ═══════════════════════════════════════════════════

@@ -7,6 +7,11 @@ let _onSave = null;
 export function onQuoteSave(fn) { _onSave = fn; }
 function _persist() { if (_onSave) _onSave(); }
 
+// ── Debug hook ─────
+let _onDebug = null;
+export function onCelebrateDebug(fn) { _onDebug = fn; }
+function _reportDebug(quote, mascot, font) { if (_onDebug) _onDebug({ quote, mascot, font, duration: 4.5 }); }
+
 export function getBannedQuotes() {
   try { return JSON.parse(localStorage.getItem('bannedQuotes') || '[]'); } catch { return []; }
 }
@@ -373,18 +378,23 @@ export function celebrate(lang = 'en') {
 
   const stats     = buildStats(lang);
   const mascot    = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
-  buildScene(quote, stats, mascot);
+  const font      = FONTS[Math.floor(Math.random() * FONTS.length)];
+  _reportDebug(quote, mascot, font);
+  buildScene(quote, stats, mascot, {}, font);
 }
 
 // ── Scene builder ──────────────────────────────────────
 // opts: { onNext, onPrev, onClose, counter } — when set, enables slideshow nav mode
-function buildScene(quote, stats, mascot, opts = {}) {
+function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   const isSlideshow = !!(opts.onNext || opts.onPrev);
   const ov = el('div', `
     position:fixed;inset:0;z-index:9990;overflow:hidden;cursor:pointer;
     background:rgba(8,4,18,0);
   `);
   document.body.appendChild(ov);
+
+  // Select font (preset or random)
+  const randomFont = presetFont || FONTS[Math.floor(Math.random() * FONTS.length)];
 
   // Shockwave ring
   const ring = el('div', `
@@ -443,7 +453,6 @@ function buildScene(quote, stats, mascot, opts = {}) {
   gsap.set(textBlock, { xPercent: -50, yPercent: -50 });
 
   // Quote (words stagger in from small scale)
-  const randomFont = FONTS[Math.floor(Math.random() * FONTS.length)];
   const quoteEl = el('div', `
     font-size:clamp(32px,5.8vw,72px);font-weight:900;
     color:#fff;text-align:center;
