@@ -6622,6 +6622,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .day-mini-col.is-current {
   background: rgba(255, 255, 255, 0.1);
 }
+.glass-mode .day-mini-abbr {
+  color: #f1f5f9;
+}
+.glass-mode .day-mini-num {
+  color: #f1f5f9;
+}
 .glass-mode:not([data-theme=dark]) .cal-sid-day {
   color: #fff;
 }

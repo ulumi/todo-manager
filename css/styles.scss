@@ -6209,6 +6209,9 @@ body:has(.bottom-panel:not(.hidden))::before {
     &.is-current { background: rgba(255,255,255,.1); }
   }
 
+  .day-mini-abbr { color: #f1f5f9; }
+  .day-mini-num { color: #f1f5f9; }
+
   // ── Light glass: keep white text for minical numbers ──
   &:not([data-theme="dark"]) {
     .cal-sid-day { color: #fff; }
