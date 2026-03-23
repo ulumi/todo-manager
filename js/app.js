@@ -4369,6 +4369,11 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       window.app.deleteTodo(hoveredItem.id, hoveredItem.ds);
     }
+    if (e.code === 'Space' && hoveredItem) {
+      e.preventDefault();
+      const [y, m, d] = hoveredItem.ds.split('-').map(Number);
+      window.app.toggleTodo(hoveredItem.id, new Date(y, m-1, d));
+    }
     if (e.code === 'ArrowLeft') {
       e.preventDefault();
       window.app.navigate(-1);
