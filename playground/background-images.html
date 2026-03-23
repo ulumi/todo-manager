@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Background Images — Zen Todo App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 32px 24px;
+      line-height: 1.6;
+    }
+
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    /* Header */
+    h1 {
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,.5);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Mode toggle */
+    .controls {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 12px;
+      padding: 8px;
+    }
+
+    .mode-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,.5);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all .2s;
+    }
+
+    .mode-btn.active {
+      background: rgba(167,139,250,.2);
+      color: #d8b4fe;
+      border: 1px solid rgba(167,139,250,.4);
+    }
+
+    .filter-label {
+      color: rgba(255,255,255,.4);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    /* Grid des previews */
+    .bg-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .bg-card {
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all .3s cubic-bezier(.2,1,.3,1);
+      border: 2px solid transparent;
+      background: #111;
+    }
+
+    .bg-card:hover {
+      transform: translateY(-6px);
+      border-color: #a78bfa;
+      box-shadow: 0 20px 50px rgba(167,139,250,.2);
+    }
+
+    .bg-preview {
+      width: 100%;
+      height: 280px;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* App mockup overlay */
+    .app-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, rgba(0,0,0,.3) 0%, rgba(0,0,0,.1) 100%);
+    }
+
+    .mock-header {
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(12px);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+
+    .mock-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+      flex-shrink: 0;
+    }
+
+    .mock-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,.9);
+    }
+
+    .mock-body {
+      flex: 1;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      justify-content: flex-start;
+    }
+
+    .mock-task {
+      background: rgba(255,255,255,.08);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,.8);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mock-checkbox {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.4);
+      flex-shrink: 0;
+    }
+
+    .mock-checkbox.done {
+      background: #a78bfa;
+      border-color: #a78bfa;
+    }
+
+    .bg-card.light .mock-header {
+      background: rgba(255,255,255,.92);
+      color: #1a1a1a;
+    }
+
+    .bg-card.light .mock-title {
+      color: #1a1a1a;
+    }
+
+    .bg-card.light .mock-task {
+      background: rgba(255,255,255,.90);
+      color: #374151;
+    }
+
+    .bg-info {
+      padding: 12px 14px;
+      background: rgba(0,0,0,.4);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(255,255,255,.08);
+      position: relative;
+      z-index: 2;
+    }
+
+    .bg-name {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .bg-type {
+      font-size: 11px;
+      color: rgba(255,255,255,.4);
+      display: flex;
+      gap: 8px;
+    }
+
+    .bg-type span {
+      background: rgba(255,255,255,.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Vector art backgrounds */
+    .vector-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Info section */
+    .info-section {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 32px;
+      color: rgba(255,255,255,.7);
+    }
+
+    .info-section h3 {
+      color: rgba(255,255,255,.9);
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .info-section ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .info-section li {
+      margin-bottom: 8px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .info-section li:before {
+      content: "→";
+      color: #a78bfa;
+      flex-shrink: 0;
+      font-weight: 700;
+    }
+
+    /* Stock images section */
+    .stock-section {
+      margin-top: 40px;
+    }
+
+    .stock-section h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: rgba(255,255,255,.9);
+    }
+
+    .source-links {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .source-links a {
+      display: inline-block;
+      margin-right: 12px;
+      margin-bottom: 8px;
+      padding: 6px 12px;
+      background: rgba(167,139,250,.1);
+      border: 1px solid rgba(167,139,250,.3);
+      border-radius: 6px;
+      color: #d8b4fe;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all .2s;
+    }
+
+    .source-links a:hover {
+      background: rgba(167,139,250,.2);
+      border-color: rgba(167,139,250,.5);
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 24px; }
+      .bg-grid { grid-template-columns: 1fr; }
+      .controls { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Background Images</h1>
+    <p class="subtitle">Zen todo app — nature inspired + techno vector art</p>
+
+    <div class="controls">
+      <span class="filter-label">Preview mode:</span>
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="dark">🌙 Dark</button>
+        <button class="mode-btn" data-mode="light">☀️ Light</button>
+      </div>
+    </div>
+
+    <!-- Vector Art Backgrounds -->
+    <div class="bg-grid" id="vectorGrid">
+      <!-- Generated dynamically -->
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+      <h3>💡 Design Philosophy</h3>
+      <ul>
+        <li>Nature-inspired minimalism (mountains, water, plants, sky)</li>
+        <li>Subtle technology overlays (grids, nodes, circuits)</li>
+        <li>Dark mode optimized (transparent overlays for readability)</li>
+        <li>Light mode variants (softer tones, higher opacity)</li>
+        <li>All backgrounds support glassmorphism UI on top</li>
+      </ul>
+    </div>
+
+    <!-- Stock Images -->
+    <div class="stock-section">
+      <h2>📸 Recommended Royalty-Free Sources</h2>
+      <p style="color: rgba(255,255,255,.5); margin-bottom: 16px;">
+        High-resolution, CC0/copyright-free images perfect for zen UI:
+      </p>
+      <div class="source-links">
+        <a href="https://unsplash.com/s/photos/zen-nature" target="_blank">Unsplash — Zen Nature</a>
+        <a href="https://unsplash.com/s/photos/zen" target="_blank">Unsplash — Zen Photos</a>
+        <a href="https://www.pexels.com/search/zen/" target="_blank">Pexels — Zen</a>
+        <a href="https://stocksnap.io/search/zen" target="_blank">StockSnap — Zen CC0</a>
+        <a href="https://www.vecteezy.com/free-photos/nature-zen" target="_blank">Vecteezy — Nature Zen</a>
+        <a href="https://4kwallpapers.com/nature/" target="_blank">4K Wallpapers — Nature</a>
+        <a href="https://pixabay.com/images/search/nature%20wallpaper/" target="_blank">Pixabay — Nature Wallpaper</a>
+        <a href="https://freenaturestock.com/" target="_blank">Free Nature Stock</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Vector art generator
+    const vectors = [
+      {
+        name: '🏔️ Minimal Mountains + Grid',
+        type: ['vector', 'nature', 'techno'],
+        generate: (ctx, w, h) => {
+          // Gradient background
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#1a1a2e');
+          grad.addColorStop(1, '#16213e');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Mountains
+          ctx.strokeStyle = 'rgba(167, 139, 250, 0.3)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.6);
+          ctx.bezierCurveTo(w * 0.25, h * 0.35, w * 0.45, h * 0.2, w * 0.6, h * 0.5);
+          ctx.bezierCurveTo(w * 0.75, h * 0.7, w * 0.9, h * 0.4, w, h * 0.55);
+          ctx.lineTo(w, h);
+          ctx.lineTo(0, h);
+          ctx.fill();
+          ctx.stroke();
+
+          // Grid overlay
+          ctx.strokeStyle = 'rgba(96, 165, 250, 0.08)';
+          ctx.lineWidth = 1;
+          const gridSize = 40;
+          for (let x = 0; x < w; x += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+          }
+          for (let y = 0; y < h; y += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+          }
+
+          // Stars/nodes
+          ctx.fillStyle = 'rgba(167, 139, 250, 0.4)';
+          for (let i = 0; i < 20; i++) {
+            const x = Math.random() * w;
+            const y = Math.random() * (h * 0.5);
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      },
+      {
+        name: '🌊 Calm Water + Ripples',
+        type: ['vector', 'nature'],
+        generate: (ctx, w, h) => {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#0f2438');
+          grad.addColorStop(0.5, '#0a3d56');
+          grad.addColorStop(1, '#051f32');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Water ripples
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.15)';
+          const centerX = w * 0.7;
+          const centerY = h * 0.5;
+          for (let i = 0; i < 8; i++) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20 + i * 25, 0, Math.PI * 2);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
+
+          // Horizon line
+          ctx.strokeStyle = 'rgba(96, 165, 250, 0.2)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.4);
+          ctx.lineTo(w, h * 0.4);
+          ctx.stroke();
+
+          // Floating nodes
+          ctx.fillStyle = 'rgba(96, 165, 250, 0.3)';
+          const nodes = [
+            { x: w * 0.2, y: h * 0.3 },
+            { x: w * 0.5, y: h * 0.2 },
+            { x: w * 0.8, y: h * 0.35 },
+          ];
+          nodes.forEach(n => {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+      },
+      {
+        name: '🌿 Organic Growth + Code',
+        type: ['vector', 'nature', 'techno'],
+        generate: (ctx, w, h) => {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#0d1f2d');
+          grad.addColorStop(1, '#1a2332');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Organic leaves
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
+          ctx.lineWidth = 2;
+          const leaves = [
+            { x: 50, y: h * 0.7, angle: 0.3 },
+            { x: 120, y: h * 0.5, angle: -0.2 },
+            { x: w - 80, y: h * 0.6, angle: 0.4 },
+          ];
+          leaves.forEach(l => {
+            ctx.beginPath();
+            ctx.ellipse(l.x, l.y, 25, 45, l.angle, 0, Math.PI * 2);
+            ctx.stroke();
+          });
+
+          // Binary/code lines
+          ctx.strokeStyle = 'rgba(96, 165, 250, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.font = '10px monospace';
+          ctx.fillStyle = 'rgba(96, 165, 250, 0.1)';
+          for (let i = 0; i < 5; i++) {
+            const y = (i * h) / 5;
+            ctx.fillText('01 10 11 00 01 11', w - 100, y + 20);
+          }
+
+          // Connecting lines
+          ctx.strokeStyle = 'rgba(167, 139, 250, 0.15)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 6; i++) {
+            ctx.beginPath();
+            ctx.moveTo(w * 0.4, (i * h) / 5);
+            ctx.lineTo(w * 0.6, (i * h) / 5 + 30);
+            ctx.stroke();
+          }
+        }
+      },
+      {
+        name: '🌅 Sunrise + Particles',
+        type: ['vector', 'nature'],
+        generate: (ctx, w, h) => {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#2d1b4e');
+          grad.addColorStop(0.4, '#6b4c9a');
+          grad.addColorStop(0.7, '#f59e0b');
+          grad.addColorStop(1, '#1f2937');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Sun
+          ctx.fillStyle = 'rgba(251, 146, 60, 0.4)';
+          ctx.beginPath();
+          ctx.arc(w * 0.5, h * 0.3, 60, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Particles
+          ctx.fillStyle = 'rgba(251, 146, 60, 0.5)';
+          for (let i = 0; i < 40; i++) {
+            const x = Math.random() * w;
+            const y = Math.random() * h;
+            const size = Math.random() * 2;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Horizon
+          ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, h * 0.6);
+          ctx.lineTo(w, h * 0.6);
+          ctx.stroke();
+        }
+      },
+      {
+        name: '⚡ Circuit Zen Garden',
+        type: ['vector', 'techno'],
+        generate: (ctx, w, h) => {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#0f172a');
+          grad.addColorStop(1, '#1e1b4b');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Sand patterns (circles)
+          ctx.fillStyle = 'rgba(217, 119, 6, 0.1)';
+          for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 6; j++) {
+              const x = (i * w) / 8;
+              const y = (j * h) / 6;
+              ctx.beginPath();
+              ctx.arc(x, y, 30, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
+          // Circuit lines
+          ctx.strokeStyle = 'rgba(96, 165, 250, 0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(50, 50);
+          ctx.lineTo(w - 50, h * 0.3);
+          ctx.lineTo(w * 0.2, h * 0.8);
+          ctx.lineTo(w - 100, h - 50);
+          ctx.stroke();
+
+          // Circuit nodes
+          const nodes = [
+            { x: 50, y: 50 },
+            { x: w - 50, y: h * 0.3 },
+            { x: w * 0.2, y: h * 0.8 },
+            { x: w - 100, y: h - 50 },
+          ];
+          nodes.forEach(n => {
+            ctx.fillStyle = 'rgba(96, 165, 250, 0.5)';
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          });
+        }
+      },
+      {
+        name: '🌌 Digital Forest',
+        type: ['vector', 'nature', 'techno'],
+        generate: (ctx, w, h) => {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#0f172a');
+          grad.addColorStop(0.5, '#0d3b66');
+          grad.addColorStop(1, '#0f0f1e');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+
+          // Trees (simplified)
+          ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
+          ctx.lineWidth = 2;
+          const trees = [80, 250, 380, w - 120];
+          trees.forEach(x => {
+            // Trunk
+            ctx.beginPath();
+            ctx.moveTo(x, h * 0.3);
+            ctx.lineTo(x, h * 0.8);
+            ctx.stroke();
+            // Canopy
+            ctx.beginPath();
+            ctx.ellipse(x, h * 0.2, 40, 50, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          });
+
+          // Nodes floating
+          ctx.fillStyle = 'rgba(167, 139, 250, 0.3)';
+          for (let i = 0; i < 15; i++) {
+            const x = Math.random() * w;
+            const y = Math.random() * (h * 0.5);
+            ctx.beginPath();
+            ctx.arc(x, y, 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      },
+    ];
+
+    // Render vector canvases
+    const gridEl = document.getElementById('vectorGrid');
+    vectors.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'bg-card dark';
+      card.innerHTML = `
+        <div class="bg-preview">
+          <canvas class="vector-canvas"></canvas>
+          <div class="app-overlay">
+            <div class="mock-header">
+              <div class="mock-logo"></div>
+              <div class="mock-title">2FŨKOI</div>
+            </div>
+            <div class="mock-body">
+              <div class="mock-task">
+                <div class="mock-checkbox done"></div>
+                <span>Complete zen meditation</span>
+              </div>
+              <div class="mock-task">
+                <div class="mock-checkbox"></div>
+                <span>Review priorities</span>
+              </div>
+              <div class="mock-task">
+                <div class="mock-checkbox"></div>
+                <span>Plan tomorrow</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-info">
+          <div class="bg-name">${item.name}</div>
+          <div class="bg-type">
+            ${item.type.map(t => `<span>${t}</span>`).join('')}
+          </div>
+        </div>
+      `;
+
+      gridEl.appendChild(card);
+
+      // Render canvas after inserting
+      setTimeout(() => {
+        const canvas = card.querySelector('canvas');
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        const ctx = canvas.getContext('2d');
+        item.generate(ctx, canvas.width, canvas.height);
+      }, 0);
+    });
+
+    // Light/Dark mode toggle
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const mode = btn.dataset.mode;
+        document.querySelectorAll('.bg-card').forEach(card => {
+          card.classList.remove('light', 'dark');
+          card.classList.add(mode);
+        });
+      });
+    });
+
+    // Responsive canvas
+    window.addEventListener('resize', () => {
+      document.querySelectorAll('canvas').forEach((canvas, i) => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        const ctx = canvas.getContext('2d');
+        vectors[i].generate(ctx, canvas.width, canvas.height);
+      });
+    });
+  </script>
+</body>
+</html>

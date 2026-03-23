@@ -1,6 +1,15 @@
 {
   "playgrounds": [
     {
+      "id": "background-images",
+      "title": "Background Images — Zen todo app",
+      "description": "6 custom vector art backgrounds + royalty-free sources. Nature inspired with subtle tech overlays, light/dark modes, and glassmorphism-ready.",
+      "file": "background-images.html",
+      "prompt": "Create a playground showcasing 6 vector art background options for a zen todo app. Mix nature themes (mountains, water, plants, forest) with subtle technology elements (grids, circuits, nodes). Include light/dark mode toggle, app mockups with glassmorphism, and curated links to royalty-free image sources (Unsplash, Pexels, Pixabay, etc.).",
+      "createdAt": "2026-03-22",
+      "tags": ["background", "vector-art", "design-system"]
+    },
+    {
       "id": "drag-demo",
       "title": "Drag & Drop — 3 feedback styles",
       "description": "Compare 3 approaches for drag and drop feedback: animated gap, orange arrow indicator, and ghost preview.",
