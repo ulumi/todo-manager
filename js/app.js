@@ -1134,12 +1134,14 @@ class TodoApp {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id);
+      container.classList.add('dragging-active');
       requestAnimationFrame(() => { item.style.display = 'none'; });
     });
 
     container.addEventListener('dragend', () => {
       showDragged();
       removePlaceholder();
+      container.classList.remove('dragging-active');
       draggedEl = null; draggedGroup = null; dropTarget = null;
     });
 
@@ -1175,6 +1177,53 @@ class TodoApp {
             dropTarget = spacerTarget.dataset.id;
             todoList.appendChild(placeholder);
           }
+          requestAnimationFrame(() => {
+            placeholder.style.height = draggedHeight + 'px';
+            placeholder.classList.add('visible');
+          });
+        }
+        return;
+      }
+
+      // Hover on a group label (priority/tag mode) → drop at end of that group
+      const groupLabel = e.target.closest('.day-auto-group-label');
+      if (groupLabel) {
+        const section = groupLabel.closest('.day-spacer-group, .day-tag-section');
+        const todoList = section?.querySelector('.todo-list[data-group]');
+        if (todoList && (todoList.dataset.group === draggedGroup || draggedGroup === 'punctual')) {
+          dropPriority = todoList.dataset.priority || null;
+          const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
+          if (lastItem) {
+            dropTarget = lastItem.dataset.id;
+            lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
+          } else {
+            // Empty group — use first item of next group as "before" target, or fallback
+            const allItems = [...container.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl);
+            const lastOverall = allItems.pop();
+            if (lastOverall) {
+              dropTarget = lastOverall.dataset.id;
+              lastOverall.parentNode.insertBefore(placeholder, lastOverall.nextSibling);
+            }
+          }
+          if (dropTarget) {
+            requestAnimationFrame(() => {
+              placeholder.style.height = draggedHeight + 'px';
+              placeholder.classList.add('visible');
+            });
+          }
+        }
+        return;
+      }
+
+      // Hover on empty zone at bottom of column → drop after last item
+      const col = e.target.closest('.day-col--punctual');
+      if (col && !e.target.closest('.todo-item, .day-spacer, .day-auto-group-label, .day-col-title-row, .day-tag-controls')) {
+        const allItems = [...col.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl);
+        const lastItem = allItems.pop();
+        if (lastItem) {
+          dropTarget = lastItem.dataset.id;
+          dropPriority = lastItem.closest('.todo-list[data-priority]')?.dataset.priority || null;
+          lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
             placeholder.classList.add('visible');

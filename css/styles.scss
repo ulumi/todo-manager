@@ -1442,6 +1442,12 @@ main {
 
 .day-spacer-line { display: none; }
 
+// During drag, prevent contenteditable & buttons from intercepting drag events
+.dragging-active .day-spacer-title,
+.dragging-active .day-spacer-remove {
+  pointer-events: none;
+}
+
 // Mini two-week grid — desktop drop zones in day view
 .day-mini-week {
   display: flex;
@@ -1481,6 +1487,9 @@ main {
     background: var(--primary);
     color: #fff;
     border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    margin: 0 auto;
   }
 
   &.past { opacity: 0.5; }

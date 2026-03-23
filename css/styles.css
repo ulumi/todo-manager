@@ -1478,6 +1478,11 @@ input:checked + .cal-sid-toggle-track::after {
   display: none;
 }
 
+.dragging-active .day-spacer-title,
+.dragging-active .day-spacer-remove {
+  pointer-events: none;
+}
+
 .day-mini-week {
   display: flex;
   flex-direction: column;
@@ -1523,6 +1528,9 @@ input:checked + .cal-sid-toggle-track::after {
   background: var(--primary);
   color: #fff;
   border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  margin: 0 auto;
 }
 .day-mini-col.past {
   opacity: 0.5;
