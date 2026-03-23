@@ -39,7 +39,7 @@ import {
   renderPlanInboxList, renderProjectsView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug } from './modules/celebrate.js';
+import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -779,13 +779,26 @@ class TodoApp {
   }
 
   _banFont(font) {
-    console.log('Banned font:', font);
-    alert('Font ban not yet implemented');
+    banFont(font);
+    const panel = document.getElementById('celebrateDebugPanel');
+    if (panel) {
+      const btn = panel.querySelector('button');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Banned!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
   }
 
   _banMascot(mascot) {
-    console.log('Banned mascot:', mascot);
-    alert('Mascot ban not yet implemented');
+    banMascot(mascot);
+    const panel = document.getElementById('celebrateDebugPanel');
+    if (panel) {
+      const btns = panel.querySelectorAll('button');
+      const btn = btns[btns.length - 1];
+      const orig = btn.textContent;
+      btn.textContent = '✓ Banned!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
   }
 
   // ═══════════════════════════════════════════════════

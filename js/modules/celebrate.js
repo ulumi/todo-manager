@@ -12,6 +12,22 @@ let _onDebug = null;
 export function onCelebrateDebug(fn) { _onDebug = fn; }
 function _reportDebug(quote, mascot, font) { if (_onDebug) _onDebug({ quote, mascot, font, duration: 4.5 }); }
 
+// ── Ban management (fonts & mascots) ───────
+export function getBannedFonts() {
+  try { return JSON.parse(localStorage.getItem('bannedFonts') || '[]'); } catch { return []; }
+}
+export function banFont(f) {
+  const banned = getBannedFonts();
+  if (!banned.includes(f)) { banned.push(f); localStorage.setItem('bannedFonts', JSON.stringify(banned)); _persist(); }
+}
+export function getBannedMascots() {
+  try { return JSON.parse(localStorage.getItem('bannedMascots') || '[]'); } catch { return []; }
+}
+export function banMascot(m) {
+  const banned = getBannedMascots();
+  if (!banned.includes(m)) { banned.push(m); localStorage.setItem('bannedMascots', JSON.stringify(banned)); _persist(); }
+}
+
 export function getBannedQuotes() {
   try { return JSON.parse(localStorage.getItem('bannedQuotes') || '[]'); } catch { return []; }
 }
@@ -377,8 +393,17 @@ export function celebrate(lang = 'en') {
   _lastQuote = quote;
 
   const stats     = buildStats(lang);
-  const mascot    = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
-  const font      = FONTS[Math.floor(Math.random() * FONTS.length)];
+
+  // Filter out banned fonts & mascots
+  const bannedFonts = getBannedFonts();
+  const bannedMascots = getBannedMascots();
+  const availableFonts = FONTS.filter(f => !bannedFonts.includes(f));
+  const availableMascots = MASCOTS.filter(m => !bannedMascots.includes(m));
+  const fontPool = availableFonts.length > 0 ? availableFonts : FONTS;
+  const mascotPool = availableMascots.length > 0 ? availableMascots : MASCOTS;
+
+  const mascot = mascotPool[Math.floor(Math.random() * mascotPool.length)];
+  const font = fontPool[Math.floor(Math.random() * fontPool.length)];
   _reportDebug(quote, mascot, font);
   buildScene(quote, stats, mascot, {}, font);
 }
