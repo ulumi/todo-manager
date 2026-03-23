@@ -492,16 +492,23 @@ class TodoApp {
     const bgPalette = localStorage.getItem('bgPalette') || 'geo';
     if (bgPalette === 'none') {
       // Currently in uni mode — switch to poly (restore last palette)
+      // Save current uni color for restoration later
+      const currentColor = localStorage.getItem('bgColor');
+      if (currentColor) {
+        localStorage.setItem('lastBgColor', currentColor);
+      }
       const lastPalette = localStorage.getItem('lastBgPalette') || 'geo';
       this.setPalette(lastPalette);
     } else {
       // Currently in poly mode — switch to uni (solid color)
       // Save current palette for restoration later
       localStorage.setItem('lastBgPalette', bgPalette);
+      const lastColor = localStorage.getItem('lastBgColor');
       const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
       const defaultColor = isDark ? '#0f1117' : '#f8f9fc';
-      _setBgColor(defaultColor);
-      localStorage.setItem('bgColor', defaultColor);
+      const colorToUse = lastColor || defaultColor;
+      _setBgColor(colorToUse);
+      localStorage.setItem('bgColor', colorToUse);
       localStorage.setItem('bgPalette', 'none');
       this._saveConfigChange();
       if (state.view === 'profile') this.render();
@@ -526,6 +533,8 @@ class TodoApp {
 
   setBgColor(color) {
     _setBgColor(color);
+    // Remember this color for toggle restore
+    localStorage.setItem('lastBgColor', color);
     this._saveConfigChange();
     this._updateSettingsMenuContent();
   }
