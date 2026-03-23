@@ -109,14 +109,6 @@ class TodoApp {
       state.setView(savedView);
     }
     this.render();
-    // Clear quick find input to avoid browser autofill (multiple times to be sure)
-    const clearQuickFind = () => {
-      const input = document.getElementById('quickFindInput');
-      if (input) input.value = '';
-    };
-    clearQuickFind();
-    setTimeout(clearQuickFind, 0);
-    setTimeout(clearQuickFind, 100);
     this._syncServer();
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
@@ -301,6 +293,7 @@ class TodoApp {
     const menu = document.getElementById('settingsMenu');
     menu.classList.add('hidden');
     document.getElementById('menuSettingsBtn')?.classList.remove('open');
+    document.getElementById('settingsBgColor')?.blur();
     if (this._settingsMenuCloser) {
       document.removeEventListener('click', this._settingsMenuCloser);
       this._settingsMenuCloser = null;
