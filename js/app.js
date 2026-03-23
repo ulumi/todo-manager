@@ -343,6 +343,8 @@ class TodoApp {
   }
 
   setPalette(id) {
+    // Close color picker if open
+    document.getElementById('settingsBgColor')?.blur();
     _setBgPalette(id);
     if (state.view === 'profile') this.render();
   }
