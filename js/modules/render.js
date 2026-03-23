@@ -204,7 +204,7 @@ export function renderDayView(todos) {
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const recColBtns = [1,2,3,4].map(n =>
-    `<button class="day-ctrl-btn${n===recColCount?' active':''}" onclick="window.app.setRecColCount(${n}); window.app.closeRecCol();" onmouseenter="window.app.resetAutoCloseRecCol()" title="${n} colonne${n>1?'s':''}">${recColIcon(n)}</button>`
+    `<button class="day-ctrl-btn${n===recColCount?' active':''}" onclick="window.app.setRecColCount(${n}); window.app.closeRecCol();" onmouseenter="window.app.resetAutoCloseRecCol()" title="${n} colonne${n>1?'s':''}">${n} col${n>1?'s':''}</button>`
   ).join('');
   const dailyColCtrl = `<div class="day-ctrl-expandable day-group-col-ctrl${!recColCollapsed ? ' expanded' : ''}">
     <button class="day-ctrl-toggle" onclick="window.app.toggleRecCol()" title="Colonnes">
