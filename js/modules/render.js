@@ -340,12 +340,12 @@ export function renderDayView(todos) {
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
       }
-      rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="day-tag-sections">${grouped}</div>`;
+      rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
       const filteredItems = itemsForRender.filter(t => selectedTags.length === 0 || selectedTags.includes(t.projectId || 'none'));
       const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
-      rightColItems = `<div class="day-tag-controls">${tagCloud}<div style="flex:1"></div>${groupToggle}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
+      rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
 
   } else {
