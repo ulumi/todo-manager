@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10 Best Vector Art — Zen Todo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      padding: 40px 24px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 {
+      font-size: 36px; font-weight: 900; margin-bottom: 8px;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #34d399 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .subtitle { color: rgba(255,255,255,.5); font-size: 14px; margin-bottom: 32px; }
+
+    .toolbar {
+      display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; align-items: center;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 12px; padding: 12px 16px;
+    }
+    .btn {
+      padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15);
+      background: rgba(167,139,250,.1); color: #d8b4fe; cursor: pointer;
+      font-weight: 600; font-size: 12px; transition: all .2s;
+    }
+    .btn:hover { background: rgba(167,139,250,.2); border-color: rgba(167,139,250,.4); }
+    .btn.secondary { background: rgba(255,255,255,.06); color: rgba(255,255,255,.6); border-color: rgba(255,255,255,.08); }
+    .select-counter { margin-left: auto; color: rgba(255,255,255,.4); font-size: 12px; }
+    .select-counter strong { color: #a78bfa; }
+
+    .bg-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .bg-item {
+      position: relative; cursor: pointer; border-radius: 16px; overflow: hidden;
+      border: 2px solid transparent; transition: all .3s cubic-bezier(.2,1,.3,1);
+      aspect-ratio: 16/10; background: #111;
+      box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    }
+    .bg-item:hover {
+      border-color: #a78bfa; transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(167,139,250,.2);
+    }
+    .bg-item.selected {
+      border-color: #a78bfa;
+      box-shadow: 0 0 0 2px rgba(167,139,250,.5), 0 20px 40px rgba(167,139,250,.3);
+    }
+    .bg-item svg { width: 100%; height: 100%; display: block; }
+    .bg-checkbox {
+      position: absolute; top: 12px; left: 12px; width: 20px; height: 20px;
+      cursor: pointer; accent-color: #a78bfa; z-index: 20;
+    }
+    .bg-label {
+      position: absolute; bottom: 10px; left: 10px; right: 10px;
+      font-size: 11px; font-weight: 600;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(8px);
+      padding: 6px 10px; border-radius: 8px; z-index: 5;
+    }
+
+    .info-box {
+      background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2);
+      border-radius: 12px; padding: 16px; margin-top: 32px; color: rgba(255,255,255,.6);
+      font-size: 12px; line-height: 1.6;
+    }
+    .info-box code { background: rgba(0,0,0,.4); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 24px; }
+      .bg-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🎨 10 Best Vector Art</h1>
+  <p class="subtitle">Curated hand-crafted SVG — zen, nature, techno</p>
+
+  <div class="toolbar">
+    <button class="btn" id="selectAll">Select All</button>
+    <button class="btn secondary" id="deselectAll">Deselect</button>
+    <button class="btn" id="copyIds">📋 Copy IDs</button>
+    <div class="select-counter"><strong id="counter">0</strong> / 10 selected</div>
+  </div>
+
+  <div class="bg-grid" id="grid"></div>
+
+  <div class="info-box">
+    <strong>Select → Copy IDs → Paste in chat</strong><br>
+    Example: <code>zen-garden, aurora-hills, sakura-wind</code>
+  </div>
+</div>
+
+<script>
+const artworks = [
+
+  // ── 1. Zen Garden ──────────────────────────────────
+  {
+    id: 'zen-garden',
+    label: '🪨 Zen Garden — Sand & Stones',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="zg-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1a1714"/>
+          <stop offset="100%" stop-color="#2a2520"/>
+        </linearGradient>
+        <linearGradient id="zg-stone" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4a4540"/>
+          <stop offset="100%" stop-color="#2a2520"/>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="500" fill="url(#zg-bg)"/>
+      <!-- sand ripples -->
+      <g stroke="#3d3630" stroke-width="1.2" fill="none" opacity="0.6">
+        <path d="M50,350 Q200,330 400,345 Q600,360 750,340"/>
+        <path d="M50,370 Q200,350 400,365 Q600,380 750,360"/>
+        <path d="M50,390 Q200,370 400,385 Q600,400 750,380"/>
+        <path d="M50,410 Q200,390 400,405 Q600,420 750,400"/>
+        <path d="M50,430 Q200,410 400,425 Q600,440 750,420"/>
+        <path d="M50,450 Q200,430 400,445 Q600,460 750,440"/>
+        <path d="M50,470 Q200,450 400,465 Q600,480 750,460"/>
+      </g>
+      <!-- concentric ripples around stone -->
+      <g stroke="#3d3630" stroke-width="1" fill="none" opacity="0.5">
+        <ellipse cx="580" cy="380" rx="40" ry="15"/>
+        <ellipse cx="580" cy="380" rx="60" ry="22"/>
+        <ellipse cx="580" cy="380" rx="80" ry="30"/>
+        <ellipse cx="580" cy="380" rx="100" ry="38"/>
+        <ellipse cx="580" cy="380" rx="120" ry="46"/>
+      </g>
+      <!-- stones -->
+      <ellipse cx="580" cy="370" rx="28" ry="22" fill="url(#zg-stone)"/>
+      <ellipse cx="575" cy="355" rx="18" ry="14" fill="#3a3530"/>
+      <ellipse cx="200" cy="320" rx="45" ry="30" fill="url(#zg-stone)"/>
+      <ellipse cx="195" cy="300" rx="28" ry="18" fill="#3a3530"/>
+      <ellipse cx="205" cy="285" rx="15" ry="10" fill="#444038"/>
+      <!-- moss dots -->
+      <g fill="#4a6b45" opacity="0.6">
+        <circle cx="170" cy="310" r="3"/><circle cx="180" cy="305" r="2"/>
+        <circle cx="220" cy="315" r="2.5"/><circle cx="560" cy="360" r="2"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 2. Aurora Hills ────────────────────────────────
+  {
+    id: 'aurora-hills',
+    label: '🌌 Aurora Hills — Northern Lights',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ah-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a0a20"/>
+          <stop offset="60%" stop-color="#0f1535"/>
+          <stop offset="100%" stop-color="#1a1a2e"/>
+        </linearGradient>
+        <linearGradient id="ah-aurora1" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#34d39900"/>
+          <stop offset="30%" stop-color="#34d39966"/>
+          <stop offset="50%" stop-color="#a78bfa44"/>
+          <stop offset="70%" stop-color="#60a5fa55"/>
+          <stop offset="100%" stop-color="#34d39900"/>
+        </linearGradient>
+        <linearGradient id="ah-aurora2" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#a78bfa00"/>
+          <stop offset="40%" stop-color="#a78bfa44"/>
+          <stop offset="60%" stop-color="#ec489933"/>
+          <stop offset="100%" stop-color="#a78bfa00"/>
+        </linearGradient>
+        <filter id="ah-glow"><feGaussianBlur stdDeviation="12"/></filter>
+        <filter id="ah-glow2"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#ah-sky)"/>
+      <!-- aurora bands -->
+      <path d="M0,80 Q200,20 400,90 Q600,160 800,60 L800,180 Q600,250 400,170 Q200,100 0,180Z"
+            fill="url(#ah-aurora1)" filter="url(#ah-glow)" opacity="0.7"/>
+      <path d="M0,120 Q300,50 500,130 Q700,200 800,100 L800,200 Q700,280 500,200 Q300,120 0,200Z"
+            fill="url(#ah-aurora2)" filter="url(#ah-glow)" opacity="0.5"/>
+      <!-- sharp aurora streaks -->
+      <path d="M200,60 Q250,40 300,70 Q350,100 400,50" stroke="#34d39944" stroke-width="2" fill="none" filter="url(#ah-glow2)"/>
+      <path d="M450,80 Q500,50 550,90 Q600,130 650,70" stroke="#a78bfa33" stroke-width="2" fill="none" filter="url(#ah-glow2)"/>
+      <!-- stars -->
+      <g fill="#fff">
+        <circle cx="120" cy="40" r="1.2" opacity="0.8"/>
+        <circle cx="350" cy="25" r="0.8" opacity="0.6"/>
+        <circle cx="680" cy="50" r="1" opacity="0.7"/>
+        <circle cx="520" cy="30" r="1.5" opacity="0.9"/>
+        <circle cx="90" cy="120" r="0.7" opacity="0.5"/>
+        <circle cx="720" cy="130" r="0.9" opacity="0.6"/>
+        <circle cx="250" cy="150" r="0.6" opacity="0.4"/>
+      </g>
+      <!-- hills silhouette -->
+      <path d="M0,380 Q100,330 200,360 Q350,290 500,340 Q650,280 750,320 Q780,310 800,330 L800,500 L0,500Z"
+            fill="#0d0d1a"/>
+      <path d="M0,420 Q150,380 300,400 Q500,360 650,390 Q750,370 800,385 L800,500 L0,500Z"
+            fill="#08080f"/>
+    </svg>`
+  },
+
+  // ── 3. Sakura Wind ─────────────────────────────────
+  {
+    id: 'sakura-wind',
+    label: '🌸 Sakura Wind — Cherry Blossoms',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sw-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1a1020"/>
+          <stop offset="100%" stop-color="#2a1530"/>
+        </linearGradient>
+        <radialGradient id="sw-moon" cx="0.4" cy="0.4">
+          <stop offset="0%" stop-color="#fff8f0"/>
+          <stop offset="100%" stop-color="#ffd6cc"/>
+        </radialGradient>
+        <filter id="sw-moongl"><feGaussianBlur stdDeviation="15"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#sw-bg)"/>
+      <!-- moon glow -->
+      <circle cx="620" cy="120" r="80" fill="#ec489911" filter="url(#sw-moongl)"/>
+      <circle cx="620" cy="120" r="35" fill="url(#sw-moon)" opacity="0.9"/>
+      <!-- branch -->
+      <path d="M0,200 Q100,180 200,220 Q300,260 400,240 Q480,220 520,250"
+            stroke="#3d2a2a" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M300,255 Q330,300 350,320" stroke="#3d2a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M420,238 Q450,200 480,190" stroke="#3d2a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- blossoms on branch -->
+      <g opacity="0.85">
+        <circle cx="220" cy="215" r="8" fill="#ec489966"/>
+        <circle cx="225" cy="210" r="6" fill="#f9a8d4"/>
+        <circle cx="310" cy="250" r="9" fill="#ec489966"/>
+        <circle cx="315" cy="245" r="7" fill="#f9a8d4"/>
+        <circle cx="400" cy="235" r="8" fill="#ec489955"/>
+        <circle cx="404" cy="230" r="6" fill="#f9a8d4"/>
+        <circle cx="480" cy="245" r="7" fill="#ec489966"/>
+        <circle cx="483" cy="241" r="5" fill="#f9a8d4"/>
+        <circle cx="350" cy="315" r="6" fill="#ec489955"/>
+        <circle cx="480" cy="188" r="6" fill="#ec489955"/>
+      </g>
+      <!-- falling petals -->
+      <g fill="#f9a8d4" opacity="0.6">
+        <ellipse cx="150" cy="300" rx="4" ry="2.5" transform="rotate(30 150 300)"/>
+        <ellipse cx="280" cy="350" rx="3.5" ry="2" transform="rotate(-20 280 350)"/>
+        <ellipse cx="500" cy="330" rx="4" ry="2.5" transform="rotate(45 500 330)"/>
+        <ellipse cx="650" cy="280" rx="3" ry="2" transform="rotate(-35 650 280)"/>
+        <ellipse cx="100" cy="380" rx="3.5" ry="2" transform="rotate(15 100 380)"/>
+        <ellipse cx="380" cy="400" rx="3" ry="2" transform="rotate(-40 380 400)"/>
+        <ellipse cx="700" cy="370" rx="4" ry="2.5" transform="rotate(25 700 370)"/>
+        <ellipse cx="550" cy="420" rx="3" ry="2" transform="rotate(-15 550 420)"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 4. Tidal Layers ────────────────────────────────
+  {
+    id: 'tidal-layers',
+    label: '🌊 Tidal Layers — Deep Ocean',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="tl-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a1628"/>
+          <stop offset="100%" stop-color="#051020"/>
+        </linearGradient>
+      </defs>
+      <rect width="800" height="500" fill="url(#tl-bg)"/>
+      <path d="M0,120 Q200,80 400,130 Q600,180 800,110 L800,500 L0,500Z" fill="#0d2040" opacity="0.9"/>
+      <path d="M0,170 Q200,140 400,180 Q600,220 800,160 L800,500 L0,500Z" fill="#0f2850" opacity="0.8"/>
+      <path d="M0,220 Q200,190 400,230 Q600,270 800,210 L800,500 L0,500Z" fill="#123060" opacity="0.7"/>
+      <path d="M0,270 Q200,240 400,280 Q600,320 800,260 L800,500 L0,500Z" fill="#153870" opacity="0.6"/>
+      <path d="M0,320 Q200,290 400,330 Q600,370 800,310 L800,500 L0,500Z" fill="#184080" opacity="0.5"/>
+      <path d="M0,370 Q200,340 400,380 Q600,420 800,360 L800,500 L0,500Z" fill="#1b4890" opacity="0.4"/>
+      <path d="M0,420 Q200,390 400,430 Q600,470 800,410 L800,500 L0,500Z" fill="#1e50a0" opacity="0.3"/>
+      <!-- light rays from above -->
+      <g opacity="0.08" fill="#60a5fa">
+        <polygon points="300,0 320,500 280,500"/>
+        <polygon points="450,0 475,500 425,500"/>
+        <polygon points="550,0 580,500 520,500"/>
+      </g>
+      <!-- bubbles -->
+      <g fill="none" stroke="#60a5fa" stroke-width="0.8" opacity="0.3">
+        <circle cx="200" cy="300" r="4"/><circle cx="350" cy="250" r="3"/>
+        <circle cx="500" cy="350" r="5"/><circle cx="650" cy="280" r="3.5"/>
+        <circle cx="150" cy="400" r="2.5"/><circle cx="600" cy="400" r="4"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 5. Circuit Bonsai ──────────────────────────────
+  {
+    id: 'circuit-bonsai',
+    label: '⚡ Circuit Bonsai — Tech meets Nature',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="cb-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0f172a"/>
+          <stop offset="100%" stop-color="#1e1b4b"/>
+        </linearGradient>
+        <filter id="cb-glow"><feGaussianBlur stdDeviation="3"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#cb-bg)"/>
+      <!-- pot -->
+      <path d="M340,420 L360,480 L440,480 L460,420Z" fill="#2d2040" stroke="#a78bfa33" stroke-width="1"/>
+      <!-- trunk -->
+      <path d="M400,420 Q395,350 380,300 Q370,260 390,220" stroke="#4a3560" stroke-width="8" fill="none" stroke-linecap="round"/>
+      <!-- branches -->
+      <path d="M390,300 Q340,270 300,260" stroke="#4a3560" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M385,260 Q420,230 460,220" stroke="#4a3560" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M390,220 Q370,190 340,180" stroke="#4a3560" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M390,220 Q410,195 440,185" stroke="#4a3560" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <!-- circuit lines -->
+      <g stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.6" filter="url(#cb-glow)">
+        <path d="M300,260 L260,260 L260,230 L220,230"/>
+        <path d="M460,220 L500,220 L500,190 L540,190"/>
+        <path d="M340,180 L310,180 L310,150 L270,150"/>
+        <path d="M440,185 L480,185 L480,155 L520,155"/>
+      </g>
+      <!-- circuit nodes -->
+      <g fill="#a78bfa" opacity="0.8">
+        <circle cx="220" cy="230" r="4"/><circle cx="540" cy="190" r="4"/>
+        <circle cx="270" cy="150" r="3.5"/><circle cx="520" cy="155" r="3.5"/>
+      </g>
+      <!-- glow leaves -->
+      <g fill="#34d39933" filter="url(#cb-glow)">
+        <circle cx="300" cy="255" r="20"/><circle cx="340" cy="175" r="18"/>
+        <circle cx="460" cy="215" r="22"/><circle cx="440" cy="180" r="16"/>
+        <circle cx="390" cy="200" r="15"/>
+      </g>
+      <!-- leaf details -->
+      <g fill="#34d39955">
+        <circle cx="300" cy="255" r="12"/><circle cx="340" cy="175" r="10"/>
+        <circle cx="460" cy="215" r="14"/><circle cx="440" cy="180" r="9"/>
+        <circle cx="390" cy="200" r="8"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 6. Dune Horizon ────────────────────────────────
+  {
+    id: 'dune-horizon',
+    label: '🏜️ Dune Horizon — Desert Sunset',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="dh-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1a0a2e"/>
+          <stop offset="40%" stop-color="#6b2fa0"/>
+          <stop offset="70%" stop-color="#e85d04"/>
+          <stop offset="100%" stop-color="#f48c06"/>
+        </linearGradient>
+        <radialGradient id="dh-sun" cx="0.5" cy="0.5">
+          <stop offset="0%" stop-color="#fff7ed"/>
+          <stop offset="60%" stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#f59e0b00"/>
+        </radialGradient>
+        <filter id="dh-sungl"><feGaussianBlur stdDeviation="20"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#dh-sky)"/>
+      <!-- sun -->
+      <circle cx="400" cy="280" r="100" fill="url(#dh-sun)" filter="url(#dh-sungl)" opacity="0.6"/>
+      <circle cx="400" cy="280" r="40" fill="#fff7ed" opacity="0.9"/>
+      <!-- dunes -->
+      <path d="M0,350 Q150,300 300,340 Q500,280 650,330 Q750,310 800,320 L800,500 L0,500Z"
+            fill="#c2410c" opacity="0.7"/>
+      <path d="M0,380 Q200,340 350,370 Q550,320 700,360 Q770,350 800,355 L800,500 L0,500Z"
+            fill="#9a3412" opacity="0.8"/>
+      <path d="M0,420 Q250,390 400,410 Q600,380 750,400 Q790,395 800,400 L800,500 L0,500Z"
+            fill="#7c2d12" opacity="0.9"/>
+      <!-- sand texture dots -->
+      <g fill="#f59e0b" opacity="0.1">
+        <circle cx="100" cy="440" r="1"/><circle cx="200" cy="430" r="1.2"/>
+        <circle cx="350" cy="445" r="0.8"/><circle cx="500" cy="435" r="1"/>
+        <circle cx="650" cy="425" r="1.1"/><circle cx="750" cy="440" r="0.9"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 7. Bamboo Night ────────────────────────────────
+  {
+    id: 'bamboo-night',
+    label: '🎋 Bamboo Night — Moonlit Grove',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bn-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a1a15"/>
+          <stop offset="100%" stop-color="#0d2818"/>
+        </linearGradient>
+        <filter id="bn-gl"><feGaussianBlur stdDeviation="20"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#bn-bg)"/>
+      <!-- moon glow -->
+      <circle cx="650" cy="80" r="80" fill="#34d39911" filter="url(#bn-gl)"/>
+      <circle cx="650" cy="80" r="25" fill="#d1fae5" opacity="0.8"/>
+      <!-- bamboo stalks -->
+      <g stroke-linecap="round">
+        <line x1="120" y1="500" x2="115" y2="30" stroke="#1a4a30" stroke-width="12"/>
+        <line x1="120" y1="500" x2="115" y2="30" stroke="#22663e" stroke-width="8"/>
+        <line x1="250" y1="500" x2="248" y2="60" stroke="#1a4a30" stroke-width="10"/>
+        <line x1="250" y1="500" x2="248" y2="60" stroke="#22663e" stroke-width="6"/>
+        <line x1="380" y1="500" x2="383" y2="20" stroke="#1a4a30" stroke-width="14"/>
+        <line x1="380" y1="500" x2="383" y2="20" stroke="#22663e" stroke-width="9"/>
+        <line x1="520" y1="500" x2="517" y2="50" stroke="#1a4a30" stroke-width="11"/>
+        <line x1="520" y1="500" x2="517" y2="50" stroke="#22663e" stroke-width="7"/>
+        <line x1="700" y1="500" x2="703" y2="40" stroke="#1a4a30" stroke-width="10"/>
+        <line x1="700" y1="500" x2="703" y2="40" stroke="#22663e" stroke-width="6"/>
+      </g>
+      <!-- bamboo nodes -->
+      <g stroke="#2d7a4a" stroke-width="1" fill="none" opacity="0.5">
+        <line x1="108" y1="150" x2="128" y2="150"/><line x1="108" y1="280" x2="128" y2="280"/>
+        <line x1="240" y1="180" x2="258" y2="180"/><line x1="240" y1="320" x2="258" y2="320"/>
+        <line x1="370" y1="120" x2="396" y2="120"/><line x1="370" y1="260" x2="396" y2="260"/><line x1="370" y1="380" x2="396" y2="380"/>
+        <line x1="508" y1="170" x2="528" y2="170"/><line x1="508" y1="300" x2="528" y2="300"/>
+        <line x1="694" y1="160" x2="712" y2="160"/><line x1="694" y1="290" x2="712" y2="290"/>
+      </g>
+      <!-- leaves -->
+      <g fill="#22663e" opacity="0.4">
+        <path d="M115,150 Q90,130 60,140 Q90,145 115,150"/>
+        <path d="M120,150 Q145,125 170,130 Q140,140 120,150"/>
+        <path d="M383,120 Q360,95 330,100 Q355,110 383,120"/>
+        <path d="M383,120 Q410,100 440,105 Q410,115 383,120"/>
+        <path d="M517,170 Q490,150 460,155 Q490,162 517,170"/>
+        <path d="M703,160 Q730,140 755,148 Q730,155 703,160"/>
+        <path d="M248,180 Q220,160 190,168 Q220,173 248,180"/>
+      </g>
+      <!-- fireflies -->
+      <g fill="#a7f3d0" opacity="0.6">
+        <circle cx="180" cy="200" r="2.5"/><circle cx="320" cy="150" r="2"/>
+        <circle cx="450" cy="250" r="2.5"/><circle cx="600" cy="180" r="2"/>
+        <circle cx="160" cy="350" r="1.8"/><circle cx="580" cy="350" r="2.2"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 8. Koi Pond ────────────────────────────────────
+  {
+    id: 'koi-pond',
+    label: '🐟 Koi Pond — Reflections',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="kp-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a1a28"/>
+          <stop offset="100%" stop-color="#0d2030"/>
+        </linearGradient>
+        <filter id="kp-ripple"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#kp-bg)"/>
+      <!-- water surface -->
+      <g stroke="#1a4a60" stroke-width="0.8" fill="none" opacity="0.4">
+        <ellipse cx="400" cy="250" rx="350" ry="200"/>
+        <ellipse cx="400" cy="250" rx="300" ry="170"/>
+        <ellipse cx="400" cy="250" rx="250" ry="140"/>
+      </g>
+      <!-- lily pads -->
+      <g fill="#1a5a3a" opacity="0.5">
+        <ellipse cx="250" cy="200" rx="35" ry="20" transform="rotate(-10 250 200)"/>
+        <ellipse cx="550" cy="300" rx="40" ry="22" transform="rotate(15 550 300)"/>
+        <ellipse cx="350" cy="350" rx="30" ry="18" transform="rotate(-5 350 350)"/>
+      </g>
+      <!-- lily pad cuts -->
+      <g stroke="#0a1a28" stroke-width="2" fill="none">
+        <line x1="250" y1="200" x2="275" y2="185"/>
+        <line x1="550" y1="300" x2="580" y2="285"/>
+        <line x1="350" y1="350" x2="372" y2="338"/>
+      </g>
+      <!-- lotus flowers -->
+      <g opacity="0.7">
+        <ellipse cx="255" cy="192" rx="8" ry="5" fill="#f9a8d488"/>
+        <ellipse cx="248" cy="190" rx="6" ry="8" fill="#ec489966" transform="rotate(-20 248 190)"/>
+        <ellipse cx="262" cy="190" rx="6" ry="8" fill="#ec489966" transform="rotate(20 262 190)"/>
+      </g>
+      <!-- koi fish -->
+      <g>
+        <path d="M420,230 Q440,225 455,230 Q460,235 455,240 Q440,245 420,240 Q415,235 420,230Z"
+              fill="#f59e0b" opacity="0.7"/>
+        <circle cx="448" cy="233" r="2" fill="#1a1a2e"/>
+        <path d="M415,233 Q405,225 400,235 Q405,245 415,237" fill="#f59e0b" opacity="0.5"/>
+      </g>
+      <g transform="translate(200, 80) scale(-1,1) rotate(30)">
+        <path d="M0,0 Q20,-5 35,0 Q40,5 35,10 Q20,15 0,10 Q-5,5 0,0Z"
+              fill="#dc2626" opacity="0.6"/>
+        <circle cx="28" cy="3" r="1.8" fill="#1a1a2e"/>
+        <path d="M-5,3 Q-15,-5 -20,5 Q-15,15 -5,7" fill="#dc2626" opacity="0.4"/>
+      </g>
+      <!-- ripples -->
+      <g stroke="#60a5fa" stroke-width="0.6" fill="none" opacity="0.2" filter="url(#kp-ripple)">
+        <ellipse cx="430" cy="235" rx="20" ry="8"/>
+        <ellipse cx="430" cy="235" rx="35" ry="14"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 9. Nebula Grid ─────────────────────────────────
+  {
+    id: 'nebula-grid',
+    label: '🪐 Nebula Grid — Cosmic Tech',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ng-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#0a0015"/>
+          <stop offset="50%" stop-color="#150025"/>
+          <stop offset="100%" stop-color="#0a0a20"/>
+        </linearGradient>
+        <radialGradient id="ng-nebula1" cx="0.3" cy="0.4">
+          <stop offset="0%" stop-color="#a78bfa33"/>
+          <stop offset="100%" stop-color="#a78bfa00"/>
+        </radialGradient>
+        <radialGradient id="ng-nebula2" cx="0.7" cy="0.6">
+          <stop offset="0%" stop-color="#ec489922"/>
+          <stop offset="100%" stop-color="#ec489900"/>
+        </radialGradient>
+        <filter id="ng-gl"><feGaussianBlur stdDeviation="8"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#ng-bg)"/>
+      <!-- nebula clouds -->
+      <ellipse cx="240" cy="200" rx="200" ry="150" fill="url(#ng-nebula1)" filter="url(#ng-gl)"/>
+      <ellipse cx="560" cy="300" rx="180" ry="130" fill="url(#ng-nebula2)" filter="url(#ng-gl)"/>
+      <!-- perspective grid -->
+      <g stroke="#a78bfa" stroke-width="0.5" opacity="0.15">
+        <line x1="400" y1="0" x2="0" y2="500"/><line x1="400" y1="0" x2="100" y2="500"/>
+        <line x1="400" y1="0" x2="200" y2="500"/><line x1="400" y1="0" x2="300" y2="500"/>
+        <line x1="400" y1="0" x2="400" y2="500"/><line x1="400" y1="0" x2="500" y2="500"/>
+        <line x1="400" y1="0" x2="600" y2="500"/><line x1="400" y1="0" x2="700" y2="500"/>
+        <line x1="400" y1="0" x2="800" y2="500"/>
+      </g>
+      <g stroke="#a78bfa" stroke-width="0.4" opacity="0.1">
+        <line x1="0" y1="200" x2="800" y2="200"/><line x1="0" y1="300" x2="800" y2="300"/>
+        <line x1="0" y1="380" x2="800" y2="380"/><line x1="0" y1="440" x2="800" y2="440"/>
+      </g>
+      <!-- stars -->
+      <g fill="#fff">
+        <circle cx="100" cy="60" r="1.2" opacity="0.9"/><circle cx="250" cy="100" r="0.8" opacity="0.5"/>
+        <circle cx="500" cy="80" r="1" opacity="0.7"/><circle cx="700" cy="120" r="1.3" opacity="0.8"/>
+        <circle cx="150" cy="300" r="0.7" opacity="0.4"/><circle cx="650" cy="200" r="0.9" opacity="0.6"/>
+        <circle cx="350" cy="50" r="1.5" opacity="0.9"/><circle cx="50" cy="180" r="0.6" opacity="0.3"/>
+        <circle cx="750" cy="350" r="0.8" opacity="0.5"/>
+      </g>
+      <!-- bright star cross -->
+      <g stroke="#fff" stroke-width="1" opacity="0.6">
+        <line x1="350" y1="45" x2="350" y2="55"/><line x1="345" y1="50" x2="355" y2="50"/>
+      </g>
+    </svg>`
+  },
+
+  // ── 10. Ink Mountains ──────────────────────────────
+  {
+    id: 'ink-mountains',
+    label: '🏔️ Ink Mountains — Sumi-e',
+    svg: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="im-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f5f0e8"/>
+          <stop offset="100%" stop-color="#e8e0d0"/>
+        </linearGradient>
+        <filter id="im-ink"><feGaussianBlur stdDeviation="1.5"/></filter>
+      </defs>
+      <rect width="800" height="500" fill="url(#im-bg)"/>
+      <!-- distant mountains (lightest) -->
+      <path d="M0,300 Q100,220 200,260 Q300,200 400,240 Q500,180 600,230 Q700,200 800,250 L800,500 L0,500Z"
+            fill="#b8b0a0" opacity="0.3" filter="url(#im-ink)"/>
+      <!-- middle mountains -->
+      <path d="M0,340 Q150,260 250,300 Q400,230 500,280 Q650,220 800,290 L800,500 L0,500Z"
+            fill="#8a8070" opacity="0.4" filter="url(#im-ink)"/>
+      <!-- foreground mountains -->
+      <path d="M0,380 Q100,320 200,350 Q350,290 450,340 Q600,280 700,330 Q760,310 800,340 L800,500 L0,500Z"
+            fill="#4a4540" opacity="0.6"/>
+      <!-- closest hill -->
+      <path d="M0,430 Q200,400 400,420 Q600,400 800,430 L800,500 L0,500Z"
+            fill="#2a2520" opacity="0.7"/>
+      <!-- pine trees silhouettes -->
+      <g fill="#3a3530" opacity="0.5">
+        <path d="M150,395 L155,370 L160,395Z"/>
+        <path d="M148,380 L155,355 L162,380Z"/>
+        <path d="M600,380 L607,350 L614,380Z"/>
+        <path d="M597,365 L607,335 L617,365Z"/>
+        <path d="M350,405 L355,385 L360,405Z"/>
+        <path d="M348,392 L355,372 L362,392Z"/>
+      </g>
+      <!-- seal stamp -->
+      <rect x="680" y="80" width="40" height="50" rx="3" fill="#c4302b22" stroke="#c4302b44" stroke-width="1"/>
+      <text x="700" y="112" font-family="serif" font-size="20" fill="#c4302b66" text-anchor="middle">禅</text>
+      <!-- mist -->
+      <g fill="#f5f0e8" opacity="0.3">
+        <ellipse cx="300" cy="340" rx="150" ry="20"/>
+        <ellipse cx="600" cy="370" rx="120" ry="15"/>
+      </g>
+    </svg>`
+  },
+];
+
+// Render
+const gridEl = document.getElementById('grid');
+let selectedSet = new Set();
+
+artworks.forEach(art => {
+  const item = document.createElement('div');
+  item.className = 'bg-item';
+  item.dataset.id = art.id;
+  item.innerHTML = `
+    ${art.svg}
+    <input type="checkbox" class="bg-checkbox" data-id="${art.id}">
+    <div class="bg-label">${art.label}</div>
+  `;
+  gridEl.appendChild(item);
+
+  const cb = item.querySelector('input');
+  cb.addEventListener('change', () => {
+    cb.checked ? selectedSet.add(art.id) : selectedSet.delete(art.id);
+    item.classList.toggle('selected', cb.checked);
+    document.getElementById('counter').textContent = selectedSet.size;
+  });
+  item.addEventListener('click', e => {
+    if (e.target !== cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }
+  });
+});
+
+document.getElementById('selectAll').addEventListener('click', () => {
+  document.querySelectorAll('.bg-checkbox').forEach(cb => {
+    cb.checked = true; selectedSet.add(cb.dataset.id);
+    cb.closest('.bg-item').classList.add('selected');
+  });
+  document.getElementById('counter').textContent = selectedSet.size;
+});
+document.getElementById('deselectAll').addEventListener('click', () => {
+  document.querySelectorAll('.bg-checkbox').forEach(cb => {
+    cb.checked = false; selectedSet.delete(cb.dataset.id);
+    cb.closest('.bg-item').classList.remove('selected');
+  });
+  document.getElementById('counter').textContent = selectedSet.size;
+});
+document.getElementById('copyIds').addEventListener('click', () => {
+  const ids = Array.from(selectedSet).sort().join(', ');
+  navigator.clipboard.writeText(ids).then(() => {
+    const btn = document.getElementById('copyIds');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = '📋 Copy IDs'; }, 2000);
+  });
+});
+</script>
+</body>
+</html>

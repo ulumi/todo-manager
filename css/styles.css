@@ -1048,9 +1048,9 @@ input:checked + .cal-sid-toggle-track::after {
   height: 22px;
   min-width: auto;
   padding: 0 4px;
-  border: none;
+  border: none !important;
   border-radius: 0;
-  background: transparent;
+  background: transparent !important;
   color: rgba(255, 255, 255, 0.5);
   font-size: 10px;
   font-weight: 600;
@@ -1062,15 +1062,20 @@ input:checked + .cal-sid-toggle-track::after {
   white-space: nowrap;
   text-decoration: none;
   gap: 2px;
+  backdrop-filter: none !important;
 }
 .day-ctrl-btn:hover {
   color: rgba(255, 255, 255, 0.8);
+  background: transparent !important;
+  border: none !important;
 }
 .day-ctrl-btn.active {
   color: #fff;
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
+  background: transparent !important;
+  border: none !important;
 }
 
 .day-sort-btn {
