@@ -760,14 +760,54 @@ class TodoApp {
           margin-left: 8px; transition: background 0.2s; vertical-align: middle;
         }
         #celebrateDebugPanel button:hover { background: rgba(255,100,200,1); }
+        #celebrateDebugPanel .editable { cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+        #celebrateDebugPanel .editable:hover { background: rgba(255,100,200,0.15); }
+        #celebrateDebugPanel .editable[contenteditable="true"] { background: rgba(255,100,200,0.2); border: 1px solid rgba(255,100,200,0.5); outline: none; }
       </style>
       <div style="margin-bottom: 16px;"><strong>🎉 Celebrate Debug</strong></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code> <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code>${mascot}</code> <button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code class="editable" id="debugQuote" contenteditable="false">${quote.substring(0, 30)}...</code> <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code class="editable" id="debugMascot" contenteditable="false">${mascot}</code> <button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
       <div style="margin-bottom: 16px; opacity: 0.8;">Font: <code>${fontName}</code></div>
       <div style="margin-bottom: 0; opacity: 0.8;">Duration: <code>${duration}s</code></div>
     `;
     document.body.appendChild(panel);
+
+    // Enable quick edit for quote and mascot
+    const quoteEl = panel.querySelector('#debugQuote');
+    const mascotEl = panel.querySelector('#debugMascot');
+
+    const makeEditable = (el) => {
+      el.addEventListener('click', () => {
+        if (el.getAttribute('contenteditable') === 'false') {
+          el.setAttribute('contenteditable', 'true');
+          el.focus();
+          // Select all text
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          window.getSelection().removeAllRanges();
+          window.getSelection().addRange(range);
+        }
+      });
+
+      el.addEventListener('blur', () => {
+        el.setAttribute('contenteditable', 'false');
+      });
+
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          el.blur();
+        }
+        // Allow Shift+Enter for <br>
+        if (e.key === 'Enter' && e.shiftKey) {
+          e.preventDefault();
+          document.execCommand('insertHTML', false, '<br>');
+        }
+      });
+    };
+
+    if (quoteEl) makeEditable(quoteEl);
+    if (mascotEl) makeEditable(mascotEl);
 
     // Auto-fade after duration + 3.5s (so 3.5s after celebrate animation ends)
     setTimeout(() => {
