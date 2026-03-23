@@ -6619,6 +6619,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .day-mini-col.week-end {
   border-right-color: rgba(255, 255, 255, 0.15);
 }
+.glass-mode .day-mini-col.is-current {
+  background: rgba(255, 255, 255, 0.1);
+}
 .glass-mode:not([data-theme=dark]) .cal-sid-day {
   color: #fff;
 }

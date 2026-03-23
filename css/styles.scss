@@ -6206,6 +6206,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .day-mini-col {
     border-right-color: rgba(255,255,255,.1);
     &.week-end { border-right-color: rgba(255,255,255,.15); }
+    &.is-current { background: rgba(255,255,255,.1); }
   }
 
   // ── Light glass: keep white text for minical numbers ──
