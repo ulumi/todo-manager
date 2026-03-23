@@ -174,4 +174,5 @@ export function setBgColor(color) {
     localStorage.setItem('bgPalette', 'none');
   }
   document.documentElement.style.backgroundColor = color;
+  _generate();
 }
