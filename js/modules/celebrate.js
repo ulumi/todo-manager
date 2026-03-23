@@ -178,6 +178,12 @@ export const DEFAULT_QUOTES_FR = [
   "CE N'EST PAS DE LA PRODUCTIVITÉ. C'EST DE L'ART.",
 ];
 
+const FONTS = [
+  "'Playfair Display', serif",
+  "'Space Grotesk', sans-serif",
+  "'Poppins', sans-serif",
+];
+
 const MASCOTS = [
   '🦄','🐉','🦁','🦋','🧜','🧚','🦩','🐸','🦖','🦕',
   '🐙','🦜','🦚','🦝','🦦','🐻‍❄️','🦈','🐳','🦊','🧙',
@@ -185,6 +191,8 @@ const MASCOTS = [
   '🌊','🔥','🐬','🦸','🌟','🧞','🧝','🦅','🎺','🎯',
   '🦣','🦤','🐲','🧨','💎','🏆','🎆','🎪','⚡','🌈',
 ];
+
+let _lastQuote = null;
 
 const PARTICLES = [
   '⭐','✨','💫','🌟','🎉','🎊','💥','💎','🔥','💜','💛','💚','🏆','⚡',
@@ -347,7 +355,15 @@ export function celebrate(lang = 'en') {
   const all            = [...base, ...globalCustom, ...custom];
   const available      = all.filter(q => !banned.includes(q));
   const pool           = available.length > 0 ? available : all; // fallback if all banned
-  const quote     = pool[Math.floor(Math.random() * pool.length)];
+
+  // Avoid showing same quote twice in a row
+  let quote;
+  const filtered = _lastQuote ? pool.filter(q => q !== _lastQuote) : pool;
+  quote = filtered.length > 0
+    ? filtered[Math.floor(Math.random() * filtered.length)]
+    : pool[Math.floor(Math.random() * pool.length)];
+  _lastQuote = quote;
+
   const stats     = buildStats(lang);
   const mascot    = MASCOTS[Math.floor(Math.random() * MASCOTS.length)];
   buildScene(quote, stats, mascot);
@@ -408,12 +424,13 @@ function buildScene(quote, stats, mascot, opts = {}) {
   gsap.set(textBlock, { xPercent: -50, yPercent: -50 });
 
   // Quote (words stagger in from small scale)
+  const randomFont = FONTS[Math.floor(Math.random() * FONTS.length)];
   const quoteEl = el('div', `
     font-size:clamp(32px,5.8vw,72px);font-weight:900;
     color:#fff;text-align:center;
     line-height:1.25;letter-spacing:-0.01em;
     text-shadow:0 0 100px rgba(255,180,255,0.98),0 4px 40px rgba(0,0,0,0.95);
-    font-family:'Playfair Display','Space Grotesk','Poppins',sans-serif;
+    font-family:${randomFont};
   `);
 
   // Handle <br> for two-line quotes
