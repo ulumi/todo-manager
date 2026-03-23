@@ -1025,7 +1025,7 @@ input:checked + .cal-sid-toggle-track::after {
   display: flex;
   gap: 5px;
   align-items: center;
-  margin-right: 5px;
+  margin-right: 10px;
 }
 
 .day-ctrl-label {
