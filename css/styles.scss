@@ -1094,10 +1094,9 @@ main {
 .day-ctrl-chevron {
   transition: transform .35s cubic-bezier(.4, .0, .2, 1);
   color: rgba(255,255,255,.4);
-  transform: rotate(90deg);
 
   .day-ctrl-expandable.expanded & {
-    transform: rotate(0deg);
+    transform: rotate(-90deg);
   }
 
   .day-ctrl-toggle:hover & {

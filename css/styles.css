@@ -1127,10 +1127,9 @@ input:checked + .cal-sid-toggle-track::after {
 .day-ctrl-chevron {
   transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   color: rgba(255, 255, 255, 0.4);
-  transform: rotate(90deg);
 }
 .day-ctrl-expandable.expanded .day-ctrl-chevron {
-  transform: rotate(0deg);
+  transform: rotate(-90deg);
 }
 .day-ctrl-toggle:hover .day-ctrl-chevron {
   color: rgba(255, 255, 255, 0.7);
