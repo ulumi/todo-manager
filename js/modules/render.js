@@ -193,12 +193,12 @@ export function renderDayView(todos) {
   const colCount = parseInt(localStorage.getItem('dayColCount') || '2');
   const colIcon = n => {
     const bars = Array.from({length: n}, () => `<rect/>`).map((_, i) => {
-      const w = Math.floor(10 / n);
-      const g = n > 1 ? Math.floor((10 - w * n) / (n - 1)) : 0;
+      const w = Math.floor(11 / n);
+      const g = n > 1 ? Math.floor((11 - w * n) / (n - 1)) : 0;
       const x = i * (w + g);
-      return `<rect x="${x}" y="0" width="${w}" height="12" rx="1" fill="currentColor"/>`;
+      return `<rect x="${x}" y="1" width="${w}" height="14" rx="1.5" fill="currentColor" opacity="0.8"/>`;
     }).join('');
-    return `<svg viewBox="0 0 10 12" width="10" height="12">${bars}</svg>`;
+    return `<svg viewBox="0 0 12 16" width="11" height="14">${bars}</svg>`;
   };
   const colBtns = [1,2,3,4].map(n =>
     `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n})" title="${n} colonne${n>1?'s':''}">${colIcon(n)}</button>`
@@ -312,9 +312,9 @@ export function renderDayView(todos) {
     }
   }
 
-  const sortCollapsed = localStorage.getItem('daySortCollapsed') === 'true';
-  const colCollapsed = localStorage.getItem('dayColCollapsed') === 'true';
-  const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') === 'true';
+  const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
+  const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
+  const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
 
   const punctualHeader = `<div class="day-col-title-row">
     <div class="day-col-title">${state.T.groupOnce}</div>
@@ -338,7 +338,7 @@ export function renderDayView(todos) {
       </div>
 
       <button class="day-ctrl-gear" onclick="window.app.toggleDayControls()" title="Options">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m2.12-2.12l4.24-4.24M19.78 4.22l-4.24 4.24m-2.12 2.12l-4.24 4.24M23 12h-6m-6 0H5M19.78 19.78l-4.24-4.24m-2.12-2.12l-4.24-4.24"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
       </button>
     </div>
   </div>`;

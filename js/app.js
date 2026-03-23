@@ -291,11 +291,18 @@ class TodoApp {
     if (state.view === 'profile') this.render();
   }
 
+  toggleGlassMode() {
+    const enabled = document.getElementById('settingsGlassInput').checked;
+    localStorage.setItem('glassMode', enabled ? '1' : '0');
+    document.documentElement.classList.toggle('glass-mode', enabled);
+  }
+
   _updateSettingsMenuContent() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const zoomIdx = this.zoomIdx ?? 1;
-    const primaryColor = localStorage.getItem('primaryColor') || '#f59e0b';
-    const bgPalette = localStorage.getItem('bgPalette') || 'default';
+    const glassMode = localStorage.getItem('glassMode') === '1';
+    const primaryColor = localStorage.getItem('primaryColor') || (isDark ? '#fbbf24' : '#f59e0b');
+    const bgPalette = localStorage.getItem('bgPalette') || 'geo';
 
     // Update theme buttons
     document.getElementById('settingsLightBtn').classList.toggle('active', !isDark);
@@ -305,36 +312,31 @@ class TodoApp {
     document.querySelectorAll('.settings-size-btn').forEach((btn, i) => {
       btn.classList.toggle('active', i === zoomIdx);
     });
+    document.getElementById('settingsSizePreview').textContent = ['Small', 'Normal', 'Large'][zoomIdx];
 
-    // Update size preview
-    const sizeLabels = ['Small', 'Normal', 'Large'];
-    document.getElementById('settingsSizePreview').textContent = sizeLabels[zoomIdx] + ' text';
+    // Update glass mode checkbox
+    document.getElementById('settingsGlassInput').checked = glassMode;
 
-    // Update accent color buttons
-    const colorOptions = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
-    const colorsGrid = document.getElementById('settingsColorsGrid');
-    colorsGrid.innerHTML = colorOptions.map(color =>
-      `<button class="settings-color-btn${primaryColor === color ? ' active' : ''}" style="background: ${color};" onclick="window.app.setPrimaryColor('${color}')"></button>`
+    // Update accent color picker
+    const accentColors = isDark
+      ? ['#fbbf24', '#f87171', '#4ade80', '#60a5fa', '#a78bfa', '#f472b6']
+      : ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+    const pickerHtml = accentColors.map(c =>
+      `<button class="settings-accent-btn${primaryColor === c ? ' active' : ''}" style="background:${c};" onclick="window.app.setPrimaryColor('${c}')" title="${c}"></button>`
     ).join('');
+    document.getElementById('settingsAccentPicker').innerHTML = pickerHtml;
+    document.getElementById('settingsAccentPreview').style.background = primaryColor;
 
-    // Update color preview
-    const preview = document.getElementById('settingsColorPreview');
-    preview.style.background = `linear-gradient(135deg, ${primaryColor}, ${primaryColor}88)`;
-
-    // Update themes buttons
-    const themesGrid = document.getElementById('settingsThemesGrid');
-    const themes = [
-      { id: 'default', name: 'Forest', colors: '#1f2937,#10b981' },
-      { id: 'ocean', name: 'Ocean', colors: '#0c4a6e,#0ea5e9' },
-      { id: 'sunset', name: 'Sunset', colors: '#7c2d12,#ea580c' },
-      { id: 'midnight', name: 'Midnight', colors: '#1e1b4b,#6366f1' },
-      { id: 'rosegold', name: 'Blush', colors: '#be123c,#f9a8d4' },
-      { id: 'forest', name: 'Grove', colors: '#15803d,#4ade80' },
+    // Update background (palettes) buttons
+    const paletteOpts = [
+      { id: 'geo', emoji: '🌋', name: 'Géo' },
+      { id: 'aurora', emoji: '🌊', name: 'Aurora' },
+      { id: 'none', emoji: '⬜', name: 'None' },
     ];
-    themesGrid.innerHTML = themes.map(t => {
-      const [c1, c2] = t.colors.split(',');
-      return `<button class="settings-theme-btn-visual${bgPalette === t.id ? ' active' : ''}" style="--bg-color-1:${c1};--bg-color-2:${c2};" onclick="window.app.setPalette('${t.id}')"><div class="theme-label">${t.name}</div></button>`;
-    }).join('');
+    const palettesHtml = paletteOpts.map(p =>
+      `<button class="settings-palette-btn${bgPalette === p.id ? ' active' : ''}" onclick="window.app.setPalette('${p.id}')" title="${p.name}"><span style="font-size:24px;">${p.emoji}</span><div class="palette-label">${p.name}</div></button>`
+    ).join('');
+    document.getElementById('settingsPalettesGrid').innerHTML = palettesHtml;
   }
 
   setPalette(id) {

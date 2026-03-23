@@ -69,9 +69,12 @@
     </button>
     <div class="settings-menu hidden" id="settingsMenu">
       <div class="settings-menu-content">
-        <!-- Theme: Dark/Bright -->
+        <!-- Top Row: Theme + Accent + Glass -->
         <div class="settings-menu-section">
-          <div class="settings-menu-title">Theme</div>
+          <div class="settings-section-header">
+            <div class="settings-menu-title">Theme</div>
+            <span class="settings-help-icon" title="Choose between light and dark theme">?</span>
+          </div>
           <div class="settings-theme-toggle">
             <button class="settings-theme-btn" id="settingsLightBtn" onclick="window.app.setTheme('light')" title="Light">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -82,30 +85,48 @@
               <span>Dark</span>
             </button>
           </div>
+
+          <!-- Accent Color Custom Picker -->
+          <div class="settings-accent-section">
+            <div class="settings-label-row">
+              <span class="settings-sublabel">Accent</span>
+              <span class="settings-help-icon" title="Choose your accent color">?</span>
+            </div>
+            <div class="settings-accent-picker" id="settingsAccentPicker"></div>
+            <div class="settings-accent-preview" id="settingsAccentPreview"></div>
+          </div>
+
+          <!-- Glass Mode Toggle -->
+          <div class="settings-glass-toggle">
+            <label class="settings-glass-label">
+              <input type="checkbox" id="settingsGlassInput" onchange="window.app.toggleGlassMode()">
+              <span>Glass mode</span>
+              <span class="settings-help-icon" title="Frosted glass effect">?</span>
+            </label>
+          </div>
         </div>
 
         <!-- Text Size -->
         <div class="settings-menu-section">
-          <div class="settings-menu-title">Text size</div>
+          <div class="settings-section-header">
+            <div class="settings-menu-title">Text size</div>
+            <span class="settings-help-icon" title="Adjust text size">?</span>
+          </div>
           <div class="settings-size-group">
             <button class="settings-size-btn" id="szSmallSettings" onclick="window.app.setZoom(0)">A</button>
             <button class="settings-size-btn active" id="szMedSettings" onclick="window.app.setZoom(1)">A</button>
             <button class="settings-size-btn" id="szLargeSettings" onclick="window.app.setZoom(2)">A</button>
-            <div class="settings-size-preview" id="settingsSizePreview">Normal text example</div>
+            <div class="settings-size-preview" id="settingsSizePreview">Normal</div>
           </div>
         </div>
 
-        <!-- Accent Color -->
+        <!-- Background Image (Palettes) -->
         <div class="settings-menu-section">
-          <div class="settings-menu-title">Accent color</div>
-          <div class="settings-colors-grid" id="settingsColorsGrid"></div>
-          <div class="settings-color-preview" id="settingsColorPreview"></div>
-        </div>
-
-        <!-- Themes/Gradients -->
-        <div class="settings-menu-section">
-          <div class="settings-menu-title">Themes</div>
-          <div class="settings-themes-grid" id="settingsThemesGrid"></div>
+          <div class="settings-section-header">
+            <div class="settings-menu-title">Background</div>
+            <span class="settings-help-icon" title="Choose background polygon image">?</span>
+          </div>
+          <div class="settings-palettes-grid" id="settingsPalettesGrid"></div>
         </div>
       </div>
     </div>
