@@ -11,10 +11,11 @@ export let todos = loadTodos();
 export let view = 'day';
 export let navDate = (() => {
   const saved = localStorage.getItem('navDate');
-  const d = saved ? new Date(saved) : new Date();
-  if (isNaN(d.getTime())) { const f = new Date(); f.setHours(0,0,0,0); return f; }
-  d.setHours(0,0,0,0);
-  return d;
+  if (saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+    const [y, m, d] = saved.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  const f = new Date(); f.setHours(0,0,0,0); return f;
 })();
 export let selectedRecurrence = 'none';
 export let selectedWeekDays = [];
