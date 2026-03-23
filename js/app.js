@@ -4481,6 +4481,12 @@ document.addEventListener('mouseout', e => {
 });
 
 document.addEventListener('keydown', e => {
+  // Skip shortcuts if user is editing a contenteditable element or input
+  const activeEl = document.activeElement;
+  if (activeEl?.getAttribute('contenteditable') === 'true' || activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA') {
+    return;
+  }
+
   if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
     if (e.code === 'KeyD') {
       e.preventDefault();
