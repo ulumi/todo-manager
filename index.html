@@ -37,7 +37,7 @@
     </div>
     <div class="header-spacer"></div>
     <div class="quick-find-wrapper">
-      <input type="search" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
+      <div id="quickFindInput" class="quick-find-input" contenteditable="plaintext-only" role="searchbox" aria-label="Chercher" data-placeholder="Chercher..." spellcheck="false" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)"></div>
       <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
     </div>
     <div class="utility-tabs">

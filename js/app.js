@@ -37,6 +37,7 @@ import {
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
   renderPlanInboxList, renderProjectsView, renderSearchView,
+  renderIntentionsView, renderAnalyseView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
@@ -309,7 +310,7 @@ class TodoApp {
 
   onQuickFind(event) {
     const input = event.target;
-    const query = input.value.trim();
+    const query = input.textContent.trim();
     const dropdown = document.getElementById('quickFindDropdown');
 
     if (!query) {
@@ -329,8 +330,9 @@ class TodoApp {
 
   onQuickFindKeydown(event) {
     if (event.key === 'Enter') {
+      event.preventDefault();
       const input = event.target;
-      const query = input.value.trim();
+      const query = input.textContent.trim();
       if (query) {
         this.openSearchView(query);
         input.blur();
@@ -413,8 +415,10 @@ class TodoApp {
     state.setView('search');
     localStorage.setItem('searchQuery', query);
     // Close the dropdown
+    const qfi = document.getElementById('quickFindInput');
     document.getElementById('quickFindDropdown').classList.add('hidden');
-    document.getElementById('quickFindInput').blur();
+    qfi.textContent = '';
+    qfi.blur();
     this.render();
   }
 
@@ -1917,13 +1921,15 @@ class TodoApp {
     const isBacklog     = state.view === 'backlog';
     const isPlan        = state.view === 'plan';
     const isSuperadmin  = state.view === 'superadmin';
+    const isIntentions  = state.view === 'intentions';
+    const isAnalyse     = state.view === 'analyse';
     document.body.classList.toggle('view-projects',   isCategories || isProjects);
     document.body.classList.toggle('view-profile',    isProfile);
     document.body.classList.toggle('view-inbox',      isInbox);
     document.body.classList.toggle('view-backlog',    isBacklog);
     document.body.classList.toggle('view-plan',       isPlan);
     document.body.classList.toggle('view-superadmin', isSuperadmin);
-    const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin;
+    const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin || isIntentions || isAnalyse;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
     this._updateInboxBadge();
@@ -1943,6 +1949,8 @@ class TodoApp {
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
     if (state.view==='superadmin') html = this._renderSuperadminView();
+    if (state.view==='intentions') html = renderIntentionsView(state.todos);
+    if (state.view==='analyse')    html = renderAnalyseView(state.todos);
     const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
     if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
     if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
@@ -1950,7 +1958,7 @@ class TodoApp {
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -1978,8 +1986,13 @@ class TodoApp {
 
   _renderPlanView() {
     const leftWidth = localStorage.getItem('planInboxWidth') || '260';
+    const explainer = `<div class="view-explainer view-explainer--compact" style="margin:0 0 8px;">
+      <strong>Planifier</strong>
+      Votre espace de planification tactique. Glissez les tâches de l'inbox vers le calendrier pour les caser dans le temps. La colonne gauche regroupe tout ce qui n'a pas encore de date.
+    </div>`;
     return `<div class="plan-view">
       <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}px">
+        ${explainer}
         ${renderPlanInboxList(state.todos)}
       </div>
       <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"></div>
@@ -3906,6 +3919,131 @@ class TodoApp {
 
   setProjectsSort(s) {
     localStorage.setItem('projectsSort', s);
+    this.render();
+  }
+
+  // ═══════════════════════════════════════════════════
+  // INTENTIONS
+  // ═══════════════════════════════════════════════════
+
+  static _INTENTION_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#eab308','#22c55e','#10b981','#14b8a6','#0ea5e9','#3b82f6','#a78bfa'];
+
+  _getIntentions() {
+    try { return JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { return []; }
+  }
+
+  _saveIntentions(arr) {
+    localStorage.setItem('intentions', JSON.stringify(arr));
+  }
+
+  addIntentionFromView() {
+    const intentions = this._getIntentions();
+    const color = TodoApp._INTENTION_COLORS[intentions.length % TodoApp._INTENTION_COLORS.length];
+    const newInt = { id: 'int-' + Date.now(), title: 'Nouvelle intention', description: '', color, createdAt: Date.now() };
+    intentions.push(newInt);
+    this._saveIntentions(intentions);
+    this.render();
+    // Open panel after render
+    setTimeout(() => this.openIntentionPanel(newInt.id), 50);
+  }
+
+  openIntentionPanel(id) {
+    const panel   = document.getElementById('intentionPanel');
+    const overlay = document.getElementById('intentionPanelOverlay');
+    if (!panel || !overlay) return;
+    panel.classList.remove('hidden');
+    overlay.classList.remove('hidden');
+    this._renderIntentionPanel(id);
+    if (window.gsap) gsap.fromTo(panel, { x: 60, opacity: 0 }, { x: 0, opacity: 1, duration: 0.28, ease: 'expo.out' });
+  }
+
+  closeIntentionPanel() {
+    const panel   = document.getElementById('intentionPanel');
+    const overlay = document.getElementById('intentionPanelOverlay');
+    if (!panel) return;
+    if (window.gsap) {
+      gsap.to(panel, { x: 60, opacity: 0, duration: 0.22, ease: 'expo.in', onComplete: () => { panel.classList.add('hidden'); overlay?.classList.add('hidden'); } });
+    } else {
+      panel.classList.add('hidden');
+      overlay?.classList.add('hidden');
+    }
+  }
+
+  _renderIntentionPanel(id) {
+    const panel = document.getElementById('intentionPanel');
+    if (!panel || panel.classList.contains('hidden')) return;
+    const intentions = this._getIntentions();
+    const int = intentions.find(x => x.id === id);
+    if (!int) { this.closeIntentionPanel(); return; }
+
+    const colorSwatches = TodoApp._INTENTION_COLORS.map(c =>
+      `<div class="cv-color-swatch${c === int.color ? ' active' : ''}" style="background:${c};"
+        onclick="window.app.setIntentionColor('${id}','${c}')"></div>`
+    ).join('');
+
+    const intTasks = state.todos.filter(t => t.intentionId === id);
+    const taskItems = intTasks.map(t =>
+      `<div class="intention-panel-task-item" onclick="window.app.openEditModal('${t.id}', null)">
+        <span style="width:6px;height:6px;border-radius:50%;background:${int.color};display:inline-block;flex-shrink:0;"></span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${esc(t.title)}</span>
+      </div>`
+    ).join('');
+
+    panel.innerHTML = `
+      <div class="cv-header">
+        <div class="cv-color-dot" style="background:${int.color};border-radius:50%;width:14px;height:14px;flex-shrink:0;"></div>
+        <input class="cv-name-input" value="${esc(int.title)}" placeholder="Titre de l'intention"
+          onblur="window.app.saveIntentionField('${id}','title',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur();">
+        <button class="cv-close-btn" onclick="window.app.closeIntentionPanel()">✕</button>
+      </div>
+      <div class="cv-color-picker">${colorSwatches}</div>
+      <div style="margin-top:12px;">
+        <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Description</label>
+        <textarea class="cv-name-input" rows="3"
+          style="margin-top:6px;resize:vertical;min-height:60px;font-family:inherit;"
+          placeholder="Ce que cette intention représente pour toi…"
+          onblur="window.app.saveIntentionField('${id}','description',this.value)">${esc(int.description || '')}</textarea>
+      </div>
+      <div class="intention-panel-tasks">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+          Tâches liées (${intTasks.length})
+        </div>
+        ${intTasks.length > 0 ? taskItems : '<p style="font-size:12px;color:var(--text-muted);font-style:italic;">Aucune tâche taguée avec cette intention.</p>'}
+      </div>
+      <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+        <button class="btn btn-danger" style="width:100%;" onclick="window.app.deleteIntention('${id}')">Supprimer cette intention</button>
+      </div>`;
+  }
+
+  saveIntentionField(id, field, value) {
+    const intentions = this._getIntentions();
+    const int = intentions.find(x => x.id === id);
+    if (!int) return;
+    int[field] = value.trim();
+    this._saveIntentions(intentions);
+    this.render();
+    this._renderIntentionPanel(id);
+  }
+
+  setIntentionColor(id, color) {
+    const intentions = this._getIntentions();
+    const int = intentions.find(x => x.id === id);
+    if (!int) return;
+    int.color = color;
+    this._saveIntentions(intentions);
+    this.render();
+    this._renderIntentionPanel(id);
+  }
+
+  deleteIntention(id) {
+    if (!confirm('Supprimer cette intention ? Les tâches resteront mais ne seront plus taguées.')) return;
+    this.closeIntentionPanel();
+    // Remove intentionId from tasks
+    state.todos.forEach(t => { if (t.intentionId === id) delete t.intentionId; });
+    saveTodos(state.todos);
+    const intentions = this._getIntentions().filter(x => x.id !== id);
+    this._saveIntentions(intentions);
     this.render();
   }
 
