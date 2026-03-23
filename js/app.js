@@ -2984,6 +2984,18 @@ class TodoApp {
     this.startAutoCloseDayCol();
   }
 
+  toggleDayTagFilter(tagId) {
+    const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
+    const idx = selectedTags.indexOf(tagId);
+    if (idx >= 0) {
+      selectedTags.splice(idx, 1);
+    } else {
+      selectedTags.push(tagId);
+    }
+    localStorage.setItem('dayTagFilter', JSON.stringify(selectedTags));
+    this.render();
+  }
+
   toggleColDropdown() {
     const menu = document.getElementById('dayColDropdownMenu');
     if (menu) menu.classList.toggle('hidden');

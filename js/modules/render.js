@@ -252,6 +252,18 @@ export function renderDayView(todos) {
     const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
     const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
     const untagged = itemsForRender.filter(t => !t.projectId);
+
+    // Tag cloud filter
+    const selectedTags = JSON.parse(localStorage.getItem('dayTagFilter') || '[]');
+    const allTags = [
+      ...catGroups.map(c => ({ id: c.id, name: c.name, color: c.color })),
+      ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999' }] : [])
+    ];
+    const tagCloud = allTags.map(tag => {
+      const isSelected = selectedTags.length === 0 || selectedTags.includes(tag.id);
+      return `<button class="day-tag-cloud-item${isSelected ? ' selected' : ''}" style="border-color:${tag.color};" onclick="window.app.toggleDayTagFilter('${tag.id}')" title="${tag.name}">${esc(tag.name)}</button>`;
+    }).join('');
+
     // Sort catGroups by stored order
     catGroups.sort((a, b) => {
       const ia = tagOrder.indexOf(a.id), ib = tagOrder.indexOf(b.id);
@@ -260,15 +272,17 @@ export function renderDayView(todos) {
       return ia - ib;
     });
     let grouped = catGroups.map(c => {
+      const isVisible = selectedTags.length === 0 || selectedTags.includes(c.id);
       const items = itemsForRender.filter(t => t.projectId === c.id);
       const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      return `<div class="day-tag-section" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
+      return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="color:#fff">${esc(c.name)}</div>${listHtml}</div>`;
     }).join('');
     if (untagged.length) {
+      const isVisible = selectedTags.length === 0 || selectedTags.includes('none');
       const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
-      grouped += `<div class="day-tag-section" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
+      grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label">Sans tag</div>${listHtml}</div>`;
     }
-    rightColItems = `<div class="day-tag-sections">${grouped}</div>` || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+    rightColItems = `<div class="day-tag-cloud">${tagCloud}</div><div class="day-tag-sections">${grouped}</div>` || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   } else {
     // Manual mode — with spacers
