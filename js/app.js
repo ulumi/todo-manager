@@ -4367,7 +4367,7 @@ document.addEventListener('keydown', e => {
     }
     if (e.code === 'Delete' && hoveredItem) {
       e.preventDefault();
-      window.app.openDeleteModal(hoveredItem.id, hoveredItem.ds);
+      window.app.deleteTodo(hoveredItem.id, hoveredItem.ds);
     }
     if (e.code === 'ArrowLeft') {
       e.preventDefault();
