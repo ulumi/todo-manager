@@ -1378,7 +1378,7 @@ main {
 .day-spacer-group {
   margin-top: 6px;
   padding-left: 16px;
-  border-left: 2px solid rgba(255,255,255,.12);
+  min-height: 48px;
 
   .todo-list { margin-top: 8px; }
 }
@@ -1441,6 +1441,11 @@ main {
 .day-spacer:hover .day-spacer-remove { opacity: 1; }
 
 .day-spacer-line { display: none; }
+
+.day-spacer.drop-target .day-spacer-title {
+  border-top-color: rgba(245, 158, 11, .7);
+  transition: border-top-color .15s;
+}
 
 // During drag, prevent contenteditable & buttons from intercepting drag events
 .dragging-active .day-spacer-title,

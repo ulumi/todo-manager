@@ -1407,7 +1407,7 @@ input:checked + .cal-sid-toggle-track::after {
 .day-spacer-group {
   margin-top: 6px;
   padding-left: 16px;
-  border-left: 2px solid rgba(255, 255, 255, 0.12);
+  min-height: 48px;
 }
 .day-spacer-group .todo-list {
   margin-top: 8px;
@@ -1476,6 +1476,11 @@ input:checked + .cal-sid-toggle-track::after {
 
 .day-spacer-line {
   display: none;
+}
+
+.day-spacer.drop-target .day-spacer-title {
+  border-top-color: rgba(245, 158, 11, 0.7);
+  transition: border-top-color 0.15s;
 }
 
 .dragging-active .day-spacer-title,

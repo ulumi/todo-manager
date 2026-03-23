@@ -1113,9 +1113,14 @@ class TodoApp {
     // Gap placeholder
     const placeholder = document.createElement('div');
     placeholder.className = 'drop-gap';
+    let activeDropSpacer = null;
+    const clearDropSpacer = () => {
+      if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
+    };
     const removePlaceholder = () => {
       placeholder.style.height = '0px';
       placeholder.classList.remove('visible');
+      clearDropSpacer();
       requestAnimationFrame(() => { if (placeholder.parentNode) placeholder.remove(); });
     };
 
@@ -1152,6 +1157,7 @@ class TodoApp {
       // Hover on a todo-item → drop after it
       const todoTarget = e.target.closest('.todo-item[draggable]');
       if (todoTarget && todoTarget !== draggedEl && todoTarget.dataset.group === draggedGroup) {
+        clearDropSpacer();
         dropTarget = todoTarget.dataset.id;
         dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
         todoTarget.parentNode.insertBefore(placeholder, todoTarget.nextSibling);
@@ -1162,26 +1168,33 @@ class TodoApp {
         return;
       }
 
-      // Hover on a spacer → drop at end of its own section
+      // Hover on a spacer → drop right after it (= bottom of its section)
       const spacerTarget = e.target.closest('.day-spacer[draggable]');
       if (spacerTarget && spacerTarget !== draggedEl) {
+        clearDropSpacer();
+        activeDropSpacer = spacerTarget;
+        spacerTarget.classList.add('drop-target');
+        dropTarget = spacerTarget.dataset.id;
+        dropPriority = null;
         const group = spacerTarget.closest('.day-spacer-group');
         const todoList = group?.querySelector('.todo-list[data-group="punctual"]');
         if (todoList) {
-          dropPriority = todoList.dataset.priority || null;
+          // Section has items — show placeholder at end of list
           const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
           if (lastItem) {
             dropTarget = lastItem.dataset.id;
             lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
           } else {
-            dropTarget = spacerTarget.dataset.id;
             todoList.appendChild(placeholder);
           }
-          requestAnimationFrame(() => {
-            placeholder.style.height = draggedHeight + 'px';
-            placeholder.classList.add('visible');
-          });
+        } else {
+          // Empty section — show placeholder right after the spacer
+          spacerTarget.parentNode.insertBefore(placeholder, spacerTarget.nextSibling);
         }
+        requestAnimationFrame(() => {
+          placeholder.style.height = draggedHeight + 'px';
+          placeholder.classList.add('visible');
+        });
         return;
       }
 
@@ -1650,7 +1663,7 @@ class TodoApp {
   planScrollToToday() {
     const mode = localStorage.getItem('planMode') || 'week';
     if (mode !== 'month') {
-      state.navDate = new Date();
+      state.setNavDate(new Date());
       this.render();
       return;
     }

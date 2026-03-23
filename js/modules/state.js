@@ -10,7 +10,9 @@ import { TRANSLATIONS } from './config.js';
 export let todos = loadTodos();
 export let view = 'day';
 export let navDate = (() => {
-  const d = new Date();
+  const saved = localStorage.getItem('navDate');
+  const d = saved ? new Date(saved) : new Date();
+  if (isNaN(d.getTime())) { const f = new Date(); f.setHours(0,0,0,0); return f; }
   d.setHours(0,0,0,0);
   return d;
 })();
@@ -45,6 +47,7 @@ export function setView(newView) {
 
 export function setNavDate(newNavDate) {
   navDate = newNavDate;
+  localStorage.setItem('navDate', newNavDate.toISOString().slice(0, 10));
 }
 
 export function setSelectedRecurrence(rec) {
