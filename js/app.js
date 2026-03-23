@@ -748,34 +748,31 @@ class TodoApp {
       background: rgba(20,10,30,0.95); border: 2px solid rgba(255,180,255,0.5);
       border-radius: 16px; padding: 24px 32px; max-width: 640px;
       font-family: monospace; font-size: 24px; color: #ddd;
-      backdrop-filter: blur(8px); animation: slideIn 0.25s ease-out;
+      backdrop-filter: blur(8px); animation: fadeIn 0.25s ease-out;
       box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     `;
     panel.innerHTML = `
       <style>
-        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         #celebrateDebugPanel button {
           background: rgba(255,100,200,0.7); border: none; color: #fff;
-          padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 22px;
-          margin-top: 12px; margin-right: 12px; transition: background 0.2s;
+          padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 18px;
+          margin-left: 8px; transition: background 0.2s; vertical-align: middle;
         }
         #celebrateDebugPanel button:hover { background: rgba(255,100,200,1); }
       </style>
       <div style="margin-bottom: 16px;"><strong>🎉 Celebrate Debug</strong></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code>${mascot}</code></div>
-      <div style="margin-bottom: 12px; opacity: 0.8;">Font: <code>${fontName}</code></div>
-      <div style="margin-bottom: 16px; opacity: 0.8;">Duration: <code>${duration}s</code></div>
-      <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban Quote</button>
-      <button onclick="window.app._banFont('${font.replace(/'/g, '"')}')">Ban Font</button>
-      <button onclick="window.app._banMascot('${mascot}')">Ban Mascot</button>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Quote: <code>${quote.substring(0, 30)}...</code> <button onclick="window.app._banQuote('${quote.replace(/'/g, '"')}')">Ban</button></div>
+      <div style="margin-bottom: 12px; opacity: 0.8;">Mascot: <code>${mascot}</code> <button onclick="window.app._banMascot('${mascot}')">Ban</button></div>
+      <div style="margin-bottom: 16px; opacity: 0.8;">Font: <code>${fontName}</code></div>
+      <div style="margin-bottom: 0; opacity: 0.8;">Duration: <code>${duration}s</code></div>
     `;
     document.body.appendChild(panel);
 
     // Auto-fade after duration + 3.5s (so 3.5s after celebrate animation ends)
     setTimeout(() => {
       if (panel.parentNode) {
-        panel.style.animation = 'slideIn 0.25s ease-in reverse';
+        panel.style.animation = 'fadeIn 0.25s ease-in reverse';
         setTimeout(() => panel.remove(), 250);
       }
     }, (duration + 3.5) * 1000);
@@ -810,7 +807,7 @@ class TodoApp {
     const panel = document.getElementById('celebrateDebugPanel');
     if (panel) {
       const btns = panel.querySelectorAll('button');
-      const btn = btns[btns.length - 1];
+      const btn = btns[1];
       const orig = btn.textContent;
       btn.textContent = '✓ Banned!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
