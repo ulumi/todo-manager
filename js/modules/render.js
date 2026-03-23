@@ -1458,3 +1458,31 @@ export function renderProjectsView() {
       </div>` : ''}
     </div>`;
 }
+
+// ─── Search View ──────────────────────────────────────────────────────────
+
+export function renderSearchView() {
+  const query = localStorage.getItem('searchQuery') || '';
+  if (!query.trim()) return '<div class="search-view-empty">Entrez un terme de recherche</div>';
+
+  const q = query.toLowerCase();
+  const results = state.todos.filter(t => t.title.toLowerCase().includes(q));
+
+  if (results.length === 0) {
+    return `<div class="search-view-empty">
+      <div class="search-view-empty-icon">🔍</div>
+      <p>Aucun résultat pour "<strong>${esc(query)}</strong>"</p>
+    </div>`;
+  }
+
+  const items = results.map(todo => todoItemHTML(todo, new Date(), 'search', false, true)).join('');
+
+  return `
+    <div class="search-view">
+      <div class="search-view-header">
+        <h1 class="search-view-title">Résultats pour "<strong>${esc(query)}</strong>"</h1>
+        <span class="search-view-count">${results.length} résultat${results.length > 1 ? 's' : ''}</span>
+      </div>
+      <div class="search-view-items">${items}</div>
+    </div>`;
+}

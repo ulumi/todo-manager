@@ -57,6 +57,10 @@
         <span>Projets</span>
       </button>
     </div>
+    <div class="quick-find-wrapper">
+      <input type="text" id="quickFindInput" class="quick-find-input" placeholder="Chercher..." oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)">
+      <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
+    </div>
     <select id="langSelect" class="lang-select" onchange="window.app.setLang(this.value)">
       <option value="en">EN</option>
       <option value="fr">FR</option>

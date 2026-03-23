@@ -36,7 +36,7 @@ import {
   renderCategoriesView, renderInboxView, renderBacklogView, getInboxCount, getBacklogCount,
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
-  renderPlanInboxList, renderProjectsView,
+  renderPlanInboxList, renderProjectsView, renderSearchView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
@@ -297,6 +297,122 @@ class TodoApp {
       document.removeEventListener('click', this._settingsMenuCloser);
       this._settingsMenuCloser = null;
     }
+  }
+
+  // ─── Quick Find Search ─────────────────────────────────────────────
+  _searchTodos(query) {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase();
+    return state.todos.filter(t => t.title.toLowerCase().includes(q)).slice(0, 5);
+  }
+
+  onQuickFind(event) {
+    const input = event.target;
+    const query = input.value.trim();
+    const dropdown = document.getElementById('quickFindDropdown');
+
+    if (!query) {
+      dropdown.classList.add('hidden');
+      return;
+    }
+
+    const results = this._searchTodos(query);
+    if (results.length === 0) {
+      dropdown.classList.add('hidden');
+      return;
+    }
+
+    this._renderQuickFindDropdown(results, query);
+    dropdown.classList.remove('hidden');
+  }
+
+  onQuickFindKeydown(event) {
+    if (event.key === 'Enter') {
+      const input = event.target;
+      const query = input.value.trim();
+      if (query) {
+        this.openSearchView(query);
+        input.blur();
+      }
+    } else if (event.key === 'Escape') {
+      event.target.blur();
+      document.getElementById('quickFindDropdown').classList.add('hidden');
+    }
+  }
+
+  _renderQuickFindDropdown(results, query) {
+    const dropdown = document.getElementById('quickFindDropdown');
+    let html = '';
+
+    results.forEach(todo => {
+      const dateStr = todo.dates && todo.dates[0] ? todo.dates[0] : '';
+      html += `
+        <div class="quick-find-item" data-id="${todo.id}" draggable="true" onclick="window.app.openSearchView('${query.replace(/'/g, "\\'")}')">
+          <div class="quick-find-drag-handle">⋮</div>
+          <div class="quick-find-item-text">
+            <div class="quick-find-item-title">${esc(todo.title)}</div>
+            ${dateStr ? `<div class="quick-find-item-date">${dateStr}</div>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    html += `<div class="quick-find-view-all" onclick="window.app.openSearchView('${query.replace(/'/g, "\\'")}')">Voir tous les résultats</div>`;
+
+    dropdown.innerHTML = html;
+    this._initQuickFindDragDrop();
+    this._setupQuickFindCloser();
+  }
+
+  _setupQuickFindCloser() {
+    if (this._quickFindCloser) return; // Already set up
+
+    this._quickFindCloser = (e) => {
+      const input = document.getElementById('quickFindInput');
+      const dropdown = document.getElementById('quickFindDropdown');
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    };
+    document.addEventListener('click', this._quickFindCloser);
+  }
+
+  _closeQuickFindDropdown() {
+    if (this._quickFindCloser) {
+      document.removeEventListener('click', this._quickFindCloser);
+      this._quickFindCloser = null;
+    }
+  }
+
+  _initQuickFindDragDrop() {
+    const dropdown = document.getElementById('quickFindDropdown');
+    let draggedId = null;
+
+    dropdown.addEventListener('dragstart', e => {
+      const item = e.target.closest('.quick-find-item[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      this._setDragGhost(e, draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    dropdown.addEventListener('dragend', e => {
+      const item = e.target.closest('.quick-find-item');
+      if (item) item.classList.remove('dragging');
+      draggedId = null;
+    });
+  }
+
+  openSearchView(query) {
+    this._closeQuickFindDropdown();
+    state.setView('search');
+    localStorage.setItem('searchQuery', query);
+    // Close the dropdown
+    document.getElementById('quickFindDropdown').classList.add('hidden');
+    document.getElementById('quickFindInput').blur();
+    this.render();
   }
 
   setTheme(theme) {
@@ -1303,6 +1419,28 @@ class TodoApp {
     });
   }
 
+  initSearchDragDrop() {
+    const container = document.querySelector('.search-view-items');
+    if (!container) return;
+    let draggedId = null;
+
+    container.addEventListener('dragstart', e => {
+      const item = e.target.closest('.todo-item[draggable]');
+      if (!item) return;
+      draggedId = item.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedId);
+      this._setDragGhost(e, draggedId);
+      requestAnimationFrame(() => item.classList.add('dragging'));
+    });
+
+    container.addEventListener('dragend', e => {
+      const item = e.target.closest('.todo-item');
+      if (item) item.classList.remove('dragging');
+      draggedId = null;
+    });
+  }
+
   initDayDragDrop() {
     const container = document.querySelector('.day-columns');
     if (!container) return;
@@ -1752,6 +1890,7 @@ class TodoApp {
     if (state.view==='projects')   html = renderProjectsView();
     if (state.view==='inbox')      html = renderInboxView(state.todos);
     if (state.view==='backlog')    html = renderBacklogView(state.todos);
+    if (state.view==='search')     html = renderSearchView();
     if (state.view==='plan')       html = this._renderPlanView();
     if (state.view==='profile')    html = this._renderProfileView();
     if (state.view==='superadmin') html = this._renderSuperadminView();
@@ -1762,7 +1901,7 @@ class TodoApp {
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'profile', 'superadmin'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -1780,6 +1919,7 @@ class TodoApp {
     if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); this.initTagSectionDragDrop(); }
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
+    if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
     this.initHeaderDropZones();
     this.renderQACloud();
