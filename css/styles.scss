@@ -6561,6 +6561,11 @@ body:has(.bottom-panel:not(.hidden))::before {
     background:   rgba(255,255,255,.07);
     border-color: rgba(255,255,255,.15);
   }
+  .plan-week-task {
+    background: rgba(255,255,255,.12);
+    color:      #f1f5f9;
+    .week-todo-text { color: #f1f5f9; }
+  }
   .plan-today-btn {
     background:   rgba(255,255,255,.15);
     border-color: rgba(255,255,255,.35);

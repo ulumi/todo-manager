@@ -7028,6 +7028,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.15);
 }
+.glass-mode .plan-week-task {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .plan-week-task .week-todo-text {
+  color: #f1f5f9;
+}
 .glass-mode .plan-today-btn {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.35);
