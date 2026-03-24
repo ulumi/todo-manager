@@ -1201,13 +1201,15 @@ export function renderInboxView(todos) {
   return `
     <div class="inbox-view">
       <div class="inbox-view-header">
-        <h1 class="inbox-view-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-          Inbox
-        </h1>
-        <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
-        <div class="inbox-sort-group">${sortBtns}</div>
-        <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
+        <div class="inbox-view-title-block">
+          <h1 class="inbox-view-title">Inbox</h1>
+          <p class="inbox-view-desc">Tâches capturées sans date <br>— à planifier ou traiter dès que possible.</p>
+        </div>
+        <div class="inbox-view-controls">
+          <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+          <div class="inbox-sort-group">${sortBtns}</div>
+          <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
+        </div>
       </div>
       ${empty}
       ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
@@ -1274,13 +1276,15 @@ export function renderBacklogView(todos) {
   return `
     <div class="inbox-view">
       <div class="inbox-view-header">
-        <h1 class="inbox-view-title">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-          Backlog
-        </h1>
-        <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
-        <div class="inbox-sort-group">${sortBtns}</div>
-        <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
+        <div class="inbox-view-title-block">
+          <h1 class="inbox-view-title">Backlog</h1>
+          <p class="inbox-view-desc">Tâches mises de côté <br>— à reprendre quand le moment est venu.</p>
+        </div>
+        <div class="inbox-view-controls">
+          <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+          <div class="inbox-sort-group">${sortBtns}</div>
+          <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
+        </div>
       </div>
       ${empty}
       ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
@@ -1302,56 +1306,178 @@ export function setupTodoItemHoverAnimations() {
 
 export function renderPlanInboxList(todos) {
   const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
-  const sort = localStorage.getItem('planSort') || 'date';
+  const grouped = localStorage.getItem('planGrouped') === 'true';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
-  const sortFn = (a, b) => {
-    if (sort === 'priority') return (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
-    if (sort === 'title')    return a.title.localeCompare(b.title);
-    return b.id.localeCompare(a.id);
-  };
-  const sortLabels = [['date','Récentes'],['priority','Priorité'],['title','A–Z']];
-  const sortBtns = sortLabels.map(([v,l]) =>
-    `<button class="plan-sort-btn${sort===v?' active':''}" onclick="window.app.setPlanSort('${v}')">${l}</button>`
-  ).join('');
-
-  const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(sortFn);
-  const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(sortFn);
-
   const cats = getCategories();
+
+  const _mkSortFn = (sec) => {
+    const s = localStorage.getItem(`planSort_${sec}`) || 'date';
+    const d = localStorage.getItem(`planSortDir_${sec}`) || 'desc';
+    return (a, b) => {
+      let cmp = 0;
+      if (s === 'priority') cmp = (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
+      else if (s === 'tag') {
+        const ca = cats.find(c => c.id === a.projectId)?.name || 'zzz';
+        const cb = cats.find(c => c.id === b.projectId)?.name || 'zzz';
+        cmp = ca.localeCompare(cb);
+      } else cmp = b.id.localeCompare(a.id);
+      return d === 'asc' ? -cmp : cmp;
+    };
+  };
+
+  const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(_mkSortFn('inbox'));
+  const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(_mkSortFn('backlog'));
+
+  const chevron = `<svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const sortLabels = [['date','Par date'],['priority','Priorité'],['tag','Tags']];
+
+  const _mkSortCtrl = (sec) => {
+    const s = localStorage.getItem(`planSort_${sec}`) || 'date';
+    const d = localStorage.getItem(`planSortDir_${sec}`) || 'desc';
+    const collapsed = localStorage.getItem(`planSortCollapsed_${sec}`) !== 'false';
+    const arrow = d === 'asc' ? ' ↑' : ' ↓';
+    const btns = sortLabels.map(([v,l]) =>
+      `<button class="day-ctrl-btn${s===v?' active':''}" onclick="window.app.setPlanSort('${v}','${sec}')">${l}${s===v?arrow:''}</button>`
+    ).join('');
+    return `<div class="day-ctrl-expandable${!collapsed?' expanded':''}">
+      <button class="day-ctrl-toggle" onclick="window.app.togglePlanSortMenu('${sec}')" title="Tri">
+        <span class="day-ctrl-label">Tri</span>${chevron}
+      </button>
+      <div class="day-ctrl-group">${btns}</div>
+    </div>`;
+  };
+  const inboxSortCtrl   = _mkSortCtrl('inbox');
+  const backlogSortCtrl = _mkSortCtrl('backlog');
+
+  const groupToggle = `<button class="day-ctrl-toggle plan-group-toggle${grouped?' active':''}" onclick="window.app.togglePlanGrouped()" title="Grouper par tag">
+    <span class="day-ctrl-label">Grouper</span>
+  </button>`;
+
+  const colCount = parseInt(localStorage.getItem('planColCount') || '1');
+  const colCollapsed = localStorage.getItem('planColCollapsed') !== 'false';
+  const colBtns = [1, 2, 3].map(n =>
+    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setPlanColCount(${n});window.app.closePlanColMenu()">${n} col${n>1?'s':''}</button>`
+  ).join('');
+  const colCtrl = `
+    <div class="day-ctrl-expandable${!colCollapsed ? ' expanded' : ''}">
+      <button class="day-ctrl-toggle" onclick="window.app.togglePlanColMenu()" title="Colonnes">
+        <span class="day-ctrl-label">Colonnes</span>${chevron}
+      </button>
+      <div class="day-ctrl-group">${colBtns}</div>
+    </div>`;
+  const _GAP = 10, _MIN_COL_W = 180;
+  const gridCss = colCount <= 1
+    ? 'grid-template-columns:1fr'
+    : `grid-template-columns:repeat(auto-fill,minmax(max(${_MIN_COL_W}px,calc((100% - ${(colCount-1)*_GAP}px)/${colCount})),1fr))`;
+  const colStyle     = `style="${gridCss}"`;
+  const groupedStyle = `style="${gridCss};align-items:start"`;
+
+  const _ageBadge = (t) => {
+    const ts = parseInt(t.id);
+    if (isNaN(ts) || ts < 1000000000000) return '';
+    const days = Math.floor((Date.now() - ts) / 86400000);
+    const label = days === 0 ? "Auj." : days === 1 ? '1j' : days < 30 ? `${days}j` : days < 365 ? `${Math.floor(days/30)}mo` : `${Math.floor(days/365)}an`;
+    return `<span class="plan-stat-badge plan-stat-age" title="Créé il y a ${days} jour${days>1?'s':''}">⏱ ${label}</span>`;
+  };
+  const _histBadge = (t) => {
+    const done = (t.completedDates || []).length;
+    if (!done) return '';
+    return `<span class="plan-stat-badge plan-stat-hist" title="${done} fois complété">✓ ${done}</span>`;
+  };
+  const _prioBadge = (t) => {
+    if (!t.priority) return '';
+    const cfg = { high: ['H', '#ef4444', 'Priorité haute'], medium: ['M', '#f59e0b', 'Priorité moyenne'], low: ['L', '#3b82f6', 'Priorité basse'] };
+    const [letter, color, title] = cfg[t.priority] || [];
+    return letter ? `<span class="plan-prio-dot" style="background:${color};box-shadow:0 0 0 2px ${color}33" title="${title}">${letter}</span>` : '';
+  };
+
   const itemRow = (t) => {
     const cat = t.projectId ? cats.find(c => c.id === t.projectId) : null;
-    const catDot = cat ? `<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${cat.color};flex-shrink:0;"></span>` : '';
-    const prioCfg = {
-      high:   { label:'▲', color:'var(--danger)' },
-      medium: { label:'▸', color:'var(--primary)' },
-      low:    { label:'▾', color:'#3b82f6' },
-    };
-    const pc = t.priority ? prioCfg[t.priority] : null;
-    const prio = pc ? `<span style="font-size:10px;color:${pc.color};flex-shrink:0;">${pc.label}</span>` : '';
+    const categoryBadge = cat
+      ? `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
+      : '';
+    const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    const meta = [categoryBadge, _prioBadge(t), _ageBadge(t), _histBadge(t)].filter(Boolean).join('');
     return `
-      <div class="plan-inbox-item" data-id="${t.id}" draggable="true"
+      <div class="todo-item${prioCls}" data-id="${t.id}" draggable="true" data-group="plan"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
+        ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}',null)">
-        <div class="plan-inbox-drag">⠿</div>
-        ${prio}${catDot}
-        <span class="plan-inbox-title">${esc(t.title)}</span>
-        <button class="plan-inbox-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Aujourd'hui">→</button>
+        <div class="todo-content">
+          <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
+          ${meta ? `<div class="todo-meta">${meta}</div>` : ''}
+        </div>
+        <div class="todo-actions">
+          <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}',null)" title="Supprimer">×</button>
+        </div>
+        <div class="plan-drag-handle" title="Glisser vers le calendrier">${_dragHandleSVG}</div>
       </div>`;
   };
 
-  const inboxRows   = inboxItems.map(itemRow).join('');
-  const backlogRows = backlogItems.map(itemRow).join('');
+  const _buildGroupDefs = (items, sortKey) => {
+    if (sortKey === 'priority') {
+      const prioCfg = [
+        { key: 'high',   label: 'Haute',        color: '#ef4444' },
+        { key: 'medium', label: 'Moyenne',       color: '#f59e0b' },
+        { key: 'low',    label: 'Basse',         color: '#3b82f6' },
+        { key: '',       label: 'Sans priorité', color: 'var(--text-muted)' },
+      ];
+      const byPrio = {};
+      for (const t of items) { const k = t.priority || ''; (byPrio[k] = byPrio[k] || []).push(t); }
+      return prioCfg.filter(p => byPrio[p.key]?.length).map(p => ({ ...p, items: byPrio[p.key] }));
+    } else if (sortKey === 'date') {
+      const now = Date.now();
+      const DAY = 86400000;
+      const buckets = [
+        { key: 'new',   label: '< 7j',    color: 'var(--success)',    test: (age) => age < 7 * DAY },
+        { key: 'week',  label: '7–30j',   color: 'var(--text-muted)', test: (age) => age < 30 * DAY },
+        { key: 'month', label: '1–3 mois',color: 'var(--text-muted)', test: (age) => age < 90 * DAY },
+        { key: 'old',   label: '> 3 mois',color: '#ef4444',           test: () => true },
+      ];
+      const byBucket = {};
+      for (const t of items) {
+        const age = now - parseInt(t.id);
+        const b = buckets.find(bk => bk.test(age)) || buckets[buckets.length - 1];
+        (byBucket[b.key] = byBucket[b.key] || []).push(t);
+      }
+      return buckets.filter(b => byBucket[b.key]?.length).map(b => ({ ...b, items: byBucket[b.key] }));
+    } else {
+      const byTag = {};
+      for (const t of items) { const k = t.projectId || '__none__'; (byTag[k] = byTag[k] || []).push(t); }
+      return [...cats, null].flatMap(cat => {
+        const key = cat ? cat.id : '__none__';
+        if (!byTag[key]?.length) return [];
+        return [{ key, label: cat ? esc(cat.name) : 'Sans tag', color: cat?.color || 'var(--text-muted)', items: byTag[key] }];
+      });
+    }
+  };
 
-  const inboxEmpty = inboxItems.length === 0
-    ? `<div class="plan-inbox-empty">Vide !<br><button class="btn btn-primary" style="margin-top:6px;font-size:11px;" onclick="window.app.openModalForInbox()">＋ Capturer</button></div>`
-    : '';
+  const _renderGrouped = (items, rowFn, sec) => {
+    if (!grouped) return items.map(rowFn).join('');
+    const sortKey = localStorage.getItem(`planSort_${sec}`) || 'date';
+    const groupDefs = _buildGroupDefs(items, sortKey);
+    if (colCount <= 1) {
+      return groupDefs.map(g =>
+        `<div class="plan-group-label" style="border-left-color:${g.color};color:${g.color}">${g.label}</div>` +
+        g.items.map(rowFn).join('')
+      ).join('');
+    } else {
+      return groupDefs.map(g =>
+        `<div class="plan-group-card">` +
+        `<div class="plan-group-label" style="border-left-color:${g.color};color:${g.color}">${g.label}</div>` +
+        g.items.map(rowFn).join('') +
+        `</div>`
+      ).join('');
+    }
+  };
+
+  const inboxEmpty = '';
 
   const backlogEmpty = backlogItems.length === 0
     ? `<div class="plan-backlog-empty">Backlog vide</div>`
     : '';
 
   return `
-    <div class="plan-sort-bar">${sortBtns}</div>
     <div class="plan-inbox-section"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
@@ -1359,10 +1485,12 @@ export function renderPlanInboxList(todos) {
       <div class="plan-inbox-header">
         <span class="plan-inbox-header-title">Inbox</span>
         <span class="plan-inbox-count">${inboxItems.length}</span>
-        <button class="plan-inbox-add" onclick="window.app.openModalForInbox()" title="Capturer">＋</button>
+<div class="day-col-controls">${inboxSortCtrl}${colCtrl}${groupToggle}</div>
       </div>
-      ${inboxEmpty}
-      ${inboxItems.length > 0 ? `<div class="plan-inbox-list">${inboxRows}</div>` : ''}
+      <div class="plan-inbox-list" ${grouped ? groupedStyle : colStyle}>
+        ${inboxEmpty}${_renderGrouped(inboxItems, itemRow, 'inbox')}
+        <div class="plan-add-item plan-add-item--full" onclick="window.app.openModalForInbox()">＋ Capturer</div>
+      </div>
     </div>
     <div class="plan-backlog-section"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -1371,10 +1499,12 @@ export function renderPlanInboxList(todos) {
       <div class="plan-backlog-header">
         <span class="plan-backlog-title">Backlog</span>
         <span class="plan-backlog-count">${backlogItems.length}</span>
-        <button class="plan-backlog-add" onclick="window.app.openModalForBacklog()" title="Ajouter au backlog">＋</button>
+<div class="day-col-controls">${backlogSortCtrl}${colCtrl}${groupToggle}</div>
       </div>
-      ${backlogEmpty}
-      ${backlogItems.length > 0 ? `<div class="plan-backlog-list">${backlogRows}</div>` : ''}
+      <div class="plan-backlog-list" ${grouped ? groupedStyle : colStyle}>
+        ${backlogEmpty}${_renderGrouped(backlogItems, itemRow, 'backlog')}
+        <div class="plan-add-item plan-add-item--full" onclick="window.app.openModalForBacklog()">＋ Ajouter</div>
+      </div>
     </div>`;
 }
 
@@ -1441,7 +1571,10 @@ export function renderProjectsView() {
   return `
     <div class="categories-view">
       <div class="categories-view-header">
-        <h1 class="categories-view-title">Projets</h1>
+        <div class="inbox-view-title-block">
+          <h1 class="inbox-view-title">Projets</h1>
+          <p class="inbox-view-desc">Livrables concrets regroupant vos tâches — chaque projet a un début, une fin, et un résultat tangible.</p>
+        </div>
         ${projects.length > 0 ? `
         <div class="categories-view-controls">
           <select class="categories-sort-select" onchange="window.app.setProjectsSort(this.value)">${sortOptions}</select>
@@ -1457,6 +1590,251 @@ export function renderProjectsView() {
         </div>
       </div>` : ''}
     </div>`;
+}
+
+// ─── Intentions View ──────────────────────────────────────────────────────────
+
+function _getIntentions() {
+  try { return JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { return []; }
+}
+
+export function renderIntentionsView(todos) {
+  const intentions = _getIntentions();
+
+
+  const cards = intentions.map(int => {
+    const intTasks = todos.filter(t => t.intentionId === int.id);
+    const count = intTasks.length;
+    const chips = intTasks.slice(0, 6).map(t =>
+      `<span class="intention-task-chip">${esc(t.title)}</span>`
+    ).join('') + (count > 6 ? `<span class="intention-task-chip">+${count - 6}</span>` : '');
+    return `
+      <div class="intention-card" style="border-top:3px solid ${int.color};" onclick="window.app.openIntentionPanel('${int.id}')">
+        <div class="intention-card-header">
+          <span class="intention-card-dot" style="background:${int.color};"></span>
+          <span class="intention-card-name">${esc(int.title)}</span>
+          <span class="intention-card-count">${count} tâche${count !== 1 ? 's' : ''}</span>
+        </div>
+        ${int.description ? `<div class="intention-card-description">${esc(int.description)}</div>` : ''}
+        ${count > 0 ? `<div class="intention-card-tasks">${chips}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  const empty = intentions.length === 0 ? `
+    <div class="categories-empty">
+      <div class="categories-empty-icon">🧭</div>
+      <p>Aucune intention pour l'instant.<br>Une intention représente un but à long terme qui donne du sens à vos tâches.</p>
+      <button class="btn btn-primary" onclick="window.app.addIntentionFromView()">＋ Créer une intention</button>
+    </div>` : '';
+
+  return `
+    <div class="intentions-view">
+      <div class="intentions-view-header">
+        <div class="inbox-view-title-block">
+          <h1 class="inbox-view-title">Intentions</h1>
+          <p class="inbox-view-desc">Vos buts à long terme — le pourquoi derrière tout ce que vous faites.</p>
+        </div>
+      </div>
+      ${empty}
+      ${intentions.length > 0 ? `<div class="categories-grid">
+        ${cards}
+        <div class="intention-card intention-card--add" onclick="window.app.addIntentionFromView()">
+          <span class="intention-card-add-icon">＋</span>
+          <span class="intention-card-add-label">Nouvelle intention</span>
+        </div>
+      </div>` : ''}
+    </div>`;
+}
+
+// ─── Analyse View ──────────────────────────────────────────────────────────────
+
+export function renderAnalyseView(todos) {
+  const todayStr = DS(new Date());
+  const monthStr = todayStr.slice(0, 7);
+  const lastMonthDate = new Date();
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonthStr = DS(lastMonthDate).slice(0, 7);
+  const weekStart = DS(addDays(new Date(), -6));
+  const prevWeekStart = DS(addDays(new Date(), -13));
+  const prevWeekEnd = DS(addDays(new Date(), -7));
+
+  function countCompletions(dateFilter) {
+    let n = 0;
+    todos.forEach(t => {
+      if (t.recurrence && t.recurrence !== 'none') {
+        n += (t.completedDates || []).filter(dateFilter).length;
+      } else if (t.completed && t.date && dateFilter(t.date)) {
+        n++;
+      }
+    });
+    return n;
+  }
+
+  const completedThisMonth  = countCompletions(d => d.startsWith(monthStr));
+  const completedLastMonth  = countCompletions(d => d.startsWith(lastMonthStr));
+  const completedThisWeek   = countCompletions(d => d >= weekStart && d <= todayStr);
+  const completedLastWeek   = countCompletions(d => d >= prevWeekStart && d <= prevWeekEnd);
+
+  function deltaHTML(cur, prev) {
+    if (prev === 0 && cur === 0) return `<span class="analyse-delta neutral">— identique</span>`;
+    if (prev === 0) return `<span class="analyse-delta up">▲ nouveau</span>`;
+    const diff = cur - prev;
+    const pct = Math.round(Math.abs(diff) / prev * 100);
+    if (diff > 0) return `<span class="analyse-delta up">▲ +${pct}% vs période préc.</span>`;
+    if (diff < 0) return `<span class="analyse-delta down">▼ −${pct}% vs période préc.</span>`;
+    return `<span class="analyse-delta neutral">— identique</span>`;
+  }
+
+  // 7-day bar chart
+  const chartDays = Array.from({length: 7}, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i)); return DS(d);
+  });
+  const chartData = chartDays.map(ds => ({ label: ds.slice(5).replace('-', '/'), count: countCompletions(d => d === ds) }));
+  const maxBar = Math.max(...chartData.map(d => d.count), 1);
+  const bars = chartData.map(d => {
+    const pct = Math.max(Math.round(d.count / maxBar * 100), d.count > 0 ? 4 : 0);
+    return `<div class="analyse-bar-col">
+      <div class="analyse-bar" style="height:${pct}%;" title="${d.count} complétée${d.count !== 1 ? 's' : ''}"></div>
+      <div class="analyse-bar-label">${d.label}</div>
+    </div>`;
+  }).join('');
+
+  // Lingering tasks (oldest first)
+  function ageFmt(id) {
+    const days = Math.floor((Date.now() - parseInt(id)) / 86400000);
+    if (days === 0) return "aujourd'hui";
+    if (days === 1) return '1 jour';
+    if (days < 30) return `${days} j`;
+    const m = Math.floor(days / 30);
+    return `${m} mois`;
+  }
+  const pendingNonRec = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed);
+  const inboxTasks   = pendingNonRec.filter(t => !t.date && !t.backlog).sort((a,b) => parseInt(a.id) - parseInt(b.id));
+  const backlogTasks = pendingNonRec.filter(t => t.backlog && !t.date).sort((a,b) => parseInt(a.id) - parseInt(b.id));
+  const lingeringItems = [...inboxTasks, ...backlogTasks].sort((a,b) => parseInt(a.id) - parseInt(b.id)).slice(0, 10);
+  const lingeringList = lingeringItems.map(t =>
+    `<div class="analyse-lingering-item" onclick="window.app.openEditModal('${t.id}', null)">
+      <span class="analyse-lingering-title">${esc(t.title)}</span>
+      <span class="analyse-lingering-age">${ageFmt(t.id)}</span>
+    </div>`
+  ).join('');
+
+  // Per intention
+  const intentions = _getIntentions();
+  const intentionRows = intentions.map(int => {
+    const intTasks = todos.filter(t => t.intentionId === int.id && (!t.recurrence || t.recurrence === 'none'));
+    const count = intTasks.length;
+    const done  = intTasks.filter(t => t.completed).length;
+    const pct   = count > 0 ? Math.round(done / count * 100) : 0;
+    return `<div class="analyse-list-item">
+      <span class="analyse-list-dot" style="background:${int.color};"></span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="analyse-list-name">${esc(int.title)}</span>
+          <span class="analyse-list-count">${count} tâche${count !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="analyse-progress-bar">
+          <div class="analyse-progress-fill" style="width:${pct}%;background:${int.color};"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Per project
+  const projects = getProjects();
+  const projRows = projects.map(p => {
+    const pTasks = todos.filter(t => t.projectId === p.id && (!t.recurrence || t.recurrence === 'none'));
+    const count = pTasks.length;
+    const done  = pTasks.filter(t => t.completed).length;
+    const pct   = count > 0 ? Math.round(done / count * 100) : 0;
+    return `<div class="analyse-list-item">
+      <span class="analyse-list-dot" style="background:${p.color};"></span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="analyse-list-name">${esc(p.name)}</span>
+          <span class="analyse-list-count">${count} tâche${count !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="analyse-progress-bar">
+          <div class="analyse-progress-fill" style="width:${pct}%;background:${p.color};"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const nonRecTodos    = todos.filter(t => !t.recurrence || t.recurrence === 'none');
+  const totalNonRec    = nonRecTodos.length;
+  const completedTotal = nonRecTodos.filter(t => t.completed).length;
+  const monthName      = new Date().toLocaleString('fr', { month: 'long' });
+
+  return `<div class="analyse-view">
+    <div class="analyse-view-header">
+      <div class="inbox-view-title-block">
+        <h1 class="inbox-view-title">Analyse</h1>
+        <p class="inbox-view-desc">Vue d'ensemble de votre activité — complétions, tendances et état de votre backlog.</p>
+      </div>
+    </div>
+
+    <p class="analyse-section-title">Complétions</p>
+    <div class="analyse-grid">
+      <div class="analyse-card">
+        <div class="analyse-card-title">Ce mois (${monthName})</div>
+        <div class="analyse-big-num">${completedThisMonth}</div>
+        <div class="analyse-sub">tâches complétées</div>
+        ${deltaHTML(completedThisMonth, completedLastMonth)}
+      </div>
+      <div class="analyse-card">
+        <div class="analyse-card-title">Cette semaine</div>
+        <div class="analyse-big-num">${completedThisWeek}</div>
+        <div class="analyse-sub">7 derniers jours</div>
+        ${deltaHTML(completedThisWeek, completedLastWeek)}
+      </div>
+      <div class="analyse-card">
+        <div class="analyse-card-title">Total complétées</div>
+        <div class="analyse-big-num">${completedTotal}</div>
+        <div class="analyse-sub">sur ${totalNonRec} tâches ponctuelles</div>
+      </div>
+      <div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">Activité — 7 derniers jours</div>
+        <div class="analyse-chart">${bars}</div>
+      </div>
+    </div>
+
+    <p class="analyse-section-title">En suspens</p>
+    <div class="analyse-grid">
+      <div class="analyse-card">
+        <div class="analyse-card-title">Inbox non traitée</div>
+        <div class="analyse-big-num">${inboxTasks.length}</div>
+        <div class="analyse-sub">${inboxTasks.length > 0 ? `plus ancienne : ${ageFmt(inboxTasks[0].id)}` : 'tout est planifié !'}</div>
+      </div>
+      <div class="analyse-card">
+        <div class="analyse-card-title">Backlog</div>
+        <div class="analyse-big-num">${backlogTasks.length}</div>
+        <div class="analyse-sub">idées en attente</div>
+      </div>
+      ${lingeringList ? `<div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">Tâches qui traînent — les plus anciennes</div>
+        <div class="analyse-lingering">${lingeringList}</div>
+      </div>` : ''}
+    </div>
+
+    ${intentions.length > 0 ? `
+    <p class="analyse-section-title">Par intention</p>
+    <div class="analyse-grid">
+      <div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">Tâches par intention (ponctuelles)</div>
+        <div class="analyse-list">${intentionRows || '<p class="analyse-empty">Aucune tâche taguée</p>'}</div>
+      </div>
+    </div>` : ''}
+
+    ${projects.length > 0 ? `
+    <p class="analyse-section-title">Par projet</p>
+    <div class="analyse-grid">
+      <div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">Tâches par projet (ponctuelles)</div>
+        <div class="analyse-list">${projRows || '<p class="analyse-empty">Aucune tâche dans les projets</p>'}</div>
+      </div>
+    </div>` : ''}
+  </div>`;
 }
 
 // ─── Search View ──────────────────────────────────────────────────────────

@@ -96,9 +96,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: transparent;
   color: var(--text);
-  height: 100vh;
   font-size: 15px;
-  overflow-x: hidden;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -523,11 +522,12 @@ main {
   padding: 24px;
 
   &.plan-mode {
-    padding:     0;
-    align-self:  stretch;
-    height:      100%;
-    min-height:  0;
-    overflow:    hidden;
+    padding:        0;
+    align-self:     stretch;
+    min-height:     0;
+    overflow:       hidden;
+    display:        flex;
+    flex-direction: column;
   }
 }
 
@@ -732,7 +732,7 @@ main {
   }
 }
 
-// ── Stats viz picker ─────────────────────────────────────────────────────
+// ─── Stats viz picker ─────────────────────────────────────────────────────
 .cal-sid-viz-row {
   margin-top: 8px;
   padding-top: 8px;
@@ -5973,10 +5973,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .categories-view-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            16px;
   margin-bottom: 28px;
   flex-wrap: wrap;
 }
@@ -8634,27 +8634,49 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-view-header {
-  display:     flex;
-  align-items: center;
-  gap:         12px;
-  flex-wrap:   wrap;
-  margin-bottom: 20px;
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            12px;
+  margin-bottom:  20px;
+}
+
+.inbox-view-title-block {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  align-items:    center;
+  text-align:     center;
 }
 
 .inbox-view-title {
   display:     flex;
   align-items: center;
-  gap:         8px;
-  font-size:   20px;
-  font-weight: 700;
-  color:       var(--text);
+  gap:         10px;
+  font-size:   48px;
+  font-weight: 800;
+  color:       #fff;
   margin:      0;
+  line-height: 1;
+}
+
+.inbox-view-desc {
+  font-size:   22px;
+  color:       rgba(255,255,255,0.55);
+  margin:      0;
+  line-height: 1.4;
+}
+
+.inbox-view-controls {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  flex-wrap:   wrap;
 }
 
 .inbox-count-label {
   font-size:   13px;
   color:       var(--text-muted);
-  margin-left: -4px;
 }
 
 .inbox-sort-group {
@@ -9164,26 +9186,37 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
 }
 
+.plan-container {
+  display:        flex;
+  flex:           1;
+  flex-direction: column;
+  min-height:     0;
+  overflow:       hidden;
+}
+
 .plan-view {
-  display:  flex;
-  height:   100%;
-  overflow: hidden;
+  display:     flex;
+  flex:        1;
+  min-height:  0;
+  overflow:    hidden;
+  align-items: center;
 }
 
 .plan-inbox-col {
   width:             50%;
-  min-width:         160px;
+  min-width:         400px;
   max-width:         50%;
   flex-shrink:       0;
+  align-self:        stretch;
   overflow-y:        auto;
   scrollbar-width:   none;
-  padding:           24px 20px;
+  padding:           32px 28px;
 
   &::-webkit-scrollbar { display: none; }
 }
 
 .plan-resize-handle {
-  width:           20px;
+  width:           36px;
   flex-shrink:     0;
   cursor:          col-resize;
   display:         flex;
@@ -9191,16 +9224,18 @@ body:has(.bottom-panel:not(.hidden))::before {
   justify-content: center;
 
   svg {
-    width:      20px;
-    height:     48px;
-    color:      rgba(255,255,255,.2);
-    transition: color .15s, transform .15s;
+    width:      36px;
+    height:     56px;
+    color:      #ffffff;
+    opacity:    .7;
+    transition: color .15s, transform .15s, opacity .15s;
     flex-shrink: 0;
   }
 
   &:hover svg, &.dragging svg {
-    color:     var(--primary);
-    transform: scaleX(1.2);
+    color:     #ffffff;
+    opacity:   1;
+    transform: scaleX(1.1);
   }
 }
 
@@ -9208,7 +9243,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex:           1;
   min-width:      0;
   min-height:     0;
-  max-height:     60vh;
+  height:         60vh;
   align-self:     center;
   overflow:       hidden;
   padding:        16px 20px;
@@ -9235,6 +9270,12 @@ body:has(.bottom-panel:not(.hidden))::before {
       flex-shrink:   0;
       border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
       .plan-week-day-num { font-size: 14px; }
+    }
+
+    .plan-week-day-body {
+      flex:           1;
+      margin-top:     0;
+      margin-bottom:  0;
     }
 
     .plan-week-day-tasks {
@@ -9327,7 +9368,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-week-grid {
   display:               grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(max(70px, calc((100% - 48px) / 7)), 1fr));
   gap:                   8px;
   flex:                  1;
   min-height:            0;
@@ -9382,11 +9423,18 @@ body:has(.bottom-panel:not(.hidden))::before {
   color:       var(--text);
 }
 
+.plan-week-day-body {
+  display:        flex;
+  flex-direction: column;
+  margin-top:     auto;
+  margin-bottom:  auto;
+  width:          100%;
+}
+
 .plan-week-day-tasks {
   display:        flex;
   flex-direction: column;
   gap:            3px;
-  flex:           1;
   overflow:       hidden;
   min-height:     0;
 }
@@ -9418,17 +9466,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-week-add {
-  width:         100%;
-  padding:       3px;
-  border:        1.5px dashed var(--border);
-  border-radius: 5px;
-  background:    transparent;
-  color:         var(--text-muted);
-  font-size:     14px;
-  cursor:        pointer;
-  margin-top:    4px;
-  flex-shrink:   0;
-  transition:    all .15s;
+  width:          100%;
+  padding:        3px;
+  border:         1.5px dashed var(--border);
+  border-radius:  5px;
+  background:     transparent;
+  color:          var(--text-muted);
+  font-size:      14px;
+  cursor:         pointer;
+  margin-top:     4px;
+  flex-shrink:    0;
+  transition:     all .15s;
 
   &:hover { border-color: var(--primary); color: var(--primary); }
 }
@@ -9550,7 +9598,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Biweek = 2 rows of 7
 .plan-biweek-grid {
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(max(70px, calc((100% - 48px) / 7)), 1fr));
 }
 
 /// Plan month scroll view
@@ -9653,8 +9701,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   display:        flex;
   align-items:    center;
   gap:            6px;
-  margin-bottom:  14px;
-  padding-bottom: 12px;
+  margin-bottom:  20px;
+  padding-bottom: 16px;
   position:       sticky;
   top:            0;
   z-index:        2;
@@ -9753,7 +9801,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   &.drag-over { background: var(--primary-light); }
 }
 
-.plan-inbox-list, .plan-backlog-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.plan-inbox-list, .plan-backlog-list { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
 .plan-stat-badge {
   display:       inline-flex;
@@ -9807,8 +9855,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .plan-add-item {
   display:       flex;
   align-items:   center;
-  justify-content: center;
-  padding:       12px;
+  padding:       14px 18px;
   border:        1.5px dashed rgba(255,255,255,.3);
   border-radius: var(--radius);
   color:         rgba(255,255,255,.45);
@@ -9816,7 +9863,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight:   600;
   cursor:        pointer;
   transition:    all .15s;
-  letter-spacing: .02em;
 
   &:hover {
     border-color: rgba(255,255,255,.7);
@@ -9876,7 +9922,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Backlog section in plan left panel
 .plan-backlog-section {
-  margin-top: 32px;
+  margin-top: 48px;
 }
 
 .plan-backlog-header {
@@ -9929,11 +9975,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ─── Plan col header ──────────────────────────────────────────────────────────
 
 .plan-col-header {
-  padding:       0 0 16px;
+  padding:       24px 32px 20px 32px;
+  flex-shrink:   0;
+  text-align:    center;
 }
 
 .plan-col-header-title {
-  font-size:     22px;
+  font-size:     48px;
   font-weight:   800;
   color:         #fff;
   letter-spacing: -.02em;
@@ -9942,7 +9990,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-col-header-desc {
-  font-size:     12px;
+  font-size:     22px;
   color:         rgba(255,255,255,0.55);
   line-height:   1.4;
 }
@@ -9985,10 +10033,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .intentions-view-header {
-  display:     flex;
-  align-items: center;
-  gap:         12px;
-  margin-bottom: 20px;
+  display:        flex;
+  flex-direction: column;
+  align-items:    center;
+  gap:            12px;
+  margin-bottom:  20px;
 }
 
 .intentions-view-title {
@@ -10103,7 +10152,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin:    0 auto;
 }
 
-.analyse-view-header   { margin-bottom: 24px; }
+.analyse-view-header   { margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; }
 .analyse-view-title    { font-size: 22px; font-weight: 800; }
 
 .analyse-section-title {

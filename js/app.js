@@ -2102,13 +2102,19 @@ class TodoApp {
   _renderPlanView() {
     const storedWidth = localStorage.getItem('planInboxWidth');
     const leftWidth = storedWidth ? storedWidth + 'px' : '50%';
-    return `<div class="plan-view">
-      <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}">
-        ${renderPlanInboxList(state.todos)}
+    return `<div class="plan-container">
+      <div class="plan-col-header">
+        <div class="plan-col-header-title">Planifier</div>
+        <div class="plan-col-header-desc">Glissez les tâches vers le calendrier <br>pour les caser dans le temps.</div>
       </div>
-      <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"><svg viewBox="0 0 10 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="32" rx="1"/><rect x="6" y="0" width="2" height="32" rx="1"/></svg></div>
-      <div class="plan-week-col${(localStorage.getItem('planMode')||'week')==='month'?' plan-month-mode':''}">
-        ${this._renderPlanCalendar()}
+      <div class="plan-view">
+        <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}">
+          ${renderPlanInboxList(state.todos)}
+        </div>
+        <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"><svg viewBox="0 0 36 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><polygon points="1,16 7,10 7,22"/><rect x="11" y="2" width="3" height="28" rx="1.5"/><rect x="22" y="2" width="3" height="28" rx="1.5"/><polygon points="35,16 29,10 29,22"/></svg></div>
+        <div class="plan-week-col${(localStorage.getItem('planMode')||'week')==='month'?' plan-month-mode':''}">
+          ${this._renderPlanCalendar()}
+        </div>
       </div>
     </div>`;
   }
@@ -2287,8 +2293,10 @@ class TodoApp {
         <span class="plan-week-day-name">${state.DAYS[(d.getDay()+6)%7]}</span>
         <span class="plan-week-day-num">${d.getDate()}</span>
       </div>
-      <div class="plan-week-day-tasks">${taskRows}</div>
-      <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
+      <div class="plan-week-day-body">
+        <div class="plan-week-day-tasks">${taskRows}</div>
+        <button class="plan-week-add" onclick="window.app.openModal(window.app.parseDS('${ds}'))">+</button>
+      </div>
     </div>`;
   }
 
