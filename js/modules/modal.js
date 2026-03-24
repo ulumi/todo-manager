@@ -6,6 +6,7 @@ import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.j
 import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
+import { getProjects } from './projectManager.js';
 
 // ─── Draft management ─────────────────────────────────────────────────────
 
@@ -34,6 +35,7 @@ function _saveDraft() {
     durationEstimated: document.getElementById('taskDurationEstimated')?.value || '',
     durationReal: document.getElementById('taskDurationReal')?.value || '',
     categoryId: document.getElementById('taskCategory')?.value || '',
+    boardProjectId: document.getElementById('taskProject')?.value || '',
     recurrence: state.selectedRecurrence,
     dayPeriod: document.getElementById('taskDayPeriod')?.value || '',
     weekDays: [...state.selectedWeekDays],
@@ -63,6 +65,7 @@ export function discardDraft() {
   document.getElementById('taskDurationReal').value = '';
   selectPriority('');
   populateCategorySelect('');
+  populateProjectSelect('');
   populateIntentionSelect('');
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
@@ -91,6 +94,7 @@ function _tryRestoreDraft() {
   if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
   if (d.priority !== undefined) selectPriority(d.priority);
   if (d.categoryId) { const sel = document.getElementById('taskCategory'); if (sel) sel.value = d.categoryId; }
+  if (d.boardProjectId) { const sel = document.getElementById('taskProject'); if (sel) sel.value = d.boardProjectId; }
   if (d.scheduleMode) {
     state.setScheduleMode(d.scheduleMode);
     document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === d.scheduleMode));
@@ -119,7 +123,7 @@ function _initDraftListeners() {
   const listeners = [];
   [['taskTitle','input'],['taskDescription','input'],['taskDate','change'],
    ['taskStartTime','change'],['taskEndTime','change'],['taskFlexibleTime','change'],
-   ['taskDurationEstimated','input'],['taskDurationReal','input'],['taskCategory','change']
+   ['taskDurationEstimated','input'],['taskDurationReal','input'],['taskCategory','change'],['taskProject','change']
   ].forEach(([id, evt]) => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -155,6 +159,14 @@ function populateCategorySelect(selectedId) {
   const categories = getCategories();
   sel.innerHTML = `<option value="">— Aucune catégorie —</option>` +
     categories.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
+}
+
+function populateProjectSelect(selectedId) {
+  const sel = document.getElementById('taskProject');
+  if (!sel) return;
+  const projects = getProjects();
+  sel.innerHTML = `<option value="">— Aucun projet —</option>` +
+    projects.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
 }
 
 function populateIntentionSelect(selectedId) {
@@ -237,6 +249,7 @@ export function openModal(date, todos, scheduleMode = 'date') {
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   populateCategorySelect('');
+  populateProjectSelect('');
   populateIntentionSelect('');
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
@@ -318,6 +331,7 @@ export function openEditModal(id, dateStr, todos) {
   if (durationRealField) durationRealField.style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
   populateCategorySelect(t.projectId || '');
+  populateProjectSelect(t.boardProjectId || '');
   populateIntentionSelect(t.intentionId || '');
   selectPriority(t.priority || '');
 
@@ -666,6 +680,7 @@ export function saveTaskLogic(todos) {
   }
 
   const projectId         = document.getElementById('taskCategory')?.value || '';
+  const boardProjectId    = document.getElementById('taskProject')?.value || '';
   const intentionId       = document.getElementById('taskIntention')?.value || '';
   const priority          = state.selectedPriority || undefined;
   const description       = document.getElementById('taskDescription').value.trim() || undefined;
@@ -682,7 +697,8 @@ export function saveTaskLogic(todos) {
   const data = {
     title,
     recurrence: state.selectedRecurrence,
-    projectId:   projectId || undefined,
+    projectId:        projectId || undefined,
+    boardProjectId:   boardProjectId || undefined,
     intentionId: intentionId || undefined,
     priority,
     description,
@@ -744,8 +760,9 @@ export function saveTaskLogic(todos) {
       if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
       if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
-      t.projectId   = data.projectId;
-      t.intentionId = data.intentionId;
+      t.projectId      = data.projectId;
+      t.boardProjectId = data.boardProjectId;
+      t.intentionId    = data.intentionId;
       t.priority    = data.priority;
       t.description = data.description;
     }
@@ -1072,6 +1089,13 @@ export function openGuidedCards() {
     gCat.innerHTML = mainCat.innerHTML;
     gCat.value = mainCat.value;
   }
+  // Populate guided project from main project
+  const gProj = document.getElementById('guidedProject');
+  const mainProj = document.getElementById('taskProject');
+  if (gProj && mainProj) {
+    gProj.innerHTML = mainProj.innerHTML;
+    gProj.value = mainProj.value;
+  }
   const gDesc = document.getElementById('guidedDescription');
   if (gDesc) gDesc.value = document.getElementById('taskDescription')?.value || '';
   const gTime = document.getElementById('guidedStartTime');
@@ -1270,6 +1294,8 @@ function _buildGuidedSummary() {
   const prio = document.getElementById('guidedPriority')?.value || '';
   const cat = document.getElementById('guidedCategory');
   const catName = cat?.selectedOptions[0]?.textContent || '';
+  const proj = document.getElementById('guidedProject');
+  const projName = proj?.selectedOptions[0]?.textContent || '';
   const desc = document.getElementById('guidedDescription')?.value || '';
   const time = document.getElementById('guidedStartTime')?.value || '';
   const dur = document.getElementById('guidedDuration')?.value || '';
@@ -1295,6 +1321,7 @@ function _buildGuidedSummary() {
   if (rec !== 'none') rows.push(['Répétition', recLabels[rec] || '']);
   if (prio) rows.push(['Priorité', prioLabels[prio] || prio]);
   if (catName && catName !== '— Aucune catégorie —') rows.push(['Catégorie', catName]);
+  if (projName && projName !== '— Aucun projet —') rows.push(['Projet', projName]);
   if (time) rows.push(['Heure', time + (flex ? ' (flexible)' : '')]);
   if (dur) rows.push(['Durée', dur + ' min']);
   if (desc) rows.push(['Notes', desc.length > 50 ? desc.slice(0, 50) + '...' : desc]);
@@ -1310,6 +1337,7 @@ function _syncGuidedToMain() {
     ['guidedDate', 'taskDate'],
     ['guidedPriority', 'taskPriority'],
     ['guidedCategory', 'taskCategory'],
+    ['guidedProject', 'taskProject'],
     ['guidedDescription', 'taskDescription'],
     ['guidedStartTime', 'taskStartTime'],
     ['guidedDuration', 'taskDurationEstimated'],

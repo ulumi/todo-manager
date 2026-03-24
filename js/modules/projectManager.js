@@ -2,9 +2,10 @@
 //  PROJECT MANAGER — entités projets indépendantes des catégories
 // ════════════════════════════════════════════════════════
 
-import { esc } from './utils.js';
+import { esc, DS } from './utils.js';
 import { categoryIconSVG, CATEGORY_ICONS } from './admin.js';
 import { pushFirestoreNow } from './storage.js';
+import * as state from './state.js';
 
 const STORAGE_KEY = 'boardProjects';
 
@@ -19,12 +20,18 @@ export const PROJECT_STATUS_COLORS = { active:'#10b981', on_hold:'#f59e0b', comp
 
 // ── CRUD ─────────────────────────────────────────────────
 
+let _projectsCache = null;
+
 export function getProjects() {
-  const s = localStorage.getItem(STORAGE_KEY);
-  return s ? JSON.parse(s) : [];
+  if (!_projectsCache) {
+    const s = localStorage.getItem(STORAGE_KEY);
+    _projectsCache = s ? JSON.parse(s) : [];
+  }
+  return _projectsCache;
 }
 
 export function saveProjects(projects) {
+  _projectsCache = projects;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
   pushFirestoreNow();
 }
@@ -99,6 +106,59 @@ export function closeProjectPanel({ immediate = false } = {}) {
   _currentProjectId = null;
 }
 
+function _projectTaskItemHTML(t) {
+  const done = t.completed;
+  const dateStr = t.date ? `<span class="project-task-date">${t.date.slice(5).replace('-','/')}</span>` : '';
+  return `
+    <div class="project-task-item${done ? ' done' : ''}" data-id="${t.id}">
+      <div class="todo-check${done ? ' checked' : ''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${t.date || DS(new Date())}'));window.app.renderProjectPanelById('${t.boardProjectId}')"></div>
+      <span class="project-task-title">${esc(t.title)}</span>
+      ${dateStr}
+      <button class="project-task-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${t.date || DS(new Date())}')">✎</button>
+    </div>`;
+}
+
+function _renderProjectTasks(projectId, p) {
+  const todos = state.todos || [];
+  const pending = [], done = [];
+  for (const t of todos) {
+    if (t.boardProjectId === projectId && (!t.recurrence || t.recurrence === 'none'))
+      (t.completed ? done : pending).push(t);
+  }
+  const projectTodos = pending.length + done.length;
+
+  if (projectTodos === 0) {
+    return `
+      <div class="project-tasks-empty">
+        <p>Aucune tâche liée à ce projet.</p>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="window.app.addTaskForProject('${projectId}')">＋ Ajouter une tâche</button>
+      </div>`;
+  }
+
+  const pct = Math.round(done.length / projectTodos * 100);
+  const progressBar = `
+    <div class="project-tasks-progress">
+      <div class="project-tasks-progress-bar" style="width:${pct}%;background:${p.color};"></div>
+    </div>
+    <div class="project-tasks-stats">${done.length} / ${projectTodos} tâche${projectTodos > 1 ? 's' : ''} — ${pct}%</div>`;
+
+  const pendingHTML = pending.length > 0
+    ? `<div class="project-tasks-section">${pending.map(_projectTaskItemHTML).join('')}</div>`
+    : '';
+
+  const doneHTML = done.length > 0
+    ? `<details class="project-tasks-done-details"><summary>${done.length} terminée${done.length > 1 ? 's' : ''}</summary><div class="project-tasks-section">${done.map(_projectTaskItemHTML).join('')}</div></details>`
+    : '';
+
+  return `
+    ${progressBar}
+    <div class="project-tasks-add-row">
+      <button class="project-tasks-add-btn" onclick="window.app.addTaskForProject('${projectId}')">＋ Ajouter une tâche</button>
+    </div>
+    ${pendingHTML}
+    ${doneHTML}`;
+}
+
 export function renderProjectPanel(projectId) {
   const panel = document.getElementById('projectPanel');
   if (!panel || panel.classList.contains('hidden')) return;
@@ -153,10 +213,8 @@ export function renderProjectPanel(projectId) {
       </div>
     </div>
 
-    <div class="cv-body" style="padding:16px;">
-      <p style="font-size:13px;color:var(--text-muted);text-align:center;margin-top:32px;">
-        Les tâches liées aux projets arrivent dans une prochaine version.
-      </p>
+    <div class="cv-body">
+      ${_renderProjectTasks(projectId, p)}
     </div>
 
     <div class="cv-footer">

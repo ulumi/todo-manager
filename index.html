@@ -309,6 +309,14 @@
           </div>
         </div>
 
+        <!-- Project -->
+        <div class="fl-group">
+          <select class="form-input fl-input" id="taskProject" autocomplete="off">
+            <option value="">— Aucun projet —</option>
+          </select>
+          <label class="fl-label">Projet</label>
+        </div>
+
         <!-- Intention -->
         <div class="fl-group">
           <select class="form-input fl-input" id="taskIntention" autocomplete="off">
@@ -493,7 +501,7 @@
                 </select>
               </div>
               <div class="guided-detail-item">
-                <label>Projet / Catégorie <span class="guided-tip" data-tip="Regroupe tes tâches par projet ou contexte (ex: Travail, Maison, Santé).">?</span></label>
+                <label>Catégorie <span class="guided-tip" data-tip="Regroupe tes tâches par contexte (ex: Travail, Maison, Santé).">?</span></label>
                 <div class="guided-cat-row">
                   <select class="form-input" id="guidedCategory"></select>
                   <button type="button" class="add-cat-btn" onclick="window.app.guidedToggleNewCat()" title="Nouvelle catégorie">+</button>
@@ -502,6 +510,10 @@
                   <input class="form-input" id="guidedNewCatInput" autocomplete="off" placeholder="Nom de la catégorie..."
                     onkeydown="if(event.key==='Enter'){event.stopPropagation();window.app.guidedAddCategory()}if(event.key==='Escape')window.app.guidedToggleNewCat()">
                 </div>
+              </div>
+              <div class="guided-detail-item">
+                <label>Projet <span class="guided-tip" data-tip="Associe cette tâche à un projet avec un livrable concret.">?</span></label>
+                <select class="form-input" id="guidedProject"></select>
               </div>
             </div>
 

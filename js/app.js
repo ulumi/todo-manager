@@ -4112,6 +4112,13 @@ class TodoApp {
 
   openProjectPanel(id)   { openProjectPanel(id); }
   closeProjectPanel()    { closeProjectPanel(); }
+  renderProjectPanelById(id) { if (id) renderProjectPanel(id); }
+
+  addTaskForProject(projectId) {
+    this.openModal(state.navDate);
+    const sel = document.getElementById('taskProject');
+    if (sel) sel.value = projectId;
+  }
 
   saveProjectName(id, name) {
     if (!name.trim()) return;
@@ -4492,7 +4499,7 @@ class TodoApp {
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
     if (backup.intentions)     localStorage.setItem('intentions',        JSON.stringify(backup.intentions));
-    if (backup.boardProjects)  localStorage.setItem('boardProjects',     JSON.stringify(backup.boardProjects));
+    if (backup.boardProjects)  saveProjects(backup.boardProjects);
     if (backup.config) {
       if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);

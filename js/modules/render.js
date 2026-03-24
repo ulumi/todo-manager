@@ -35,15 +35,21 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     if (!cat) return '';
     return `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
   })();
+  const projectBadge = (() => {
+    if (!todo.boardProjectId) return '';
+    const proj = getProjects().find(p => p.id === todo.boardProjectId);
+    if (!proj) return '';
+    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectPanel('${proj.id}')">${esc(proj.name)}</span>`;
+  })();
   const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
-  const hasMeta = categoryBadge || rec;
+  const hasMeta = categoryBadge || projectBadge || rec;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
       <div class="todo-content">
         <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${categoryBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
       <div class="todo-actions">
         <button class="todo-add-after" onclick="window.app.addTaskAfter('${todo.id}','${ds}')" title="Ajouter après">＋</button>
@@ -1573,7 +1579,7 @@ export function renderProjectsView() {
       <div class="categories-view-header">
         <div class="inbox-view-title-block">
           <h1 class="inbox-view-title">Projets</h1>
-          <p class="inbox-view-desc">Livrables concrets regroupant vos tâches — chaque projet a un début, une fin, et un résultat tangible.</p>
+          <p class="inbox-view-desc">Livrables concrets regroupant vos tâches —<br>chaque projet a un début, une fin, et un résultat tangible.</p>
         </div>
         ${projects.length > 0 ? `
         <div class="categories-view-controls">
@@ -1743,7 +1749,7 @@ export function renderAnalyseView(todos) {
   // Per project
   const projects = getProjects();
   const projRows = projects.map(p => {
-    const pTasks = todos.filter(t => t.projectId === p.id && (!t.recurrence || t.recurrence === 'none'));
+    const pTasks = todos.filter(t => t.boardProjectId === p.id && (!t.recurrence || t.recurrence === 'none'));
     const count = pTasks.length;
     const done  = pTasks.filter(t => t.completed).length;
     const pct   = count > 0 ? Math.round(done / count * 100) : 0;
