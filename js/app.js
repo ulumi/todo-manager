@@ -4445,6 +4445,7 @@ class TodoApp {
         logoAvatar.classList.add('logo-avatar--entering');
         logoAvatar.addEventListener('animationend', () => {
           logoAvatar.classList.remove('logo-avatar--entering');
+          logoAvatar.style.opacity = '1';
         }, { once: true });
       }));
     }
