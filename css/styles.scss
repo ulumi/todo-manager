@@ -6557,9 +6557,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   // ── Plan view ──
-  .plan-inbox-col {
-    border-right-color: rgba(255,255,255,.15);
-  }
   .plan-inbox-col .todo-item {
     background:   rgba(255,255,255,.07);
     border-color: rgba(255,255,255,.12);
@@ -9170,7 +9167,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex-shrink:  0;
   overflow-y:   auto;
   padding:      24px 20px;
-  border-right: 1px solid var(--border);
 }
 
 .plan-resize-handle {
