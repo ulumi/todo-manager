@@ -9254,11 +9254,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-toolbar {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  flex-shrink:    0;
+  margin-bottom:  10px;
+}
+
+.plan-toolbar-nav {
   display:     flex;
   align-items: center;
   gap:         6px;
-  flex-shrink: 0;
-  margin-bottom: 10px;
 
   .day-nav-btn {
     width:  28px;
@@ -9266,6 +9272,13 @@ body:has(.bottom-panel:not(.hidden))::before {
     flex-shrink: 0;
     svg { width: 14px; height: 14px; }
   }
+}
+
+.plan-toolbar-filters {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  flex-wrap:   wrap;
 }
 
 .plan-toolbar-label {

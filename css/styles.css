@@ -10072,19 +10072,32 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-toolbar {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
   flex-shrink: 0;
   margin-bottom: 10px;
 }
-.plan-toolbar .day-nav-btn {
+
+.plan-toolbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-toolbar-nav .day-nav-btn {
   width: 28px;
   height: 28px;
   flex-shrink: 0;
 }
-.plan-toolbar .day-nav-btn svg {
+.plan-toolbar-nav .day-nav-btn svg {
   width: 14px;
   height: 14px;
+}
+
+.plan-toolbar-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .plan-toolbar-label {

@@ -953,6 +953,15 @@ class TodoApp {
     closeModal();
   }
 
+  deleteFromEditModal() {
+    const btn = document.getElementById('deleteFromEditBtn');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const dateStr = btn.dataset.date || null;
+    closeModal();
+    setTimeout(() => this.deleteTodo(id, dateStr), 250);
+  }
+
   openEditModal(id, dateStr) {
     openEditModal(id, dateStr, state.todos);
   }
@@ -1156,8 +1165,56 @@ class TodoApp {
     this.render();
   }
 
-  setPlanSort(sort) {
-    localStorage.setItem('planSort', sort);
+  _reloadPlanCol() {
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+  }
+
+  setPlanSort(sort, section) {
+    const k = `planSort_${section}`;
+    const cur = localStorage.getItem(k) || 'date';
+    if (cur === sort) {
+      const dir = localStorage.getItem(`planSortDir_${section}`) || 'desc';
+      localStorage.setItem(`planSortDir_${section}`, dir === 'desc' ? 'asc' : 'desc');
+    } else {
+      localStorage.setItem(k, sort);
+      localStorage.setItem(`planSortDir_${section}`, 'desc');
+    }
+    this._reloadPlanCol();
+  }
+
+  togglePlanSortMenu(section) {
+    const k = `planSortCollapsed_${section}`;
+    localStorage.setItem(k, localStorage.getItem(k) !== 'false' ? 'false' : 'true');
+    this._reloadPlanCol();
+  }
+
+  closePlanSortMenu() {
+    this._reloadPlanCol();
+  }
+
+  setPlanColCount(n) {
+    localStorage.setItem('planColCount', n);
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+  }
+
+  togglePlanColMenu() {
+    const cur = localStorage.getItem('planColCollapsed') !== 'false';
+    localStorage.setItem('planColCollapsed', cur ? 'false' : 'true');
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+  }
+
+  closePlanColMenu() {
+    localStorage.setItem('planColCollapsed', 'true');
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+  }
+
+  togglePlanGrouped() {
+    const cur = localStorage.getItem('planGrouped') === 'true';
+    localStorage.setItem('planGrouped', cur ? 'false' : 'true');
     const col = document.getElementById('planInboxCol');
     if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
   }
@@ -2041,14 +2098,10 @@ class TodoApp {
   }
 
   _renderPlanView() {
-    const leftWidth = localStorage.getItem('planInboxWidth') || '260';
-    const explainer = `<div class="view-explainer view-explainer--compact" style="margin:0 0 8px;">
-      <strong>Planifier</strong>
-      Votre espace de planification tactique. Glissez les tâches de l'inbox vers le calendrier pour les caser dans le temps. La colonne gauche regroupe tout ce qui n'a pas encore de date.
-    </div>`;
+    const storedWidth = localStorage.getItem('planInboxWidth');
+    const leftWidth = storedWidth ? storedWidth + 'px' : '50%';
     return `<div class="plan-view">
-      <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}px">
-        ${explainer}
+      <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}">
         ${renderPlanInboxList(state.todos)}
       </div>
       <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"></div>
@@ -2094,11 +2147,11 @@ class TodoApp {
     ).join('');
 
     const recToggles = [
-      ['none',    'Ponctuel'],
-      ['daily',   'Quotidien'],
-      ['weekly',  'Hebdomadaire'],
-      ['monthly', 'Mensuel'],
-      ['yearly',  'Annuel'],
+      ['none',    'Ponct.'],
+      ['daily',   'Quot.'],
+      ['weekly',  'Hebdo.'],
+      ['monthly', 'Mens.'],
+      ['yearly',  'Ann.'],
     ].map(([k, l]) =>
       `<button class="plan-rec-btn${filter[k]?' active':''}" onclick="window.app.togglePlanRecFilter('${k}')" title="${k}">${l}</button>`
     ).join('');
@@ -2109,13 +2162,12 @@ class TodoApp {
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
     if (mode === 'month') {
+      const now = new Date();
+      const monthLabel = `${state.MONTHS[now.getMonth()]} ${now.getFullYear()}`;
       const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
       return `<div class="plan-toolbar">
-        ${todayBtn}
-        <div class="plan-mode-btns">${modeBtns}</div>
-        <div class="plan-toolbar-sep"></div>
-        <div class="plan-rec-pills">${recToggles}</div>
-        ${hideBtn}
+        <div class="plan-toolbar-nav">${todayBtn}<span class="plan-toolbar-label">${monthLabel}</span></div>
+        <div class="plan-toolbar-filters"><div class="plan-mode-btns">${modeBtns}</div><div class="plan-toolbar-sep"></div><div class="plan-rec-pills">${recToggles}</div>${hideBtn}</div>
       </div>
       <div class="plan-month-daynames">${dayNames}</div>
       <div class="plan-month-scroll" id="planMonthScroll">
@@ -2131,14 +2183,18 @@ class TodoApp {
     const weekEnd = addDays(weekStart, numDays - 1);
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
     return `<div class="plan-toolbar">
-      <button class="day-nav-btn" onclick="window.app.navigate(-1)">${navSvgL}</button>
-      <span class="plan-toolbar-label">${label}</span>
-      <button class="day-nav-btn" onclick="window.app.navigate(1)">${navSvgR}</button>
-      ${todayBtn}
-      <div class="plan-mode-btns">${modeBtns}</div>
-      <div class="plan-toolbar-sep"></div>
-      <div class="plan-rec-pills">${recToggles}</div>
-      ${hideBtn}
+      <div class="plan-toolbar-nav">
+        <button class="day-nav-btn" onclick="window.app.navigate(-1)">${navSvgL}</button>
+        <span class="plan-toolbar-label">${label}</span>
+        <button class="day-nav-btn" onclick="window.app.navigate(1)">${navSvgR}</button>
+        ${todayBtn}
+      </div>
+      <div class="plan-toolbar-filters">
+        <div class="plan-mode-btns">${modeBtns}</div>
+        <div class="plan-toolbar-sep"></div>
+        <div class="plan-rec-pills">${recToggles}</div>
+        ${hideBtn}
+      </div>
     </div>
     <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
   }
@@ -2391,12 +2447,15 @@ class TodoApp {
     const col    = document.getElementById('planInboxCol');
     if (!handle || !col) return;
     let startX, startW;
+    const clamp = (w) => {
+      const maxW = Math.round((col.parentElement?.offsetWidth || window.innerWidth) * 0.50);
+      return Math.max(160, Math.min(maxW, w));
+    };
     const onMove = (e) => {
-      const w = Math.max(160, Math.min(480, startW + e.clientX - startX));
-      col.style.width = w + 'px';
+      col.style.width = clamp(startW + e.clientX - startX) + 'px';
     };
     const onUp = (e) => {
-      const w = Math.max(160, Math.min(480, startW + e.clientX - startX));
+      const w = clamp(startW + e.clientX - startX);
       localStorage.setItem('planInboxWidth', Math.round(w));
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
