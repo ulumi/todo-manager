@@ -5000,10 +5000,12 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e =
 
 // Keyboard shortcuts
 let hoveredItem = null;
+let hoveredItemEl = null;
 
 document.addEventListener('mouseover', e => {
   const item = e.target.closest('.todo-item');
   if (item) {
+    hoveredItemEl = item;
     hoveredItem = {
       id: item.getAttribute('data-id'),
       ds: item.getAttribute('data-date')
@@ -5012,8 +5014,10 @@ document.addEventListener('mouseover', e => {
 });
 
 document.addEventListener('mouseout', e => {
-  if (e.target.closest('.todo-item') === hoveredItem) {
+  const item = e.target.closest('.todo-item');
+  if (item && item === hoveredItemEl && !item.contains(e.relatedTarget)) {
     hoveredItem = null;
+    hoveredItemEl = null;
   }
 });
 
