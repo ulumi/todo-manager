@@ -2104,7 +2104,7 @@ class TodoApp {
       <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}">
         ${renderPlanInboxList(state.todos)}
       </div>
-      <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"><svg viewBox="0 0 10 28" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><circle cx="3" cy="6"  r="1.5"/><circle cx="7" cy="6"  r="1.5"/><circle cx="3" cy="14" r="1.5"/><circle cx="7" cy="14" r="1.5"/><circle cx="3" cy="22" r="1.5"/><circle cx="7" cy="22" r="1.5"/></svg></div>
+      <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"><svg viewBox="0 0 10 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="0" width="2" height="32" rx="1"/><rect x="6" y="0" width="2" height="32" rx="1"/></svg></div>
       <div class="plan-week-col${(localStorage.getItem('planMode')||'week')==='month'?' plan-month-mode':''}">
         ${this._renderPlanCalendar()}
       </div>
