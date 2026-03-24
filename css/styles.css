@@ -9989,26 +9989,23 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-resize-handle {
-  width: 6px;
+  width: 20px;
   flex-shrink: 0;
   cursor: col-resize;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.plan-resize-handle::after {
-  content: "";
-  display: block;
-  width: 2px;
-  height: 24px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
-  transition: background 0.15s, height 0.15s;
+.plan-resize-handle svg {
+  width: 20px;
+  height: 48px;
+  color: rgba(255, 255, 255, 0.2);
+  transition: color 0.15s, transform 0.15s;
+  flex-shrink: 0;
 }
-.plan-resize-handle:hover::after, .plan-resize-handle.dragging::after {
-  background: var(--primary);
-  height: 40px;
+.plan-resize-handle:hover svg, .plan-resize-handle.dragging svg {
+  color: var(--primary);
+  transform: scaleX(1.2);
 }
 
 .plan-week-col {

@@ -9174,27 +9174,24 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-resize-handle {
-  width:        6px;
-  flex-shrink:  0;
-  cursor:       col-resize;
-  position:     relative;
-  display:      flex;
-  align-items:  center;
+  width:           20px;
+  flex-shrink:     0;
+  cursor:          col-resize;
+  display:         flex;
+  align-items:     center;
   justify-content: center;
 
-  &::after {
-    content:      '';
-    display:      block;
-    width:        2px;
-    height:       24px;
-    border-radius: 2px;
-    background:   rgba(255,255,255,.2);
-    transition:   background .15s, height .15s;
+  svg {
+    width:      20px;
+    height:     48px;
+    color:      rgba(255,255,255,.2);
+    transition: color .15s, transform .15s;
+    flex-shrink: 0;
   }
 
-  &:hover::after, &.dragging::after {
-    background: var(--primary);
-    height:     40px;
+  &:hover svg, &.dragging svg {
+    color:     var(--primary);
+    transform: scaleX(1.2);
   }
 }
 
