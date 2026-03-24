@@ -3408,6 +3408,36 @@ select.fl-input ~ .fl-label {
   .modal-title { margin-bottom: 0; }
 }
 
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modal-guided-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+}
+
 .modal-close-btn {
   flex-shrink: 0;
   width: 28px;
@@ -3792,6 +3822,15 @@ select.fl-input ~ .fl-label {
     box-shadow: 0 4px 12px rgba(91, 94, 247, .25);
 
     &:hover  { background: var(--primary-dark); box-shadow: 0 8px 24px rgba(91, 94, 247, .4); transform: translateY(-2px) scale(1.02); }
+    &:active { transform: translateY(0) scale(0.98); }
+  }
+
+  &-danger {
+    background: transparent;
+    color: var(--danger);
+    border: 1.5px solid color-mix(in srgb, var(--danger) 40%, transparent);
+
+    &:hover  { background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: var(--danger); box-shadow: 0 8px 20px rgba(239, 68, 68, .2); transform: translateY(-2px) scale(1.02); }
     &:active { transform: translateY(0) scale(0.98); }
   }
 }
@@ -6492,6 +6531,29 @@ body:has(.bottom-panel:not(.hidden))::before {
     color: #f1f5f9;
   }
 
+  // ── Inbox/Backlog standalone views ──
+  .inbox-item {
+    @include glass-surface(40%, 12px);
+    color: #f1f5f9;
+    border-color: rgba(255,255,255,.15);
+  }
+  .inbox-view-title,
+  .inbox-count-label { color: #f1f5f9; }
+  .inbox-sort-btn {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.15);
+    color: rgba(255,255,255,.6);
+    &:hover  { border-color: rgba(255,255,255,.4); color: #f1f5f9; }
+    &.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary); }
+  }
+
+  // ── Plan view sidebar ──
+  .plan-inbox-col {
+    border-right-color: rgba(255,255,255,.15);
+  }
+  .view-explainer       { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12);
+                          color: rgba(255,255,255,.65); strong { color: #f1f5f9; } }
+
   // ── Search / command bar ──
   .search-input,
   .command-bar {
@@ -9058,40 +9120,83 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-view {
-  display: flex;
-  height:  calc(100vh - var(--header-h));
-  overflow: hidden;
+  display:    flex;
+  height:     calc(100vh - var(--header-h));
+  overflow:   hidden;
+  // Always use dark-mode values — lowpoly bg is always dark
+  --text:          #f1f5f9;
+  --text-muted:    #8b96a8;
+  --border:        #2d3147;
+  --surface:       #1a1d27;
+  --surface2:      #222636;
+  --bg:            #0f1117;
+  --primary-light: #7c2d12;
 }
 
 .plan-inbox-col {
-  width:        260px;
+  width:        50%;
   min-width:    160px;
-  max-width:    480px;
+  max-width:    50%;
   flex-shrink:  0;
   overflow-y:   auto;
-  padding:      16px 12px;
+  padding:      24px 20px;
+  border-right: 1px solid var(--border);
 }
 
 .plan-resize-handle {
-  width:        6px;
+  width:        36px;
   flex-shrink:  0;
-  background:   var(--border);
+  background:   var(--surface2);
+  border-left:  1px solid var(--border);
+  border-right: 1px solid var(--border);
   cursor:       col-resize;
-  transition:   background .15s, width .1s;
+  transition:   background .15s;
+  display:      flex;
+  align-items:  center;
+  justify-content: center;
+  position:     relative;
 
-  &:hover, &.dragging { background: var(--primary); width: 4px; }
+  &::after {
+    content:        '';
+    display:        block;
+    width:          3px;
+    height:         32px;
+    border-radius:  2px;
+    background:     repeating-linear-gradient(
+      to bottom,
+      var(--text-muted) 0px, var(--text-muted) 3px,
+      transparent 3px, transparent 6px
+    );
+    opacity: .4;
+    transition: opacity .15s;
+  }
+
+  &:hover, &.dragging {
+    background: color-mix(in srgb, var(--primary) 12%, var(--surface2));
+    border-color: var(--primary);
+    &::after { opacity: .9; background: repeating-linear-gradient(
+      to bottom,
+      var(--primary) 0px, var(--primary) 3px,
+      transparent 3px, transparent 6px
+    ); }
+  }
 }
 
 .plan-week-col {
   flex:           1;
   min-width:      0;
   min-height:     0;
+  max-height:     60vh;
+  align-self:     center;
   overflow:       hidden;
   padding:        16px 20px;
   display:        flex;
   flex-direction: column;
 
   &.plan-month-mode {
+    max-height:  100%;
+    align-self:  stretch;
+
     .plan-week-day {
       min-height:     0;
       padding:        5px 6px 6px;
@@ -9103,9 +9208,11 @@ body:has(.bottom-panel:not(.hidden))::before {
     .plan-week-day-name { display: none; }
 
     .plan-week-day-header {
-      margin-bottom: 4px;
+      margin:        -5px -6px 4px -6px;
+      padding:       5px 8px;
       flex-shrink:   0;
-      .plan-week-day-num { font-size: 12px; }
+      border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
+      .plan-week-day-num { font-size: 14px; }
     }
 
     .plan-week-day-tasks {
@@ -9170,10 +9277,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight: 600;
   cursor:      pointer;
   white-space: nowrap;
-  transition:  all .15s;
+  transition:  all .12s;
   margin-right: 2px;
 
-  &:hover { border-color: var(--primary); color: var(--primary); }
+  &:hover { border-color: var(--text-muted); color: var(--text); }
 }
 
 .plan-week-grid {
@@ -9210,29 +9317,30 @@ body:has(.bottom-panel:not(.hidden))::before {
   display:       flex;
   align-items:   center;
   gap:           5px;
-  margin-bottom: 6px;
+  margin:        -8px -8px 8px -8px;
+  padding:       8px 12px;
   cursor:        pointer;
-  border-radius: 4px;
+  border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
   flex-shrink:   0;
+  background:    var(--primary);
   transition:    background .12s;
 
   &:hover {
-    background: var(--surface2);
-    .plan-week-day-name, .plan-week-day-num { color: var(--primary); }
+    background: var(--primary-dark);
   }
 }
 
 .plan-week-day-name {
   font-size:   11px;
   font-weight: 600;
-  color:       var(--text-muted);
+  color:       rgba(255,255,255,0.7);
   text-transform: uppercase;
 }
 
 .plan-week-day-num {
-  font-size:   14px;
+  font-size:   22px;
   font-weight: 700;
-  color:       var(--text);
+  color:       #fff;
 }
 
 .plan-week-day-tasks {
@@ -9386,17 +9494,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-mode-btn {
   padding:       4px 10px;
-  border:        1.5px solid var(--border);
+  border:        none;
   border-radius: 6px;
-  background:    var(--surface2);
-  color:         var(--text);
+  background:    transparent;
+  color:         var(--text-muted);
   font-size:     12px;
-  font-weight:   600;
+  font-weight:   500;
   cursor:        pointer;
-  transition:    all .15s;
+  transition:    all .12s;
 
-  &.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 1px var(--primary); }
-  &:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+  &.active { background: var(--text); color: var(--bg); font-weight: 600; }
+  &:hover:not(.active) { background: var(--surface2); color: var(--text); }
 }
 
 // Biweek = 2 rows of 7
@@ -9431,6 +9539,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding:        16px 2px 6px;
+  position:       sticky;
+  top:            0;
+  z-index:        1;
+  background:     var(--bg);
 
   &:first-child { padding-top: 0; }
 }
@@ -9468,25 +9580,24 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-rec-btn {
   padding:       3px 9px;
-  border:        1.5px solid var(--border);
+  border:        none;
   border-radius: 20px;
-  background:    var(--surface);
-  color:         var(--text);
+  background:    transparent;
+  color:         var(--text-muted);
   font-size:     11px;
-  font-weight:   600;
+  font-weight:   500;
   cursor:        pointer;
-  transition:    all .15s;
+  transition:    all .12s;
 
   &.active {
-    border-color: var(--primary);
-    color:        var(--primary);
-    background:   var(--primary-light);
-    box-shadow:   0 0 0 1px var(--primary);
+    background: var(--text);
+    color:      var(--bg);
+    font-weight: 600;
   }
 
   &:hover:not(.active) {
-    border-color: var(--text-muted);
-    background:   var(--surface2);
+    background: var(--surface2);
+    color:      var(--text);
   }
 }
 
@@ -9497,23 +9608,39 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // Plan inbox col — compact list
-.plan-inbox-header {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1.5px solid var(--border);
-  position:      sticky;
-  top:           0;
-  background:    var(--surface);
-  z-index:       2;
+.plan-inbox-header,
+.plan-backlog-header {
+  display:        flex;
+  align-items:    center;
+  gap:            6px;
+  margin-bottom:  14px;
+  padding-bottom: 12px;
+  position:       sticky;
+  top:            0;
+  z-index:        2;
+
+  .day-col-controls { margin-left: auto; }
+
+  // White text on transparent column
+  .day-ctrl-toggle {
+    border-color: rgba(255,255,255,.25);
+    color:        rgba(255,255,255,.6);
+    &:hover { background: rgba(255,255,255,.08); color: #fff; }
+  }
+  .day-ctrl-label   { color: rgba(255,255,255,.6); }
+  .day-ctrl-chevron { color: rgba(255,255,255,.45); }
+  .day-ctrl-btn {
+    color: rgba(255,255,255,.4);
+    &:hover  { color: rgba(255,255,255,.85); }
+    &.active { color: var(--primary); }
+  }
 }
 
-.plan-inbox-header-title {
-  font-size:   14px;
+.plan-inbox-header-title,
+.plan-backlog-title {
+  font-size:   15px;
   font-weight: 700;
-  color:       var(--text);
+  color:       #fff;
 }
 
 .plan-inbox-count {
@@ -9526,7 +9653,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-inbox-add {
-  margin-left: auto;
   background:  none;
   border:      1.5px dashed var(--border);
   border-radius: 6px;
@@ -9538,6 +9664,71 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:hover { border-color: var(--primary); color: var(--primary); }
 }
 
+// Plan items — drag left, × right, no checkbox
+.plan-inbox-col .todo-item {
+  grid-template-columns: 1fr;
+  grid-template-areas: "content";
+  align-items: center;
+  padding-left:  32px; // room for drag handle
+  padding-right: 40px; // room for × button
+
+  .todo-actions {
+    grid-area: unset;
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    opacity: 1 !important;
+  }
+  .todo-delete {
+    font-size:  18px;
+    width:      26px;
+    height:     26px;
+    display:    flex;
+    align-items: center;
+    justify-content: center;
+    padding:    0;
+    color:      var(--text-muted);
+    background: none;
+    border:     none;
+    cursor:     pointer;
+    border-radius: 6px;
+    transition: color .12s, background .12s;
+    &:hover { color: #ef4444; background: rgba(239,68,68,.1); }
+  }
+}
+
+.plan-drag-handle {
+  position:   absolute;
+  left:       8px;
+  top:        50%;
+  transform:  translateY(-50%);
+  width:      18px;
+  display:    flex;
+  align-items: center;
+  justify-content: center;
+  cursor:     grab;
+  color:      var(--text-muted);
+  opacity:    0.3;
+  transition: opacity 0.15s;
+  &:active { cursor: grabbing; }
+}
+.plan-inbox-col .todo-item:hover .plan-drag-handle { opacity: 0.7; }
+
+.plan-prio-dot {
+  display:       inline-flex;
+  align-items:   center;
+  justify-content: center;
+  width:         18px;
+  height:        18px;
+  border-radius: 50%;
+  font-size:     9px;
+  font-weight:   800;
+  color:         #fff;
+  letter-spacing: 0;
+  flex-shrink:   0;
+}
+
 // Drop zones (inbox + backlog sections)
 .plan-inbox-section, .plan-backlog-section {
   border-radius: 8px;
@@ -9545,7 +9736,77 @@ body:has(.bottom-panel:not(.hidden))::before {
   &.drag-over { background: var(--primary-light); }
 }
 
-.plan-inbox-list, .plan-backlog-list { display: flex; flex-direction: column; gap: 3px; }
+.plan-inbox-list, .plan-backlog-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+.plan-stat-badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           3px;
+  font-size:     10px;
+  font-weight:   600;
+  padding:       1px 6px;
+  border-radius: 6px;
+  white-space:   nowrap;
+  letter-spacing: .01em;
+}
+
+.plan-stat-age {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color:      var(--text-muted);
+}
+
+.plan-stat-hist {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color:      color-mix(in srgb, var(--success) 80%, var(--text));
+}
+
+.plan-group-label {
+  font-size:     11px;
+  font-weight:   700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding:       4px 0 4px 8px;
+  border-left:   3px solid;
+  margin:        8px 0 6px;
+  opacity:       .85;
+}
+
+.plan-group-card {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+
+  .plan-group-label { margin: 0 0 2px; }
+}
+
+.plan-add-item--full { grid-column: 1 / -1; }
+
+.plan-group-toggle.active {
+  background:   rgba(255,255,255,.15);
+  border-color: rgba(255,255,255,.6);
+  color:        #fff;
+}
+
+.plan-add-item {
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  padding:       12px;
+  border:        1.5px dashed rgba(255,255,255,.3);
+  border-radius: var(--radius);
+  color:         rgba(255,255,255,.45);
+  font-size:     13px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    all .15s;
+  letter-spacing: .02em;
+
+  &:hover {
+    border-color: rgba(255,255,255,.7);
+    color:        rgba(255,255,255,.9);
+    background:   rgba(255,255,255,.06);
+  }
+}
 
 .plan-inbox-item {
   display:       flex;
@@ -9598,27 +9859,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // Backlog section in plan left panel
 .plan-backlog-section {
-  margin-top: 12px;
+  margin-top: 32px;
 }
 
 .plan-backlog-header {
-  display:        flex;
-  align-items:    center;
-  gap:            6px;
-  margin-bottom:  8px;
-  padding-bottom: 8px;
-  border-top:     1.5px solid var(--border);
-  padding-top:    12px;
-  position:       sticky;
-  top:            0;
-  background:     var(--surface);
-  z-index:        2;
-}
-
-.plan-backlog-title {
-  font-size:   13px;
-  font-weight: 700;
-  color:       var(--text);
+  padding-top:   10px;
+  border-bottom: none;
 }
 
 .plan-backlog-count {
@@ -9631,7 +9877,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-backlog-add {
-  margin-left:   auto;
   background:    none;
   border:        1.5px dashed var(--border);
   border-radius: 6px;
@@ -9664,33 +9909,55 @@ body:has(.bottom-panel:not(.hidden))::before {
   min-width: 0;
 }
 
+// ─── Plan col header ──────────────────────────────────────────────────────────
+
+.plan-col-header {
+  padding:       0 0 16px;
+}
+
+.plan-col-header-title {
+  font-size:     22px;
+  font-weight:   800;
+  color:         var(--text);
+  letter-spacing: -.02em;
+  line-height:   1.1;
+  margin-bottom: 4px;
+}
+
+.plan-col-header-desc {
+  font-size:     12px;
+  color:         var(--text-muted);
+  line-height:   1.4;
+}
+
 // ─── 30. View Explainer Banner ─────────────────────────────────────────────────
 
 .view-explainer {
-  background:    var(--surface2);
-  border:        1.5px solid var(--border);
+  background:    color-mix(in srgb, var(--surface) 60%, transparent);
+  border:        1px solid var(--border);
   border-radius: 10px;
-  padding:       14px 18px;
-  margin-bottom: 24px;
-  font-size:     13px;
+  padding:       10px 14px;
+  margin-bottom: 12px;
+  font-size:     12px;
   color:         var(--text-muted);
-  line-height:   1.65;
+  line-height:   1.55;
   strong {
     color:         var(--text);
-    display:       block;
-    font-size:     13px;
+    display:       inline;
+    font-size:     12px;
     font-weight:   700;
-    margin-bottom: 5px;
+    margin-right:  4px;
   }
   em { font-style: italic; }
 }
 
 .view-explainer--compact {
-  padding:       10px 14px;
-  font-size:     12px;
+  padding:       8px 12px;
+  font-size:     11.5px;
   margin-bottom: 4px;
   border-radius: 8px;
 }
+
 
 // ─── 31. Intentions View ──────────────────────────────────────────────────────
 
