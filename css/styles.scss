@@ -6585,9 +6585,9 @@ body:has(.bottom-panel:not(.hidden))::before {
     .week-todo-check { display: none; }
   }
   .plan-today-btn {
-    background: rgba(255,255,255,.12);
-    color:      rgba(255,255,255,.85);
-    &:hover { background: rgba(255,255,255,.18); color: #fff; }
+    border-color: rgba(255,255,255,.2);
+    color:        rgba(255,255,255,.6);
+    &:hover { border-color: rgba(255,255,255,.5); color: #fff; }
   }
   .view-explainer       { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12);
                           color: rgba(255,255,255,.65); strong { color: #f1f5f9; } }
@@ -9287,11 +9287,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-toolbar-label {
-  font-size:   14px;
-  font-weight: 600;
+  font-size:   22px;
+  font-weight: 700;
   color:       #fff;
   white-space: nowrap;
-  margin:      0 2px;
+  margin:      0 4px;
+  flex:        1;
+  text-align:  center;
 }
 
 .plan-toolbar-sep {
@@ -9303,21 +9305,18 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-today-btn {
-  display:       block;
-  width:         100%;
-  padding:       10px 0;
-  border:        none;
-  border-radius: 10px;
-  background:    rgba(255,255,255,0.1);
-  color:         rgba(255,255,255,0.85);
-  font-size:     18px;
-  font-weight:   700;
-  letter-spacing: 0.01em;
+  padding:       4px 12px;
+  border:        1.5px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  background:    transparent;
+  color:         rgba(255,255,255,0.6);
+  font-size:     11px;
+  font-weight:   600;
   cursor:        pointer;
-  text-align:    center;
+  white-space:   nowrap;
   transition:    all .15s;
 
-  &:hover { background: rgba(255,255,255,0.16); color: #fff; }
+  &:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
 }
 
 .plan-week-grid {

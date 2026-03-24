@@ -7060,11 +7060,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: none;
 }
 .glass-mode .plan-today-btn {
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
 }
 .glass-mode .plan-today-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.5);
   color: #fff;
 }
 .glass-mode .view-explainer {
@@ -10105,11 +10105,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-toolbar-label {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 700;
   color: #fff;
   white-space: nowrap;
-  margin: 0 2px;
+  margin: 0 4px;
+  flex: 1;
+  text-align: center;
 }
 
 .plan-toolbar-sep {
@@ -10121,22 +10123,19 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-today-btn {
-  display: block;
-  width: 100%;
-  padding: 10px 0;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  padding: 4px 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
-  text-align: center;
+  white-space: nowrap;
   transition: all 0.15s;
 }
 .plan-today-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.5);
   color: #fff;
 }
 
