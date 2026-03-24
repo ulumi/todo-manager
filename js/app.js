@@ -2184,9 +2184,11 @@ class TodoApp {
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
     return `<div class="plan-toolbar">
       <div class="plan-toolbar-nav">
-        <button class="day-nav-btn" onclick="window.app.navigate(-1)">${navSvgL}</button>
-        <span class="plan-toolbar-label">${label}</span>
-        <button class="day-nav-btn" onclick="window.app.navigate(1)">${navSvgR}</button>
+        <div class="plan-toolbar-nav-date">
+          <button class="day-nav-btn" onclick="window.app.navigate(-1)">${navSvgL}</button>
+          <span class="plan-toolbar-label">${label}</span>
+          <button class="day-nav-btn" onclick="window.app.navigate(1)">${navSvgR}</button>
+        </div>
         ${todayBtn}
       </div>
       <div class="plan-toolbar-filters">

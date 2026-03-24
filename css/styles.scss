@@ -6585,10 +6585,9 @@ body:has(.bottom-panel:not(.hidden))::before {
     .week-todo-check { display: none; }
   }
   .plan-today-btn {
-    background:   rgba(255,255,255,.15);
-    border-color: rgba(255,255,255,.35);
-    color:        rgba(255,255,255,.85);
-    &:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.55); color: #fff; }
+    background: rgba(255,255,255,.12);
+    color:      rgba(255,255,255,.85);
+    &:hover { background: rgba(255,255,255,.18); color: #fff; }
   }
   .view-explainer       { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12);
                           color: rgba(255,255,255,.65); strong { color: #f1f5f9; } }
@@ -9262,6 +9261,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-toolbar-nav {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+}
+
+.plan-toolbar-nav-date {
   display:     flex;
   align-items: center;
   gap:         6px;
@@ -9298,19 +9303,21 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-today-btn {
-  padding:     4px 10px;
-  border:      1.5px solid rgba(255,255,255,0.25);
-  border-radius: 6px;
-  background:  rgba(255,255,255,0.1);
-  color:       rgba(255,255,255,0.75);
-  font-size:   12px;
-  font-weight: 600;
-  cursor:      pointer;
-  white-space: nowrap;
-  transition:  all .12s;
-  margin-right: 2px;
+  display:       block;
+  width:         100%;
+  padding:       10px 0;
+  border:        none;
+  border-radius: 10px;
+  background:    rgba(255,255,255,0.1);
+  color:         rgba(255,255,255,0.85);
+  font-size:     18px;
+  font-weight:   700;
+  letter-spacing: 0.01em;
+  cursor:        pointer;
+  text-align:    center;
+  transition:    all .15s;
 
-  &:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+  &:hover { background: rgba(255,255,255,0.16); color: #fff; }
 }
 
 .plan-week-grid {
