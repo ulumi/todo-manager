@@ -104,15 +104,34 @@ class TodoApp {
     this.applyLang();
     initLowPolyBg();
     this.initGlassMode();
-    // Restore saved view
-    const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin', 'search'].includes(savedView)) {
-      state.setView(savedView);
+    // Restore state from URL hash, fall back to localStorage
+    const _hash = new URLSearchParams(window.location.hash.slice(1));
+    const _hashView = _hash.get('view');
+    const _hashNav  = _hash.get('nav');
+    const _ALL_VIEWS = ['day','week','month','year','categories','inbox','backlog','plan','projects','superadmin','search','intentions','profile','analyse'];
+    if (_hashView && _ALL_VIEWS.includes(_hashView)) {
+      state.setView(_hashView);
+    } else {
+      const savedView = localStorage.getItem('view');
+      if (savedView && _ALL_VIEWS.includes(savedView)) state.setView(savedView);
+    }
+    if (_hashNav) {
+      const [_hy, _hm, _hd] = _hashNav.split('-').map(Number);
+      if (!isNaN(_hy)) state.setNavDate(new Date(_hy, _hm - 1, _hd));
     }
     this.render();
     this._syncServer();
+    // Restore modal from hash after render
+    const _hashModal = _hash.get('modal');
+    if (_hashModal === 'edit') {
+      const _mId = _hash.get('id'), _mDate = _hash.get('date');
+      if (_mId && _mDate) setTimeout(() => this.openEditModal(_mId, _mDate), 50);
+    } else if (_hashModal === 'add') {
+      const _mDate = _hash.get('date');
+      setTimeout(() => this.openModal(_mDate ? parseDS(_mDate) : state.navDate), 50);
+    }
     // Seed the history stack with the initial state
-    history.replaceState({ view: state.view, nav: state.navDate.toISOString().slice(0, 10) }, '');
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
     window.addEventListener('popstate', (e) => this._popHistory(e));
     const vl = document.getElementById('versionLabel');
     if (vl) vl.textContent = 'v' + VERSION;
@@ -786,9 +805,19 @@ class TodoApp {
     this._updateInboxBadge();
   }
 
+  _buildHash(extra = {}) {
+    const p = new URLSearchParams();
+    p.set('view', state.view);
+    p.set('nav', DS(state.navDate));
+    for (const [k, v] of Object.entries(extra)) {
+      if (v !== null && v !== undefined) p.set(k, v);
+    }
+    return '#' + p.toString();
+  }
+
   _pushHistory() {
-    const navStr = state.navDate.toISOString().slice(0, 10);
-    history.pushState({ view: state.view, nav: navStr }, '');
+    const navStr = DS(state.navDate);
+    history.pushState({ view: state.view, nav: navStr }, '', this._buildHash());
   }
 
   async _popHistory(e) {
@@ -993,6 +1022,8 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   openModal(date) {
     openModal(date, state.todos);
+    const dateStr = typeof date === 'string' ? date : DS(date);
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'add', date: dateStr }));
   }
 
   openModalForInbox() {
@@ -1009,6 +1040,7 @@ class TodoApp {
 
   cancelModal() {
     cancelModal();
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
   }
 
   clearDraft() {
@@ -1034,6 +1066,7 @@ class TodoApp {
 
   openEditModal(id, dateStr) {
     openEditModal(id, dateStr, state.todos);
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'edit', id, date: dateStr }));
   }
 
   _showCelebrateDebugPanel(data) {
@@ -1380,6 +1413,7 @@ class TodoApp {
       snapshot(before);
       saveTodos(state.todos);
       closeModal();
+      history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
       this.render();
       this._refreshCategoryPanel();
     }
