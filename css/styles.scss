@@ -9175,41 +9175,27 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-resize-handle {
-  width:        36px;
+  width:        6px;
   flex-shrink:  0;
-  background:   var(--surface2);
-  border-left:  1px solid var(--border);
-  border-right: 1px solid var(--border);
   cursor:       col-resize;
-  transition:   background .15s;
+  position:     relative;
   display:      flex;
   align-items:  center;
   justify-content: center;
-  position:     relative;
 
   &::after {
-    content:        '';
-    display:        block;
-    width:          3px;
-    height:         32px;
-    border-radius:  2px;
-    background:     repeating-linear-gradient(
-      to bottom,
-      var(--text-muted) 0px, var(--text-muted) 3px,
-      transparent 3px, transparent 6px
-    );
-    opacity: .4;
-    transition: opacity .15s;
+    content:      '';
+    display:      block;
+    width:        2px;
+    height:       24px;
+    border-radius: 2px;
+    background:   rgba(255,255,255,.2);
+    transition:   background .15s, height .15s;
   }
 
-  &:hover, &.dragging {
-    background: color-mix(in srgb, var(--primary) 12%, var(--surface2));
-    border-color: var(--primary);
-    &::after { opacity: .9; background: repeating-linear-gradient(
-      to bottom,
-      var(--primary) 0px, var(--primary) 3px,
-      transparent 3px, transparent 6px
-    ); }
+  &:hover::after, &.dragging::after {
+    background: var(--primary);
+    height:     40px;
   }
 }
 
