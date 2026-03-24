@@ -6493,6 +6493,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   .week-todo-text { color: #f1f5f9; }
   .week-done-count { color: rgba(255,255,255,.6); }
 
+  // ── Plan view — today cell fully frosted ──
+  .plan-week-day.is-today {
+    background:          color-mix(in srgb, var(--primary) 35%, rgba(255,255,255,.18));
+    backdrop-filter:     blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-color:        var(--primary);
+    box-shadow:          0 0 0 1px var(--primary), 0 0 24px color-mix(in srgb, var(--primary) 28%, transparent);
+  }
+
   // ── Month / Year view cards ──
   .month-cell,
   .month-year-mini,
@@ -6560,6 +6569,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   .plan-week-day {
     background:   rgba(255,255,255,.07);
     border-color: rgba(255,255,255,.15);
+    &.is-today {
+      background:  color-mix(in srgb, var(--primary) 28%, #1a1d27);
+      border-color: var(--primary);
+      box-shadow:  0 0 0 1px var(--primary), 0 0 18px color-mix(in srgb, var(--primary) 22%, transparent);
+    }
   }
   .plan-week-task {
     background: rgba(255,255,255,.12);

@@ -6945,6 +6945,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .week-done-count {
   color: rgba(255, 255, 255, 0.6);
 }
+.glass-mode .plan-week-day.is-today {
+  background: color-mix(in srgb, var(--primary) 35%, rgba(255, 255, 255, 0.18));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 0 24px color-mix(in srgb, var(--primary) 28%, transparent);
+}
 .glass-mode .month-cell,
 .glass-mode .month-year-mini,
 .glass-mode .year-month-card {
@@ -7027,6 +7034,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .plan-week-day {
   background: rgba(255, 255, 255, 0.07);
   border-color: rgba(255, 255, 255, 0.15);
+}
+.glass-mode .plan-week-day.is-today {
+  background: color-mix(in srgb, var(--primary) 28%, #1a1d27);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary), 0 0 18px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 .glass-mode .plan-week-task {
   background: rgba(255, 255, 255, 0.12);
