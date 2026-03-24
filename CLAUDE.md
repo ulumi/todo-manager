@@ -6,7 +6,7 @@
 ## CSS / SCSS
 ⚠ NEVER edit `css/styles.css` directly — it is auto-generated from `css/styles.scss`.
 - Source: `css/styles.scss` — always edit this
-- Compile: `npx sass css/styles.scss css/styles.css --style=expanded --source-map`
+- Compile: `npx sass css/styles.scss css/styles.css --style=expanded`
 - Always recompile before committing
 
 ## Shorthand commands
