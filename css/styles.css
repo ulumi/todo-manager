@@ -540,6 +540,8 @@ header.scrolled {
   align-items: flex-start;
   width: 100%;
   padding: 0 24px;
+  flex: 1;
+  min-height: 0;
 }
 
 main {

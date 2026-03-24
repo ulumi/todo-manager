@@ -508,10 +508,12 @@ header {
 // ─── 4. Layout ───────────────────────────────────────────────────────────
 
 #appWrapper {
-  display: flex;
+  display:    flex;
   align-items: flex-start;
-  width: 100%;
-  padding: 0 24px;
+  width:      100%;
+  padding:    0 24px;
+  flex:       1;
+  min-height: 0;
 }
 
 main {
