@@ -343,6 +343,26 @@ class TodoApp {
     }
   }
 
+  onSearchPageInput(event) {
+    const query = event.target.value;
+    localStorage.setItem('searchQuery', query);
+    const cursorPos = event.target.selectionStart;
+    this.render();
+    const input = document.getElementById('searchPageInput');
+    if (input) { input.focus(); input.setSelectionRange(cursorPos, cursorPos); }
+  }
+
+  onSearchPageKeydown(event) {
+    if (event.key === 'Escape') event.target.blur();
+  }
+
+  toggleSearchFilter(type, value) {
+    localStorage.setItem(`searchFilter_${type}`, value);
+    this.render();
+    const input = document.getElementById('searchPageInput');
+    if (input) input.focus();
+  }
+
   _quickFindItemMeta(todo) {
     const badges = [];
     const cats = getCategories();
@@ -476,6 +496,9 @@ class TodoApp {
     qfi.textContent = '';
     qfi.blur();
     this.render();
+    // Focus the in-page search input
+    const searchInput = document.getElementById('searchPageInput');
+    if (searchInput) { searchInput.focus(); searchInput.setSelectionRange(query.length, query.length); }
   }
 
   _closeSearchView() {
@@ -2042,6 +2065,7 @@ class TodoApp {
     document.body.classList.toggle('view-backlog',    isBacklog);
     document.body.classList.toggle('view-plan',       isPlan);
     document.body.classList.toggle('view-superadmin', isSuperadmin);
+    document.body.classList.toggle('view-search',     state.view === 'search');
     const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin || isIntentions || isAnalyse;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
@@ -2069,7 +2093,8 @@ class TodoApp {
     if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
     const mainEl = document.getElementById('mainContent');
     mainEl.innerHTML = html;
-    mainEl.classList.toggle('plan-mode', state.view === 'plan');
+    mainEl.classList.toggle('plan-mode',   state.view === 'plan');
+    mainEl.classList.toggle('search-mode', state.view === 'search');
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {

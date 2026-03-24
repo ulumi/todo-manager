@@ -1840,50 +1840,95 @@ export function renderAnalyseView(todos) {
 // ─── Search View ──────────────────────────────────────────────────────────
 
 export function renderSearchView() {
-  const query = localStorage.getItem('searchQuery') || '';
+  const query          = localStorage.getItem('searchQuery')           || '';
+  const filterPriority = localStorage.getItem('searchFilter_priority') || '';
+  const filterDone     = localStorage.getItem('searchFilter_done')     || '';
+  const filterType     = localStorage.getItem('searchFilter_type')     || '';
+
+  const q     = query.toLowerCase().trim();
+  const today = new Date();
+
+  const results = state.todos.filter(t => {
+    if (q && !t.title.toLowerCase().includes(q)) return false;
+    if (filterPriority && (t.priority || '') !== filterPriority) return false;
+    if (filterDone === 'done'   && !isCompleted(t, today)) return false;
+    if (filterDone === 'undone' &&  isCompleted(t, today)) return false;
+    if (filterType === 'has-date'  && !t.date) return false;
+    if (filterType === 'no-date'   &&  t.date) return false;
+    if (filterType === 'recurring' && (!t.recurrence || t.recurrence === 'none')) return false;
+    return true;
+  });
+
+  const fBtn = (group, val, label) => {
+    const curr = group === 'priority' ? filterPriority : group === 'done' ? filterDone : filterType;
+    return `<button class="search-filter-btn${curr === val ? ' active' : ''}" onclick="window.app.toggleSearchFilter('${group}','${val}')">${label}</button>`;
+  };
+
+  const items = results.map(t => todoItemHTML(t, today, 'search', false, false)).join('');
+
+  const emptyState = `
+    <div class="search-empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>${q ? `Aucun résultat pour "<strong>${esc(query)}</strong>"` : 'Entrez un terme ou sélectionnez un filtre.'}</p>
+    </div>`;
 
   const searchIcon = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
-
-  if (!query.trim()) {
-    return `
-      <div class="inbox-view">
-        <div class="inbox-view-header">
-          <div class="inbox-view-title-block">
-            <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
-            <p class="inbox-view-desc">Entrez un terme dans la barre de recherche.</p>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  const q = query.toLowerCase();
-  const results = state.todos.filter(t => t.title.toLowerCase().includes(q));
-
-  if (results.length === 0) {
-    return `
-      <div class="inbox-view">
-        <div class="inbox-view-header">
-          <div class="inbox-view-title-block">
-            <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
-            <p class="inbox-view-desc">Aucun résultat pour "<strong>${esc(query)}</strong>"</p>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  const items = results.map(todo => todoItemHTML(todo, new Date(), 'search', false, true)).join('');
+  const desc = q
+    ? `${results.length} résultat${results.length !== 1 ? 's' : ''} pour "<strong>${esc(query)}</strong>"`
+    : 'Cherche parmi toutes tes tâches, ou filtre par priorité, statut ou type.';
 
   return `
-    <div class="inbox-view">
-      <div class="inbox-view-header">
+    <div class="search-page">
+      <div class="inbox-view-header search-page-header">
         <div class="inbox-view-title-block">
           <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
-          <p class="inbox-view-desc">${results.length} résultat${results.length !== 1 ? 's' : ''} pour "<strong>${esc(query)}</strong>"</p>
-        </div>
-        <div class="inbox-view-controls">
-          <span class="inbox-count-label">${results.length} résultat${results.length !== 1 ? 's' : ''}</span>
+          <p class="inbox-view-desc">${desc}</p>
         </div>
       </div>
-      <div class="search-view-items">${items}</div>
+      <div class="search-page-body">
+      <div class="search-sidebar">
+        <div class="search-sidebar-input-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--text-muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchPageInput" class="search-page-input"
+            value="${esc(query)}"
+            placeholder="Chercher..."
+            oninput="window.app.onSearchPageInput(event)"
+            onkeydown="window.app.onSearchPageKeydown(event)">
+          <button class="search-page-go-btn" onclick="document.getElementById('searchPageInput').blur()" tabindex="-1">↵</button>
+        </div>
+        <div class="search-filters">
+          <div class="search-filter-group">
+            <div class="search-filter-label">Priorité</div>
+            <div class="search-filter-options">
+              ${fBtn('priority', '', 'Toutes')}
+              ${fBtn('priority', 'high', '↑ Urgent')}
+              ${fBtn('priority', 'medium', '→ Moyen')}
+              ${fBtn('priority', 'low', '↓ Bas')}
+            </div>
+          </div>
+          <div class="search-filter-group">
+            <div class="search-filter-label">Statut</div>
+            <div class="search-filter-options">
+              ${fBtn('done', '', 'Tous')}
+              ${fBtn('done', 'undone', 'En cours')}
+              ${fBtn('done', 'done', 'Complétées')}
+            </div>
+          </div>
+          <div class="search-filter-group">
+            <div class="search-filter-label">Type</div>
+            <div class="search-filter-options">
+              ${fBtn('type', '', 'Toutes')}
+              ${fBtn('type', 'has-date', 'Avec date')}
+              ${fBtn('type', 'no-date', 'Sans date')}
+              ${fBtn('type', 'recurring', 'Récurrentes')}
+            </div>
+          </div>
+        </div>
+        <div class="search-result-count">${results.length} résultat${results.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="search-results">
+        ${results.length > 0 ? items : emptyState}
+      </div>
+      </div>
     </div>`;
 }
