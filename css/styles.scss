@@ -6581,7 +6581,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   .plan-week-task {
     background: rgba(255,255,255,.12);
     color:      #f1f5f9;
-    .week-todo-text { color: #f1f5f9; }
+    .week-todo-text  { color: #f1f5f9; }
+    .week-todo-check { display: none; }
   }
   .plan-today-btn {
     background:   rgba(255,255,255,.15);
@@ -9391,6 +9392,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   border:        1.5px solid transparent;
   transition:    border-color .12s, opacity .12s;
 
+  .week-todo-check { display: none; }
+
   &.done { opacity: .5; .week-todo-text { text-decoration: line-through; } }
   &.dragging { opacity: .4; }
 
@@ -9562,14 +9565,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 .plan-scroll-month-label {
   font-size:      11px;
   font-weight:    700;
-  color:          var(--text-muted);
+  color:          rgba(255,255,255,0.6);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding:        16px 2px 6px;
   position:       sticky;
   top:            0;
   z-index:        1;
-  background:     var(--bg);
 
   &:first-child { padding-top: 0; }
 }
@@ -9691,38 +9693,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:hover { border-color: var(--primary); color: var(--primary); }
 }
 
-// Plan items — drag left, × right, no checkbox
+// Plan items — drag left only, no × no checkbox
 .plan-inbox-col .todo-item {
   grid-template-columns: 1fr;
   grid-template-areas: "content";
   align-items: center;
   padding-left:  32px; // room for drag handle
-  padding-right: 40px; // room for × button
+  padding-right: 10px;
 
-  .todo-actions {
-    grid-area: unset;
-    position: absolute;
-    top: 50%;
-    right: 10px;
-    transform: translateY(-50%);
-    opacity: 1 !important;
-  }
-  .todo-delete {
-    font-size:  18px;
-    width:      26px;
-    height:     26px;
-    display:    flex;
-    align-items: center;
-    justify-content: center;
-    padding:    0;
-    color:      var(--text-muted);
-    background: none;
-    border:     none;
-    cursor:     pointer;
-    border-radius: 6px;
-    transition: color .12s, background .12s;
-    &:hover { color: #ef4444; background: rgba(239,68,68,.1); }
-  }
+  .todo-actions { display: none; }
 }
 
 .plan-drag-handle {

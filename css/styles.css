@@ -7056,6 +7056,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .plan-week-task .week-todo-text {
   color: #f1f5f9;
 }
+.glass-mode .plan-week-task .week-todo-check {
+  display: none;
+}
 .glass-mode .plan-today-btn {
   background: rgba(255, 255, 255, 0.15);
   border-color: rgba(255, 255, 255, 0.35);
@@ -10204,6 +10207,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   border: 1.5px solid transparent;
   transition: border-color 0.12s, opacity 0.12s;
 }
+.plan-week-task .week-todo-check {
+  display: none;
+}
 .plan-week-task.done {
   opacity: 0.5;
 }
@@ -10397,14 +10403,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 .plan-scroll-month-label {
   font-size: 11px;
   font-weight: 700;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 16px 2px 6px;
   position: sticky;
   top: 0;
   z-index: 1;
-  background: var(--bg);
 }
 .plan-scroll-month-label:first-child {
   padding-top: 0;
@@ -10549,34 +10554,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   grid-template-areas: "content";
   align-items: center;
   padding-left: 32px;
-  padding-right: 40px;
+  padding-right: 10px;
 }
 .plan-inbox-col .todo-item .todo-actions {
-  grid-area: unset;
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  opacity: 1 !important;
-}
-.plan-inbox-col .todo-item .todo-delete {
-  font-size: 18px;
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: color 0.12s, background 0.12s;
-}
-.plan-inbox-col .todo-item .todo-delete:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
+  display: none;
 }
 
 .plan-drag-handle {
