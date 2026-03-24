@@ -6569,6 +6569,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .plan-week-day {
     background:   rgba(255,255,255,.07);
     border-color: rgba(255,255,255,.15);
+    .plan-week-day-name { color: rgba(255,255,255,.55); }
+    .plan-week-day-num  { color: #f1f5f9; }
+    .plan-week-day-header:hover { background: rgba(255,255,255,.08); }
     &.is-today {
       background:  color-mix(in srgb, var(--primary) 28%, #1a1d27);
       border-color: var(--primary);
@@ -9331,7 +9334,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   &.is-today {
     border-color: var(--today-border);
-    background:   var(--today);
+    background:  var(--surface) !important;
   }
 
   &.drag-over {
@@ -9349,25 +9352,22 @@ body:has(.bottom-panel:not(.hidden))::before {
   cursor:        pointer;
   border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0;
   flex-shrink:   0;
-  background:    var(--primary);
   transition:    background .12s;
 
-  &:hover {
-    background: var(--primary-dark);
-  }
+  &:hover { background: rgba(0,0,0,.06); }
 }
 
 .plan-week-day-name {
   font-size:   11px;
   font-weight: 600;
-  color:       rgba(255,255,255,0.7);
+  color:       var(--text-muted);
   text-transform: uppercase;
 }
 
 .plan-week-day-num {
   font-size:   22px;
   font-weight: 700;
-  color:       #fff;
+  color:       var(--text);
 }
 
 .plan-week-day-tasks {
