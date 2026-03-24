@@ -58,7 +58,6 @@ export function setupEventListeners(app) {
   // Task date change (for modal clouds)
   document.getElementById('taskDate').addEventListener('change', e => {
     const d = e.target.value ? app.parseDS(e.target.value) : app.getNavDate();
-    const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     document.getElementById('modalClouds').innerHTML = app.getCloudsHTML(d);
   });
 

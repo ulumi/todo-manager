@@ -474,7 +474,7 @@ class TodoApp {
 
   _renderQuickFindDropdown(results, query) {
     const dropdown = document.getElementById('quickFindDropdown');
-    const qEsc = query.replace(/'/g, "\\'");
+    const qEsc = query.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     let html = '';
 
     results.forEach(todo => {
@@ -968,6 +968,7 @@ class TodoApp {
   }
 
   deleteOneOccurrence() {
+    if (!state.pendingDelete) return;
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
       snapshot(state.todos);
@@ -978,6 +979,7 @@ class TodoApp {
   }
 
   deleteFutureOccurrences() {
+    if (!state.pendingDelete) return;
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
       snapshot(state.todos);
@@ -989,6 +991,7 @@ class TodoApp {
   }
 
   deleteAllOccurrences() {
+    if (!state.pendingDelete) return;
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
       snapshot(state.todos);
@@ -1183,7 +1186,7 @@ class TodoApp {
     const panel = document.getElementById('celebrateDebugPanel');
     if (panel) {
       const btns = panel.querySelectorAll('button');
-      const btn = btns[0];
+      const btn = btns[2];
       const orig = btn.textContent;
       btn.textContent = '✓ Banned!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -1195,7 +1198,7 @@ class TodoApp {
     const panel = document.getElementById('celebrateDebugPanel');
     if (panel) {
       const btns = panel.querySelectorAll('button');
-      const btn = btns[1];
+      const btn = btns[4];
       const orig = btn.textContent;
       btn.textContent = '✓ Banned!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -1207,7 +1210,7 @@ class TodoApp {
     const panel = document.getElementById('celebrateDebugPanel');
     if (panel) {
       const btns = panel.querySelectorAll('button');
-      const btn = btns[1];
+      const btn = btns[3];
       const orig = btn.textContent;
       btn.textContent = '✓ Banned!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -1263,7 +1266,7 @@ class TodoApp {
     snapshot(state.todos);
     t.completed = !t.completed;
     saveTodos(state.todos);
-    if (!t.completed) celebrate(state.lang);
+    if (t.completed) celebrate(state.lang);
     this.render();
   }
 

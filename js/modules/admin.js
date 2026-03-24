@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import * as state from './state.js';
-import { saveTodos } from './storage.js';
+import { saveTodos, pushFirestoreNow } from './storage.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
@@ -40,6 +40,7 @@ export function getCategories() {
 
 export function saveCategories(categories) {
   localStorage.setItem(PROJECTS_KEY, JSON.stringify(categories));
+  pushFirestoreNow();
 }
 
 export function addCategory() {
@@ -92,6 +93,7 @@ export function getTemplates() {
 
 export function saveTemplates(templates) {
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+  pushFirestoreNow();
 }
 
 export function addTemplate() {
@@ -213,6 +215,7 @@ export function getSuggestedTasks() {
 
 export function saveSuggestedTasks(tasks) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  pushFirestoreNow();
 }
 
 export function openAdminModal() {
