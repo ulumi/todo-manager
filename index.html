@@ -227,7 +227,10 @@
     <!-- ── Main form ── -->
     <div class="modal-main">
       <div class="modal-header">
-        <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
+        <div class="modal-title-wrap">
+          <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
+          <button class="modal-guided-pill" id="guidedPillBtn" onclick="window.app.openGuidedCards()">✦ Mode guidé</button>
+        </div>
         <button class="modal-close-btn" onclick="window.app.closeModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
       </div>
 
@@ -344,6 +347,7 @@
       <div class="modal-footer">
         <a class="guided-link" id="guidedCardsLink" onclick="window.app.openGuidedCards()">Besoin d'aide ?</a>
         <div class="modal-footer-actions">
+          <button class="btn btn-danger" id="deleteFromEditBtn" style="display:none" onclick="window.app.deleteFromEditModal()">Supprimer</button>
           <button class="btn btn-ghost" id="cancelModal" data-i18n="cancel">Annuler</button>
           <button class="btn btn-primary" id="saveTask" data-i18n="saveTask">Ajouter</button>
         </div>

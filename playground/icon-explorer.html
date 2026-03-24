@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Icon Explorer — HUGE Playground</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090614;--bg2:#0d0b1a;--surf:rgba(255,255,255,.04);--surf2:rgba(255,255,255,.07);
+  --bdr:rgba(255,255,255,.08);--bdr2:rgba(255,255,255,.14);
+  --txt:#f1f5f9;--txt2:rgba(255,255,255,.6);--txt3:rgba(255,255,255,.3);
+  --acc:#a78bfa;--acc2:rgba(167,139,250,.14);--acc3:rgba(167,139,250,.35);
+  --sb:240px;--fav:264px;--card:88px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+#topbar{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--bg2);z-index:10}
+#logo{font-size:15px;font-weight:900;letter-spacing:-.5px;white-space:nowrap;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#sw{flex:1;max-width:500px;position:relative;display:flex;align-items:center}
+#si{position:absolute;left:11px;width:15px;height:15px;color:var(--txt3);pointer-events:none;flex-shrink:0}
+#search{width:100%;padding:8px 34px 8px 34px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:9px;color:var(--txt);font-size:13px;outline:none;transition:border-color .2s,background .2s}
+#search:focus{border-color:var(--acc3);background:rgba(167,139,250,.07)}
+#search::placeholder{color:var(--txt3)}
+#clr{position:absolute;right:8px;background:none;border:none;cursor:pointer;color:var(--txt3);font-size:13px;padding:3px;border-radius:4px;display:none;line-height:1}
+#clr:hover{color:var(--txt);background:var(--surf2)}
+#rinfo{font-size:11px;color:var(--txt3);white-space:nowrap}
+.szbtns{display:flex;gap:2px;background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:2px}
+.szbtn{padding:4px 10px;border-radius:6px;border:none;background:none;color:var(--txt3);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.szbtn.on{background:var(--acc2);color:var(--acc)}
+#favtog{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid var(--bdr);background:var(--surf);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+#favtog:hover{border-color:var(--bdr2);color:var(--txt)}
+#favtog.on{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.3);color:#fda4af}
+
+/* ── LAYOUT ── */
+#content{flex:1;display:flex;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sb{width:var(--sb);flex-shrink:0;border-right:1px solid var(--bdr);overflow-y:auto;padding:10px 0;background:var(--bg2)}
+#sb::-webkit-scrollbar{width:3px}
+#sb::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.sbs{padding:0 10px 10px}
+.sbs+.sbs{border-top:1px solid var(--bdr);padding-top:10px}
+.sbt{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--txt3);margin-bottom:7px;display:flex;align-items:center;justify-content:space-between}
+.sba{font-size:9px;background:none;border:none;cursor:pointer;color:var(--acc);font-weight:700;padding:0}
+.sba:hover{text-decoration:underline}
+
+/* Library items */
+.lbi{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;cursor:pointer;transition:background .15s;user-select:none}
+.lbi:hover{background:var(--surf2)}
+.lbck{width:13px;height:13px;border:1.5px solid var(--bdr2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.lbi.on .lbck{border-color:var(--acc);background:var(--acc)}
+.lbck::after{content:'✓';font-size:9px;font-weight:900;color:#fff;display:none;margin-top:-1px}
+.lbi.on .lbck::after{display:block}
+.lbd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.lbn{font-size:11px;color:var(--txt2);flex:1}
+.lbi.on .lbn{color:var(--txt)}
+.lbc{font-size:9px;color:var(--txt3)}
+
+/* Categories */
+.cti{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:7px;cursor:pointer;font-size:11px;color:var(--txt2);transition:all .15s;user-select:none}
+.cti:hover{background:var(--surf2);color:var(--txt)}
+.cti.on{background:var(--acc2);color:var(--acc);font-weight:600}
+.ctio{font-size:13px;width:16px;text-align:center}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#gs{flex:1;overflow-y:auto;padding:14px}
+#gs::-webkit-scrollbar{width:4px}
+#gs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--card),1fr));gap:7px}
+
+/* Icon cards */
+.ic{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:10px 6px 8px;border-radius:10px;border:1px solid var(--bdr);background:var(--surf);cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.ic:hover{border-color:var(--acc3);background:var(--acc2);transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.ic.fav{border-color:rgba(251,113,133,.25)}
+.ic img{display:block;object-fit:contain}
+.icn{font-size:9px;color:var(--txt3);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;line-height:1.2}
+.ic:hover .icn{color:var(--txt2)}
+.icfb{position:absolute;top:3px;right:3px;background:none;border:none;cursor:pointer;color:var(--txt3);font-size:11px;padding:2px;border-radius:4px;opacity:0;transition:all .15s;line-height:1}
+.ic:hover .icfb,.ic.fav .icfb{opacity:1}
+.icfb:hover{background:rgba(251,113,133,.2);color:#fda4af}
+.ic.fav .icfb{color:#fda4af}
+.iclb{position:absolute;bottom:3px;left:3px;font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;opacity:0;transition:opacity .15s}
+.ic:hover .iclb{opacity:1}
+
+/* States */
+#lst,#est{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--txt3);font-size:13px;display:none}
+.spin{display:inline-block;width:26px;height:26px;border:2.5px solid rgba(255,255,255,.1);border-top-color:var(--acc);border-radius:50%;animation:sp 1s linear infinite;margin-bottom:10px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#lmw{text-align:center;padding:14px;display:none}
+#lmb{padding:7px 22px;border-radius:8px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+#lmb:hover{background:var(--acc2);border-color:var(--acc3);color:var(--acc)}
+
+/* ── FAV PANEL ── */
+#fav{width:0;min-width:0;overflow:hidden;flex-shrink:0;transition:width .3s cubic-bezier(.2,1,.3,1)}
+#fav.on{width:var(--fav)}
+#favi{width:var(--fav);min-width:var(--fav);height:100%;display:flex;flex-direction:column;border-left:1px solid var(--bdr);background:var(--bg2);overflow:hidden}
+#favh{padding:11px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;flex-shrink:0}
+#favht{font-size:12px;font-weight:700;color:var(--txt);flex:1}
+#afb{background:none;border:1px solid var(--bdr2);border-radius:6px;padding:3px 8px;font-size:10px;color:var(--txt2);cursor:pointer;transition:all .15s}
+#afb:hover{border-color:var(--acc3);color:var(--acc)}
+#favf{padding:7px 8px;display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.ftab{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;border:1px solid var(--bdr);background:var(--surf);font-size:10px;color:var(--txt2);cursor:pointer;transition:all .15s}
+.ftab.on{background:var(--acc2);border-color:var(--acc3);color:var(--acc);font-weight:600}
+.ftab:hover:not(.on){border-color:var(--bdr2);color:var(--txt)}
+.fdel{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.2);font-size:9px;padding:0;line-height:1}
+.fdel:hover{color:#fda4af}
+#favgs{flex:1;overflow-y:auto;padding:8px}
+#favgs::-webkit-scrollbar{width:3px}
+#favgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+#favg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.fvc{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border-radius:7px;border:1px solid var(--bdr);background:var(--surf);cursor:pointer;position:relative;transition:all .15s}
+.fvc:hover{border-color:var(--bdr2);background:var(--surf2)}
+.fvn{font-size:8px;color:var(--txt3);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.fvr{position:absolute;top:2px;right:2px;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.2);font-size:9px;padding:1px;border-radius:3px;opacity:0;line-height:1}
+.fvc:hover .fvr{opacity:1}
+.fvr:hover{color:#fda4af;background:rgba(251,113,133,.15)}
+.femp{grid-column:1/-1;text-align:center;padding:24px 8px;color:var(--txt3);font-size:10px;line-height:1.7}
+
+/* ── MODAL ── */
+#mo{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+#mo.on{opacity:1;pointer-events:all}
+#md{background:#110e1f;border:1px solid rgba(255,255,255,.12);border-radius:18px;width:min(500px,92vw);max-height:88vh;overflow-y:auto;transform:translateY(18px) scale(.97);transition:transform .25s cubic-bezier(.2,1,.3,1)}
+#mo.on #md{transform:none}
+#md::-webkit-scrollbar{width:3px}
+#md::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+#mdh{display:flex;align-items:flex-start;gap:14px;padding:20px 20px 14px}
+#mdprev{width:76px;height:76px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#mdprev img{width:44px;height:44px}
+#mdmeta{flex:1;min-width:0}
+#mdname{font-size:15px;font-weight:700;color:var(--txt);margin-bottom:3px;word-break:break-all}
+#mdlib{font-size:11px;color:var(--txt3);margin-bottom:8px}
+#mdfavb{display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+#mdfavb:hover,#mdfavb.on{background:rgba(251,113,133,.1);border-color:rgba(251,113,133,.3);color:#fda4af}
+#mdclo{background:var(--surf2);border:1px solid var(--bdr);border-radius:8px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--txt2);font-size:13px;flex-shrink:0;transition:all .15s}
+#mdclo:hover{background:rgba(255,255,255,.1);color:var(--txt)}
+#mdsz{padding:0 20px 14px;display:flex;align-items:flex-end;gap:16px;border-bottom:1px solid var(--bdr)}
+.szp{display:flex;flex-direction:column;align-items:center;gap:5px}
+.szp span{font-size:9px;color:var(--txt3)}
+#mdcol{padding:12px 20px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bdr)}
+#mdcol span{font-size:10px;color:var(--txt3)}
+#colorpick{width:30px;height:30px;border-radius:7px;border:1px solid var(--bdr2);padding:2px;background:var(--surf2);cursor:pointer}
+.cpre{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0}
+.cpre:hover{transform:scale(1.18)}
+.cpre.on{border-color:rgba(255,255,255,.8)}
+#mdcp{padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.cpb{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:9px;border:1px solid var(--bdr);background:var(--surf);cursor:pointer;transition:all .2s;text-align:left}
+.cpb:hover{border-color:var(--acc3);background:var(--acc2)}
+.cpbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}
+.cpb:hover .cpbl{color:rgba(167,139,250,.7)}
+.cpbv{font-size:10px;color:var(--txt2);font-family:'SF Mono','Courier New',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpb:hover .cpbv{color:var(--acc)}
+#mdfol{padding:0 20px 18px;display:flex;align-items:center;gap:8px}
+#mdfol label{font-size:10px;color:var(--txt3)}
+#folsel{flex:1;padding:5px 9px;border-radius:7px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt);font-size:11px;outline:none}
+#folsel:focus{border-color:var(--acc3)}
+#mdsavf{padding:5px 12px;border-radius:7px;border:1px solid var(--acc3);background:var(--acc2);color:var(--acc);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+#mdsavf:hover{background:rgba(167,139,250,.25)}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(17,14,31,.97);border:1px solid var(--acc3);border-radius:10px;padding:9px 16px;font-size:12px;color:var(--txt);z-index:1000;transition:transform .3s cubic-bezier(.2,1,.3,1);pointer-events:none;white-space:nowrap}
+#toast.on{transform:translateX(-50%) translateY(0)}
+
+/* ── SELECTION ── */
+.ic.sel{border-color:var(--acc);background:var(--acc2);box-shadow:0 0 0 1px var(--acc)}
+.ic.sel::after{content:'✓';position:absolute;top:3px;left:3px;font-size:9px;font-weight:900;color:var(--acc);background:rgba(167,139,250,.2);border-radius:3px;padding:1px 4px;line-height:1.4}
+.ic.copied{animation:flash .35s ease}
+@keyframes flash{0%,100%{background:var(--surf)}50%{background:rgba(167,139,250,.28);border-color:var(--acc)}}
+
+/* ── SELECTION BAR ── */
+#selbar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);z-index:200;display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(10,8,20,.97);border:1px solid var(--acc3);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.5);backdrop-filter:blur(12px);transition:transform .3s cubic-bezier(.2,1,.3,1);white-space:nowrap}
+#selbar.on{transform:translateX(-50%) translateY(0)}
+#selcnt{font-size:12px;font-weight:700;color:var(--acc)}
+#selcopyall{padding:6px 14px;border-radius:8px;border:1px solid var(--acc3);background:var(--acc2);color:var(--acc);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+#selcopyall:hover{background:rgba(167,139,250,.28)}
+#selcopynames{padding:6px 14px;border-radius:8px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+#selcopynames:hover{background:var(--surf2);border-color:var(--bdr2);color:var(--txt)}
+#selclr{background:none;border:none;cursor:pointer;color:var(--txt3);font-size:13px;padding:4px;border-radius:5px;line-height:1}
+#selclr:hover{color:var(--txt);background:var(--surf2)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){:root{--sb:190px}}
+@media(max-width:650px){#sb{display:none}:root{--fav:100vw}}
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div id="logo">Icon Explorer</div>
+  <div id="sw">
+    <svg id="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="search" type="text" placeholder="Search 50,000+ icons across 10 libraries… (press /)" autocomplete="off" spellcheck="false">
+    <button id="clr">✕</button>
+  </div>
+  <span id="rinfo"></span>
+  <div class="szbtns">
+    <button class="szbtn" data-s="sm">S</button>
+    <button class="szbtn on" data-s="md">M</button>
+    <button class="szbtn" data-s="lg">L</button>
+  </div>
+  <button id="favtog">♡ <span id="favcnt">0</span></button>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- SIDEBAR -->
+  <aside id="sb">
+    <div class="sbs">
+      <div class="sbt">Libraries <button class="sba" id="togall">Deselect all</button></div>
+      <div id="lbsl"></div>
+    </div>
+    <div class="sbs">
+      <div class="sbt">Categories</div>
+      <div id="ctsl"></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+    <div id="gs">
+      <div id="grid">
+        <div id="lst"><div class="spin"></div><div>Searching…</div></div>
+        <div id="est"><div style="font-size:28px;margin-bottom:8px">◉</div><div id="estmsg">No icons found.</div></div>
+      </div>
+      <div id="lmw"><button id="lmb">Load more</button></div>
+    </div>
+  </main>
+
+  <!-- FAV PANEL -->
+  <div id="fav">
+    <div id="favi">
+      <div id="favh">
+        <span id="favht">♡ Favorites</span>
+        <button id="afb">+ Folder</button>
+      </div>
+      <div id="favf"></div>
+      <div id="favgs"><div id="favg"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="mo">
+  <div id="md">
+    <div id="mdh">
+      <div id="mdprev"><img id="mdimg" src="" alt=""></div>
+      <div id="mdmeta">
+        <div id="mdname"></div>
+        <div id="mdlib"></div>
+        <button id="mdfavb">♡ Add to favorites</button>
+      </div>
+      <button id="mdclo">✕</button>
+    </div>
+    <div id="mdsz">
+      <div class="szp"><img class="szimg" data-px="16" style="width:16px;height:16px" alt=""><span>16</span></div>
+      <div class="szp"><img class="szimg" data-px="24" style="width:24px;height:24px" alt=""><span>24</span></div>
+      <div class="szp"><img class="szimg" data-px="32" style="width:32px;height:32px" alt=""><span>32</span></div>
+      <div class="szp"><img class="szimg" data-px="48" style="width:48px;height:48px" alt=""><span>48</span></div>
+      <div class="szp"><img class="szimg" data-px="64" style="width:64px;height:64px" alt=""><span>64</span></div>
+    </div>
+    <div id="mdcol">
+      <span>Color</span>
+      <input type="color" id="colorpick" value="#e2e8f0">
+      <div class="cpre on" data-c="#e2e8f0" style="background:#e2e8f0"></div>
+      <div class="cpre" data-c="#a78bfa" style="background:#a78bfa"></div>
+      <div class="cpre" data-c="#60a5fa" style="background:#60a5fa"></div>
+      <div class="cpre" data-c="#34d399" style="background:#34d399"></div>
+      <div class="cpre" data-c="#fb7185" style="background:#fb7185"></div>
+      <div class="cpre" data-c="#f97316" style="background:#f97316"></div>
+      <div class="cpre" data-c="#fbbf24" style="background:#fbbf24"></div>
+      <div class="cpre" data-c="#ffffff" style="background:#fff;border:1px solid rgba(255,255,255,.2)"></div>
+    </div>
+    <div id="mdcp">
+      <button class="cpb" id="cname"><span class="cpbl">Icon name</span><span class="cpbv" id="cnamev"></span></button>
+      <button class="cpb" id="csvg"><span class="cpbl">SVG code</span><span class="cpbv">&lt;svg&gt;…&lt;/svg&gt;</span></button>
+      <button class="cpb" id="curl"><span class="cpbl">img src URL</span><span class="cpbv" id="curlv"></span></button>
+      <button class="cpb" id="ccmp"><span class="cpbl">React / Vue</span><span class="cpbv" id="ccmpv"></span></button>
+    </div>
+    <div id="mdfol">
+      <label for="folsel">Save to:</label>
+      <select id="folsel"></select>
+      <button id="mdsavf">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="selbar">
+  <span id="selcnt">0 selected</span>
+  <button id="selcopyall">Copy names</button>
+  <button id="selcopynames">Copy SVG list</button>
+  <button id="selclr" title="Deselect all (Esc)">✕</button>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   ICON EXPLORER — powered by Iconify API
+   https://api.iconify.design
+══════════════════════════════════════════════ */
+
+const API = 'https://api.iconify.design';
+const LIMIT = 96;
+
+const LIBS = [
+  { id:'lucide',           name:'Lucide',           cnt:'1.7k', color:'#f97316' },
+  { id:'ph',               name:'Phosphor',         cnt:'9k',   color:'#a78bfa' },
+  { id:'tabler',           name:'Tabler',           cnt:'6k',   color:'#60a5fa' },
+  { id:'mdi',              name:'Material Design',  cnt:'7.4k', color:'#34d399' },
+  { id:'heroicons',        name:'Heroicons',        cnt:'1.3k', color:'#fb7185' },
+  { id:'bi',               name:'Bootstrap',        cnt:'2k',   color:'#f59e0b' },
+  { id:'ri',               name:'Remix Icons',      cnt:'3.2k', color:'#38bdf8' },
+  { id:'material-symbols', name:'Material Symbols', cnt:'9k',   color:'#4ade80' },
+  { id:'fa6-solid',        name:'Font Awesome',     cnt:'1k',   color:'#818cf8' },
+  { id:'simple-icons',     name:'Simple Icons',     cnt:'3k',   color:'#f43f5e' },
+];
+
+const CATS = [
+  { id:'home',     label:'Navigation', e:'◉', q:'home'     },
+  { id:'arrow',    label:'Arrows',     e:'→', q:'arrow'    },
+  { id:'user',     label:'Users',      e:'◎', q:'user'     },
+  { id:'file',     label:'Files',      e:'▣', q:'file'     },
+  { id:'play',     label:'Media',      e:'▶', q:'play'     },
+  { id:'heart',    label:'Social',     e:'♡', q:'heart'    },
+  { id:'mail',     label:'Messages',   e:'✉', q:'mail'     },
+  { id:'cart',     label:'Commerce',   e:'◈', q:'cart'     },
+  { id:'chart',    label:'Charts',     e:'▦', q:'chart'    },
+  { id:'cloud',    label:'Weather',    e:'☁', q:'cloud'    },
+  { id:'phone',    label:'Devices',    e:'▬', q:'phone'    },
+  { id:'lock',     label:'Security',   e:'◆', q:'lock'     },
+  { id:'settings', label:'Settings',   e:'⚙', q:'settings' },
+  { id:'star',     label:'Ratings',    e:'★', q:'star'     },
+];
+
+const SZMAP = { sm:{ card:72, icon:20 }, md:{ card:88, icon:28 }, lg:{ card:108, icon:40 } };
+
+const S = {
+  q: 'home',
+  libs: new Set(LIBS.map(l => l.id)),
+  cat: null,
+  start: 0,
+  icons: [],
+  total: 0,
+  loading: false,
+  sz: 'md',
+  color: '#e2e8f0',
+  favs: { Favorites: [] },
+  folder: 'Favorites',
+  favOpen: false,
+  modal: null,
+  svgc: {},
+  sel: new Set(),
+};
+
+// DOM shortcuts
+const g = id => document.getElementById(id);
+const grid = g('grid'), rinfo = g('rinfo'), lmw = g('lmw');
+const lst = g('lst'), est = g('est'), estmsg = g('estmsg');
+const mo = g('mo'), toast = g('toast');
+
+/* ══ INIT ══════════════════════════════════════ */
+function init() {
+  loadFavs();
+  buildLibs();
+  buildCats();
+  renderFavs();
+  updFavCnt();
+  bindEvents();
+  document.documentElement.style.setProperty('--card', SZMAP[S.sz].card + 'px');
+  search('home');
+}
+
+/* ══ SIDEBAR ═══════════════════════════════════ */
+function buildLibs() {
+  g('lbsl').innerHTML = LIBS.map(l => `
+    <div class="lbi on" data-id="${l.id}">
+      <div class="lbck"></div>
+      <div class="lbd" style="background:${l.color}"></div>
+      <span class="lbn">${l.name}</span>
+      <span class="lbc">${l.cnt}</span>
+    </div>`).join('');
+  g('lbsl').querySelectorAll('.lbi').forEach(el =>
+    el.addEventListener('click', () => toggleLib(el.dataset.id, el))
+  );
+}
+
+function buildCats() {
+  g('ctsl').innerHTML = CATS.map(c => `
+    <div class="cti" data-q="${c.q}" data-id="${c.id}">
+      <span class="ctio">${c.e}</span>${c.label}
+    </div>`).join('');
+  g('ctsl').querySelectorAll('.cti').forEach(el =>
+    el.addEventListener('click', () => {
+      g('ctsl').querySelectorAll('.cti').forEach(c => c.classList.remove('on'));
+      el.classList.add('on');
+      S.cat = el.dataset.id;
+      search(el.dataset.q);
+    })
+  );
+}
+
+function toggleLib(id, el) {
+  if (S.libs.has(id)) {
+    if (S.libs.size === 1) return;
+    S.libs.delete(id); el.classList.remove('on');
+  } else {
+    S.libs.add(id); el.classList.add('on');
+  }
+  updToggleBtn();
+  dSearch(S.q);
+}
+
+function updToggleBtn() {
+  g('togall').textContent = S.libs.size === LIBS.length ? 'Deselect all' : 'Select all';
+}
+
+/* ══ SEARCH ════════════════════════════════════ */
+let dtimer;
+function dSearch(q) {
+  clearTimeout(dtimer);
+  dtimer = setTimeout(() => search(q), 280);
+}
+
+async function search(q, more = false) {
+  if (S.loading) return;
+  const query = (q || 'home').trim();
+  const libs = [...S.libs];
+  if (!libs.length) { showEmpty('Select at least one library.'); return; }
+
+  if (!more) { S.start = 0; S.icons = []; }
+  S.loading = true; S.q = query;
+
+  if (!more) {
+    grid.innerHTML = '';
+    grid.appendChild(lst); grid.appendChild(est);
+    lst.style.display = 'block'; est.style.display = 'none';
+    lmw.style.display = 'none';
+  } else {
+    g('lmb').textContent = 'Loading…'; g('lmb').disabled = true;
+  }
+
+  try {
+    const url = `${API}/search?query=${encodeURIComponent(query)}&limit=${LIMIT}&start=${S.start}&prefixes=${libs.join(',')}`;
+    const data = await fetch(url).then(r => r.json());
+    lst.style.display = 'none';
+    S.loading = false;
+
+    const icons = data.icons || [];
+    S.total = data.total || 0;
+    S.start += icons.length;
+    S.icons.push(...icons);
+
+    if (!S.icons.length) { showEmpty(); return; }
+    if (!more) { grid.innerHTML = ''; grid.appendChild(lst); grid.appendChild(est); }
+
+    icons.forEach(id => grid.appendChild(mkCard(id)));
+
+    rinfo.textContent = S.total > LIMIT
+      ? `${S.total.toLocaleString()} icons found`
+      : `${S.total} icon${S.total !== 1 ? 's' : ''}`;
+
+    if (S.start < S.total) {
+      lmw.style.display = 'block';
+      g('lmb').textContent = `Load more (${S.total - S.start} remaining)`;
+      g('lmb').disabled = false;
+    } else { lmw.style.display = 'none'; }
+
+    updFavBadges();
+  } catch(e) {
+    S.loading = false; lst.style.display = 'none';
+    showEmpty('API error — check your connection.');
+  }
+}
+
+function showEmpty(msg) {
+  est.style.display = 'block'; lst.style.display = 'none';
+  if (msg) estmsg.textContent = msg;
+  rinfo.textContent = '0 icons';
+}
+
+/* ══ CARDS ═════════════════════════════════════ */
+function iSrc(id, sz) {
+  const [p, n] = id.split(':');
+  return `${API}/${p}/${n}.svg?color=${S.color.replace('#','%23')}&height=${sz}`;
+}
+
+function mkCard(id) {
+  const [p, n] = id.split(':');
+  const lib = LIBS.find(l => l.id === p);
+  const sz = SZMAP[S.sz].icon;
+  const fav = inFavs(id);
+
+  const div = document.createElement('div');
+  div.className = 'ic' + (fav ? ' fav' : '');
+  div.dataset.id = id; div.title = id;
+
+  const img = document.createElement('img');
+  img.width = sz; img.height = sz;
+  img.src = iSrc(id, sz); img.alt = n; img.loading = 'lazy';
+
+  const nm = document.createElement('div');
+  nm.className = 'icn'; nm.textContent = n;
+
+  const fb = document.createElement('button');
+  fb.className = 'icfb'; fb.innerHTML = fav ? '♥' : '♡';
+  fb.title = fav ? 'Remove from favorites' : 'Add to favorites';
+  fb.onclick = e => { e.stopPropagation(); toggleFav(id, div, fb); };
+
+  if (lib) {
+    const badge = document.createElement('div');
+    badge.className = 'iclb';
+    badge.textContent = lib.name.split(' ')[0];
+    badge.style.cssText = `background:${lib.color}1a;color:${lib.color}`;
+    div.appendChild(badge);
+  }
+  div.append(img, nm, fb);
+
+  // Single click = select + copy (single) or add to selection (multi)
+  div.addEventListener('click', () => {
+    if (S.sel.has(id)) {
+      S.sel.delete(id); div.classList.remove('sel');
+    } else {
+      S.sel.add(id); div.classList.add('sel');
+      // Flash feedback
+      div.classList.add('copied');
+      setTimeout(() => div.classList.remove('copied'), 400);
+      if (S.sel.size === 1) cp(id, `Copied: ${id}`);
+    }
+    renderSelBar();
+  });
+
+  // Double click = open detail modal
+  div.addEventListener('dblclick', e => { e.preventDefault(); e.stopPropagation(); S.sel.delete(id); div.classList.remove('sel'); renderSelBar(); openModal(id); });
+
+  return div;
+}
+
+function toggleFav(id, card, btn) {
+  if (inFavs(id)) { removeFav(id); }
+  else { addFav(id, S.folder); }
+  const now = inFavs(id);
+  card.classList.toggle('fav', now);
+  btn.innerHTML = now ? '♥' : '♡';
+  btn.title = now ? 'Remove from favorites' : 'Add to favorites';
+}
+
+function updFavBadges() {
+  document.querySelectorAll('.ic').forEach(c => {
+    const id = c.dataset.id, fav = inFavs(id);
+    c.classList.toggle('fav', fav);
+    const fb = c.querySelector('.icfb');
+    if (fb) { fb.innerHTML = fav ? '♥' : '♡'; fb.title = fav ? 'Remove from favorites' : 'Add to favorites'; }
+  });
+}
+
+function applySize() {
+  const sz = SZMAP[S.sz];
+  document.documentElement.style.setProperty('--card', sz.card + 'px');
+  document.querySelectorAll('.ic img').forEach(img => {
+    const id = img.closest('.ic')?.dataset.id;
+    if (id) { img.width = sz.icon; img.height = sz.icon; img.src = iSrc(id, sz.icon); }
+  });
+}
+
+function applyColor() {
+  document.querySelectorAll('.ic img').forEach(img => {
+    const id = img.closest('.ic')?.dataset.id;
+    if (id) img.src = iSrc(id, SZMAP[S.sz].icon);
+  });
+  // update fav panel
+  document.querySelectorAll('.fvc img').forEach(img => {
+    const id = img.closest('.fvc')?.dataset.id;
+    if (id) img.src = iSrc(id, 20);
+  });
+}
+
+/* ══ MODAL ═════════════════════════════════════ */
+async function openModal(id) {
+  const [p, n] = id.split(':');
+  const lib = LIBS.find(l => l.id === p);
+  S.modal = id;
+
+  g('mdname').textContent = id;
+  g('mdlib').textContent = lib ? `${lib.name} · ${p}:${n}` : p;
+
+  setModalImgs(S.color);
+  g('colorpick').value = S.color;
+  document.querySelectorAll('.cpre').forEach(el => el.classList.toggle('on', el.dataset.c === S.color));
+
+  g('cnamev').textContent = id;
+  g('curlv').textContent = `${API}/${p}/${n}.svg`;
+  g('ccmpv').textContent = `<Icon icon="${id}" />`;
+
+  updModalFavBtn(id);
+  renderFolSel();
+  mo.classList.add('on');
+
+  if (!S.svgc[id]) {
+    try {
+      const data = await fetch(`${API}/${p}.json?icons=${n}`).then(r => r.json());
+      const ic = data.icons?.[n];
+      if (ic) {
+        const w = ic.width || data.width || 24, h = ic.height || data.height || 24;
+        S.svgc[id] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${ic.body}</svg>`;
+      }
+    } catch(e) {}
+  }
+}
+
+function setModalImgs(color) {
+  if (!S.modal) return;
+  const [p, n] = S.modal.split(':');
+  const c = color.replace('#','%23');
+  const base = `${API}/${p}/${n}.svg?color=${c}`;
+  g('mdimg').src = `${base}&height=44`;
+  document.querySelectorAll('.szimg').forEach(img => img.src = `${base}&height=${img.dataset.px}`);
+}
+
+function updModalFavBtn(id) {
+  const fav = inFavs(id);
+  g('mdfavb').innerHTML = fav ? '♥ In favorites' : '♡ Add to favorites';
+  g('mdfavb').classList.toggle('on', fav);
+}
+
+function closeModal() { mo.classList.remove('on'); S.modal = null; }
+
+/* ══ FAVORITES ═════════════════════════════════ */
+function inFavs(id) { return Object.values(S.favs).some(a => a.includes(id)); }
+
+function addFav(id, folder) {
+  if (!S.favs[folder]) S.favs[folder] = [];
+  if (S.favs[folder].includes(id)) return;
+  S.favs[folder].push(id);
+  saveFavs(); renderFavs(); updFavCnt();
+  showToast(`Saved ${id.split(':')[1]} → ${folder}`);
+}
+
+function removeFav(id, folder = null) {
+  if (folder) {
+    S.favs[folder] = S.favs[folder].filter(x => x !== id);
+  } else {
+    for (const f in S.favs) S.favs[f] = S.favs[f].filter(x => x !== id);
+  }
+  saveFavs(); renderFavs(); updFavCnt(); updFavBadges();
+  if (S.modal === id) updModalFavBtn(id);
+}
+
+function saveFavs() { localStorage.setItem('huge-icon-favs', JSON.stringify(S.favs)); }
+function loadFavs() {
+  try { const d = JSON.parse(localStorage.getItem('huge-icon-favs') || '{}'); if (Object.keys(d).length) S.favs = d; } catch(e) {}
+  if (!S.favs.Favorites) S.favs.Favorites = [];
+}
+
+function updFavCnt() {
+  const n = Object.values(S.favs).reduce((s, a) => s + a.length, 0);
+  g('favcnt').textContent = n;
+  g('favtog').classList.toggle('on', n > 0 || S.favOpen);
+}
+
+function renderFavs() { renderFolTabs(); renderFavGrid(); }
+
+function renderFolTabs() {
+  g('favf').innerHTML = Object.keys(S.favs).map(f => `
+    <div class="ftab${f === S.folder ? ' on' : ''}" data-f="${f}">
+      📁 ${f} <span style="opacity:.4">${S.favs[f].length}</span>
+      ${f !== 'Favorites' ? `<button class="fdel" data-f="${f}">✕</button>` : ''}
+    </div>`).join('');
+  g('favf').querySelectorAll('.ftab').forEach(el =>
+    el.addEventListener('click', e => { if (e.target.classList.contains('fdel')) return; S.folder = el.dataset.f; renderFavs(); })
+  );
+  g('favf').querySelectorAll('.fdel').forEach(btn =>
+    btn.addEventListener('click', e => { e.stopPropagation(); delFolder(btn.dataset.f); })
+  );
+  renderFolSel();
+}
+
+function renderFolSel() {
+  const sel = g('folsel'); if (!sel) return;
+  sel.innerHTML = Object.keys(S.favs).map(f => `<option value="${f}"${f === S.folder ? ' selected' : ''}>${f}</option>`).join('');
+}
+
+function renderFavGrid() {
+  const gv = g('favg');
+  const icons = S.favs[S.folder] || [];
+  if (!icons.length) { gv.innerHTML = '<div class="femp">No icons yet.<br>Click ♡ on any icon<br>to save it here.</div>'; return; }
+  gv.innerHTML = '';
+  icons.forEach(id => {
+    const [p, n] = id.split(':');
+    const div = document.createElement('div');
+    div.className = 'fvc'; div.dataset.id = id; div.title = id;
+    const img = document.createElement('img'); img.src = iSrc(id, 20); img.width = 20; img.height = 20;
+    const nm = document.createElement('div'); nm.className = 'fvn'; nm.textContent = n;
+    const rb = document.createElement('button'); rb.className = 'fvr'; rb.innerHTML = '✕'; rb.title = 'Remove';
+    rb.onclick = e => { e.stopPropagation(); removeFav(id, S.folder); };
+    div.append(img, nm, rb);
+    div.addEventListener('click', () => openModal(id));
+    gv.appendChild(div);
+  });
+}
+
+function mkFolder(name) {
+  if (!name || S.favs[name]) return;
+  S.favs[name] = []; S.folder = name; saveFavs(); renderFavs();
+}
+
+function delFolder(name) {
+  if (name === 'Favorites') return;
+  if (!confirm(`Delete folder "${name}" (${S.favs[name].length} icons)?`)) return;
+  delete S.favs[name];
+  if (S.folder === name) S.folder = 'Favorites';
+  saveFavs(); renderFavs(); updFavCnt(); updFavBadges();
+}
+
+/* ══ EVENTS ════════════════════════════════════ */
+function bindEvents() {
+  const si = g('search'), clr = g('clr');
+
+  si.addEventListener('input', () => {
+    const q = si.value.trim();
+    clr.style.display = q ? 'block' : 'none';
+    if (q) { g('ctsl').querySelectorAll('.cti').forEach(c => c.classList.remove('on')); S.cat = null; }
+    dSearch(q || 'home');
+  });
+
+  clr.addEventListener('click', () => { si.value = ''; clr.style.display = 'none'; search('home'); });
+
+  document.querySelectorAll('.szbtn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.szbtn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on'); S.sz = btn.dataset.s; applySize();
+  }));
+
+  g('favtog').addEventListener('click', () => {
+    S.favOpen = !S.favOpen;
+    g('fav').classList.toggle('on', S.favOpen);
+    g('favtog').classList.toggle('on', S.favOpen || Object.values(S.favs).some(a => a.length));
+  });
+
+  g('afb').addEventListener('click', () => { const n = prompt('Folder name:'); if (n?.trim()) mkFolder(n.trim()); });
+
+  g('togall').addEventListener('click', () => {
+    const all = S.libs.size === LIBS.length;
+    S.libs.clear();
+    if (all) S.libs.add(LIBS[0].id); else LIBS.forEach(l => S.libs.add(l.id));
+    document.querySelectorAll('.lbi').forEach(el => el.classList.toggle('on', S.libs.has(el.dataset.id)));
+    updToggleBtn(); dSearch(S.q);
+  });
+
+  g('lmb').addEventListener('click', () => search(S.q, true));
+
+  // Selection bar
+  g('selcopyall').addEventListener('click', () => {
+    cp([...S.sel].join('\n'), `${S.sel.size} icon names copied!`);
+  });
+  g('selcopynames').addEventListener('click', async () => {
+    showToast('Fetching SVGs…');
+    const svgs = await Promise.all([...S.sel].map(async id => {
+      if (S.svgc[id]) return S.svgc[id];
+      const [p,n] = id.split(':');
+      try {
+        const data = await fetch(`${API}/${p}.json?icons=${n}`).then(r=>r.json());
+        const ic = data.icons?.[n];
+        if (ic) { const w=ic.width||data.width||24,h=ic.height||data.height||24; S.svgc[id]=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${ic.body}</svg>`; return S.svgc[id]; }
+      } catch(e) {}
+      return `<!-- ${id}: fetch failed -->`;
+    }));
+    cp(svgs.join('\n'), `${S.sel.size} SVGs copied!`);
+  });
+  g('selclr').addEventListener('click', clearSel);
+
+  // Click on grid background = deselect all
+  g('gs').addEventListener('click', e => { if (e.target === g('gs') || e.target === g('grid')) clearSel(); });
+
+  // Modal
+  mo.addEventListener('click', e => { if (e.target === mo) closeModal(); });
+  g('mdclo').addEventListener('click', closeModal);
+  g('mdfavb').addEventListener('click', () => {
+    if (inFavs(S.modal)) removeFav(S.modal); else addFav(S.modal, S.folder);
+    updModalFavBtn(S.modal); updFavBadges();
+  });
+  g('mdsavf').addEventListener('click', () => {
+    addFav(S.modal, g('folsel').value); updModalFavBtn(S.modal); updFavBadges();
+  });
+
+  // Copy buttons
+  g('cname').addEventListener('click', () => cp(S.modal, 'Icon name copied!'));
+  g('csvg').addEventListener('click', () => {
+    if (S.svgc[S.modal]) cp(S.svgc[S.modal], 'SVG copied!');
+    else showToast('SVG loading, try again in a moment…');
+  });
+  g('curl').addEventListener('click', () => { const [p,n]=S.modal.split(':'); cp(`${API}/${p}/${n}.svg`, 'URL copied!'); });
+  g('ccmp').addEventListener('click', () => cp(`<Icon icon="${S.modal}" />`, 'Component copied!'));
+
+  // Color
+  g('colorpick').addEventListener('input', function() {
+    S.color = this.value;
+    document.querySelectorAll('.cpre').forEach(el => el.classList.toggle('on', el.dataset.c === S.color));
+    setModalImgs(S.color); applyColor();
+  });
+  document.querySelectorAll('.cpre').forEach(el => el.addEventListener('click', () => {
+    S.color = el.dataset.c; g('colorpick').value = S.color;
+    document.querySelectorAll('.cpre').forEach(p => p.classList.toggle('on', p.dataset.c === S.color));
+    setModalImgs(S.color); applyColor();
+  }));
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (mo.classList.contains('on')) closeModal();
+      else if (S.sel.size) clearSel();
+      else if (S.favOpen) { S.favOpen = false; g('fav').classList.remove('on'); updFavCnt(); }
+    }
+    if ((e.key === '/' || (e.metaKey && e.key === 'f')) && document.activeElement !== si) {
+      e.preventDefault(); si.focus(); si.select();
+    }
+  });
+}
+
+/* ══ SELECTION BAR ═════════════════════════════ */
+function renderSelBar() {
+  const n = S.sel.size;
+  const bar = g('selbar');
+  bar.classList.toggle('on', n > 1);
+  if (n > 1) g('selcnt').textContent = `${n} icons selected`;
+}
+
+function clearSel() {
+  S.sel.forEach(id => {
+    const card = document.querySelector(`.ic[data-id="${CSS.escape(id)}"]`);
+    if (card) card.classList.remove('sel');
+  });
+  S.sel.clear();
+  renderSelBar();
+}
+
+/* ══ UTILS ══════════════════════════════════════ */
+let tt;
+function showToast(msg) {
+  toast.textContent = msg; toast.classList.add('on');
+  clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('on'), 2200);
+}
+function cp(text, msg) {
+  navigator.clipboard.writeText(text).then(() => showToast(msg)).catch(() => {
+    const el = Object.assign(document.createElement('textarea'), { value: text });
+    document.body.appendChild(el); el.select(); document.execCommand('copy'); el.remove();
+    showToast(msg);
+  });
+}
+
+init();
+</script>
+<script src="huge-nav.js"></script>
+</body>
+</html>

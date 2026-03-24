@@ -63,6 +63,7 @@ export function discardDraft() {
   document.getElementById('taskDurationReal').value = '';
   selectPriority('');
   populateCategorySelect('');
+  populateIntentionSelect('');
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
@@ -156,6 +157,15 @@ function populateCategorySelect(selectedId) {
     categories.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
 }
 
+function populateIntentionSelect(selectedId) {
+  const sel = document.getElementById('taskIntention');
+  if (!sel) return;
+  let intentions = [];
+  try { intentions = JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { intentions = []; }
+  sel.innerHTML = `<option value="">— Aucune intention —</option>` +
+    intentions.map(i => `<option value="${i.id}"${i.id === selectedId ? ' selected' : ''}>${escapeCategory(i.title)}</option>`).join('');
+}
+
 function escapeCategory(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -202,6 +212,10 @@ export function openModal(date, todos, scheduleMode = 'date') {
   selectPriority('');
   document.getElementById('modalTitleEl').textContent = state.T.newTask;
   document.getElementById('saveTask').textContent = state.T.btnAdd;
+  const _deleteBtn = document.getElementById('deleteFromEditBtn');
+  if (_deleteBtn) _deleteBtn.style.display = 'none';
+  const _guidedPill = document.getElementById('guidedPillBtn');
+  if (_guidedPill) _guidedPill.style.display = '';
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskDescription').value = '';
   document.getElementById('taskDate').value = DS(date);
@@ -223,6 +237,7 @@ export function openModal(date, todos, scheduleMode = 'date') {
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
   populateCategorySelect('');
+  populateIntentionSelect('');
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
   const hadDraft = _tryRestoreDraft();
@@ -288,6 +303,10 @@ export function openEditModal(id, dateStr, todos) {
   state.setSelectedWeekDays(t.recDays ? [...t.recDays] : []);
   document.getElementById('modalTitleEl').textContent = state.T.editTask;
   document.getElementById('saveTask').textContent = state.T.btnModify;
+  const _deleteBtn = document.getElementById('deleteFromEditBtn');
+  if (_deleteBtn) { _deleteBtn.dataset.id = id; _deleteBtn.dataset.date = dateStr || ''; _deleteBtn.style.display = ''; }
+  const _guidedPill = document.getElementById('guidedPillBtn');
+  if (_guidedPill) _guidedPill.style.display = 'none';
   document.getElementById('taskTitle').value = t.title;
   document.getElementById('taskDescription').value = t.description || '';
   document.getElementById('taskStartTime').value = t.startTime || '';
@@ -299,6 +318,7 @@ export function openEditModal(id, dateStr, todos) {
   if (durationRealField) durationRealField.style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
   populateCategorySelect(t.projectId || '');
+  populateIntentionSelect(t.intentionId || '');
   selectPriority(t.priority || '');
 
   // Schedule mode UI
@@ -646,6 +666,7 @@ export function saveTaskLogic(todos) {
   }
 
   const projectId         = document.getElementById('taskCategory')?.value || '';
+  const intentionId       = document.getElementById('taskIntention')?.value || '';
   const priority          = state.selectedPriority || undefined;
   const description       = document.getElementById('taskDescription').value.trim() || undefined;
   const startTime         = document.getElementById('taskStartTime')?.value || undefined;
@@ -661,7 +682,8 @@ export function saveTaskLogic(todos) {
   const data = {
     title,
     recurrence: state.selectedRecurrence,
-    projectId: projectId || undefined,
+    projectId:   projectId || undefined,
+    intentionId: intentionId || undefined,
     priority,
     description,
     startTime,
@@ -723,6 +745,7 @@ export function saveTaskLogic(todos) {
       if (data.durationReal) t.durationReal = data.durationReal;
       if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
       t.projectId   = data.projectId;
+      t.intentionId = data.intentionId;
       t.priority    = data.priority;
       t.description = data.description;
     }

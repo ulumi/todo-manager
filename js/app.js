@@ -4443,6 +4443,9 @@ class TodoApp {
       logoAvatar.dataset.animated = '1';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         logoAvatar.classList.add('logo-avatar--entering');
+        logoAvatar.addEventListener('animationend', () => {
+          logoAvatar.classList.remove('logo-avatar--entering');
+        }, { once: true });
       }));
     }
   }

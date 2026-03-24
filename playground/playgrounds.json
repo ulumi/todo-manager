@@ -1,6 +1,15 @@
 {
   "playgrounds": [
     {
+      "id": "icon-explorer",
+      "title": "Icon Explorer — 50k+ icons",
+      "description": "Search 50,000+ icons across 10 libraries (Lucide, Phosphor, Tabler, Material Design, Heroicons, Bootstrap, Remix, Font Awesome, Simple Icons…). Click to copy, multi-select to copy a group. Color picker, size previews, favorites with folders.",
+      "file": "icon-explorer.html",
+      "prompt": "Icon search playground with Iconify API, 10 libraries, click-to-copy, multi-select, color picker, favorites with folders.",
+      "createdAt": "2026-03-23",
+      "tags": ["icons", "search", "tooling", "design-system"]
+    },
+    {
       "id": "background-images-300",
       "title": "Vector Art — 300 Custom Illustrations",
       "description": "Hand-crafted SVG art. 6 styles (Abstract, Organic, Geometric, Minimal, Fluid, Retro) × 50 variations each.",
