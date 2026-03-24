@@ -1142,7 +1142,7 @@ export function getBacklogCount(todos) {
 }
 
 export function renderInboxView(todos) {
-  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog);
 
   const sort = localStorage.getItem('inboxSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
@@ -1841,25 +1841,48 @@ export function renderAnalyseView(todos) {
 
 export function renderSearchView() {
   const query = localStorage.getItem('searchQuery') || '';
-  if (!query.trim()) return '<div class="search-view-empty">Entrez un terme de recherche</div>';
+
+  const searchIcon = `<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`;
+
+  if (!query.trim()) {
+    return `
+      <div class="inbox-view">
+        <div class="inbox-view-header">
+          <div class="inbox-view-title-block">
+            <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
+            <p class="inbox-view-desc">Entrez un terme dans la barre de recherche.</p>
+          </div>
+        </div>
+      </div>`;
+  }
 
   const q = query.toLowerCase();
   const results = state.todos.filter(t => t.title.toLowerCase().includes(q));
 
   if (results.length === 0) {
-    return `<div class="search-view-empty">
-      <div class="search-view-empty-icon">🔍</div>
-      <p>Aucun résultat pour "<strong>${esc(query)}</strong>"</p>
-    </div>`;
+    return `
+      <div class="inbox-view">
+        <div class="inbox-view-header">
+          <div class="inbox-view-title-block">
+            <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
+            <p class="inbox-view-desc">Aucun résultat pour "<strong>${esc(query)}</strong>"</p>
+          </div>
+        </div>
+      </div>`;
   }
 
   const items = results.map(todo => todoItemHTML(todo, new Date(), 'search', false, true)).join('');
 
   return `
-    <div class="search-view">
-      <div class="search-view-header">
-        <h1 class="search-view-title">Résultats pour "<strong>${esc(query)}</strong>"</h1>
-        <span class="search-view-count">${results.length} résultat${results.length > 1 ? 's' : ''}</span>
+    <div class="inbox-view">
+      <div class="inbox-view-header">
+        <div class="inbox-view-title-block">
+          <h1 class="inbox-view-title">${searchIcon} Recherche</h1>
+          <p class="inbox-view-desc">${results.length} résultat${results.length !== 1 ? 's' : ''} pour "<strong>${esc(query)}</strong>"</p>
+        </div>
+        <div class="inbox-view-controls">
+          <span class="inbox-count-label">${results.length} résultat${results.length !== 1 ? 's' : ''}</span>
+        </div>
       </div>
       <div class="search-view-items">${items}</div>
     </div>`;

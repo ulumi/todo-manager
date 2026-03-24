@@ -207,7 +207,7 @@ header {
   opacity: 0; // hidden until JS sets content then triggers anim
 }
 
-#logoAvatar.logo-avatar--entering {
+.logo-avatar--entering {
   animation: logo-surge .7s cubic-bezier(.08, .82, .17, 1) both;
 }
 
@@ -2982,7 +2982,7 @@ main {
   flex-direction: column;
 
   .modal-header     { margin-bottom: 20px; }
-  .form-group       { margin-bottom: 18px; }
+  .form-group       { margin-bottom: 24px; }
 
   .modal-footer {
     position: sticky;
@@ -3002,7 +3002,7 @@ main {
 // Floating labels
 .fl-group {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 26px;
 }
 
 .fl-label {
@@ -3058,7 +3058,7 @@ select.fl-input ~ .fl-label {
 .fl-row {
   display: flex;
   gap: 12px;
-  .fl-group { flex: 1; margin-bottom: 14px; }
+  .fl-group { flex: 1; margin-bottom: 20px; }
 }
 
 // Context fields — progressive disclosure
@@ -4728,60 +4728,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ─── Search View ──────────────────────────────────────────────────────
-.search-view {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.search-view-header {
-  flex-shrink: 0;
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.search-view-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text);
-
-  strong { font-weight: 700; color: var(--primary); }
-}
-
-.search-view-count {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
 .search-view-items {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.search-view-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  gap: 12px;
-  color: var(--text-muted);
-  font-size: 14px;
-}
-
-.search-view-empty-icon {
-  font-size: 48px;
-  opacity: 0.6;
 }
 
 // ─── Settings Menu (theme, accent, glass, text size, background) ──────
@@ -9978,6 +9928,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding:       24px 32px 20px 32px;
   flex-shrink:   0;
   text-align:    center;
+  opacity:       0.8;
 }
 
 .plan-col-header-title {
