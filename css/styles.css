@@ -552,7 +552,9 @@ main {
 }
 main.plan-mode {
   padding: 0;
+  align-self: stretch;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
