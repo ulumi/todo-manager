@@ -21,7 +21,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'styles.scss'; then npx sass /Users/hugues/Projects/todo/todo-manager/css/styles.scss /Users/hugues/Projects/todo/todo-manager/css/styles.css --style=expanded --no-source-map && osascript -e 'display notification \"SCSS compilé avec succès\" with title \"Todo Manager\" sound name \"Glass\"' || osascript -e 'display notification \"Erreur de compilation SCSS\" with title \"Todo Manager\" sound name \"Basso\"'; fi"
+            "command": "if echo \"$CLAUDE_TOOL_INPUT\" | grep -q 'styles.scss'; then npx sass /Users/hugues/Projects/todo/todo-manager/css/styles.scss /Users/hugues/Projects/todo/todo-manager/css/styles.css --style=expanded && osascript -e 'display notification \"SCSS compilé avec succès\" with title \"Todo Manager\" sound name \"Glass\"' || osascript -e 'display notification \"Erreur de compilation SCSS\" with title \"Todo Manager\" sound name \"Basso\"'; fi"
           }
         ]
       }

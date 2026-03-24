@@ -6,7 +6,7 @@ import { esc } from './utils.js';
 import { updatePresenceAvatar } from './presence.js';
 
 const AVATAR_KEY = 'profileAvatar';
-const SIZE = 240; // compressed canvas size
+const SIZE = 400; // compressed canvas size
 
 export const FILTERS = [
   { id: 'natural', label: 'Naturel',  css: '',                            canvas: false },
@@ -371,7 +371,7 @@ function _applyCrop(base64) {
       const srcX    = Math.max(0, Math.min(imgW - srcSize, cx - srcSize / 2));
       const srcY    = Math.max(0, Math.min(imgH - srcSize, cy - srcSize / 2));
       ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = base64;
   });
@@ -388,7 +388,7 @@ function _compressImage(file, size) {
       const dim = Math.min(img.width, img.height);
       ctx.drawImage(img, (img.width-dim)/2, (img.height-dim)/2, dim, dim, 0, 0, size, size);
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = url;
   });

@@ -106,7 +106,7 @@ class TodoApp {
     this.initGlassMode();
     // Restore saved view
     const savedView = localStorage.getItem('view');
-    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin'].includes(savedView)) {
+    if (savedView && ['day', 'week', 'month', 'year', 'categories', 'inbox', 'backlog', 'plan', 'projects', 'superadmin', 'search'].includes(savedView)) {
       state.setView(savedView);
     }
     this.render();
@@ -242,11 +242,14 @@ class TodoApp {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = saved || (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-    // Restore primary color
-    const primaryColor = localStorage.getItem('primaryColor');
-    if (primaryColor) {
-      document.documentElement.style.setProperty('--primary', primaryColor);
+    // Restore primary color (migrate old yellow defaults to blue)
+    const _yellows = new Set(['#fbbf24', '#f59e0b', '#d97706', '#fcd34d']);
+    let primaryColor = localStorage.getItem('primaryColor');
+    if (!primaryColor || _yellows.has(primaryColor)) {
+      primaryColor = '#60a5fa';
+      localStorage.setItem('primaryColor', primaryColor);
     }
+    this._applyPrimaryColor(primaryColor);
     this.updateThemeBtn();
   }
 
@@ -353,14 +356,46 @@ class TodoApp {
   }
 
   onSearchPageKeydown(event) {
-    if (event.key === 'Escape') event.target.blur();
+    if (event.key === 'Escape') { event.target.blur(); return; }
+    if (event.key === 'Enter')  { this._saveSearchHistory(event.target.value.trim()); event.target.blur(); }
+  }
+
+  onSearchPageSubmit() {
+    const input = document.getElementById('searchPageInput');
+    if (!input) return;
+    this._saveSearchHistory(input.value.trim());
+    input.blur();
   }
 
   toggleSearchFilter(type, value) {
     localStorage.setItem(`searchFilter_${type}`, value);
     this.render();
-    const input = document.getElementById('searchPageInput');
-    if (input) input.focus();
+    document.getElementById('searchPageInput')?.focus();
+  }
+
+  setSearchSort(value) {
+    localStorage.setItem('searchSort', value);
+    this.render();
+    document.getElementById('searchPageInput')?.focus();
+  }
+
+  setSearchColumns(value) {
+    localStorage.setItem('searchColumns', String(value));
+    this.render();
+    document.getElementById('searchPageInput')?.focus();
+  }
+
+  clearSearchHistory() {
+    localStorage.removeItem('searchHistory');
+    this.render();
+    document.getElementById('searchPageInput')?.focus();
+  }
+
+  _saveSearchHistory(query) {
+    if (!query) return;
+    let h = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    h = [query, ...h.filter(x => x !== query)].slice(0, 8);
+    localStorage.setItem('searchHistory', JSON.stringify(h));
   }
 
   _quickFindItemMeta(todo) {
@@ -489,12 +524,14 @@ class TodoApp {
     // Save current view so we can return to it after drop
     this._searchViewPreviousView = state.view;
     state.setView('search');
+    localStorage.setItem('view', 'search');
     localStorage.setItem('searchQuery', query);
     // Close the dropdown
     const qfi = document.getElementById('quickFindInput');
     document.getElementById('quickFindDropdown').classList.add('hidden');
     qfi.textContent = '';
     qfi.blur();
+    this._saveSearchHistory(query);
     this.render();
     // Focus the in-page search input
     const searchInput = document.getElementById('searchPageInput');
@@ -531,7 +568,7 @@ class TodoApp {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const zoomIdx = this.zoomIdx ?? 1;
     const glassMode = localStorage.getItem('glassMode') === '1';
-    const primaryColor = localStorage.getItem('primaryColor') || (isDark ? '#fbbf24' : '#f59e0b');
+    const primaryColor = localStorage.getItem('primaryColor') || '#60a5fa';
     const bgPalette = localStorage.getItem('bgPalette') || 'geo';
     const bgColor = localStorage.getItem('bgColor') || (isDark ? '#0f1117' : '#f8f9fc');
 
@@ -550,8 +587,8 @@ class TodoApp {
 
     // Update accent color picker (presets + custom input)
     const accentColors = isDark
-      ? ['#fbbf24', '#f87171', '#4ade80', '#60a5fa', '#a78bfa', '#f472b6']
-      : ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+      ? ['#60a5fa', '#f87171', '#4ade80', '#a78bfa', '#f472b6', '#fb923c']
+      : ['#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
     const pickerHtml = accentColors.map(c =>
       `<button class="settings-accent-btn${primaryColor === c ? ' active' : ''}" style="background:${c};" onclick="window.app.setPrimaryColor('${c}')" title="${c}"></button>`
     ).join('');
@@ -638,8 +675,18 @@ class TodoApp {
     this._updateSettingsMenuContent();
   }
 
-  setPrimaryColor(color) {
+  _applyPrimaryColor(color) {
     document.documentElement.style.setProperty('--primary', color);
+    if (/^#[0-9a-f]{6}$/i.test(color)) {
+      const r = parseInt(color.slice(1,3), 16);
+      const g = parseInt(color.slice(3,5), 16);
+      const b = parseInt(color.slice(5,7), 16);
+      document.documentElement.style.setProperty('--primary-rgb', `${r},${g},${b}`);
+    }
+  }
+
+  setPrimaryColor(color) {
+    this._applyPrimaryColor(color);
     localStorage.setItem('primaryColor', color);
     this._saveConfigChange();
     this._updateSettingsMenuContent();
@@ -1147,6 +1194,15 @@ class TodoApp {
     const backlogCount = getBacklogCount(state.todos);
     const backlogBadge = document.getElementById('backlogBadge');
     if (backlogBadge) { backlogBadge.textContent = backlogCount; backlogBadge.classList.toggle('hidden', backlogCount === 0); }
+
+    const projectsCount = getProjects().length;
+    const projectsBadge = document.getElementById('projectsBadge');
+    if (projectsBadge) { projectsBadge.textContent = projectsCount; projectsBadge.classList.toggle('hidden', projectsCount === 0); }
+
+    let intentionsCount = 0;
+    try { intentionsCount = JSON.parse(localStorage.getItem('intentions') || '[]').length; } catch {}
+    const intentionsBadge = document.getElementById('intentionsBadge');
+    if (intentionsBadge) { intentionsBadge.textContent = intentionsCount; intentionsBadge.classList.toggle('hidden', intentionsCount === 0); }
   }
 
   assignInboxToday(id) {
