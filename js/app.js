@@ -12,7 +12,7 @@ import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
   downloadICalFile, getICalBlobURL, generateICalURL,
-  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync
+  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushFirestoreNow
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -4142,6 +4142,7 @@ class TodoApp {
 
   _saveIntentions(arr) {
     localStorage.setItem('intentions', JSON.stringify(arr));
+    pushFirestoreNow();
   }
 
   addIntentionFromView() {
@@ -4456,6 +4457,8 @@ class TodoApp {
     if (backup.templates)      localStorage.setItem('dayTemplates',      JSON.stringify(backup.templates));
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
+    if (backup.intentions)     localStorage.setItem('intentions',        JSON.stringify(backup.intentions));
+    if (backup.boardProjects)  localStorage.setItem('boardProjects',     JSON.stringify(backup.boardProjects));
     if (backup.config) {
       if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);

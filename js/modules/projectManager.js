@@ -4,6 +4,7 @@
 
 import { esc } from './utils.js';
 import { categoryIconSVG, CATEGORY_ICONS } from './admin.js';
+import { pushFirestoreNow } from './storage.js';
 
 const STORAGE_KEY = 'boardProjects';
 
@@ -25,6 +26,7 @@ export function getProjects() {
 
 export function saveProjects(projects) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  pushFirestoreNow();
 }
 
 export function addProjectItem(name) {

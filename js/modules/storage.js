@@ -114,6 +114,8 @@ export function getFullBackup(todos) {
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
     avatar: raw('profileAvatar'),
+    intentions: raw('intentions'),
+    boardProjects: raw('boardProjects'),
     quotes: {
       banned:   raw('bannedQuotes')   || [],
       customFR: raw('customQuotesFR') || [],
@@ -124,6 +126,14 @@ export function getFullBackup(todos) {
   const icalSecret = localStorage.getItem('icalSecret');
   if (icalSecret) backup.icalSecret = icalSecret;
   return backup;
+}
+
+export function pushFirestoreNow() {
+  const todos = loadTodos();
+  localStorage.setItem('_pendingSync', '1');
+  pushToFirestore(getFullBackup(todos))
+    .then(() => localStorage.removeItem('_pendingSync'))
+    .catch(() => {});
 }
 
 export function downloadJSON(obj, filename) {
