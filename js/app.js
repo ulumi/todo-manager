@@ -2067,7 +2067,9 @@ class TodoApp {
     const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
     if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
     if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
-    document.getElementById('mainContent').innerHTML = html;
+    const mainEl = document.getElementById('mainContent');
+    mainEl.innerHTML = html;
+    mainEl.classList.toggle('plan-mode', state.view === 'plan');
     if (isPlanMonth) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {

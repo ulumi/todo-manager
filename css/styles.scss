@@ -521,6 +521,12 @@ main {
   min-width: 0;
   min-height: calc(100vh - var(--header-h));
   padding: 24px;
+
+  &.plan-mode {
+    padding:  0;
+    height:   100%;
+    overflow: hidden;
+  }
 }
 
 
@@ -9157,9 +9163,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .plan-view {
-  display:    flex;
-  height:     calc(100vh - var(--header-h));
-  overflow:   hidden;
+  display:  flex;
+  height:   100%;
+  overflow: hidden;
 }
 
 .plan-inbox-col {

@@ -550,6 +550,11 @@ main {
   min-height: calc(100vh - var(--header-h));
   padding: 24px;
 }
+main.plan-mode {
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
 
 #calSidebar {
   width: 218px;
@@ -9973,7 +9978,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-view {
   display: flex;
-  height: calc(100vh - var(--header-h));
+  height: 100%;
   overflow: hidden;
 }
 
