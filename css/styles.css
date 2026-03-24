@@ -7016,6 +7016,28 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .plan-inbox-col {
   border-right-color: rgba(255, 255, 255, 0.15);
 }
+.glass-mode .plan-inbox-col .todo-item {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+.glass-mode .plan-inbox-col .todo-text {
+  color: #f1f5f9;
+}
+.glass-mode .plan-week-day {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.glass-mode .plan-today-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+.glass-mode .plan-today-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
 .glass-mode .view-explainer {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.12);
@@ -11142,3 +11164,5 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size: 13px;
   font-style: italic;
 }
+
+/*# sourceMappingURL=styles.css.map */

@@ -6547,9 +6547,25 @@ body:has(.bottom-panel:not(.hidden))::before {
     &.active { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 20%, transparent); color: var(--primary); }
   }
 
-  // ── Plan view sidebar ──
+  // ── Plan view ──
   .plan-inbox-col {
     border-right-color: rgba(255,255,255,.15);
+  }
+  .plan-inbox-col .todo-item {
+    background:   rgba(255,255,255,.07);
+    border-color: rgba(255,255,255,.12);
+    color:        #f1f5f9;
+  }
+  .plan-inbox-col .todo-text { color: #f1f5f9; }
+  .plan-week-day {
+    background:   rgba(255,255,255,.07);
+    border-color: rgba(255,255,255,.15);
+  }
+  .plan-today-btn {
+    background:   rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.35);
+    color:        rgba(255,255,255,.85);
+    &:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.55); color: #fff; }
   }
   .view-explainer       { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12);
                           color: rgba(255,255,255,.65); strong { color: #f1f5f9; } }
