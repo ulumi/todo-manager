@@ -9981,7 +9981,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   max-width: 50%;
   flex-shrink: 0;
   overflow-y: auto;
+  scrollbar-width: none;
   padding: 24px 20px;
+}
+.plan-inbox-col::-webkit-scrollbar {
+  display: none;
 }
 
 .plan-resize-handle {
