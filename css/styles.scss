@@ -9123,14 +9123,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   display:    flex;
   height:     calc(100vh - var(--header-h));
   overflow:   hidden;
-  // Always use dark-mode values — lowpoly bg is always dark
-  --text:          #f1f5f9;
-  --text-muted:    #8b96a8;
-  --border:        #2d3147;
-  --surface:       #1a1d27;
-  --surface2:      #222636;
-  --bg:            #0f1117;
-  --primary-light: #7c2d12;
 }
 
 .plan-inbox-col {
@@ -9254,7 +9246,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .plan-toolbar-label {
   font-size:   14px;
   font-weight: 600;
-  color:       var(--text);
+  color:       #fff;
   white-space: nowrap;
   margin:      0 2px;
 }
@@ -9269,10 +9261,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-today-btn {
   padding:     4px 10px;
-  border:      1.5px solid var(--border);
+  border:      1.5px solid rgba(255,255,255,0.25);
   border-radius: 6px;
-  background:  var(--surface2);
-  color:       var(--text-muted);
+  background:  rgba(255,255,255,0.1);
+  color:       rgba(255,255,255,0.75);
   font-size:   12px;
   font-weight: 600;
   cursor:      pointer;
@@ -9280,7 +9272,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   transition:  all .12s;
   margin-right: 2px;
 
-  &:hover { border-color: var(--text-muted); color: var(--text); }
+  &:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
 }
 
 .plan-week-grid {
@@ -9497,14 +9489,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   border:        none;
   border-radius: 6px;
   background:    transparent;
-  color:         var(--text-muted);
+  color:         rgba(255,255,255,0.6);
   font-size:     12px;
   font-weight:   500;
   cursor:        pointer;
   transition:    all .12s;
 
-  &.active { background: var(--text); color: var(--bg); font-weight: 600; }
-  &:hover:not(.active) { background: var(--surface2); color: var(--text); }
+  &.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+  &:hover:not(.active) { background: rgba(255,255,255,0.1); color: #fff; }
 }
 
 // Biweek = 2 rows of 7
@@ -9583,21 +9575,21 @@ body:has(.bottom-panel:not(.hidden))::before {
   border:        none;
   border-radius: 20px;
   background:    transparent;
-  color:         var(--text-muted);
+  color:         rgba(255,255,255,0.6);
   font-size:     11px;
   font-weight:   500;
   cursor:        pointer;
   transition:    all .12s;
 
   &.active {
-    background: var(--text);
-    color:      var(--bg);
+    background:  rgba(255,255,255,0.18);
+    color:       #fff;
     font-weight: 600;
   }
 
   &:hover:not(.active) {
-    background: var(--surface2);
-    color:      var(--text);
+    background: rgba(255,255,255,0.1);
+    color:      #fff;
   }
 }
 
@@ -9918,7 +9910,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .plan-col-header-title {
   font-size:     22px;
   font-weight:   800;
-  color:         var(--text);
+  color:         #fff;
   letter-spacing: -.02em;
   line-height:   1.1;
   margin-bottom: 4px;
@@ -9926,7 +9918,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .plan-col-header-desc {
   font-size:     12px;
-  color:         var(--text-muted);
+  color:         rgba(255,255,255,0.55);
   line-height:   1.4;
 }
 
