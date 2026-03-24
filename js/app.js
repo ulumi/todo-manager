@@ -5024,6 +5024,12 @@ document.addEventListener('keydown', e => {
     return;
   }
 
+  // Skip shortcuts if a modal is open
+  const isModalOpen = () => {
+    const modalIds = ['modalOverlay', 'deleteModalOverlay', 'adminModalOverlay', 'templateModalOverlay', 'authModalOverlay', 'upgradePromptOverlay', 'leavePromptOverlay', 'avatarEditorOverlay', 'guestNameOverlay'];
+    return modalIds.some(id => !document.getElementById(id)?.classList.contains('hidden'));
+  };
+
   if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
     if (e.code === 'KeyD') {
       e.preventDefault();
@@ -5057,7 +5063,7 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       window.app.deleteTodo(hoveredItem.id, hoveredItem.ds);
     }
-    if (e.code === 'Space' && hoveredItem) {
+    if (e.code === 'Space' && hoveredItem && !isModalOpen()) {
       e.preventDefault();
       const [y, m, d] = hoveredItem.ds.split('-').map(Number);
       window.app.toggleTodo(hoveredItem.id, new Date(y, m-1, d));
