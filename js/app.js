@@ -4976,10 +4976,6 @@ document.addEventListener('keydown', e => {
   }
 
   if (!e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
-    if (e.code === 'KeyE' && hoveredItem) {
-      e.preventDefault();
-      window.app.openEditModal(hoveredItem.id, hoveredItem.ds);
-    }
     if ((e.code === 'Delete' || e.code === 'Backspace') && hoveredItem) {
       e.preventDefault();
       window.app.deleteTodo(hoveredItem.id, hoveredItem.ds);
