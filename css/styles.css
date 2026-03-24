@@ -135,6 +135,7 @@ header.scrolled {
   overflow: visible;
   clip-path: circle(24px at center);
   filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 55%, transparent));
+  transform: translateZ(0);
 }
 .logo-avatar--has-avatar::before {
   content: "";
@@ -5978,6 +5979,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   clip-path: circle(60px at center);
   transition: transform 0.15s, filter 0.15s;
   filter: drop-shadow(0 0 10px color-mix(in srgb, var(--primary) 55%, transparent));
+  transform: translateZ(0);
 }
 .profile-avatar::before {
   content: "";

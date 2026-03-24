@@ -169,6 +169,7 @@ header {
     overflow: visible;
     clip-path: circle(24px at center);
     filter: drop-shadow(0 0 7px color-mix(in srgb, var(--primary) 55%, transparent));
+    transform: translateZ(0); // GPU compositing → smooth clip-path edges
 
     &::before {
       content: '';
@@ -5596,6 +5597,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   clip-path:       circle(60px at center); // always clip — same mechanism as .avatar-editor-preview
   transition:      transform .15s, filter .15s;
   filter:          drop-shadow(0 0 10px color-mix(in srgb, var(--primary) 55%, transparent));
+  transform:       translateZ(0); // GPU compositing → smooth clip-path edges
 
   // Concentric rings behind the emoji — emoji overflows at top, masked at bottom
   &::before {
