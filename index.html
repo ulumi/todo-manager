@@ -38,7 +38,7 @@
     <div class="header-spacer"></div>
     <div class="quick-find-wrapper">
       <div id="quickFindInput" class="quick-find-input" contenteditable="plaintext-only" role="searchbox" aria-label="Chercher" data-placeholder="Chercher..." spellcheck="false" oninput="window.app.onQuickFind(event)" onkeydown="window.app.onQuickFindKeydown(event)"></div>
-      <button class="quick-find-search-btn" tabindex="-1" onclick="window.app.onQuickFindKeydown({key:'Enter',target:document.getElementById('quickFindInput'),preventDefault:()=>{}})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Recherche</button>
+      <button class="quick-find-search-btn" tabindex="-1" onclick="window.app.onQuickFindKeydown({key:'Enter',target:document.getElementById('quickFindInput'),preventDefault:()=>{}})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span class="search-btn-label"> Recherche</span></button>
       <div class="quick-find-dropdown hidden" id="quickFindDropdown"></div>
     </div>
     <div class="utility-tabs">
@@ -77,7 +77,7 @@
       <option value="en">EN</option>
       <option value="fr">FR</option>
     </select>
-    <div style="position:relative">
+    <div class="settings-btn-wrap" style="position:relative">
     <button class="nav-btn" id="menuSettingsBtn" onclick="window.app.toggleSettingsMenu()" title="Theme & appearance">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
     </button>

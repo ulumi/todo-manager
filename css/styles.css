@@ -65,7 +65,7 @@ body {
   background: transparent;
   color: var(--text);
   font-size: 15px;
-  overflow: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
 }
@@ -315,6 +315,8 @@ header.scrolled {
 .utility-tabs .view-tab svg {
   opacity: 0.55;
   transition: opacity 0.15s;
+  width: 18px;
+  height: 18px;
 }
 .utility-tabs .view-tab:hover svg, .utility-tabs .view-tab.active svg {
   opacity: 1;
@@ -543,6 +545,9 @@ main {
   min-height: calc(100vh - var(--header-h));
   padding: 24px;
 }
+main:has(.day-view) {
+  padding-bottom: 84px;
+}
 main.plan-mode, main.search-mode {
   padding: 0;
   align-self: stretch;
@@ -555,6 +560,7 @@ main.plan-mode, main.search-mode {
 #calSidebar {
   width: 218px;
   flex-shrink: 0;
+  align-self: flex-start;
   position: sticky;
   top: calc(var(--header-h) + 30px);
   z-index: 1;
@@ -1007,15 +1013,14 @@ input:checked + .cal-sid-toggle-track::after {
 
 .day-view {
   width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .day-top-sticky {
-  position: sticky;
-  top: var(--header-h);
   z-index: 50;
   background: transparent;
-  margin-top: -32px;
-  padding-top: 32px;
   padding-bottom: 4px;
 }
 .day-top-sticky .day-header-wrapper {
@@ -1024,6 +1029,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-columns {
+  flex: 1;
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 28px;
@@ -1682,8 +1688,6 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .sticky-header-wrap {
-  position: sticky;
-  top: var(--header-h);
   z-index: 50;
   background: transparent !important;
   margin-top: -32px;
@@ -1806,11 +1810,11 @@ input:checked + .cal-sid-toggle-track::after {
   color: rgba(255, 255, 255, 0.45);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-top: 14px;
+  margin-top: 0;
   margin-bottom: 6px;
 }
-.day-period-label:first-child {
-  margin-top: 0;
+.todo-list + .day-period-label {
+  margin-top: 14px;
 }
 
 .day-period-select {
@@ -2123,35 +2127,13 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .is-dragging-task .inbox-tab,
-.is-dragging-task .backlog-tab {
-  position: relative;
+.is-dragging-task .backlog-tab,
+.is-dragging-task .view-tab[data-view=day] {
   outline: 2px dashed var(--primary);
   outline-offset: -2px;
   border-radius: 8px;
-  animation: dropzone-pulse 1.2s ease-in-out infinite;
-}
-.is-dragging-task .inbox-tab::after,
-.is-dragging-task .backlog-tab::after {
-  content: "↓";
-  position: absolute;
-  bottom: -13px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--primary);
-  line-height: 1;
-  pointer-events: none;
 }
 
-@keyframes dropzone-pulse {
-  0%, 100% {
-    outline-color: var(--primary);
-  }
-  50% {
-    outline-color: transparent;
-  }
-}
 .header-drop-hover {
   outline: 2.5px solid var(--primary) !important;
   outline-offset: -2px;
@@ -4099,7 +4081,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .day-action-bar {
   display: flex;
   gap: 10px;
-  margin-top: 60px;
+  margin-top: 0;
   padding: 12px 0 16px;
   position: sticky;
   bottom: 0;
@@ -4872,6 +4854,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .lang-select {
+  margin-left: auto;
   border: 1.5px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
@@ -7524,12 +7507,25 @@ body:has(.bottom-panel:not(.hidden))::before {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-@media (max-width: 1380px) and (min-width: 961px) {
+@media (max-width: 1750px) and (min-width: 961px) {
   .header-top {
     gap: 10px;
   }
   .view-tab {
     padding: 5px 8px;
+  }
+  .header-spacer {
+    display: none;
+  }
+  .quick-find-input {
+    width: 140px;
+    flex-shrink: 1;
+  }
+}
+@media (max-width: 1500px) and (min-width: 961px) {
+  .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
+  .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
+    display: none;
   }
 }
 @media (max-width: 960px) {
@@ -7561,22 +7557,25 @@ body:has(.bottom-panel:not(.hidden))::before {
     flex-shrink: 0;
   }
   .chat-inbox-btn {
-    order: 1;
-    flex-shrink: 0;
-    margin-right: auto;
-  }
-  #themeBtn {
     order: 2;
+    flex-shrink: 0;
+  }
+  .settings-btn-wrap {
+    order: 3;
+    margin-left: auto;
+  }
+  .playground-link {
+    order: 4;
   }
   .lang-select {
     display: block;
-    order: 3;
-  }
-  .hamburger-wrap {
-    order: 4;
+    order: 5;
   }
   .user-btn {
-    order: 5;
+    order: 6;
+  }
+  #hamburgerBtn {
+    order: 7;
   }
   .add-btn {
     display: none;
@@ -7604,9 +7603,14 @@ body:has(.bottom-panel:not(.hidden))::before {
     padding: 6px 6px;
     font-size: 13px;
   }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab {
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
     order: 10;
     flex: none;
+  }
+  .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
+  .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
+    display: none;
   }
   .utility-sep {
     display: none;
@@ -7614,6 +7618,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   .today-btn {
     order: 10;
     margin-right: 0;
+  }
+  .quick-find-wrapper {
+    order: 10;
+    flex: none;
+  }
+  .quick-find-wrapper #quickFindInput {
+    display: none;
+  }
+  .quick-find-wrapper .search-btn-label {
+    display: none;
+  }
+  .quick-find-wrapper .quick-find-search-btn {
+    border-radius: 6px;
+    padding: 6px 8px;
   }
   .nav-group {
     order: 20;
@@ -7633,7 +7651,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     gap: 20px;
   }
   .day-col--punctual .todo-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .day-header-wrapper {
     grid-template-columns: 28px 44px 1fr 44px 28px;
@@ -7705,6 +7723,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .day-columns--three {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+  .day-col--punctual .todo-list {
+    grid-template-columns: 1fr !important;
   }
   .day-col--project {
     border-left: none;
@@ -11619,5 +11640,3 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size: 13px;
   font-style: italic;
 }
-
-/*# sourceMappingURL=styles.css.map */

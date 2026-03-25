@@ -97,9 +97,11 @@ body {
   background: transparent;
   color: var(--text);
   font-size: 15px;
-  overflow: hidden;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
+
+  // padding moved to main — body's overflow-x:clip absorbs padding-bottom before it reaches the scroll root
 }
 
 
@@ -315,7 +317,7 @@ header {
 
   .view-tab {
     margin-left: 0;
-    svg { opacity: 0.55; transition: opacity .15s; }
+    svg { opacity: 0.55; transition: opacity .15s; width: 18px; height: 18px; }
     &:hover svg, &.active svg { opacity: 1; }
   }
 }
@@ -534,6 +536,9 @@ main {
   min-height: calc(100vh - var(--header-h));
   padding: 24px;
 
+  &:has(.day-view) { padding-bottom: 84px; }
+
+
   &.plan-mode,
   &.search-mode {
     padding:        0;
@@ -551,6 +556,7 @@ main {
 #calSidebar {
   width: 218px;
   flex-shrink: 0;
+  align-self: flex-start;
   position: sticky;
   top: calc(var(--header-h) + 30px);
   z-index: 1;
@@ -975,15 +981,16 @@ main {
 
 // ─── 6. Day View ─────────────────────────────────────────────────────────
 
-.day-view { width: 100%; }
+.day-view {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 .day-top-sticky {
-  position: sticky;
-  top: var(--header-h);
   z-index: 50;
   background: transparent;
-  margin-top: -32px;
-  padding-top: 32px;
   padding-bottom: 4px;
 
   .day-header-wrapper {
@@ -993,6 +1000,7 @@ main {
 }
 
 .day-columns {
+  flex: 1;
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 28px;
@@ -1649,8 +1657,6 @@ main {
 }
 
 .sticky-header-wrap {
-  position: sticky;
-  top: var(--header-h);
   z-index: 50;
   background: transparent !important;
   margin-top: -32px;
@@ -1768,10 +1774,12 @@ main {
   color: rgba(255,255,255,.45);
   text-transform: uppercase;
   letter-spacing: .12em;
-  margin-top: 14px;
+  margin-top: 0;
   margin-bottom: 6px;
 
-  &:first-child { margin-top: 0; }
+  // Extra breathing room only when a period label follows a todo-list
+  // (i.e. between two period sections) — not when it follows the column header
+  .todo-list + & { margin-top: 14px; }
 }
 
 // Modal — period selector buttons
@@ -2080,32 +2088,12 @@ main {
 // ── Header drop zones (Inbox / Backlog buttons during drag) ───────────────────
 .is-dragging-task {
   .inbox-tab,
-  .backlog-tab {
-    position: relative;
+  .backlog-tab,
+  .view-tab[data-view="day"] {
     outline: 2px dashed var(--primary);
     outline-offset: -2px;
     border-radius: 8px;
-    animation: dropzone-pulse 1.2s ease-in-out infinite;
-
-    // arrow indicator
-    &::after {
-      content: '↓';
-      position: absolute;
-      bottom: -13px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--primary);
-      line-height: 1;
-      pointer-events: none;
-    }
   }
-}
-
-@keyframes dropzone-pulse {
-  0%, 100% { outline-color: var(--primary); }
-  50%      { outline-color: transparent; }
 }
 
 // Active hover while dragging over the header button
@@ -3906,7 +3894,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .day-action-bar {
   display: flex;
   gap: 10px;
-  margin-top: 60px;
+  margin-top: 0;
   padding: 12px 0 16px;
   position: sticky;
   bottom: 0;
@@ -4592,6 +4580,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .lang-select {
+  margin-left: auto; // pushes lang + settings + playground + hamburger to the right
   border: 1.5px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
@@ -7016,10 +7005,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   .admin-form { grid-template-columns: repeat(2, 1fr); }
 }
 
-// ── Medium desktop (961px – 1380px): compact header to prevent overflow ───
-@media (max-width: 1380px) and (min-width: 961px) {
-  .header-top { gap: 10px; }
-  .view-tab   { padding: 5px 8px; }
+// ── Step 1 (1381–1750px): collapse empty space + shrink search ─────────────
+@media (max-width: 1750px) and (min-width: 961px) {
+  .header-top    { gap: 10px; }
+  .view-tab      { padding: 5px 8px; }
+  .header-spacer { display: none; }
+  .quick-find-input { width: 140px; flex-shrink: 1; }
+}
+
+// ── Step 2 (961–1500px): hide utility tab labels (space exhausted) ─────────
+@media (max-width: 1500px) and (min-width: 961px) {
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
+    span:not(.nav-badge) { display: none; }
+  }
 }
 
 @media (max-width: 960px) {
@@ -7042,26 +7041,44 @@ body:has(.bottom-panel:not(.hidden))::before {
   .header-sep    { display: none; }
   .header-spacer { display: none; }
 
-  // Row 1: [logo] [chat | spacer→] [theme] [lang] [hamburger] [account]
-  .app-title       { order: 1; flex-shrink: 0; }
-  .chat-inbox-btn  { order: 1; flex-shrink: 0; margin-right: auto; }
-  #themeBtn        { order: 2; }
-  .lang-select     { display: block; order: 3; }
-  .hamburger-wrap  { order: 4; }
-  .user-btn        { order: 5; }
+  // Row 1: [logo] [chat] [spacer→] [settings] [playground] [lang] [user] [hamburger]
+  .app-title           { order: 1; flex-shrink: 0; }
+  .chat-inbox-btn      { order: 2; flex-shrink: 0; }
+  .settings-btn-wrap   { order: 3; margin-left: auto; }
+  .playground-link     { order: 4; }
+  .lang-select         { display: block; order: 5; }
+  .user-btn            { order: 6; }
+  #hamburgerBtn        { order: 7; }
   .add-btn         { display: none; }
   .zoom-group      { display: none; }
 
   // Flex break after row 1
   .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
 
-  // Row 2: view tabs + utility tabs + today
+  // Row 2: view tabs + utility tabs + search
   .view-tabs      { order: 10; flex: 1; justify-content: center; }
   .utility-tabs   { display: contents; } // transparent wrapper on mobile
   .view-tab       { flex: 1; text-align: center; padding: 6px 6px; font-size: 13px; }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab { order: 10; flex: none; }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab { order: 10; flex: none; }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
+    span:not(.nav-badge) { display: none; }
+  }
   .utility-sep { display: none; }
   .today-btn      { order: 10; margin-right: 0; }
+
+  // Search: icon-only on mobile, right side of row 2
+  .quick-find-wrapper {
+    order: 10;
+    flex: none;
+    #quickFindInput       { display: none; }
+    .search-btn-label     { display: none; }
+    .quick-find-search-btn {
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+  }
 
   // Row 3: nav group
   .nav-group    { order: 20; width: 100%; justify-content: center; margin-left: 0; }
@@ -7072,7 +7089,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   // Day view: equal columns, single-col cards
   .day-columns         { grid-template-columns: 1fr 1fr; gap: 20px; }
-  .day-col--punctual .todo-list { grid-template-columns: 1fr; }
+  .day-col--punctual .todo-list { grid-template-columns: 1fr !important; }
 
   // Day header
   .day-header-wrapper { grid-template-columns: 28px 44px 1fr 44px 28px; }
@@ -7121,6 +7138,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Day columns: stack to single column
   .day-columns,
   .day-columns--three { grid-template-columns: 1fr; gap: 16px; }
+  .day-col--punctual .todo-list { grid-template-columns: 1fr !important; }
 
   .day-col--project {
     border-left: none;

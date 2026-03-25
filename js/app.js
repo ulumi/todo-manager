@@ -558,7 +558,11 @@ class TodoApp {
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', draggedId);
       this._setDragGhost(e, draggedId);
-      requestAnimationFrame(() => item.classList.add('dragging'));
+      requestAnimationFrame(() => {
+        item.classList.add('dragging');
+        this._closeQuickFindDropdown();
+        document.getElementById('quickFindDropdown').classList.add('hidden');
+      });
     });
 
     dropdown.addEventListener('dragend', e => {
@@ -2665,10 +2669,11 @@ class TodoApp {
     this.render();
   }
 
-  // ── Header drop zones (Inbox / Backlog buttons) ──────────────────────────
+  // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
   initHeaderDropZones() {
     const inboxBtn   = document.getElementById('inboxTab');
     const backlogBtn = document.querySelector('.backlog-tab');
+    const todayBtn   = document.querySelector('.view-tab[data-view="day"]');
     if (!inboxBtn || !backlogBtn) return;
 
     // Avoid duplicate listeners by using a flag
@@ -2714,6 +2719,19 @@ class TodoApp {
       this.render();
       this._closeSearchView();
     });
+
+    if (todayBtn) {
+      setup(todayBtn, id => {
+        const t = state.todos.find(x => x.id === id);
+        if (!t) return;
+        snapshot(state.todos);
+        t.date = DS(new Date());
+        t.backlog = false;
+        saveTodos(state.todos);
+        this.render();
+        this._closeSearchView();
+      });
+    }
 
     // Global drag tracking: show/hide header drop zone indicators
     if (!document._headerDragBound) {
