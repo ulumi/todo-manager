@@ -179,7 +179,7 @@ export function importData(file) {
   });
 }
 
-export function generateICalURL(todos) {
+export function generateICalContent(todos) {
   const icalEvents = todos.map(todo => {
     // Generate unique ID based on todo id and date
     const uid = `${todo.id}@todo-manager`;
@@ -244,7 +244,7 @@ END:VCALENDAR`;
 }
 
 export function downloadICalFile(todos) {
-  const icalContent = generateICalURL(todos);
+  const icalContent = generateICalContent(todos);
   const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -257,7 +257,7 @@ export function downloadICalFile(todos) {
 }
 
 export function getICalBlobURL(todos) {
-  const icalContent = generateICalURL(todos);
+  const icalContent = generateICalContent(todos);
   const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
   return URL.createObjectURL(blob);
 }

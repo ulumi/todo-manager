@@ -33,12 +33,17 @@ export function categoryIconSVG(iconKey, size = 16, color = 'currentColor') {
 }
 
 // ── Categories ─────────────────────────────────────────────
+let _categoriesCache = null;
+
 export function getCategories() {
+  if (_categoriesCache) return _categoriesCache;
   const stored = localStorage.getItem(PROJECTS_KEY);
-  return stored ? JSON.parse(stored) : [];
+  _categoriesCache = stored ? JSON.parse(stored) : [];
+  return _categoriesCache;
 }
 
 export function saveCategories(categories) {
+  _categoriesCache = categories;
   localStorage.setItem(PROJECTS_KEY, JSON.stringify(categories));
   pushFirestoreNow();
 }

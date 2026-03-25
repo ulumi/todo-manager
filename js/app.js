@@ -11,7 +11,7 @@ import {
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
-  downloadICalFile, getICalBlobURL, generateICalURL,
+  downloadICalFile, getICalBlobURL,
   loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushFirestoreNow
 } from './modules/storage.js';
 import * as state from './modules/state.js';
@@ -229,6 +229,13 @@ class TodoApp {
     if (backup.templates)      localStorage.setItem('dayTemplates',     JSON.stringify(backup.templates));
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',   JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
+    if (backup.intentions)     localStorage.setItem('intentions',       JSON.stringify(backup.intentions));
+    if (backup.boardProjects)  saveProjects(backup.boardProjects);
+    if (backup.icalSecret)     localStorage.setItem('icalSecret', backup.icalSecret);
+    if ('avatar' in backup) {
+      if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
+      else               localStorage.removeItem('profileAvatar');
+    }
     if (backup.config) {
       if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
@@ -769,7 +776,7 @@ class TodoApp {
   async navigate(delta) {
     const d = new Date(state.navDate);
     if (state.view==='day')   d.setDate(d.getDate()+delta);
-    if (state.view==='week')  d.setDate(d.getDate()+delta*14);
+    if (state.view==='week')  d.setDate(d.getDate()+delta*7);
     if (state.view==='month') d.setMonth(d.getMonth()+delta);
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     if (state.view==='plan') {
@@ -2090,6 +2097,10 @@ class TodoApp {
   }
 
   _showUndoToast() {
+    this._showToast('↩ Annulé');
+  }
+
+  _showToast(msg) {
     let toast = document.getElementById('undoToast');
     if (!toast) {
       toast = document.createElement('div');
@@ -2097,7 +2108,7 @@ class TodoApp {
       toast.className = 'undo-toast';
       document.body.appendChild(toast);
     }
-    toast.textContent = '↩ Annulé';
+    toast.textContent = msg;
     toast.classList.remove('undo-toast--visible');
     void toast.offsetWidth;
     toast.classList.add('undo-toast--visible');
@@ -2132,9 +2143,9 @@ class TodoApp {
       saveTodos(state.todos);
       closeAdminModal();
       this.render();
-      alert(state.T.importSuccess || 'Données importées avec succès !');
+      this._showToast(state.T.importSuccess || 'Données importées avec succès !');
     } catch (err) {
-      alert(state.T.importError || 'Failed to import data');
+      this._showToast(state.T.importError || 'Failed to import data');
     }
     e.target.value = '';
   }
@@ -4043,13 +4054,22 @@ class TodoApp {
   addCategoryInline() { addCategoryInline(); }
 
   addCategoryFromView() {
-    const name = prompt('Nom de la catégorie :');
-    if (!name || !name.trim()) return;
-    const colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
-    const categories = getCategories();
-    categories.push({ id: Date.now().toString(), name: name.trim(), color: colors[categories.length % colors.length] });
-    saveCategories(categories);
-    this.render();
+    const addCard = document.querySelector('.category-card--add');
+    if (!addCard || addCard.querySelector('input')) return;
+    addCard.innerHTML = `<input class="inline-name-input" type="text" placeholder="Nom de la catégorie" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);color:var(--text);font-size:0.85rem;" autofocus>`;
+    const input = addCard.querySelector('input');
+    input.focus();
+    const confirm = () => {
+      const name = input.value.trim();
+      if (!name) { this.render(); return; }
+      const colors = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
+      const categories = getCategories();
+      categories.push({ id: Date.now().toString(), name, color: colors[categories.length % colors.length] });
+      saveCategories(categories);
+      this.render();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') this.render(); });
+    input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) this.render(); }, 150));
   }
 
   removeCategory(id) {
@@ -4107,10 +4127,19 @@ class TodoApp {
   // PROJECTS (independent entities)
   // ═══════════════════════════════════════════════════
   addProjectFromView() {
-    const name = prompt('Nom du projet :');
-    if (!name || !name.trim()) return;
-    addProjectItem(name.trim());
-    this.render();
+    const addCard = document.querySelector('.category-card--add');
+    if (!addCard || addCard.querySelector('input')) return;
+    addCard.innerHTML = `<input class="inline-name-input" type="text" placeholder="Nom du projet" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-card);color:var(--text);font-size:0.85rem;" autofocus>`;
+    const input = addCard.querySelector('input');
+    input.focus();
+    const confirm = () => {
+      const name = input.value.trim();
+      if (!name) { this.render(); return; }
+      addProjectItem(name);
+      this.render();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); if (e.key === 'Escape') this.render(); });
+    input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) this.render(); }, 150));
   }
 
   openProjectPanel(id)   { openProjectPanel(id); }

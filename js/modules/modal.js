@@ -672,6 +672,21 @@ function _initModalSwipe() {
   }, { passive: true });
 }
 
+function _showRecError(msg) {
+  const recDetail = document.getElementById('recDetail') || document.getElementById('guidedRecDetail');
+  if (!recDetail) return;
+  let el = recDetail.parentElement.querySelector('.rec-error');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'rec-error';
+    el.style.cssText = 'color:#ef4444;font-size:0.8rem;margin-top:4px;';
+    recDetail.after(el);
+  }
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
 export function saveTaskLogic(todos) {
   const title = document.getElementById('taskTitle').value.trim();
   if (!title) {
@@ -725,11 +740,11 @@ export function saveTaskLogic(todos) {
   }
 
   if (state.selectedRecurrence==='weekly') {
-    if (state.selectedWeekDays.length===0) { alert(state.T.selectWeekdayError); return true; }
+    if (state.selectedWeekDays.length===0) { _showRecError(state.T.selectWeekdayError); return true; }
     data.recDays = [...state.selectedWeekDays];
   } else if (state.selectedRecurrence==='monthly') {
     if (!state.selectedMonthLastDay && state.selectedMonthDays.length === 0) {
-      alert(state.T.selectMonthDayError || 'Please select at least one day.');
+      _showRecError(state.T.selectMonthDayError || 'Please select at least one day.');
       return true;
     }
     data.recDays = [...state.selectedMonthDays];
