@@ -1,244 +1,211 @@
-# App Overview — Todo Manager
+# Todo Manager — App Overview
 
-> This document is intended for AI assistants. It provides a comprehensive picture of what the application is, what it does, and how it is structured. Update it whenever the application's goals, architecture, or module responsibilities change meaningfully.
-
----
-
-## Purpose
-
-A personal task management web application. The primary user is a solo developer using it daily to manage personal todos across multiple devices. The app is deployed at [todo-hugues.vercel.app](https://todo-hugues.vercel.app) and supports multiple authenticated users, though it is primarily a personal tool.
-
-The admin panel provides oversight and management of all users, templates, and system messages.
+**Version actuelle :** `0.4.1422` (`js/modules/version.js`)
+**Deploy :** Vercel — [todo.hugues.app](https://todo.hugues.app)
+**App title :** "2FŨKOI"
 
 ---
 
-## Application Goals
+## Architecture générale
 
-- Make task creation fast and frictionless (quick-add, templates)
-- Support recurring tasks with flexible patterns
-- Provide multiple calendar views so tasks can be seen in context
-- Keep data in sync across devices in real time via Firebase
-- Support offline use via Service Worker
-- Allow guest access with zero friction, with an optional upgrade path to a real account
-- Provide a polished, animated, mobile-friendly UI
+- **Point d'entrée :** `index.html` + `js/app.js`
+- **Classe principale :** `TodoApp` — singleton exposé via `window.app`
+- **Pattern rendu :** Pas de framework — mutations → `app.render()` → regen DOM complet depuis `render.js`
+- **État :** exports mutables dans `js/modules/state.js` (todos, view, navDate, etc.) avec setters
 
 ---
 
-## Key Concepts
+## Modules JS (`js/modules/`)
 
-### Task (Todo)
-The core data unit. Stored in Firestore under each user's collection. A task has:
-- `text` — main task label
-- `description` — optional longer note
-- `date` — ISO date string (YYYY-MM-DD) — the base/start date
-- `completed` — boolean
-- `priority` — `"none"` | `"low"` | `"medium"` | `"high"`
-- `category` — category ID string (optional)
-- `recurrence` — recurrence rule object (optional)
-- `completedDates` — array of ISO dates when a recurring task was marked done
-- `deletedDates` — array of ISO dates when a single occurrence was deleted
-- `id` — unique string ID
-
-### Recurrence
-Tasks can recur on a pattern: daily, weekly (on specific weekdays), monthly (by day-of-month or nth weekday), yearly, or a custom interval in days. Recurrence is computed at render time from the base `date` and pattern — no separate instances are stored.
-
-### Category / Project
-Categories are named groups with a color and optional icon/emoji. Tasks can belong to a category. The "Categories" view groups and displays tasks by their category.
-
-### Templates
-Reusable task presets. Stored globally (admin-created) and locally (user-created). Applying a template pre-fills the task modal.
-
-### Views
-The app has 5 views: Day, Week, Month, Year, Categories. The current view and navigation date are stored in global state and drive all rendering.
+| Module | Rôle |
+|--------|------|
+| `state.js` | Variables d'état + setters |
+| `storage.js` | localStorage (saveTodos/loadTodos), Firestore push, iCal export, full backup |
+| `sync.js` | Firestore realtime (SESSION_ID anti-écho), subscriptions, offline IndexedDB |
+| `firebase.js` | Init Firebase + auth + Firestore persistent cache |
+| `auth.js` | Guest / email / Google / Facebook, upgrade guest→email |
+| `calendar.js` | Récurrence logic, getTodosForDate, toggleTodo, addTask |
+| `render.js` | Génération HTML — toutes les vues |
+| `modal.js` | Modal add/edit tâche, draft, récurrence UI |
+| `events.js` | Setup event listeners globaux |
+| `projectManager.js` | CRUD projets (entités indépendantes avec cycle de vie) |
+| `projectView.js` | Sidebar panel projet |
+| `admin.js` | Categories, templates, suggested tasks — cache `_categoriesCache` |
+| `celebrate.js` | Animations victoire, quotes, mascots, ban system |
+| `undo.js` | Stack undo (max 50 snapshots) |
+| `presence.js` | Online heartbeat, admin inbox messages, click counter |
+| `avatarEditor.js` | Upload photo, crop, emoji, filtres |
+| `utils.js` | Helpers date (DS, parseDS, today, addDays), esc() |
+| `config.js` | Traductions EN/FR/ES, ZOOM_SIZES |
+| `lowpoly-bg.js` | Background animé GSAP, palettes |
+| `version.js` | Constante VERSION |
 
 ---
 
-## Module Responsibilities
+## Vues disponibles
 
-### `js/app.js`
-Entry point. Imports all modules and boots the app: initializes Firebase, restores state, attaches event listeners, performs initial render.
-
-### `js/modules/state.js`
-Single source of truth for runtime state. Exports a `state` object and typed setters. Key state fields:
-- `todos` — flat array of all task objects for the current user
-- `currentView` — active view (`"day"` | `"week"` | `"month"` | `"year"` | `"categories"`)
-- `navDate` — the currently navigated date (Date object)
-- `currentUser` — Firebase user object
-- `categories` — array of category objects
-- `selectedRecurrence` — current recurrence rule being edited in modal
-- `undoStack` — stack of snapshots for undo
-
-### `js/modules/config.js`
-Static configuration: translation strings for EN and FR, zoom size constants, any other app-wide constants. Locale is derived from the browser or user preference.
-
-### `js/modules/utils.js`
-Pure helper functions: date formatting, string escaping, DOM helpers, date arithmetic.
-
-### `js/modules/firebase.js`
-Initializes the Firebase SDK (app + Firestore + Auth). Exports `db` and `auth` instances used by other modules.
-
-### `js/modules/auth.js`
-Handles all authentication flows:
-- Anonymous / guest login
-- Email/password login and registration
-- Google and Facebook OAuth
-- Account upgrade from guest to real account
-- Logout and account deletion
-
-### `js/modules/sync.js`
-Manages Firestore data:
-- Loads todos and categories from Firestore on login
-- Sets up real-time listeners for live updates
-- Writes tasks and categories back to Firestore
-- Generates a session ID to deduplicate updates and prevent loops
-
-### `js/modules/storage.js`
-Handles localStorage persistence (for offline/guest mode) and the local dev API server (port 3333) used in development. Also handles:
-- JSON data export (backup)
-- iCalendar (.ics) export
-
-### `js/modules/calendar.js`
-Core task logic (no rendering):
-- Get all tasks relevant to a given date (including recurring)
-- Toggle task completion (handles recurring vs single tasks)
-- Delete a single occurrence vs all future occurrences vs the whole task
-- Recurrence expansion: given a task and a date range, compute which dates it applies to
-
-### `js/modules/render.js`
-All view rendering. Takes the current state and produces DOM. Handles:
-- Day view
-- Week view
-- Month view (calendar grid)
-- Year view
-- Category view (delegated to `projectView.js`)
-- Individual task items (with drag handles, badges, priority, completion)
-- Mini calendar sidebar
-
-### `js/modules/modal.js`
-The task creation/edit modal UI. Manages:
-- Form fields: text, description, date, priority, category
-- Recurrence picker UI
-- Template selector
-- Save/delete/cancel actions
-- Calls `sync.js` and `storage.js` to persist changes
-
-### `js/modules/events.js`
-Attaches all global event listeners on startup: keyboard shortcuts, click delegation, window resize, swipe gestures, etc.
-
-### `js/modules/projectView.js`
-Renders the Categories view. Groups tasks by category, handles category CRUD, manages task ordering within a category.
-
-### `js/modules/presence.js`
-Real-time user presence using Firestore. Shows which users are online. Also manages the in-app messaging/inbox system with read receipts and message badges.
-
-### `js/modules/avatarEditor.js`
-A full avatar editor UI. Users can upload a photo, crop it, apply filters (sepia, grayscale, etc.), or pick an emoji as their avatar. Stores the result in their Firebase profile.
-
-### `js/modules/celebrate.js`
-Confetti and celebration animations triggered when a task is completed. Uses GSAP. Includes logic for varying the celebration intensity.
-
-### `js/modules/undo.js`
-Takes snapshots of the `todos` state and allows undoing the last destructive action (delete, bulk clear, etc.).
-
-### `js/modules/admin.js`
-Manages the admin UI (in `admin.html`):
-- View and manage all users
-- Create/edit/delete global templates
-- Create/edit/delete global categories
-- Send broadcast messages to all users
-- View usage stats and activity
-
-### `js/modules/version.js`
-Single-line export of the current semver version string. Auto-bumped by a PostToolUse hook on every file edit.
+| Vue | Description |
+|-----|-------------|
+| `day` | Liste des tâches du jour (navDate). Groupées : ponctuel + récurrent |
+| `week` | Grille 7 colonnes. Navigation glissante par 7j |
+| `month` | Calendrier mensuel avec count de tâches par date |
+| `year` | 12 mini-calendriers, vue annuelle |
+| `plan` | Vue "Planifier" : colonne inbox redimensionnable à gauche, calendrier drag-and-drop à droite. Modes : `week` / `biweek` (14j) / `month`. Filtres : types de récurrence, cacher complétées |
+| `inbox` | Tâches capturées sans date — à planifier dès que possible. Badge count |
+| `backlog` | Tâches avec date passée non marquées done. Badge rouge urgence |
+| `categories` | Grille de cards **tags** (voir distinction ci-dessous). Vue par tag avec tâches associées |
+| `projects` | Grille de cards **projets** (voir distinction ci-dessous). Statuts, cycle de vie |
+| `intentions` | Buts à long terme. Cards avec tâches liées (chips). "Le pourquoi derrière ce qu'on fait" |
+| `analyse` | Stats passé : tâches complétées cette semaine vs semaine préc., ce mois vs mois préc., bar chart 7 jours, tâches en souffrance (les plus vieilles) |
 
 ---
 
-## API Endpoints (Vercel Serverless Functions)
+## Distinction Tags vs Projets
 
-All endpoints require admin authentication via a Firebase ID token.
+> **IMPORTANT — ne pas confondre ces deux entités**
 
-| Endpoint | Purpose |
-|----------|---------|
-| `/api/admin-users` | List all users, get user details |
-| `/api/admin-user-action` | Perform actions on a user (delete, promote) |
-| `/api/admin-batch` | Batch operations (delete anonymous users, etc.) |
-| `/api/admin-messages` | Read and send admin messages |
-| `/api/admin-presence` | Read presence data for all users |
-| `/api/admin-stats` | Usage statistics and activity data |
-| `/api/cron-cleanup-guests` | Cron job (daily 3 AM UTC): delete stale guest accounts |
+### Tags (= "categories" dans le code)
+- **Ce que c'est :** Labels/groupes pour classer les tâches. Équivalent d'un tag ou d'un contexte.
+- **Structure :** `{ id, name, color, icon, description, status, deadline }`
+- **Usage :** Une tâche peut avoir un `categoryId`. Affiché comme badge coloré sur la tâche.
+- **Vue :** `categories` — grille de cards, chaque card = un tag avec ses tâches
+- **Admin :** géré dans le modal admin → section Catégories
+- **Stockage :** localStorage key `categories`, Firestore champ `categories`
+- **Module :** `admin.js`
 
----
+### Projets (= "projects" dans le code)
+- **Ce que c'est :** Entités indépendantes avec cycle de vie (début, fin, résultat). Équivalent d'un projet Jira/Asana.
+- **Structure :** `{ id, name, color, status: 'active'|'on_hold'|'completed'|'archived', created, updated }`
+- **Usage :** Une tâche peut avoir un `projectId`. Affiché comme badge dans la todo list avec lien vers le panel projet.
+- **Vue :** `projects` — grille de cards avec statuts, sidebar panel par projet
+- **Module :** `projectManager.js`
+- **Stockage :** localStorage key `projects`, Firestore champ `projects`
 
-## Data Flow
-
-### Startup
-1. `app.js` boots → Firebase initialized
-2. Auth state checked → user loaded or guest created
-3. Firestore listener opened → `state.todos` and `state.categories` populated
-4. Initial render triggered
-
-### Task creation
-1. User opens modal → fills form
-2. Submit → `modal.js` calls `sync.js` (Firestore write) + `storage.js` (localStorage)
-3. Firestore listener fires → `state.todos` updated → re-render
-
-### Navigation
-1. User clicks prev/next or a date → `state.navDate` updated
-2. `render.js` called → filters and displays tasks for new date range
-
-### Recurrence rendering
-- Recurring tasks are not stored as multiple instances
-- At render time, `calendar.js` expands a recurrence rule over the visible date range
-- Completion/deletion of a single occurrence writes to `completedDates` / `deletedDates` arrays
+### Résumé
+| | Tags (categories) | Projets (projects) |
+|--|--|--|
+| Clé localStorage | `categories` | `projects` |
+| Clé Firestore | `categories` | `projects` |
+| Champ todo | `categoryId` | `projectId` |
+| Vue | `categories` | `projects` |
+| Module | `admin.js` | `projectManager.js` |
+| Concept | Tag/contexte | Projet avec cycle de vie |
 
 ---
 
-## Infrastructure
+## Data model
 
-| Service | Role |
-|---------|------|
-| Vercel | Hosting + serverless functions |
-| Firebase Firestore | Primary database (per-user collections) |
-| Firebase Auth | User authentication |
-| GitHub | Source control (`master` branch) |
-| Service Worker (`sw.js`) | Offline support and caching |
+### Todo
+```js
+{
+  id: string,           // timestamp
+  title: string,
+  description?: string,
+  completed: boolean,
+  date?: string,        // YYYY-MM-DD (one-time tasks)
+  completedDates: string[],   // dates done pour récurrentes
+  recurrence: 'none'|'daily'|'weekly'|'monthly'|'yearly',
+  startDate?: string, endDate?: string,
+  excludedDates: string[],
+  recDays: number[],    // dow (weekly) ou dom (monthly)
+  recLastDay?: boolean,
+  recMonth?: number, recDay?: number,
+  priority: ''|'low'|'medium'|'high',
+  categoryId?: string,      // tag/category ID
+  projectId?: string,       // board project ID
+  intentionId?: string,
+  startTime?: string, endTime?: string,
+  durationEstimated?: number, durationReal?: number
+}
+```
 
-### Cron
-`vercel.json` configures a daily cron at `0 3 * * *` (3 AM UTC) calling `/api/cron-cleanup-guests`.
+### Category (clé localStorage : `categories`)
+```js
+{ id, name, color (hex), icon (key CATEGORY_ICONS), description, status, deadline }
+```
 
-### Local development
-`server.js` runs a local Node.js API server on port 3333 using Firebase Admin SDK. Data is stored in `~/.todo-hugues/` locally. The frontend detects `localhost` and routes API calls to the local server instead of Vercel.
+### Project (entité indépendante, clé localStorage : `projects`)
+```js
+{ id, name, color, status: 'active'|'on_hold'|'completed'|'archived', created, updated }
+```
 
----
-
-## CSS / SCSS
-
-All styles live in `css/styles.scss`. The compiled `css/styles.css` is generated and committed. Never edit `styles.css` directly.
-
-Compile command:
-```bash
-npx sass css/styles.scss css/styles.css --style=expanded --no-source-map
+### Intention
+```js
+{ id, title, description?, status?: 'active'|'completed' }
 ```
 
 ---
 
-## Localization
+## Stockage & Sync
 
-The app supports English and French. All user-facing strings are defined in `config.js` under `translations.en` and `translations.fr`. The active locale is stored in state and applied at render time.
+### localStorage (source de vérité côté client)
+`todos`, `categories`, `dayTemplates`, `suggestedTasks`, `projects`, `intentions`, `projectTaskOrder`, `dayOrder`, `recurringOrder`, `punctualPeriodOrder`, `zoom`, `lang`, `theme`, `navDate`, `profileAvatar`, `icalSecret`, `bannedQuotes`, `customQuotesFR`, `customQuotesEN`, `modalDraft`, `glassMode`, `timezone`, `icalHour`, `icalFilters`, `bgPalette`, `bgColor`
+
+### Firestore — `users/{uid}/data/main` (single document)
+```js
+{
+  calendar, config, categories, templates, suggestedTasks,
+  taskOrder, avatar, intentions, projects,
+  quotes: { banned, customFR, customEN },
+  icalSecret, _pushedBySession, updatedAt
+}
+```
+Autres collections : `presence/{uid}`, `admin_messages/{uid}/inbox/{id}`
+
+### Sync flow
+1. **Client → Firestore :** `pushFirestoreNow()` après chaque write → `pushToFirestore(getFullBackup())`
+2. **Firestore → Client :** realtime listener, skip si `_pushedBySession === SESSION_ID`
+3. **Cross-tab :** `initCrossTabSync()` via storage events
+4. **Offline :** IndexedDB persistent cache (Firebase SDK)
 
 ---
 
-## Version
+## API Serverless (`/api/`)
 
-The version is a semver string in `js/modules/version.js`. A PostToolUse hook in `.claude/settings.json` auto-bumps the patch version on every file edit via `.claude/bump-version.sh`. No manual version management is needed.
+| Endpoint | Méthode | Rôle |
+|----------|---------|------|
+| `ical` | GET | Feed iCal live depuis Firestore (token secret) |
+| `gcal-auth` | GET | OAuth2 init Google Calendar |
+| `gcal-callback` | GET | OAuth2 callback, sauve refresh token |
+| `gcal-sync` | POST | Push todos → Google Calendar |
+| `gcal-pull` | POST | Fetch events ← Google Calendar |
+| `admin-users` | GET | Liste comptes Firebase Auth |
+| `admin-batch` | POST | Batch Firestore ops |
+| `admin-messages` | POST | Envoie message à utilisateur |
+| `admin-presence` | GET | Présence online |
+| `admin-stats` | GET | Stats agrégées utilisateurs |
+| `admin-user-action` | POST | Action sur un user |
+| `cron-cleanup-guests` | GET | Nettoie vieux comptes guests |
+
+Tous les admin endpoints : Firebase ID token requis + UID dans `ADMIN_UIDS`. CORS : liste blanche `todo.hugues.app` + localhost.
 
 ---
 
-## Notable Patterns
+## CSS/SCSS
 
-- **No framework**: pure vanilla JS with ES modules. No React, Vue, etc.
-- **Module imports**: all modules import from each other directly; `app.js` is the root.
-- **State mutation**: state is mutated through setter functions in `state.js`. There is no reactive binding between state and DOM (no Vue/Svelte/MobX-style auto-render). Mutating state does not automatically update the UI — renders must be triggered explicitly by calling `render()`.
-- **Drag-and-drop**: native HTML5 drag/drop API (`dragstart`/`dragover`/`drop`, `draggable="true"`, `dataTransfer`). Three separate implementations in `app.js`: day view (reorder tasks), week view (move task to another day), month view (move task to another day). Interact.js is listed in `package.json` but is not imported or used.
-- **Animations**: GSAP for celebrations; CSS transitions for view changes and hover effects.
-- **Single HTML file per view**: `index.html` for the app, `admin.html` for the admin panel.
+- **Source :** `css/styles.scss` — NE JAMAIS éditer `css/styles.css`
+- **Compiler :** `npx sass css/styles.scss css/styles.css --style=expanded`
+- Dark mode via `[data-theme="dark"]`
+- Variables CSS : `--primary`, `--bg`, `--surface`, `--surface2`, `--text`, `--text-muted`, `--border`, `--shadow`, `--radius`
+
+---
+
+## Features notables
+
+- **Undo :** snapshot avant chaque mutation, stack 50, `canUndo()`
+- **Récurrence :** daily/weekly(dow)/monthly(dom ou lastDay)/yearly — 1 todo, pas d'instances
+- **iCal :** token secret `{uid}_{secret}`, endpoint `/api/ical?token=...`
+- **Celebrate :** GSAP, quotes EN/FR/custom, mascots, ban, debug panel
+- **Avatar :** upload + crop + emoji + filtres, saved Firestore
+- **Présence :** heartbeat 30s, click counter, admin messages inbox
+- **Draft :** modal auto-save 300ms debounce dans `modalDraft`
+- **_showToast(msg) :** toast non-bloquant (réutilise `#undoToast` / `.undo-toast`)
+- **Inline inputs :** addCategoryFromView / addProjectFromView injectent un `<input>` dans `.category-card--add` (pas de `prompt()`)
+
+---
+
+## Auth
+
+- Guest (anonymous), email/password, Google OAuth, Facebook OAuth
+- Upgrade guest → email : `upgradeGuestToEmail()`
+- Profile : displayName, photoURL, custom avatar, icalSecret, GCal tokens
