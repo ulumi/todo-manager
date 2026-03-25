@@ -109,13 +109,13 @@ export function getFullBackup(todos) {
   const backup = {
     calendar: todos,
     config: getAppConfig(),
-    categories: raw('projects'),
+    categories: raw('categories'),
     templates: raw('dayTemplates'),
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
     avatar: raw('profileAvatar'),
     intentions: raw('intentions'),
-    boardProjects: raw('boardProjects'),
+    projects: raw('projects'),
     quotes: {
       banned:   raw('bannedQuotes')   || [],
       customFR: raw('customQuotesFR') || [],

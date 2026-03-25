@@ -35,7 +35,7 @@ function _saveDraft() {
     durationEstimated: document.getElementById('taskDurationEstimated')?.value || '',
     durationReal: document.getElementById('taskDurationReal')?.value || '',
     categoryId: document.getElementById('taskCategory')?.value || '',
-    boardProjectId: document.getElementById('taskProject')?.value || '',
+    projectId: document.getElementById('taskProject')?.value || '',
     recurrence: state.selectedRecurrence,
     dayPeriod: document.getElementById('taskDayPeriod')?.value || '',
     weekDays: [...state.selectedWeekDays],
@@ -94,7 +94,7 @@ function _tryRestoreDraft() {
   if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
   if (d.priority !== undefined) selectPriority(d.priority);
   if (d.categoryId) { const sel = document.getElementById('taskCategory'); if (sel) sel.value = d.categoryId; }
-  if (d.boardProjectId) { const sel = document.getElementById('taskProject'); if (sel) sel.value = d.boardProjectId; }
+  if (d.projectId) { const sel = document.getElementById('taskProject'); if (sel) sel.value = d.projectId; }
   if (d.scheduleMode) {
     state.setScheduleMode(d.scheduleMode);
     document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === d.scheduleMode));
@@ -330,8 +330,8 @@ export function openEditModal(id, dateStr, todos) {
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
   document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
-  populateCategorySelect(t.projectId || '');
-  populateProjectSelect(t.boardProjectId || '');
+  populateCategorySelect(t.categoryId || '');
+  populateProjectSelect(t.projectId || '');
   populateIntentionSelect(t.intentionId || '');
   selectPriority(t.priority || '');
 
@@ -694,8 +694,8 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const projectId         = document.getElementById('taskCategory')?.value || '';
-  const boardProjectId    = document.getElementById('taskProject')?.value || '';
+  const categoryId        = document.getElementById('taskCategory')?.value || '';
+  const projectId         = document.getElementById('taskProject')?.value || '';
   const intentionId       = document.getElementById('taskIntention')?.value || '';
   const priority          = state.selectedPriority || undefined;
   const description       = document.getElementById('taskDescription').value.trim() || undefined;
@@ -712,8 +712,8 @@ export function saveTaskLogic(todos) {
   const data = {
     title,
     recurrence: state.selectedRecurrence,
+    categoryId:       categoryId || undefined,
     projectId:        projectId || undefined,
-    boardProjectId:   boardProjectId || undefined,
     intentionId: intentionId || undefined,
     priority,
     description,
@@ -775,8 +775,8 @@ export function saveTaskLogic(todos) {
       if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
       if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
+      t.categoryId     = data.categoryId;
       t.projectId      = data.projectId;
-      t.boardProjectId = data.boardProjectId;
       t.intentionId    = data.intentionId;
       t.priority    = data.priority;
       t.description = data.description;

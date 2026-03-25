@@ -7,7 +7,7 @@ import { saveTodos, pushFirestoreNow } from './storage.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
-const PROJECTS_KEY = 'projects';
+const CATEGORIES_KEY = 'categories';
 
 export const CATEGORY_COLORS = ['#f59e0b','#3b82f6','#10b981','#ef4444','#8b5cf6','#f97316','#06b6d4','#ec4899'];
 
@@ -37,14 +37,14 @@ let _categoriesCache = null;
 
 export function getCategories() {
   if (_categoriesCache) return _categoriesCache;
-  const stored = localStorage.getItem(PROJECTS_KEY);
+  const stored = localStorage.getItem(CATEGORIES_KEY);
   _categoriesCache = stored ? JSON.parse(stored) : [];
   return _categoriesCache;
 }
 
 export function saveCategories(categories) {
   _categoriesCache = categories;
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(categories));
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
   pushFirestoreNow();
 }
 

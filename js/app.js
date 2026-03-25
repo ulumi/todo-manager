@@ -88,12 +88,35 @@ class TodoApp {
   }
 
   init() {
+    // Migration: localStorage key renames
+    // 'projects' (was categories/tags) → 'categories'
+    if (localStorage.getItem('projects') !== null && localStorage.getItem('categories') === null) {
+      localStorage.setItem('categories', localStorage.getItem('projects'));
+      localStorage.removeItem('projects');
+    }
+    // 'boardProjects' (was real projects) → 'projects'
+    if (localStorage.getItem('boardProjects') !== null && localStorage.getItem('projects') === null) {
+      localStorage.setItem('projects', localStorage.getItem('boardProjects'));
+      localStorage.removeItem('boardProjects');
+    }
+
     const todos = loadTodos();
     // Migration: recurring tasks without startDate get one derived from their ID (creation timestamp)
+    // Migration: todo field renames — projectId → categoryId, boardProjectId → projectId
     let migrated = false;
     todos.forEach(t => {
       if (t.recurrence && t.recurrence !== 'none' && !t.startDate) {
         t.startDate = DS(new Date(parseInt(t.id)));
+        migrated = true;
+      }
+      if ('projectId' in t && !('categoryId' in t)) {
+        t.categoryId = t.projectId || undefined;
+        delete t.projectId;
+        migrated = true;
+      }
+      if ('boardProjectId' in t && !('projectId' in t)) {
+        t.projectId = t.boardProjectId || undefined;
+        delete t.boardProjectId;
         migrated = true;
       }
     });
@@ -225,12 +248,12 @@ class TodoApp {
 
     // localStorage is empty, server has data — pull from server
     state.setTodos(backup.calendar);
-    if (backup.categories)     localStorage.setItem('projects',         JSON.stringify(backup.categories));
+    if (backup.categories)     localStorage.setItem('categories',       JSON.stringify(backup.categories));
     if (backup.templates)      localStorage.setItem('dayTemplates',     JSON.stringify(backup.templates));
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',   JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder', JSON.stringify(backup.taskOrder));
     if (backup.intentions)     localStorage.setItem('intentions',       JSON.stringify(backup.intentions));
-    if (backup.boardProjects)  saveProjects(backup.boardProjects);
+    if (backup.projects)  saveProjects(backup.projects);
     if (backup.icalSecret)     localStorage.setItem('icalSecret', backup.icalSecret);
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
@@ -430,8 +453,8 @@ class TodoApp {
     const today = DS(new Date());
 
     // Category
-    if (todo.projectId) {
-      const cat = cats.find(c => c.id === todo.projectId);
+    if (todo.categoryId) {
+      const cat = cats.find(c => c.id === todo.categoryId);
       if (cat) badges.push(`<span class="qf-badge" style="background:${cat.color}22;border-color:${cat.color}88;color:${cat.color}">${esc(cat.name.toUpperCase())}</span>`);
     }
 
@@ -1449,10 +1472,10 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     state.setInsertAfterId(id);
     openModal(this.parseDS(ds), state.todos);
-    if (t?.projectId) {
+    if (t?.categoryId) {
       setTimeout(() => {
         const sel = document.getElementById('taskCategory');
-        if (sel) sel.value = t.projectId;
+        if (sel) sel.value = t.categoryId;
       }, 60);
     }
   }
@@ -2136,7 +2159,7 @@ class TodoApp {
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
         this.applyZoom();
       }
-      if (data.categories) localStorage.setItem('projects', JSON.stringify(data.categories));
+      if (data.categories) localStorage.setItem('categories', JSON.stringify(data.categories));
       if (data.templates) localStorage.setItem('dayTemplates', JSON.stringify(data.templates));
       if (data.suggestedTasks) localStorage.setItem('suggestedTasks', JSON.stringify(data.suggestedTasks));
       if (data.taskOrder) localStorage.setItem('projectTaskOrder', JSON.stringify(data.taskOrder));
@@ -4075,7 +4098,7 @@ class TodoApp {
   removeCategory(id) {
     // Clear task links before removing
     snapshot(state.todos);
-    state.todos.forEach(t => { if (t.projectId === id) delete t.projectId; });
+    state.todos.forEach(t => { if (t.categoryId === id) delete t.categoryId; });
     saveTodos(state.todos);
     removeCategory(id);
     this.render();
@@ -4336,7 +4359,7 @@ class TodoApp {
   }
 
   reorderCategoryTask(id, categoryId, direction) {
-    const tasks = state.todos.filter(t => t.projectId === categoryId);
+    const tasks = state.todos.filter(t => t.categoryId === categoryId);
     let order = getCategoryTaskOrder(categoryId);
     tasks.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
     order = order.filter(oid => tasks.some(t => t.id === oid));
@@ -4361,7 +4384,7 @@ class TodoApp {
   unlinkFromCategory(id) {
     snapshot(state.todos);
     const t = state.todos.find(x => x.id === id);
-    if (t) { delete t.projectId; saveTodos(state.todos); }
+    if (t) { delete t.categoryId; saveTodos(state.todos); }
     this._refreshCategoryPanel();
     this.render();
   }
@@ -4526,12 +4549,12 @@ class TodoApp {
         changed = true;
       }
     }
-    if (backup.categories)     localStorage.setItem('projects',          JSON.stringify(backup.categories));
+    if (backup.categories)     localStorage.setItem('categories',         JSON.stringify(backup.categories));
     if (backup.templates)      localStorage.setItem('dayTemplates',      JSON.stringify(backup.templates));
     if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
     if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
     if (backup.intentions)     localStorage.setItem('intentions',        JSON.stringify(backup.intentions));
-    if (backup.boardProjects)  saveProjects(backup.boardProjects);
+    if (backup.projects)  saveProjects(backup.projects);
     if (backup.config) {
       if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);

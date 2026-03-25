@@ -30,14 +30,14 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const ds = DS(date);
   const dragHandleHTML = group ? `<div class="todo-drag-handle" title="Déplacer">${_dragHandleSVG}</div>` : '';
   const categoryBadge = (() => {
-    if (hideCategoryBadge || !todo.projectId) return '';
-    const cat = getCategories().find(p => p.id === todo.projectId);
+    if (hideCategoryBadge || !todo.categoryId) return '';
+    const cat = getCategories().find(p => p.id === todo.categoryId);
     if (!cat) return '';
     return `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
   })();
   const projectBadge = (() => {
-    if (!todo.boardProjectId) return '';
-    const proj = getProjects().find(p => p.id === todo.boardProjectId);
+    if (!todo.projectId) return '';
+    const proj = getProjects().find(p => p.id === todo.projectId);
     if (!proj) return '';
     return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectPanel('${proj.id}')">${esc(proj.name)}</span>`;
   })();
@@ -334,14 +334,14 @@ export function renderDayView(todos) {
     // Group by category/tag — sections draggable to reorder
     const categories = getCategories();
     const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
-    const catGroups = categories.filter(c => itemsForRender.some(t => t.projectId === c.id));
-    const untagged = itemsForRender.filter(t => !t.projectId);
+    const catGroups = categories.filter(c => itemsForRender.some(t => t.categoryId === c.id));
+    const untagged = itemsForRender.filter(t => !t.categoryId);
 
     // Tag cloud filter — excluded tags are hidden
     const excludedTags = JSON.parse(localStorage.getItem('dayTagExcluded') || '[]');
     const allTags = [
       ...catGroups.map(c => {
-        const count = itemsForRender.filter(t => t.projectId === c.id).length;
+        const count = itemsForRender.filter(t => t.categoryId === c.id).length;
         return { id: c.id, name: c.name, color: c.color, count };
       }),
       ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999', count: untagged.length }] : [])
@@ -369,7 +369,7 @@ export function renderDayView(todos) {
       // Grouped view
       let grouped = catGroups.map(c => {
         const isVisible = !excludedTags.includes(c.id);
-        const items = itemsForRender.filter(t => t.projectId === c.id);
+        const items = itemsForRender.filter(t => t.categoryId === c.id);
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
@@ -381,7 +381,7 @@ export function renderDayView(todos) {
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
-      const filteredItems = itemsForRender.filter(t => !excludedTags.includes(t.projectId || 'none'));
+      const filteredItems = itemsForRender.filter(t => !excludedTags.includes(t.categoryId || 'none'));
       const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
@@ -1053,7 +1053,7 @@ export function renderCategoriesView(todos) {
 
   // Compute stats for all categories
   const data = categories.map(p => {
-    const tasks = todos.filter(t => t.projectId === p.id);
+    const tasks = todos.filter(t => t.categoryId === p.id);
     const total = tasks.length;
     const punctual  = tasks.filter(t => !t.recurrence || t.recurrence === 'none');
     const recurring = tasks.filter(t => t.recurrence && t.recurrence !== 'none');
@@ -1155,13 +1155,13 @@ export function renderInboxView(todos) {
   const sorted = [...inboxItems].sort((a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (a.projectId || '').localeCompare(b.projectId || '');
+    if (sort === 'category') return (a.categoryId || '').localeCompare(b.categoryId || '');
     return b.id.localeCompare(a.id); // newest first (default)
   });
 
   const categories = getCategories();
   const items = sorted.map(t => {
-    const cat = t.projectId ? categories.find(c => c.id === t.projectId) : null;
+    const cat = t.categoryId ? categories.find(c => c.id === t.categoryId) : null;
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
@@ -1230,13 +1230,13 @@ export function renderBacklogView(todos) {
   const sorted = [...backlogItems].sort((a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (a.projectId || '').localeCompare(b.projectId || '');
+    if (sort === 'category') return (a.categoryId || '').localeCompare(b.categoryId || '');
     return b.id.localeCompare(a.id);
   });
 
   const categories = getCategories();
   const items = sorted.map(t => {
-    const cat = t.projectId ? categories.find(c => c.id === t.projectId) : null;
+    const cat = t.categoryId ? categories.find(c => c.id === t.categoryId) : null;
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
@@ -1323,8 +1323,8 @@ export function renderPlanInboxList(todos) {
       let cmp = 0;
       if (s === 'priority') cmp = (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
       else if (s === 'tag') {
-        const ca = cats.find(c => c.id === a.projectId)?.name || 'zzz';
-        const cb = cats.find(c => c.id === b.projectId)?.name || 'zzz';
+        const ca = cats.find(c => c.id === a.categoryId)?.name || 'zzz';
+        const cb = cats.find(c => c.id === b.categoryId)?.name || 'zzz';
         cmp = ca.localeCompare(cb);
       } else cmp = b.id.localeCompare(a.id);
       return d === 'asc' ? -cmp : cmp;
@@ -1398,7 +1398,7 @@ export function renderPlanInboxList(todos) {
   };
 
   const itemRow = (t) => {
-    const cat = t.projectId ? cats.find(c => c.id === t.projectId) : null;
+    const cat = t.categoryId ? cats.find(c => c.id === t.categoryId) : null;
     const categoryBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
@@ -1449,7 +1449,7 @@ export function renderPlanInboxList(todos) {
       return buckets.filter(b => byBucket[b.key]?.length).map(b => ({ ...b, items: byBucket[b.key] }));
     } else {
       const byTag = {};
-      for (const t of items) { const k = t.projectId || '__none__'; (byTag[k] = byTag[k] || []).push(t); }
+      for (const t of items) { const k = t.categoryId || '__none__'; (byTag[k] = byTag[k] || []).push(t); }
       return [...cats, null].flatMap(cat => {
         const key = cat ? cat.id : '__none__';
         if (!byTag[key]?.length) return [];
@@ -1749,7 +1749,7 @@ export function renderAnalyseView(todos) {
   // Per project
   const projects = getProjects();
   const projRows = projects.map(p => {
-    const pTasks = todos.filter(t => t.boardProjectId === p.id && (!t.recurrence || t.recurrence === 'none'));
+    const pTasks = todos.filter(t => t.projectId === p.id && (!t.recurrence || t.recurrence === 'none'));
     const count = pTasks.length;
     const done  = pTasks.filter(t => t.completed).length;
     const pct   = count > 0 ? Math.round(done / count * 100) : 0;
@@ -1875,7 +1875,7 @@ export function renderSearchView() {
   const results = [...filtered].sort((a, b) => {
     if (sort === 'priority') return (prioOrder[a.priority||''] ?? 3) - (prioOrder[b.priority||''] ?? 3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (a.projectId||'').localeCompare(b.projectId||'');
+    if (sort === 'category') return (a.categoryId||'').localeCompare(b.categoryId||'');
     return b.id.localeCompare(a.id); // date — newest first
   });
 

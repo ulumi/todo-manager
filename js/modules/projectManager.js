@@ -7,7 +7,7 @@ import { categoryIconSVG, CATEGORY_ICONS } from './admin.js';
 import { pushFirestoreNow } from './storage.js';
 import * as state from './state.js';
 
-const STORAGE_KEY = 'boardProjects';
+const STORAGE_KEY = 'projects';
 
 export const PROJECT_COLORS = [
   '#6366f1','#3b82f6','#10b981','#ef4444',
@@ -111,7 +111,7 @@ function _projectTaskItemHTML(t) {
   const dateStr = t.date ? `<span class="project-task-date">${t.date.slice(5).replace('-','/')}</span>` : '';
   return `
     <div class="project-task-item${done ? ' done' : ''}" data-id="${t.id}">
-      <div class="todo-check${done ? ' checked' : ''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${t.date || DS(new Date())}'));window.app.renderProjectPanelById('${t.boardProjectId}')"></div>
+      <div class="todo-check${done ? ' checked' : ''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${t.date || DS(new Date())}'));window.app.renderProjectPanelById('${t.projectId}')"></div>
       <span class="project-task-title">${esc(t.title)}</span>
       ${dateStr}
       <button class="project-task-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${t.date || DS(new Date())}')">✎</button>
@@ -122,7 +122,7 @@ function _renderProjectTasks(projectId, p) {
   const todos = state.todos || [];
   const pending = [], done = [];
   for (const t of todos) {
-    if (t.boardProjectId === projectId && (!t.recurrence || t.recurrence === 'none'))
+    if (t.projectId === projectId && (!t.recurrence || t.recurrence === 'none'))
       (t.completed ? done : pending).push(t);
   }
   const projectTodos = pending.length + done.length;
