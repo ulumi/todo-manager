@@ -964,12 +964,12 @@ class TodoApp {
     if (catId) renderCategoryPanel(catId);
   }
 
-  toggleTodo(id, d) {
+  toggleTodo(id, d, e) {
     const wasCompleted = isCompleted(state.todos.find(x => x.id === id), d);
     snapshot(state.todos);
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
-    if (!wasCompleted) celebrate(state.lang);
+    if (!wasCompleted && !e?.altKey) celebrate(state.lang);
     this.render();
     this._refreshCategoryPanel();
     // Animate checkbox bounce
@@ -2821,23 +2821,22 @@ class TodoApp {
 
     const html = `
       <div class="profile-view">
-        <div class="profile-hero">
-          <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
-            ${getAvatarHTML(initials)}
-            <span class="profile-avatar-hint">✏️</span>
-          </div>
-          <button class="profile-avatar-edit-btn" onclick="window.app.openAvatarEditor()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span class="profile-avatar-edit-label">Modifier l'avatar</span>
-          </button>
-          <h1 class="profile-hero-name">${esc(name)}</h1>
-          <p class="profile-hero-email">${esc(user?.email || '')}</p>
-        </div>
-
         <div class="profile-body">
 
-          <!-- Name -->
-          <div class="profile-section">
+          <!-- Identity: avatar + name + display name form -->
+          <div class="profile-section profile-section--identity">
+            <div class="profile-hero-inner">
+              <div class="profile-avatar" onclick="window.app.openAvatarEditor()" title="Modifier l'avatar">
+                ${getAvatarHTML(initials)}
+                <span class="profile-avatar-hint">✏️</span>
+              </div>
+              <button class="profile-avatar-edit-btn" onclick="window.app.openAvatarEditor()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span class="profile-avatar-edit-label">Modifier l'avatar</span>
+              </button>
+              <h1 class="profile-hero-name">${esc(name)}</h1>
+              <p class="profile-hero-email">${esc(user?.email || '')}</p>
+            </div>
             <h3 class="profile-section-title">Nom d'affichage</h3>
             <div class="profile-name-row">
               <input class="form-input" type="text" id="profileDisplayName"
@@ -4514,17 +4513,29 @@ class TodoApp {
 
   async _syncFirebase() {
     const backup = await loadFromFirestore();
-    if (!backup) {
+    if (backup === null) {
+      // Network / auth error — work offline, never push blindly
+      return;
+    }
+    if (backup._empty) {
+      // New user or cleared Firestore — push local state to initialise
       await pushToFirestore(getFullBackup(state.todos));
       return;
     }
 
     // Primary guard: if local has todos AND a push is pending (last push failed or
-    // page reloaded before push completed), always keep local and retry the push.
-    // This is the main protection against sync overwriting local data.
+    // page reloaded before push completed), retry the push — BUT only if local data
+    // is not clearly older than Firestore (prevents stale devices from overwriting).
     if (state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') {
-      await pushToFirestore(getFullBackup(state.todos));
-      return;
+      const localWriteTime  = parseInt(localStorage.getItem('_localWriteTime') || '0');
+      const firestoreTime   = backup._firestoreUpdatedAt || 0;
+      if (firestoreTime > localWriteTime + 5000) {
+        // Firestore is clearly newer — our pending push is stale, discard it
+        localStorage.removeItem('_pendingSync');
+      } else {
+        await pushToFirestore(getFullBackup(state.todos));
+        return;
+      }
     }
 
     // Secondary guard: compare timestamps. Local wins if it's strictly newer than

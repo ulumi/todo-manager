@@ -21,16 +21,18 @@ function userDocRef() {
 }
 
 // ── One-time read from Firestore ──────────────────────────
-// Returns the stored backup object (with _firestoreUpdatedAt in ms), or null.
+// Returns the stored backup object (with _firestoreUpdatedAt in ms),
+// { _empty: true } if the doc doesn't exist yet (new user),
+// or null on network / auth error.
 export async function loadFromFirestore() {
   try {
     const snap = await getDoc(userDocRef());
-    if (!snap.exists()) return null;
+    if (!snap.exists()) return { _empty: true };
     const { updatedAt, ...data } = snap.data();
     return { ...data, _firestoreUpdatedAt: updatedAt?.toMillis() ?? 0 };
   } catch (err) {
     console.warn('[sync] loadFromFirestore failed:', err.message);
-    return null;
+    return null; // network / auth error — caller must not push
   }
 }
 

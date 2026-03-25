@@ -97,11 +97,8 @@ body {
   background: transparent;
   color: var(--text);
   font-size: 15px;
-  overflow-x: clip;
   display: flex;
   flex-direction: column;
-
-  // padding moved to main — body's overflow-x:clip absorbs padding-bottom before it reaches the scroll root
 }
 
 
@@ -288,6 +285,9 @@ header {
 }
 
 .view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 14px;
   border-radius: 6px;
   border: none;
@@ -1892,6 +1892,7 @@ main {
   &:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,.12);
     border-color: var(--primary);
+    padding-bottom: 44px;
 
     .todo-reorder-btn { opacity: 0.5; }
   }
@@ -1918,7 +1919,10 @@ main {
 }
 
 .todo-actions {
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 7px;
+  left: 18px;
+  right: 18px;
   display: flex;
   flex-wrap: nowrap;
   gap: 2px;
@@ -1968,7 +1972,9 @@ main {
   line-height: 1.5;
   font-weight: 500;
   color: var(--text);
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &.editable {
     cursor: default;
@@ -5546,7 +5552,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // ─── Profile view ──────────────────────────────────────────────────────────
 .profile-view {
-  max-width: 560px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 40px 24px 60px;
 }
@@ -5557,6 +5563,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   align-items:     center;
   text-align:      center;
   margin-bottom:   40px;
+}
+
+.profile-hero-inner {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  text-align:      center;
+  margin-bottom:   24px;
 }
 
 .profile-avatar {

@@ -130,6 +130,7 @@ export function getFullBackup(todos) {
 
 export function pushFirestoreNow() {
   const todos = loadTodos();
+  localStorage.setItem('_localWriteTime', Date.now().toString());
   localStorage.setItem('_pendingSync', '1');
   pushToFirestore(getFullBackup(todos))
     .then(() => localStorage.removeItem('_pendingSync'))
