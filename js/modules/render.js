@@ -1341,9 +1341,9 @@ export function setupTodoItemHoverAnimations() {
   const icon  = placeholder.querySelector('.add-item-placeholder-icon');
   const label = placeholder.querySelector('.add-item-placeholder-label');
 
-  // Set GSAP initial state (override any CSS leftover)
+  // Reset GSAP state (survit aux re-renders)
   gsap.set(pill,  { width: 36 });
-  gsap.set(icon,  { rotation: 0, y: '-50%' });
+  gsap.set(icon,  { rotation: 0 });
   gsap.set(label, { opacity: 0 });
 
   placeholder.addEventListener('mouseenter', () => {

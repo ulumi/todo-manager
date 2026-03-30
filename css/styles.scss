@@ -4139,8 +4139,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .add-item-placeholder-label {
     position: absolute;
     left: 13px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: calc(50% - 9px);
     font-size: 13px;
     font-weight: 700;
     color: #fff;
@@ -4152,8 +4151,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .add-item-placeholder-icon {
     position: absolute;
     right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: calc(50% - 12px);
     width: 24px;
     height: 24px;
     display: flex;
