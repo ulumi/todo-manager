@@ -1334,6 +1334,31 @@ export function setupTodoItemHoverAnimations() {
       gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
     );
   });
+
+  const placeholder = document.querySelector('.add-item-placeholder');
+  if (!placeholder) return;
+  const pill  = placeholder.querySelector('.add-item-placeholder-pill');
+  const icon  = placeholder.querySelector('.add-item-placeholder-icon');
+  const label = placeholder.querySelector('.add-item-placeholder-label');
+
+  // Set GSAP initial state (override any CSS leftover)
+  gsap.set(pill,  { width: 36 });
+  gsap.set(icon,  { rotation: 0, y: '-50%' });
+  gsap.set(label, { opacity: 0 });
+
+  placeholder.addEventListener('mouseenter', () => {
+    const tl = gsap.timeline();
+    tl.to(pill,  { width: 118, duration: 0.5, ease: 'elastic.out(1, 0.6)' }, 0);
+    tl.to(icon,  { rotation: 135, duration: 0.45, ease: 'back.out(2.5)' }, 0);
+    tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.15);
+  });
+
+  placeholder.addEventListener('mouseleave', () => {
+    const tl = gsap.timeline();
+    tl.to(label, { opacity: 0, duration: 0.15, ease: 'power2.in' }, 0);
+    tl.to(icon,  { rotation: 0, duration: 0.4, ease: 'back.out(2)' }, 0.05);
+    tl.to(pill,  { width: 36, duration: 0.4, ease: 'power3.inOut' }, 0.05);
+  });
 }
 
 // ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
