@@ -172,6 +172,27 @@
       border-radius: 50%; animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* NEW badge */
+    .badge-new {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 4px;
+      background: linear-gradient(135deg, rgba(251,146,60,.3), rgba(239,68,68,.3));
+      border: 1px solid rgba(251,146,60,.5);
+      color: #fdba74;
+      position: relative; z-index: 1;
+      animation: pulse-new 2.5s ease-in-out infinite;
+    }
+    .badge-new::before { content: '●'; font-size: 6px; color: #fb923c; }
+    @keyframes pulse-new {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251,146,60,0); }
+      50% { box-shadow: 0 0 6px 2px rgba(251,146,60,.25); }
+    }
+
+    /* Highlight new card border */
+    .card.is-new { border-color: rgba(251,146,60,.25); }
+    .card.is-new:hover { border-color: rgba(251,146,60,.5); }
   </style>
 </head>
 <body>
@@ -193,7 +214,7 @@
       <span class="toolbar-count" id="count"></span>
     </div>
 
-    <div class="playground-grid" id="grid"></div>
+    <div class="playground-grid" id="grid"><div class="loading"><div class="spinner"></div></div></div>
 
     <div class="footer">
       <p>Each playground is a self-contained experiment. Hover for details, click to explore.</p>
@@ -227,6 +248,13 @@
       return sorted;
     }
 
+    const NEW_DAYS = 7; // items within this many days get the NEW badge
+
+    function isNew(dateStr) {
+      const age = (Date.now() - new Date(dateStr).getTime()) / 86400000;
+      return age <= NEW_DAYS;
+    }
+
     function render() {
       const grid = document.getElementById('grid');
       const sorted = sortData(playgrounds);
@@ -234,6 +262,7 @@
 
       grid.innerHTML = sorted.map(pg => {
         const date = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(pg.createdAt));
+        const fresh = isNew(pg.createdAt);
         const tagHTML = pg.tags.map(t => {
           const cls = ['design', 'design-system'].some(k => t.includes(k)) ? 'design'
             : t.includes('animation') ? 'animation'
@@ -242,8 +271,11 @@
         }).join('');
 
         return `
-          <a href="${pg.file}" class="card">
-            <div class="card-title">${pg.title}</div>
+          <a href="${pg.file}" class="card${fresh ? ' is-new' : ''}">
+            <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:1">
+              <div class="card-title" style="flex:1">${pg.title}</div>
+              ${fresh ? '<span class="badge-new">new</span>' : ''}
+            </div>
             <div class="card-date">${date}</div>
             <div class="tags">${tagHTML}</div>
             <div class="card-details">
@@ -271,8 +303,10 @@
       render();
     });
 
-    playgrounds = [{"id":"hamburger-icons","title":"Hamburger Icons — 40 variantes","description":"40 variantes d'icônes hamburger animées open/close. Barres, cercles, flèches, SVG, dot grid, gradient, glow, spin, bounce...","file":"hamburger-icons.html","prompt":"40 hamburger menu icon variants animated open/close","createdAt":"2026-03-23","tags":["animation","icon","UI-patterns"]},{"id":"modal-glass-variants","title":"Modal — Glass Variants","description":"Exploration de styles glassmorphism pour les modals.","file":"modal-glass-variants.html","prompt":"Glass modal variants","createdAt":"2026-03-23","tags":["modal","glass","design-system"]},{"id":"settings-icon","title":"Settings Icon","description":"Exploration d'icônes et styles pour le bouton de settings.","file":"settings-icon.html","prompt":"Settings icon exploration","createdAt":"2026-03-23","tags":["icon","UI-patterns"]},{"id":"section-titles","title":"Section Titles","description":"Styles de titres de section pour la vue jour.","file":"section-titles.html","prompt":"Section title styles","createdAt":"2026-03-23","tags":["typography","design-system"]},{"id":"background-images-300","title":"Vector Art — 300 Custom Illustrations","description":"Hand-crafted SVG art. 6 styles (Abstract, Organic, Geometric, Minimal, Fluid, Retro) × 50 variations each.","file":"background-images-300.html","prompt":"Create 300 beautiful custom SVG vector art illustrations across 6 categories.","createdAt":"2026-03-22","tags":["vector-art","svg","illustration","300-variations"]},{"id":"background-images-200","title":"Background Images — 200 Variations","description":"200 selectable vector backgrounds (8 themes × 25 variations). Select, copy IDs, paste here.","file":"background-images-200.html","prompt":"Create a mega-playground with 200 vector background variations across 8 themes.","createdAt":"2026-03-22","tags":["background","vector-art","selection","mega-playground"]},{"id":"add-screen-concepts","title":"Add Screen — 100 concepts","description":"100 innovative approaches for the add-task screen: command palette, progressive disclosure, spatial, conversational, step-by-step, minimal, gesture, hybrid, immersive, and experimental.","file":"add-screen-concepts.html","prompt":"Generate 100 different add-task screen concepts organized in 10 categories.","createdAt":"2026-03-22","tags":["add-screen","UX","concepts","modal"]},{"id":"background-images","title":"Background Images — Zen todo app","description":"6 custom vector art backgrounds + royalty-free sources. Nature inspired with subtle tech overlays, light/dark modes, and glassmorphism-ready.","file":"background-images.html","prompt":"Create a playground showcasing 6 vector art background options for a zen todo app.","createdAt":"2026-03-22","tags":["background","vector-art","design-system"]},{"id":"priority-display","title":"Priority Display — 20 styles","description":"20 different visual approaches to display task priority levels and section headers when sorting by priority.","file":"priority-display.html","prompt":"Create 20 unique variations for displaying task priority indicators and section headers.","createdAt":"2026-03-21","tags":["priority","design-system","UI-patterns"]},{"id":"lowpoly-demo","title":"Low-poly backgrounds — 2 palettes","description":"Dynamic low-poly background generator with warm geography and northern lights themed palettes.","file":"lowpoly-demo.html","prompt":"Create a low-poly background generator with 2 palettes.","createdAt":"2026-03-20","tags":["generative","background","low-poly"]},{"id":"dropzone-styles","title":"Dropzone Styles — 10 variations","description":"Explore 10 different visual styles for drop zones, from subtle dashed borders to glowing neon outlines.","file":"dropzone-styles.html","prompt":"Generate 10 unique dropzone placeholder styles.","createdAt":"2026-03-19","tags":["dropzone","design-system","animation"]},{"id":"drag-demo","title":"Drag & Drop — 3 feedback styles","description":"Compare 3 approaches for drag and drop feedback: animated gap, orange arrow indicator, and ghost preview.","file":"drag-demo.html","prompt":"Create a comparison playground showing 3 different drag & drop feedback patterns.","createdAt":"2026-03-18","tags":["drag-drop","animation","UX"]}];
-    render();
+    fetch('playgrounds.json?v=' + Date.now())
+      .then(r => r.json())
+      .then(data => { playgrounds = data.playgrounds || data; render(); })
+      .catch(() => { document.getElementById('grid').innerHTML = '<div class="loading">Failed to load playgrounds.json</div>'; });
   </script>
 </body>
 </html>

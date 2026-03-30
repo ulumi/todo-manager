@@ -6,7 +6,49 @@ import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.j
 import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
-import { getProjects } from './projectManager.js';
+import { getProjects, saveProjects } from './projectManager.js';
+import { pushFirestoreNow } from './storage.js';
+
+// ─── Smooth reveal / hide helpers ──────────────────────────────────────────
+
+function _slideIn(el) {
+  if (!el || (el.style.display !== 'none' && el.offsetHeight > 0 && !el._hiding)) return;
+  if (el._hiding) { el._hiding = false; gsap.killTweensOf(el); }
+  el.style.display = '';
+  el.style.overflow = 'clip';
+  gsap.fromTo(el,
+    { height: 0, opacity: 0 },
+    { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out',
+      onComplete: () => { el.style.overflow = ''; el.style.height = ''; } }
+  );
+}
+
+function _slideOut(el) {
+  if (!el || el.style.display === 'none') return;
+  el._hiding = true;
+  el.style.overflow = 'clip';
+  gsap.to(el,
+    { height: 0, opacity: 0, duration: 0.2, ease: 'power2.in',
+      onComplete: () => { el.style.display = 'none'; el.style.overflow = ''; el.style.height = ''; el._hiding = false; } }
+  );
+}
+
+// ─── Day period (Moment) button builder ───────────────────────────────────
+
+const _PERIOD_ICONS = {
+  'morning':   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  'afternoon': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>',
+  'evening':   '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+};
+const _PERIOD_LABELS = { 'morning': 'Matin', 'afternoon': 'Après-midi', 'evening': 'Soir' };
+
+function _dayPeriodHTML(currentPeriod) {
+  const periods = ['morning', 'afternoon', 'evening'];
+  const buttons = periods.map(p =>
+    `<button type="button" class="day-period-btn${currentPeriod === p ? ' active' : ''}" data-period="${p}" onclick="window.app.toggleDayPeriod('${p}')">${_PERIOD_ICONS[p]}<span>${_PERIOD_LABELS[p]}</span></button>`
+  ).join('');
+  return `<label class="form-label">Moment <span class="timing-flex-hint" title="Matin, après-midi ou soir — aide à planifier sans fixer d'heure précise">?</span></label><div class="day-period-select">${buttons}<input type="hidden" id="taskDayPeriod" value="${currentPeriod}"></div>`;
+}
 
 // ─── Draft management ─────────────────────────────────────────────────────
 
@@ -34,8 +76,9 @@ function _saveDraft() {
     flexibleTime: document.getElementById('taskFlexibleTime')?.checked || false,
     durationEstimated: document.getElementById('taskDurationEstimated')?.value || '',
     durationReal: document.getElementById('taskDurationReal')?.value || '',
-    categoryId: document.getElementById('taskCategory')?.value || '',
-    projectId: document.getElementById('taskProject')?.value || '',
+    categoryIds: [..._selectedCategoryIds],
+    projectIds: [..._selectedProjectIds],
+    intentionIds: [..._selectedIntentionIds],
     recurrence: state.selectedRecurrence,
     dayPeriod: document.getElementById('taskDayPeriod')?.value || '',
     weekDays: [...state.selectedWeekDays],
@@ -64,9 +107,10 @@ export function discardDraft() {
   document.getElementById('taskDurationEstimated').value = '';
   document.getElementById('taskDurationReal').value = '';
   selectPriority('');
-  populateCategorySelect('');
-  populateProjectSelect('');
-  populateIntentionSelect('');
+  populateCategoryTags([]);
+  populateProjectTags([]);
+  populateIntentionTags([]);
+  switchTagTab('categories');
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
@@ -93,8 +137,9 @@ function _tryRestoreDraft() {
   if (d.durationEstimated) document.getElementById('taskDurationEstimated').value = d.durationEstimated;
   if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
   if (d.priority !== undefined) selectPriority(d.priority);
-  if (d.categoryId) { const sel = document.getElementById('taskCategory'); if (sel) sel.value = d.categoryId; }
-  if (d.projectId) { const sel = document.getElementById('taskProject'); if (sel) sel.value = d.projectId; }
+  if (d.categoryIds?.length) populateCategoryTags(d.categoryIds);
+  if (d.projectIds?.length) populateProjectTags(d.projectIds);
+  if (d.intentionIds?.length) populateIntentionTags(d.intentionIds);
   if (d.scheduleMode) {
     state.setScheduleMode(d.scheduleMode);
     document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === d.scheduleMode));
@@ -153,30 +198,184 @@ export function selectScheduleMode(mode) {
   _scheduleDraftSave();
 }
 
-function populateCategorySelect(selectedId) {
-  const sel = document.getElementById('taskCategory');
-  if (!sel) return;
-  const categories = getCategories();
-  sel.innerHTML = `<option value="">— Aucune catégorie —</option>` +
-    categories.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
+export function selectBigMode(mode) {
+  // Update button highlights with punch animation
+  document.querySelectorAll('.schedule-mode-option').forEach(o => {
+    const isActive = o.dataset.mode === mode;
+    o.classList.toggle('active', isActive);
+    if (isActive) gsap.fromTo(o, { scale: 0.92 }, { scale: 1, duration: 0.25, ease: 'back.out(2)' });
+  });
+
+  const dateTimeGroup = document.getElementById('dateTimeGroup');
+  const recSubOptions = document.getElementById('recSubOptions');
+  const dateGroup = document.getElementById('dateGroup');
+
+  if (mode === 'today' || mode === 'tomorrow') {
+    // Quick-set date to today or tomorrow, then show date fields
+    const d = new Date();
+    if (mode === 'tomorrow') d.setDate(d.getDate() + 1);
+    const dateInput = document.getElementById('taskDate');
+    if (dateInput) dateInput.value = d.toISOString().slice(0, 10);
+    state.setScheduleMode('date');
+    state.setSelectedRecurrence('none');
+    const recSel0 = document.getElementById('taskRecurrence');
+    if (recSel0) recSel0.value = 'none';
+    _slideIn(dateTimeGroup);
+    if (dateGroup) dateGroup.style.display = '';
+    _slideOut(recSubOptions);
+    const detail0 = document.getElementById('recDetail');
+    if (detail0) {
+      const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
+      detail0.innerHTML = _dayPeriodHTML(curPeriod);
+    }
+  } else if (mode === 'date') {
+    state.setScheduleMode('date');
+    state.setSelectedRecurrence('none');
+    const recSel = document.getElementById('taskRecurrence');
+    if (recSel) recSel.value = 'none';
+    _slideIn(dateTimeGroup);
+    if (dateGroup) dateGroup.style.display = '';
+    _slideOut(recSubOptions);
+    // Show day period for "none" recurrence
+    const detail = document.getElementById('recDetail');
+    if (detail) {
+      const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
+      detail.innerHTML = _dayPeriodHTML(curPeriod);
+    }
+  } else if (mode === 'recurring') {
+    state.setScheduleMode('date');
+    _slideIn(dateTimeGroup);
+    _slideIn(recSubOptions);
+    // Highlight current recurrence sub-option
+    const cur = state.selectedRecurrence === 'none' ? 'daily' : state.selectedRecurrence;
+    document.querySelectorAll('.rec-sub-option').forEach(o =>
+      o.classList.toggle('active', o.dataset.rec === cur)
+    );
+    // Auto-select daily if none
+    if (state.selectedRecurrence === 'none') selectRecurrence('daily');
+  } else if (mode === 'inbox') {
+    state.setScheduleMode('inbox');
+    state.setSelectedRecurrence('none');
+    const recSel = document.getElementById('taskRecurrence');
+    if (recSel) recSel.value = 'none';
+    _slideOut(dateTimeGroup);
+  } else if (mode === 'backlog') {
+    state.setScheduleMode('backlog');
+    state.setSelectedRecurrence('none');
+    const recSel = document.getElementById('taskRecurrence');
+    if (recSel) recSel.value = 'none';
+    _slideOut(dateTimeGroup);
+    if (recSubOptions) recSubOptions.style.display = 'none';
+  }
+  _scheduleDraftSave();
 }
 
-function populateProjectSelect(selectedId) {
-  const sel = document.getElementById('taskProject');
-  if (!sel) return;
-  const projects = getProjects();
-  sel.innerHTML = `<option value="">— Aucun projet —</option>` +
-    projects.map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>${escapeCategory(p.name)}</option>`).join('');
+// ─── Tag picker state ────────────────────────────────────────────────
+let _selectedCategoryIds = [];
+let _selectedProjectIds = [];
+let _selectedIntentionIds = [];
+
+export function getSelectedCategoryIds() { return _selectedCategoryIds; }
+export function getSelectedProjectIds() { return _selectedProjectIds; }
+export function getSelectedIntentionIds() { return _selectedIntentionIds; }
+
+function _renderTagPicker(containerId, items, selectedIds, toggleFn, addBtnLabel, addFn) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const pills = items.map(item => {
+    const sel = selectedIds.includes(item.id);
+    const color = item.color || '#888';
+    const label = escapeCategory(item.name || item.title || '');
+    const style = sel ? `background:${color};border-color:${color};color:#fff` : '';
+    const dotStyle = sel ? '' : `style="background:${color}"`;
+    return `<span class="tag-pill${sel ? ' selected' : ''}" data-id="${item.id}" style="${style}" onclick="${toggleFn}('${item.id}')">${sel ? '' : `<span class="tag-pill-dot" ${dotStyle}></span>`}${label}</span>`;
+  }).join('');
+  const addBtn = addFn ? `<span class="tag-pill-add" onclick="${addFn}">+ ${addBtnLabel}</span>` : '';
+  el.innerHTML = pills + addBtn;
 }
 
-function populateIntentionSelect(selectedId) {
-  const sel = document.getElementById('taskIntention');
-  if (!sel) return;
+function populateCategoryTags(selectedIds) {
+  _selectedCategoryIds = selectedIds || [];
+  _renderTagPicker('taskCategoryTags', getCategories(), _selectedCategoryIds,
+    'window.app.toggleCategoryTag', 'Ajouter', 'window.app.toggleNewCatRow()');
+}
+
+function populateProjectTags(selectedIds) {
+  _selectedProjectIds = selectedIds || [];
+  _renderTagPicker('taskProjectTags', getProjects(), _selectedProjectIds,
+    'window.app.toggleProjectTag', 'Ajouter', 'window.app.toggleNewProjectRow()');
+}
+
+function populateIntentionTags(selectedIds) {
+  _selectedIntentionIds = selectedIds || [];
   let intentions = [];
   try { intentions = JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { intentions = []; }
-  sel.innerHTML = `<option value="">— Aucune intention —</option>` +
-    intentions.map(i => `<option value="${i.id}"${i.id === selectedId ? ' selected' : ''}>${escapeCategory(i.title)}</option>`).join('');
+  _renderTagPicker('taskIntentionTags', intentions.map(i => ({ ...i, name: i.codename || i.title })), _selectedIntentionIds,
+    'window.app.toggleIntentionTag', 'Ajouter', 'window.app.toggleNewIntentionRow()');
 }
+
+export function toggleCategoryTag(id) {
+  const idx = _selectedCategoryIds.indexOf(id);
+  if (idx >= 0) _selectedCategoryIds.splice(idx, 1); else _selectedCategoryIds.push(id);
+  populateCategoryTags(_selectedCategoryIds);
+  _scheduleDraftSave();
+}
+
+export function toggleProjectTag(id) {
+  const idx = _selectedProjectIds.indexOf(id);
+  if (idx >= 0) _selectedProjectIds.splice(idx, 1); else _selectedProjectIds.push(id);
+  populateProjectTags(_selectedProjectIds);
+  _scheduleDraftSave();
+}
+
+export function toggleIntentionTag(id) {
+  const idx = _selectedIntentionIds.indexOf(id);
+  if (idx >= 0) _selectedIntentionIds.splice(idx, 1); else _selectedIntentionIds.push(id);
+  populateIntentionTags(_selectedIntentionIds);
+  _scheduleDraftSave();
+}
+
+export function toggleNewProjectRow() {
+  const row = document.getElementById('newProjectRow');
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+  if (row.style.display !== 'none') document.getElementById('newProjectInput')?.focus();
+}
+
+export function toggleNewIntentionRow() {
+  const row = document.getElementById('newIntentionRow');
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+  if (row.style.display !== 'none') document.getElementById('newIntentionInput')?.focus();
+}
+
+export function addIntentionInline() {
+  const input = document.getElementById('newIntentionInput');
+  const title = input?.value.trim();
+  if (!title) return;
+  let intentions = [];
+  try { intentions = JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { intentions = []; }
+  const colors = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  const color = colors[intentions.length % colors.length];
+  const id = Date.now().toString();
+  intentions.push({ id, title, color, description: '', codename: '' });
+  localStorage.setItem('intentions', JSON.stringify(intentions));
+  pushFirestoreNow();
+  input.value = '';
+  document.getElementById('newIntentionRow').style.display = 'none';
+  _selectedIntentionIds.push(id);
+  populateIntentionTags(_selectedIntentionIds);
+}
+
+export function switchTagTab(tab) {
+  document.querySelectorAll('.tag-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tag-tab-panel').forEach(p => p.style.display = p.dataset.tab === tab ? '' : 'none');
+}
+
+// Back-compat wrappers (used by openModal / openEditModal)
+function populateCategorySelect(selectedId) { populateCategoryTags(selectedId ? [selectedId] : []); }
+function populateProjectSelect(selectedId) { populateProjectTags(selectedId ? [selectedId] : []); }
+function populateIntentionSelect(selectedId) { populateIntentionTags(selectedId ? [selectedId] : []); }
 
 function escapeCategory(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -201,7 +400,23 @@ export function addCategoryInline() {
   saveCategories(categories);
   input.value = '';
   document.getElementById('newCatRow').style.display = 'none';
-  populateCategorySelect(id);
+  _selectedCategoryIds.push(id);
+  populateCategoryTags(_selectedCategoryIds);
+}
+
+export function addProjectInline() {
+  const input = document.getElementById('newProjectInput');
+  const name = input?.value.trim();
+  if (!name) return;
+  const projects = getProjects();
+  const color = CATEGORY_COLORS[projects.length % CATEGORY_COLORS.length];
+  const id = Date.now().toString();
+  projects.push({ id, name, color });
+  saveProjects(projects);
+  input.value = '';
+  document.getElementById('newProjectRow').style.display = 'none';
+  _selectedProjectIds.push(id);
+  populateProjectTags(_selectedProjectIds);
 }
 
 export function selectPriority(p) {
@@ -226,6 +441,10 @@ export function openModal(date, todos, scheduleMode = 'date') {
   document.getElementById('saveTask').textContent = state.T.btnAdd;
   const _deleteBtn = document.getElementById('deleteFromEditBtn');
   if (_deleteBtn) _deleteBtn.style.display = 'none';
+  const _completeWrap = document.getElementById('completeFromEditWrap');
+  if (_completeWrap) _completeWrap.style.display = 'none';
+  const _completeMenu = document.getElementById('completeMenu');
+  if (_completeMenu) _completeMenu.style.display = 'none';
   const _guidedPill = document.getElementById('guidedPillBtn');
   if (_guidedPill) _guidedPill.style.display = '';
   document.getElementById('taskTitle').value = '';
@@ -241,36 +460,33 @@ export function openModal(date, todos, scheduleMode = 'date') {
   const recSel = document.getElementById('taskRecurrence');
   if (recSel) recSel.value = 'none';
   document.getElementById('recDetail').innerHTML = '';
-  // Schedule mode UI
-  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === scheduleMode));
+  // Big mode UI
+  const bigMode = scheduleMode === 'date' ? 'date' : scheduleMode;
+  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === bigMode));
   const scheduleModeGroup = document.getElementById('scheduleModeGroup');
   if (scheduleModeGroup) scheduleModeGroup.style.display = '';
+  const recSubOptions = document.getElementById('recSubOptions');
+  if (recSubOptions) recSubOptions.style.display = 'none';
+  const dateTimeGroup = document.getElementById('dateTimeGroup');
+  if (dateTimeGroup) dateTimeGroup.style.display = (scheduleMode === 'inbox' || scheduleMode === 'backlog') ? 'none' : '';
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = scheduleMode === 'date' ? '' : 'none';
-  document.getElementById('modalClouds').innerHTML = cloudsHTML(date, todos);
-  populateCategorySelect('');
-  populateProjectSelect('');
-  populateIntentionSelect('');
+  populateCategoryTags([]);
+  populateProjectTags([]);
+  populateIntentionTags([]);
+  switchTagTab('categories');
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
   const hadDraft = _tryRestoreDraft();
   if (draftBanner) draftBanner.style.display = hadDraft ? '' : 'none';
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  // Reset right column state — collapsed in add mode
-  const right = document.getElementById('modalRight');
-  const inner = document.getElementById('modalRightInner');
-  const toggle = document.getElementById('modalColToggle');
-  if (right) { right.style.display = ''; right.classList.add('collapsed'); gsap.set(right, { width: 0 }); }
-  if (inner) gsap.set(inner, { x: 30, opacity: 0 });
-  if (toggle) { toggle.classList.add('collapsed'); toggle.style.display = 'none'; }
   // Context fields — hidden until title has content
   const ctxFields = document.getElementById('contextFields');
   if (ctxFields) {
     if (hadDraft && document.getElementById('taskTitle').value.trim()) {
-      gsap.set(ctxFields, { maxHeight: 2000, opacity: 1 });
-      if (toggle) toggle.style.display = '';
+      gsap.set(ctxFields, { maxHeight: 'none', overflow: 'visible', opacity: 1 });
     } else {
-      gsap.set(ctxFields, { maxHeight: 0, opacity: 0 });
+      gsap.set(ctxFields, { maxHeight: 0, overflow: 'hidden', opacity: 0 });
     }
   }
   // Hide guided overlay
@@ -318,6 +534,17 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('saveTask').textContent = state.T.btnModify;
   const _deleteBtn = document.getElementById('deleteFromEditBtn');
   if (_deleteBtn) { _deleteBtn.dataset.id = id; _deleteBtn.dataset.date = dateStr || ''; _deleteBtn.style.display = ''; }
+  const _completeWrap = document.getElementById('completeFromEditWrap');
+  if (_completeWrap) {
+    _completeWrap.style.display = t.completed ? 'none' : '';
+    _completeWrap.dataset.id = id;
+    _completeWrap.dataset.date = t.date || dateStr || '';
+  }
+  const _completeMenu = document.getElementById('completeMenu');
+  if (_completeMenu) _completeMenu.style.display = 'none';
+  // Hide "original date" option when task has no date
+  const _completeOrigBtn = document.getElementById('completeOrigDate');
+  if (_completeOrigBtn) _completeOrigBtn.style.display = (t.date || dateStr) ? '' : 'none';
   const _guidedPill = document.getElementById('guidedPillBtn');
   if (_guidedPill) _guidedPill.style.display = 'none';
   document.getElementById('taskTitle').value = t.title;
@@ -329,15 +556,18 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
-  document.getElementById('modalClouds').innerHTML = cloudsHTML(dateStr ? parseDS(dateStr) : state.navDate, todos);
-  populateCategorySelect(t.categoryId || '');
-  populateProjectSelect(t.projectId || '');
-  populateIntentionSelect(t.intentionId || '');
+  populateCategoryTags(t.categoryIds || (t.categoryId ? [t.categoryId] : []));
+  populateProjectTags(t.projectIds || (t.projectId ? [t.projectId] : []));
+  populateIntentionTags(t.intentionIds || (t.intentionId ? [t.intentionId] : []));
   selectPriority(t.priority || '');
 
-  // Schedule mode UI
-  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === schedMode));
+  // Big mode UI
+  const isRecurring = t.recurrence && t.recurrence !== 'none';
+  const bigMode = isRecurring ? 'recurring' : schedMode;
+  document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === bigMode));
   const scheduleModeGroup = document.getElementById('scheduleModeGroup');
+  const recSubOptions = document.getElementById('recSubOptions');
+  const dateTimeGroup = document.getElementById('dateTimeGroup');
 
   // Set recurrence UI
   const recSel2 = document.getElementById('taskRecurrence');
@@ -345,61 +575,54 @@ export function openEditModal(id, dateStr, todos) {
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
 
-  if (state.selectedRecurrence === 'none') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = '';
-    dateGroup.style.display = schedMode === 'date' ? '' : 'none';
+  if (schedMode === 'inbox' || schedMode === 'backlog') {
+    // Inbox/Backlog: hide date/time/moment
+    if (dateTimeGroup) dateTimeGroup.style.display = 'none';
+    if (recSubOptions) recSubOptions.style.display = 'none';
+  } else if (isRecurring) {
+    // Recurring: show dateTimeGroup, show rec sub-options, hide dateGroup
+    if (dateTimeGroup) dateTimeGroup.style.display = '';
+    if (recSubOptions) {
+      recSubOptions.style.display = '';
+      document.querySelectorAll('.rec-sub-option').forEach(o =>
+        o.classList.toggle('active', o.dataset.rec === state.selectedRecurrence)
+      );
+    }
+    if (state.selectedRecurrence === 'daily') {
+      dateGroup.style.display = 'none';
+      detail.innerHTML = _dayPeriodHTML(t.dayPeriod || '');
+    } else if (state.selectedRecurrence === 'weekly') {
+      dateGroup.style.display = 'none';
+      detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
+        ${state.DAYS.map((d,i) => { const dow=(i+1)%7; return `<div class="day-checkbox${state.selectedWeekDays.includes(dow)?' selected':''}" data-day="${dow}"
+          onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
+      </div>`;
+    } else if (state.selectedRecurrence === 'monthly') {
+      dateGroup.style.display = 'none';
+      const days = t.recDays ? [...t.recDays] : (t.recDay ? [t.recDay] : [1]);
+      state.setSelectedMonthDays(days);
+      state.setSelectedMonthLastDay(t.recLastDay || false);
+      detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
+    } else if (state.selectedRecurrence === 'yearly') {
+      dateGroup.style.display = 'none';
+      state.setSelectedYearMonth(t.recMonth !== undefined ? t.recMonth : state.navDate.getMonth());
+      state.setSelectedYearDay(t.recDay !== undefined ? t.recDay : state.navDate.getDate());
+      detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
+    }
+  } else {
+    // Date mode: show dateTimeGroup, hide rec sub-options
+    if (dateTimeGroup) dateTimeGroup.style.display = '';
+    if (recSubOptions) recSubOptions.style.display = 'none';
+    dateGroup.style.display = '';
     document.getElementById('taskDate').value = t.date || dateStr || '';
-    const editPeriod = t.dayPeriod || '';
-    detail.innerHTML = `<div class="day-period-select">
-      <button type="button" class="day-period-btn${editPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
-      <button type="button" class="day-period-btn${editPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
-      <button type="button" class="day-period-btn${editPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
-      <button type="button" class="day-period-btn${editPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
-      <input type="hidden" id="taskDayPeriod" value="${editPeriod}">
-    </div>`;
-  } else if (state.selectedRecurrence === 'daily') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
-    dateGroup.style.display = 'none';
-    const editPeriod = t.dayPeriod || '';
-    detail.innerHTML = `<div class="day-period-select">
-      <button type="button" class="day-period-btn${editPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
-      <button type="button" class="day-period-btn${editPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
-      <button type="button" class="day-period-btn${editPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
-      <button type="button" class="day-period-btn${editPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
-      <input type="hidden" id="taskDayPeriod" value="${editPeriod}">
-    </div>`;
-  } else if (state.selectedRecurrence === 'weekly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
-    dateGroup.style.display = 'none';
-    detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
-      ${state.DAYS.map((d,i) => { const dow=(i+1)%7; return `<div class="day-checkbox${state.selectedWeekDays.includes(dow)?' selected':''}" data-day="${dow}"
-        onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
-    </div>`;
-  } else if (state.selectedRecurrence === 'monthly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
-    dateGroup.style.display = 'none';
-    const days = t.recDays ? [...t.recDays] : (t.recDay ? [t.recDay] : [1]);
-    state.setSelectedMonthDays(days);
-    state.setSelectedMonthLastDay(t.recLastDay || false);
-    detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
-  } else if (state.selectedRecurrence === 'yearly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
-    dateGroup.style.display = 'none';
-    state.setSelectedYearMonth(t.recMonth !== undefined ? t.recMonth : state.navDate.getMonth());
-    state.setSelectedYearDay(t.recDay !== undefined ? t.recDay : state.navDate.getDate());
-    detail.innerHTML = yearCalendarHTML(state.selectedYearMonth, state.selectedYearDay);
+    detail.innerHTML = _dayPeriodHTML(t.dayPeriod || '');
   }
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  const right = document.getElementById('modalRight');
-  const inner = document.getElementById('modalRightInner');
-  const toggle = document.getElementById('modalColToggle');
-  if (right) { right.style.display = ''; right.classList.remove('collapsed'); gsap.set(right, { clearProps: 'width' }); }
-  if (inner) gsap.set(inner, { clearProps: 'x,opacity' });
-  if (toggle) { toggle.classList.remove('collapsed'); toggle.style.display = ''; }
   // Context fields — immediately visible in edit mode
   const ctxFields = document.getElementById('contextFields');
-  if (ctxFields) gsap.set(ctxFields, { maxHeight: 2000, opacity: 1 });
+  if (ctxFields) gsap.set(ctxFields, { maxHeight: 'none', overflow: 'visible', opacity: 1 });
+  switchTagTab('categories');
   // Hide guided overlay
   const guidedOv = document.getElementById('guidedOverlay');
   if (guidedOv) guidedOv.style.display = 'none';
@@ -419,35 +642,24 @@ export function selectRecurrence(rec) {
   state.setSelectedRecurrence(rec);
   const sel = document.getElementById('taskRecurrence');
   if (sel) sel.value = rec;
+  // Highlight rec sub-option buttons with punch
+  document.querySelectorAll('.rec-sub-option').forEach(o => {
+    const isActive = o.dataset.rec === rec;
+    o.classList.toggle('active', isActive);
+    if (isActive) gsap.fromTo(o, { scale: 0.9 }, { scale: 1, duration: 0.25, ease: 'back.out(2)' });
+  });
   _scheduleDraftSave();
   const dateGroup = document.getElementById('dateGroup');
   const detail = document.getElementById('recDetail');
   const scheduleModeGroup = document.getElementById('scheduleModeGroup');
 
   if (rec==='none') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = '';
-    dateGroup.style.display = state.scheduleMode === 'date' ? '' : 'none';
-    const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
-    detail.innerHTML = `<div class="day-period-select">
-      <button type="button" class="day-period-btn${curPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
-      <button type="button" class="day-period-btn${curPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
-      <button type="button" class="day-period-btn${curPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
-      <button type="button" class="day-period-btn${curPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
-      <input type="hidden" id="taskDayPeriod" value="${curPeriod}">
-    </div>`;
+    dateGroup.style.display = '';
+    detail.innerHTML = _dayPeriodHTML(document.getElementById('taskDayPeriod')?.value || '');
   } else if (rec==='daily') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
-    const curPeriod = document.getElementById('taskDayPeriod')?.value || '';
-    detail.innerHTML = `<div class="day-period-select">
-      <button type="button" class="day-period-btn${curPeriod===''?' active':''}" data-period="" onclick="window.app.selectDayPeriod('')">—</button>
-      <button type="button" class="day-period-btn${curPeriod==='morning'?' active':''}" data-period="morning" onclick="window.app.selectDayPeriod('morning')">Matin</button>
-      <button type="button" class="day-period-btn${curPeriod==='afternoon'?' active':''}" data-period="afternoon" onclick="window.app.selectDayPeriod('afternoon')">Après-midi</button>
-      <button type="button" class="day-period-btn${curPeriod==='evening'?' active':''}" data-period="evening" onclick="window.app.selectDayPeriod('evening')">Soir</button>
-      <input type="hidden" id="taskDayPeriod" value="${curPeriod}">
-    </div>`;
+    detail.innerHTML = _dayPeriodHTML(document.getElementById('taskDayPeriod')?.value || '');
   } else if (rec==='weekly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     if (!state.selectedWeekDays.length) {
       state.setSelectedWeekDays([state.navDate.getDay()]);
@@ -457,13 +669,11 @@ export function selectRecurrence(rec) {
         onclick="window.app.toggleWeekDay(${dow})">${d[0]}</div>`; }).join('')}
     </div>`;
   } else if (rec==='monthly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     state.setSelectedMonthDays([state.navDate.getDate()]);
     state.setSelectedMonthLastDay(false);
     detail.innerHTML = monthCalendarHTML(state.selectedMonthDays, state.selectedMonthLastDay);
   } else if (rec==='yearly') {
-    if (scheduleModeGroup) scheduleModeGroup.style.display = 'none';
     dateGroup.style.display = 'none';
     state.setSelectedYearMonth(state.navDate.getMonth());
     state.setSelectedYearDay(state.navDate.getDate());
@@ -599,48 +809,9 @@ export function toggleDetailSection(headerEl) {
   }
 }
 
-// ─── Right column slide toggle ────────────────────────────────────────────
+// ─── Right column (removed) ───────────────────────────────────────────────
 
-let _rightNaturalWidth = 0;
-
-export function toggleModalRight() {
-  const right = document.getElementById('modalRight');
-  const inner = document.getElementById('modalRightInner');
-  const toggle = document.getElementById('modalColToggle');
-  if (!right || !toggle) return;
-
-  const isOpen = !right.classList.contains('collapsed');
-
-  if (isOpen) {
-    _rightNaturalWidth = right.offsetWidth || 360;
-    gsap.set(right, { width: _rightNaturalWidth });
-    if (inner) gsap.to(inner, { x: 30, opacity: 0, duration: 0.22, ease: 'power2.in', overwrite: 'auto' });
-    gsap.to(right, {
-      width: 0,
-      borderLeftWidth: 0,
-      borderRightWidth: 0,
-      duration: 0.32,
-      ease: 'expo.inOut',
-      overwrite: 'auto',
-      onComplete: () => { right.classList.add('collapsed'); toggle.classList.add('collapsed'); }
-    });
-  } else {
-    right.classList.remove('collapsed');
-    toggle.classList.remove('collapsed');
-    gsap.set(right, { width: 0, borderLeftWidth: 0, borderRightWidth: 0 });
-    if (inner) gsap.set(inner, { x: 30, opacity: 0 });
-    gsap.to(right, {
-      width: _rightNaturalWidth || 360,
-      borderLeftWidth: 1.5,
-      borderRightWidth: 1.5,
-      duration: 0.35,
-      ease: 'expo.out',
-      overwrite: 'auto',
-      onComplete: () => gsap.set(right, { clearProps: 'width,borderLeftWidth,borderRightWidth' })
-    });
-    if (inner) gsap.to(inner, { x: 0, opacity: 1, duration: 0.3, delay: 0.1, ease: 'expo.out', overwrite: 'auto' });
-  }
-}
+export function toggleModalRight() { /* panel removed */ }
 
 // ─── Swipe gesture ────────────────────────────────────────────────────────
 
@@ -658,18 +829,7 @@ function _initModalSwipe() {
     active = true;
   }, { passive: true });
 
-  modal.addEventListener('pointerup', e => {
-    if (!active) return;
-    active = false;
-    if (window.innerWidth <= 600) return;
-    const dx = e.clientX - sx;
-    if (Math.abs(dx) < THRESHOLD) return;
-    const right = document.getElementById('modalRight');
-    if (!right) return;
-    const isOpen = !right.classList.contains('collapsed');
-    if (dx < 0 && isOpen) window.app.toggleModalRight();
-    else if (dx > 0 && !isOpen) window.app.toggleModalRight();
-  }, { passive: true });
+  modal.addEventListener('pointerup', () => { active = false; }, { passive: true });
 }
 
 function _showRecError(msg) {
@@ -694,9 +854,9 @@ export function saveTaskLogic(todos) {
     return true; // error
   }
 
-  const categoryId        = document.getElementById('taskCategory')?.value || '';
-  const projectId         = document.getElementById('taskProject')?.value || '';
-  const intentionId       = document.getElementById('taskIntention')?.value || '';
+  const categoryIds       = _selectedCategoryIds.length ? [..._selectedCategoryIds] : undefined;
+  const projectIds        = _selectedProjectIds.length ? [..._selectedProjectIds] : undefined;
+  const intentionIds      = _selectedIntentionIds.length ? [..._selectedIntentionIds] : undefined;
   const priority          = state.selectedPriority || undefined;
   const description       = document.getElementById('taskDescription').value.trim() || undefined;
   const startTime         = document.getElementById('taskStartTime')?.value || undefined;
@@ -712,9 +872,9 @@ export function saveTaskLogic(todos) {
   const data = {
     title,
     recurrence: state.selectedRecurrence,
-    categoryId:       categoryId || undefined,
-    projectId:        projectId || undefined,
-    intentionId: intentionId || undefined,
+    categoryIds,
+    projectIds,
+    intentionIds,
     priority,
     description,
     startTime,
@@ -775,11 +935,13 @@ export function saveTaskLogic(todos) {
       if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
       if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
-      t.categoryId     = data.categoryId;
-      t.projectId      = data.projectId;
-      t.intentionId    = data.intentionId;
+      t.categoryIds    = data.categoryIds;
+      t.projectIds     = data.projectIds;
+      t.intentionIds   = data.intentionIds;
+      delete t.categoryId; delete t.projectId; delete t.intentionId;
       t.priority    = data.priority;
       t.description = data.description;
+      t.updatedAt   = Date.now();
     }
   } else {
     addTask(data, todos);
@@ -1047,7 +1209,6 @@ function _initContextReveal() {
   _contextRevealed = false;
   const title = document.getElementById('taskTitle');
   const ctx = document.getElementById('contextFields');
-  const toggle = document.getElementById('modalColToggle');
   if (!title || !ctx) return;
 
   // If already has content (edit mode or draft), mark as revealed
@@ -1057,12 +1218,15 @@ function _initContextReveal() {
     const hasContent = title.value.trim().length > 0;
     if (hasContent && !_contextRevealed) {
       _contextRevealed = true;
-      gsap.to(ctx, { maxHeight: 2000, opacity: 1, duration: 0.4, ease: 'power2.out' });
-      if (toggle) { toggle.style.display = ''; gsap.fromTo(toggle, { opacity: 0 }, { opacity: 1, duration: 0.3 }); }
+      gsap.fromTo(ctx,
+        { maxHeight: 0, opacity: 0 },
+        { maxHeight: 2000, opacity: 1, duration: 0.35, ease: 'expo.out',
+          onComplete: () => { ctx.style.maxHeight = 'none'; ctx.style.overflow = 'visible'; } }
+      );
     } else if (!hasContent && _contextRevealed) {
       _contextRevealed = false;
-      gsap.to(ctx, { maxHeight: 0, opacity: 0, duration: 0.3, ease: 'power2.in' });
-      if (toggle) gsap.to(toggle, { opacity: 0, duration: 0.2, onComplete: () => { toggle.style.display = 'none'; } });
+      gsap.to(ctx, { maxHeight: 0, opacity: 0, duration: 0.2, ease: 'power3.in',
+        onComplete: () => { ctx.style.overflow = 'hidden'; } });
     }
   };
   title.addEventListener('input', _contextRevealHandler);
@@ -1084,8 +1248,6 @@ let _guidedKeyHandler = null;
 export function openGuidedCards() {
   const overlay = document.getElementById('guidedOverlay');
   const main = document.querySelector('.modal-main');
-  const colToggle = document.getElementById('modalColToggle');
-  const right = document.getElementById('modalRight');
   if (!overlay) return;
 
   // Sync current form values to guided fields
@@ -1128,8 +1290,6 @@ export function openGuidedCards() {
 
   // Hide main, show guided
   if (main) gsap.to(main, { opacity: 0, x: -20, duration: 0.2, onComplete: () => main.style.display = 'none' });
-  if (colToggle) colToggle.style.display = 'none';
-  if (right) gsap.to(right, { width: 0, duration: 0.2 });
 
   overlay.style.display = 'flex';
   gsap.fromTo(overlay, { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.35, ease: 'power2.out' });
@@ -1168,9 +1328,6 @@ export function closeGuidedCards() {
     main.style.display = '';
     gsap.to(main, { opacity: 1, x: 0, duration: 0.3, ease: 'power2.out' });
   }
-  // Re-show toggle if title has content
-  const toggle = document.getElementById('modalColToggle');
-  if (toggle && document.getElementById('taskTitle')?.value.trim()) toggle.style.display = '';
 }
 
 export function guidedNext() {
@@ -1377,6 +1534,6 @@ function _syncGuidedToMain() {
   const ctx = document.getElementById('contextFields');
   if (ctx && document.getElementById('taskTitle')?.value.trim()) {
     _contextRevealed = true;
-    gsap.set(ctx, { maxHeight: 2000, opacity: 1 });
+    gsap.set(ctx, { maxHeight: 'none', overflow: 'visible', opacity: 1 });
   }
 }

@@ -1,6 +1,15 @@
 {
   "playgrounds": [
     {
+      "id": "todo-item-actions",
+      "title": "Todo Actions — 9 approches sans layout shift",
+      "description": "9 patterns interactifs pour révéler les actions d'un item au hover, sans jamais changer la taille des blocs ni décaler le layout : gradient overlay, colonne droite, popover ⋯, hauteur fixe, pill flottante, slide depuis droite, inline après texte, scale reveal, menu contextuel.",
+      "file": "todo-item-actions.html",
+      "prompt": "9 hover action patterns for todo items, zero layout shift",
+      "createdAt": "2026-03-25",
+      "tags": ["UX", "hover", "actions", "animation", "design-system"]
+    },
+    {
       "id": "icon-explorer",
       "title": "Icon Explorer — 50k+ icons",
       "description": "Search 50,000+ icons across 10 libraries (Lucide, Phosphor, Tabler, Material Design, Heroicons, Bootstrap, Remix, Font Awesome, Simple Icons…). Click to copy, multi-select to copy a group. Color picker, size previews, favorites with folders.",

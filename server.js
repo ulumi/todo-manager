@@ -330,19 +330,40 @@ const MIME = {
   '.css':  'text/css',
   '.svg':  'image/svg+xml',
   '.json': 'application/json',
+  '.map':  'application/json',
   '.ico':  'image/x-icon',
 };
 
 http.createServer((req, res) => {
-  const urlPath = req.url.endsWith('/') ? req.url + 'index.html' : req.url;
+  const urlPath = req.url.split('?')[0]; // strip query string
   let filePath = path.join(APP_DIR, urlPath === '/' ? 'index.html' : urlPath);
   if (!filePath.startsWith(APP_DIR)) { res.writeHead(403); res.end(); return; }
-  const ext = path.extname(filePath);
-  fs.readFile(filePath, (err, data) => {
-    if (err) { res.writeHead(404); res.end('Not found'); return; }
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
-    res.end(data);
-  });
+
+  function serveFile(fp) {
+    const ext = path.extname(fp);
+    fs.readFile(fp, (err, data) => {
+      if (err) { res.writeHead(404); res.end('Not found'); return; }
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+      res.end(data);
+    });
+  }
+
+  // If path has no extension and no trailing slash, check if directory → redirect
+  if (!path.extname(filePath) && !urlPath.endsWith('/')) {
+    const indexPath = path.join(filePath, 'index.html');
+    fs.access(indexPath, fs.constants.F_OK, err => {
+      if (!err) {
+        res.writeHead(302, { Location: urlPath + '/' });
+        res.end();
+      } else {
+        serveFile(filePath);
+      }
+    });
+  } else if (!path.extname(filePath) && urlPath.endsWith('/')) {
+    serveFile(path.join(filePath, 'index.html'));
+  } else {
+    serveFile(filePath);
+  }
 }).listen(APP_PORT, () => {
   console.log(`  App  → http://localhost:${APP_PORT}`);
 });

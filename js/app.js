@@ -23,9 +23,12 @@ import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
   toggleMonthDay, toggleMonthLastDay,
   selectYearMonth, selectYearDay,
-  saveTaskLogic, cloudsHTML, openDeleteModal, closeDeleteModal,
+  saveTaskLogic, openDeleteModal, closeDeleteModal,
   toggleCloudSection, toggleModalRight, selectPriority,
-  toggleNewCatRow, addCategoryInline, selectScheduleMode, toggleDetailSection,
+  toggleNewCatRow, addCategoryInline, addProjectInline, toggleNewProjectRow,
+  toggleCategoryTag, toggleProjectTag, toggleIntentionTag, switchTagTab,
+  toggleNewIntentionRow, addIntentionInline,
+  selectScheduleMode, selectBigMode, toggleDetailSection,
   cancelModal, clearDraft, discardDraft,
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
@@ -119,8 +122,28 @@ class TodoApp {
         delete t.boardProjectId;
         migrated = true;
       }
+      // Migration: single ID → array format
+      if (t.categoryId && !t.categoryIds) {
+        t.categoryIds = [t.categoryId];
+        delete t.categoryId;
+        migrated = true;
+      }
+      if (t.projectId && !t.projectIds) {
+        t.projectIds = [t.projectId];
+        delete t.projectId;
+        migrated = true;
+      }
+      if (t.intentionId && !t.intentionIds) {
+        t.intentionIds = [t.intentionId];
+        delete t.intentionId;
+        migrated = true;
+      }
     });
     if (migrated) saveTodos(todos);
+    // Migration: stamp existing items without updatedAt using their ID as creation timestamp
+    let migratedTs = false;
+    todos.forEach(t => { if (!t.updatedAt) { t.updatedAt = parseInt(t.id) || Date.now(); migratedTs = true; } });
+    if (migratedTs) saveTodos(todos);
     state.setTodos(todos);
     this.applyZoom();
     this.initTheme();
@@ -260,15 +283,14 @@ class TodoApp {
       else               localStorage.removeItem('profileAvatar');
     }
     if (backup.config) {
-      if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
       if (backup.config.lang)       localStorage.setItem('lang',       backup.config.lang);
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
-      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette, { sync: false });
-      if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
-      if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
+      const _bPal0 = backup.config.bgPalette;
+      if (_bPal0)  this.setPalette(_bPal0, { sync: false });
+      if (backup.config.bgColor && (!_bPal0 || _bPal0 === 'none'))  _setBgColor(backup.config.bgColor);
     }
     localStorage.setItem('todos', JSON.stringify(backup.calendar));
     this.render();
@@ -452,11 +474,12 @@ class TodoApp {
     const cats = getCategories();
     const today = DS(new Date());
 
-    // Category
-    if (todo.categoryId) {
-      const cat = cats.find(c => c.id === todo.categoryId);
+    // Categories
+    const catIds = todo.categoryIds || (todo.categoryId ? [todo.categoryId] : []);
+    catIds.forEach(cid => {
+      const cat = cats.find(c => c.id === cid);
       if (cat) badges.push(`<span class="qf-badge" style="background:${cat.color}22;border-color:${cat.color}88;color:${cat.color}">${esc(cat.name.toUpperCase())}</span>`);
-    }
+    });
 
     // Priority
     if (todo.priority === 'high')   badges.push(`<span class="qf-badge prio-high">↑ Urgent</span>`);
@@ -808,9 +831,24 @@ class TodoApp {
     if (state.view==='year')  d.setFullYear(d.getFullYear()+delta);
     if (state.view==='plan') {
       const planMode = localStorage.getItem('planMode') || 'week';
-      if (planMode === 'month')  d.setMonth(d.getMonth() + delta);
-      else if (planMode === 'biweek') d.setDate(d.getDate() + delta * 14);
-      else                            d.setDate(d.getDate() + delta * 7);
+      if (planMode === 'month' || planMode === 'biweek') {
+        // Infinite scroll: shift by scrolling, no re-render needed
+        const container = document.getElementById('planMonthScroll');
+        if (container) {
+          const week = container.querySelector('.plan-month-scroll-week');
+          const rowH = week ? (week.offsetHeight + 8) : 130;
+          const weeks = planMode === 'biweek' ? 2 : 4;
+          container.scrollBy({ top: delta * weeks * rowH, behavior: 'smooth' });
+          return;
+        }
+      } else {
+        const base = startOfWeek(d);
+        base.setDate(base.getDate() + delta * 14);
+        state.setNavDate(base);
+        this._pushHistory();
+        await this._animateViewChange(delta);
+        return;
+      }
     }
     state.setNavDate(d);
     this._pushHistory();
@@ -965,6 +1003,10 @@ class TodoApp {
   }
 
   toggleTodo(id, d, e) {
+    if (e?.ctrlKey) {
+      celebrate(state.lang, true);
+      return;
+    }
     const wasCompleted = isCompleted(state.todos.find(x => x.id === id), d);
     snapshot(state.todos);
     toggleTodo(id, d, state.todos);
@@ -983,12 +1025,19 @@ class TodoApp {
     }, 0);
   }
 
+  _trackDeletion(id) {
+    const dels = JSON.parse(localStorage.getItem('_deletions') || '{}');
+    dels[id] = Date.now();
+    localStorage.setItem('_deletions', JSON.stringify(dels));
+  }
+
   deleteTodo(id, dateStr) {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     if (!t.recurrence || t.recurrence === 'none') {
       this._animateDeleteAndRefresh(id, () => {
         snapshot(state.todos);
+        this._trackDeletion(id);
         state.setTodos(state.todos.filter(x => x.id !== id));
         saveTodos(state.todos);
       });
@@ -1029,6 +1078,7 @@ class TodoApp {
     const { id } = state.pendingDelete;
     this._animateDeleteAndRefresh(id, () => {
       snapshot(state.todos);
+      this._trackDeletion(id);
       state.setTodos(state.todos.filter(x => x.id !== id));
       closeDeleteModal();
       saveTodos(state.todos);
@@ -1071,6 +1121,10 @@ class TodoApp {
     selectScheduleMode(mode);
   }
 
+  selectBigMode(mode) {
+    selectBigMode(mode);
+  }
+
   toggleDetailSection(headerEl) {
     toggleDetailSection(headerEl);
   }
@@ -1099,6 +1153,63 @@ class TodoApp {
     const dateStr = btn.dataset.date || null;
     closeModal();
     setTimeout(() => this.deleteTodo(id, dateStr), 250);
+  }
+
+  toggleCompleteMenu() {
+    const menu = document.getElementById('completeMenu');
+    if (!menu) return;
+    const visible = menu.style.display !== 'none';
+    menu.style.display = visible ? 'none' : '';
+    // Hide date picker when toggling menu
+    const picker = document.getElementById('completeDatePicker');
+    if (picker) { picker.style.display = 'none'; picker.value = ''; }
+    // Close menu on outside click
+    if (!visible) {
+      const close = (e) => {
+        if (!menu.contains(e.target) && e.target.id !== 'completeFromEditBtn') {
+          menu.style.display = 'none';
+          document.removeEventListener('click', close);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', close), 0);
+    }
+  }
+
+  showCompleteDatePicker() {
+    const picker = document.getElementById('completeDatePicker');
+    if (!picker) return;
+    picker.style.display = '';
+    picker.value = DS(today());
+    picker.focus();
+    picker.showPicker?.();
+  }
+
+  completeFromEditModal(mode) {
+    const wrap = document.getElementById('completeFromEditWrap');
+    if (!wrap) return;
+    const id = wrap.dataset.id;
+    const taskDate = wrap.dataset.date || null;
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+
+    let completedDate;
+    if (mode === 'original') {
+      completedDate = taskDate || DS(today());
+    } else if (mode === 'today') {
+      completedDate = DS(today());
+    } else if (mode === 'pick') {
+      const picker = document.getElementById('completeDatePicker');
+      completedDate = picker?.value || DS(today());
+    }
+
+    snapshot(state.todos);
+    t.completed = true;
+    t.completedDate = completedDate;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    closeModal();
+    celebrate(state.lang);
+    this.render();
   }
 
   openEditModal(id, dateStr) {
@@ -1273,6 +1384,15 @@ class TodoApp {
     try { intentionsCount = JSON.parse(localStorage.getItem('intentions') || '[]').length; } catch {}
     const intentionsBadge = document.getElementById('intentionsBadge');
     if (intentionsBadge) { intentionsBadge.textContent = intentionsCount; intentionsBadge.classList.toggle('hidden', intentionsCount === 0); }
+
+    const todayStr = DS(today());
+    const overdueCount = state.todos.filter(t =>
+      t.date && t.date < todayStr &&
+      !t.completed &&
+      (!t.recurrence || t.recurrence === 'none')
+    ).length;
+    const overdueBadge = document.getElementById('overdueBadge');
+    if (overdueBadge) { overdueBadge.textContent = overdueCount; overdueBadge.classList.toggle('hidden', overdueCount === 0); }
   }
 
   assignInboxToday(id) {
@@ -1280,6 +1400,7 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     t.date = DS(today());
+    t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
   }
@@ -1290,6 +1411,7 @@ class TodoApp {
     snapshot(state.todos);
     t.date = dateStr;
     t.backlog = false;
+    t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
   }
@@ -1299,6 +1421,7 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     t.completed = !t.completed;
+    t.updatedAt = Date.now();
     saveTodos(state.todos);
     if (t.completed) celebrate(state.lang);
     this.render();
@@ -1316,7 +1439,7 @@ class TodoApp {
 
   _reloadPlanCol() {
     const col = document.getElementById('planInboxCol');
-    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
   }
 
   setPlanSort(sort, section) {
@@ -1345,27 +1468,27 @@ class TodoApp {
   setPlanColCount(n) {
     localStorage.setItem('planColCount', n);
     const col = document.getElementById('planInboxCol');
-    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
   }
 
   togglePlanColMenu() {
     const cur = localStorage.getItem('planColCollapsed') !== 'false';
     localStorage.setItem('planColCollapsed', cur ? 'false' : 'true');
     const col = document.getElementById('planInboxCol');
-    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
   }
 
   closePlanColMenu() {
     localStorage.setItem('planColCollapsed', 'true');
     const col = document.getElementById('planInboxCol');
-    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
   }
 
   togglePlanGrouped() {
     const cur = localStorage.getItem('planGrouped') === 'true';
     localStorage.setItem('planGrouped', cur ? 'false' : 'true');
     const col = document.getElementById('planInboxCol');
-    if (col) { col.innerHTML = renderPlanInboxList(state.todos); this.initPlanDragDrop(); }
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
   }
 
   quickEditInboxTitle(el, id) {
@@ -1400,8 +1523,17 @@ class TodoApp {
     const input = document.getElementById('taskDayPeriod');
     if (input) input.value = period;
     document.querySelectorAll('.day-period-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.period === period);
+      const isActive = btn.dataset.period === period;
+      btn.classList.toggle('active', isActive);
+      if (isActive) gsap.fromTo(btn, { scale: 0.9 }, { scale: 1, duration: 0.25, ease: 'back.out(2)' });
     });
+  }
+
+  toggleDayPeriod(period) {
+    const input = document.getElementById('taskDayPeriod');
+    const current = input?.value || '';
+    const newVal = current === period ? '' : period;
+    this.selectDayPeriod(newVal);
   }
 
   setTaskDateToday() {
@@ -1476,11 +1608,9 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     state.setInsertAfterId(id);
     openModal(this.parseDS(ds), state.todos);
-    if (t?.categoryId) {
-      setTimeout(() => {
-        const sel = document.getElementById('taskCategory');
-        if (sel) sel.value = t.categoryId;
-      }, 60);
+    const catIds = t?.categoryIds || (t?.categoryId ? [t.categoryId] : []);
+    if (catIds.length) {
+      setTimeout(() => catIds.forEach(cid => toggleCategoryTag(cid)), 60);
     }
   }
 
@@ -1488,7 +1618,8 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     snapshot(state.todos);
-    const clone = { ...JSON.parse(JSON.stringify(t)), id: Date.now().toString(), completed: false, completedDates: [] };
+    const _cloneId = Date.now().toString();
+    const clone = { ...JSON.parse(JSON.stringify(t)), id: _cloneId, completed: false, completedDates: [], updatedAt: parseInt(_cloneId) };
     if (clone.recurrence && clone.recurrence !== 'none') {
       clone.startDate = ds;
       delete clone.endDate;
@@ -1502,8 +1633,12 @@ class TodoApp {
     this.render();
   }
 
+  showTodoMenu(e, id, ds) {
+    _showTodoCtxMenu(e.currentTarget, id, ds);
+  }
+
   clickTodo(e, id, ds) {
-    if (e.target.closest('.todo-check, .todo-actions, .todo-drag-handle')) return;
+    if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle')) return;
     if (e.target.closest('.todo-text')) {
       // dblclick handled by ondblclick on the span — single click ignored on text
       return;
@@ -1586,6 +1721,7 @@ class TodoApp {
     if (todo.date === newDateStr) return;
     snapshot(state.todos);
     todo.date = newDateStr;
+    todo.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
   }
@@ -2149,15 +2285,14 @@ class TodoApp {
       snapshot(state.todos);
       if (data.calendar) state.setTodos(data.calendar);
       if (data.config) {
-        if (data.config.theme)      localStorage.setItem('theme',      data.config.theme);
         if (data.config.zoom)       localStorage.setItem('zoom',       data.config.zoom);
         if (data.config.lang)       localStorage.setItem('lang',       data.config.lang);
         if (data.config.timezone)   localStorage.setItem('timezone',   data.config.timezone);
         if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
-        if (data.config.bgPalette)  this.setPalette(data.config.bgPalette);
-        if (data.config.bgColor)    _setBgColor(data.config.bgColor);
-        if (data.config.glassMode !== undefined) { localStorage.setItem('glassMode', data.config.glassMode); this.initGlassMode(); }
+        const _bPal1 = data.config.bgPalette;
+        if (_bPal1)  this.setPalette(_bPal1);
+        if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
         this.initTheme();
         this.applyLang();
         this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
@@ -2219,14 +2354,14 @@ class TodoApp {
     if (state.view==='superadmin') html = this._renderSuperadminView();
     if (state.view==='intentions') html = renderIntentionsView(state.todos);
     if (state.view==='analyse')    html = renderAnalyseView(state.todos);
-    const isPlanMonth = state.view === 'plan' && (localStorage.getItem('planMode')||'week') === 'month';
-    if (isPlanMonth) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
-    if (!isPlanMonth && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
+    const _planScrollMode = state.view === 'plan' && ['month', 'biweek'].includes(localStorage.getItem('planMode') || 'week');
+    if (_planScrollMode) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
+    if (!_planScrollMode && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
     const mainEl = document.getElementById('mainContent');
     mainEl.innerHTML = html;
     mainEl.classList.toggle('plan-mode',   state.view === 'plan');
     mainEl.classList.toggle('search-mode', state.view === 'search');
-    if (isPlanMonth) this._setupPlanMonth();
+    if (_planScrollMode) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
       const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse'];
@@ -2265,10 +2400,10 @@ class TodoApp {
       </div>
       <div class="plan-view">
         <div class="plan-inbox-col" id="planInboxCol" style="width:${leftWidth}">
-          ${renderPlanInboxList(state.todos)}
+          ${renderPlanInboxList(state.todos, this._overdueSelected || new Set())}
         </div>
         <div class="plan-resize-handle" id="planResizeHandle" title="Redimensionner"><svg viewBox="0 0 36 32" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><polygon points="1,16 7,10 7,22"/><rect x="11" y="2" width="3" height="28" rx="1.5"/><rect x="22" y="2" width="3" height="28" rx="1.5"/><polygon points="35,16 29,10 29,22"/></svg></div>
-        <div class="plan-week-col${(localStorage.getItem('planMode')||'week')==='month'?' plan-month-mode':''}">
+        <div class="plan-week-col${['month','biweek'].includes(localStorage.getItem('planMode')||'week')?' plan-month-mode':''}">
           ${this._renderPlanCalendar()}
         </div>
       </div>
@@ -2325,7 +2460,7 @@ class TodoApp {
     const navSvgL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>`;
     const navSvgR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
 
-    if (mode === 'month') {
+    if (mode === 'month' || mode === 'biweek') {
       const now = new Date();
       const monthLabel = `${state.MONTHS[now.getMonth()]} ${now.getFullYear()}`;
       const dayNames = state.DAYS.map(d => `<div class="plan-month-dayname">${d}</div>`).join('');
@@ -2340,12 +2475,12 @@ class TodoApp {
       </div>`;
     }
 
-    const numDays = mode === 'biweek' ? 14 : 7;
-    const weekStart = new Date(state.navDate);
+    const weekStart = startOfWeek(new Date(state.navDate));
     const days = [];
-    for (let i = 0; i < numDays; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr, hideCompleted));
-    const weekEnd = addDays(weekStart, numDays - 1);
+    for (let i = 0; i < 14; i++) days.push(this._planMonthDayHTML(addDays(weekStart, i), filter, todayStr, hideCompleted));
+    const weekEnd = addDays(weekStart, 13);
     const label = `${weekStart.getDate()} ${state.MONTHS[weekStart.getMonth()]} – ${weekEnd.getDate()} ${state.MONTHS[weekEnd.getMonth()]}`;
+
     return `<div class="plan-toolbar">
       <div class="plan-toolbar-nav">
         <div class="plan-toolbar-nav-date">
@@ -2362,13 +2497,22 @@ class TodoApp {
         ${hideBtn}
       </div>
     </div>
-    <div class="plan-week-grid${mode==='biweek'?' plan-biweek-grid':''}">${days.join('')}</div>`;
+    <div class="plan-week-grid plan-week-grid--2rows">
+      <div class="plan-week-block">
+        <div class="plan-week-row plan-week-row--4">${days.slice(0, 4).join('')}</div>
+        <div class="plan-week-row plan-week-row--3">${days.slice(4, 7).join('')}</div>
+      </div>
+      <div class="plan-week-block">
+        <div class="plan-week-row plan-week-row--4">${days.slice(7, 11).join('')}</div>
+        <div class="plan-week-row plan-week-row--3">${days.slice(11).join('')}</div>
+      </div>
+    </div>`;
   }
 
   planScrollToToday() {
     const mode = localStorage.getItem('planMode') || 'week';
-    if (mode !== 'month') {
-      state.setNavDate(new Date());
+    if (mode !== 'month' && mode !== 'biweek') {
+      state.setNavDate(startOfWeek(new Date()));
       this.render();
       return;
     }
@@ -2389,7 +2533,7 @@ class TodoApp {
   }
 
   setPlanMode(mode) {
-    if (mode !== 'month') this._planMonthFrom = null;
+    if (!['month', 'biweek'].includes(mode)) this._planMonthFrom = null;
     if (this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
     localStorage.setItem('planMode', mode);
     this.render();
@@ -2667,6 +2811,119 @@ class TodoApp {
     t.backlog = true;
     saveTodos(state.todos);
     this.render();
+  }
+
+  // ── Overdue actions ──────────────────────────────────────────────────────
+  togglePlanSection(sec) {
+    const key = `plan${sec.charAt(0).toUpperCase() + sec.slice(1)}Collapsed`;
+    const cur = localStorage.getItem(key) === 'true';
+    localStorage.setItem(key, cur ? 'false' : 'true');
+    const col = document.getElementById('planInboxCol');
+    if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }
+  }
+
+  overdueToToday(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = DS(today());
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  overdueToBacklog(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = null;
+    t.backlog = true;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  overdueAllToToday() {
+    const todayStr = DS(today());
+    const overdue = state.todos.filter(t =>
+      t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none')
+    );
+    if (!overdue.length) return;
+    snapshot(state.todos);
+    overdue.forEach(t => { t.date = todayStr; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  overdueAllToBacklog() {
+    const todayStr = DS(today());
+    const overdue = state.todos.filter(t =>
+      t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none')
+    );
+    if (!overdue.length) return;
+    snapshot(state.todos);
+    overdue.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    this._overdueSelected = new Set();
+    this.render();
+  }
+
+  overdueToggleSelect(id) {
+    if (!this._overdueSelected) this._overdueSelected = new Set();
+    if (this._overdueSelected.has(id)) this._overdueSelected.delete(id);
+    else this._overdueSelected.add(id);
+    const item = document.querySelector(`.plan-overdue-section .todo-item[data-id="${id}"]`);
+    if (item) {
+      const sel = this._overdueSelected.has(id);
+      item.classList.toggle('overdue-selected', sel);
+      const cb = item.querySelector('.overdue-checkbox');
+      if (cb) {
+        cb.classList.toggle('checked', sel);
+        cb.innerHTML = sel ? `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>` : '';
+      }
+    }
+    this._updateOverdueFooter();
+  }
+
+  _updateOverdueFooter() {
+    const count = this._overdueSelected?.size || 0;
+    const todayBtn   = document.getElementById('overdueFooterToday');
+    const backlogBtn = document.getElementById('overdueFooterBacklog');
+    if (!todayBtn) return;
+    todayBtn.textContent   = count > 0 ? `Reporter la sélection (${count})` : 'Reporter tout à aujourd\'hui';
+    backlogBtn.textContent = count > 0 ? `Backlog (${count})` : 'Tout en backlog';
+    todayBtn.classList.toggle('plan-overdue-big-btn--primary', true);
+  }
+
+  overdueActionToday() {
+    const sel = this._overdueSelected;
+    if (sel?.size > 0) {
+      const todayStr = DS(today());
+      const targets = state.todos.filter(t => sel.has(t.id));
+      if (!targets.length) return;
+      snapshot(state.todos);
+      targets.forEach(t => { t.date = todayStr; t.updatedAt = Date.now(); });
+      saveTodos(state.todos);
+      this._overdueSelected = new Set();
+      this.render();
+    } else {
+      this.overdueAllToToday();
+    }
+  }
+
+  overdueActionBacklog() {
+    const sel = this._overdueSelected;
+    if (sel?.size > 0) {
+      const targets = state.todos.filter(t => sel.has(t.id));
+      if (!targets.length) return;
+      snapshot(state.todos);
+      targets.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+      saveTodos(state.todos);
+      this._overdueSelected = new Set();
+      this.render();
+    } else {
+      this.overdueAllToBacklog();
+    }
   }
 
   // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
@@ -4012,6 +4269,7 @@ class TodoApp {
         if (todo) {
           snapshot(state.todos);
           todo.title = newTitle;
+          todo.updatedAt = Date.now();
           saveTodos(state.todos);
         }
       }
@@ -4092,6 +4350,14 @@ class TodoApp {
   addCategory() { addCategory(); }
   toggleNewCatRow() { toggleNewCatRow(); }
   addCategoryInline() { addCategoryInline(); }
+  toggleNewProjectRow() { toggleNewProjectRow(); }
+  addProjectInline() { addProjectInline(); }
+  switchTagTab(tab) { switchTagTab(tab); }
+  toggleCategoryTag(id) { toggleCategoryTag(id); }
+  toggleProjectTag(id) { toggleProjectTag(id); }
+  toggleIntentionTag(id) { toggleIntentionTag(id); }
+  toggleNewIntentionRow() { toggleNewIntentionRow(); }
+  addIntentionInline() { addIntentionInline(); }
 
   addCategoryFromView() {
     const addCard = document.querySelector('.category-card--add');
@@ -4115,7 +4381,10 @@ class TodoApp {
   removeCategory(id) {
     // Clear task links before removing
     snapshot(state.todos);
-    state.todos.forEach(t => { if (t.categoryId === id) delete t.categoryId; });
+    state.todos.forEach(t => {
+      if (t.categoryIds) t.categoryIds = t.categoryIds.filter(cid => cid !== id);
+      if (t.categoryId === id) delete t.categoryId;
+    });
     saveTodos(state.todos);
     removeCategory(id);
     this.render();
@@ -4188,8 +4457,7 @@ class TodoApp {
 
   addTaskForProject(projectId) {
     this.openModal(state.navDate);
-    const sel = document.getElementById('taskProject');
-    if (sel) sel.value = projectId;
+    setTimeout(() => toggleProjectTag(projectId), 60);
   }
 
   saveProjectName(id, name) {
@@ -4223,6 +4491,18 @@ class TodoApp {
 
   setProjectDeadline(id, deadline) {
     updateProjectItem(id, { deadline });
+    this.render();
+  }
+
+  toggleProjectIntention(projectId, intentionId) {
+    const p = getProjects().find(x => x.id === projectId);
+    if (!p) return;
+    const ids = [...(p.intentionIds || [])];
+    const idx = ids.indexOf(intentionId);
+    if (idx >= 0) ids.splice(idx, 1);
+    else ids.push(intentionId);
+    updateProjectItem(projectId, { intentionIds: ids });
+    renderProjectPanel(projectId);
     this.render();
   }
 
@@ -4303,11 +4583,19 @@ class TodoApp {
         onclick="window.app.setIntentionColor('${id}','${c}')"></div>`
     ).join('');
 
-    const intTasks = state.todos.filter(t => t.intentionId === id);
+    const intTasks = state.todos.filter(t => (t.intentionIds || (t.intentionId ? [t.intentionId] : [])).includes(id));
     const taskItems = intTasks.map(t =>
       `<div class="intention-panel-task-item" onclick="window.app.openEditModal('${t.id}', null)">
         <span style="width:6px;height:6px;border-radius:50%;background:${int.color};display:inline-block;flex-shrink:0;"></span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${esc(t.title)}</span>
+      </div>`
+    ).join('');
+
+    const linkedProjects = getProjects().filter(p => (p.intentionIds || []).includes(id));
+    const projectItems = linkedProjects.map(p =>
+      `<div class="intention-panel-task-item" onclick="window.app.openProjectPanel('${p.id}')">
+        <span style="width:6px;height:6px;border-radius:50%;background:${p.color};display:inline-block;flex-shrink:0;"></span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;">${esc(p.name)}</span>
       </div>`
     ).join('');
 
@@ -4321,12 +4609,26 @@ class TodoApp {
       </div>
       <div class="cv-color-picker">${colorSwatches}</div>
       <div style="margin-top:12px;">
+        <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Codename <span class="timing-flex-hint" title="Alias court affiché partout sauf dans cette vue">?</span></label>
+        <input class="cv-name-input" value="${esc(int.codename || '')}" placeholder="Alias court (ex: Santé, Pro…)"
+          style="margin-top:6px;font-size:13px;"
+          onblur="window.app.saveIntentionField('${id}','codename',this.value)"
+          onkeydown="if(event.key==='Enter')this.blur();">
+      </div>
+      <div style="margin-top:12px;">
         <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Description</label>
         <textarea class="cv-name-input" rows="3"
           style="margin-top:6px;resize:vertical;min-height:60px;font-family:inherit;"
           placeholder="Ce que cette intention représente pour toi…"
           onblur="window.app.saveIntentionField('${id}','description',this.value)">${esc(int.description || '')}</textarea>
       </div>
+      ${linkedProjects.length > 0 ? `
+      <div class="intention-panel-tasks">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
+          Projets liés (${linkedProjects.length})
+        </div>
+        ${projectItems}
+      </div>` : ''}
       <div class="intention-panel-tasks">
         <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">
           Tâches liées (${intTasks.length})
@@ -4362,7 +4664,10 @@ class TodoApp {
     if (!confirm('Supprimer cette intention ? Les tâches resteront mais ne seront plus taguées.')) return;
     this.closeIntentionPanel();
     // Remove intentionId from tasks
-    state.todos.forEach(t => { if (t.intentionId === id) delete t.intentionId; });
+    state.todos.forEach(t => {
+      if (t.intentionIds) t.intentionIds = t.intentionIds.filter(iid => iid !== id);
+      if (t.intentionId === id) delete t.intentionId;
+    });
     saveTodos(state.todos);
     const intentions = this._getIntentions().filter(x => x.id !== id);
     this._saveIntentions(intentions);
@@ -4376,7 +4681,7 @@ class TodoApp {
   }
 
   reorderCategoryTask(id, categoryId, direction) {
-    const tasks = state.todos.filter(t => t.categoryId === categoryId);
+    const tasks = state.todos.filter(t => (t.categoryIds || (t.categoryId ? [t.categoryId] : [])).includes(categoryId));
     let order = getCategoryTaskOrder(categoryId);
     tasks.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
     order = order.filter(oid => tasks.some(t => t.id === oid));
@@ -4392,16 +4697,13 @@ class TodoApp {
   openModalForCategory(categoryId) {
     closeCategoryView({ immediate: true });
     openModal(state.navDate, state.todos);
-    setTimeout(() => {
-      const sel = document.getElementById('taskCategory');
-      if (sel) sel.value = categoryId;
-    }, 60);
+    setTimeout(() => toggleCategoryTag(categoryId), 60);
   }
 
   unlinkFromCategory(id) {
     snapshot(state.todos);
     const t = state.todos.find(x => x.id === id);
-    if (t) { delete t.categoryId; saveTodos(state.todos); }
+    if (t) { delete t.categoryId; delete t.categoryIds; saveTodos(state.todos); }
     this._refreshCategoryPanel();
     this.render();
   }
@@ -4570,12 +4872,63 @@ class TodoApp {
     let changed = false;
 
     if (backup.calendar) {
-      const localJSON = JSON.stringify(state.todos);
-      const remoteJSON = JSON.stringify(backup.calendar);
-      if (localJSON !== remoteJSON) {
-        state.setTodos(backup.calendar);
-        localStorage.setItem('todos', remoteJSON);
+      // ── Per-item merge (Option A) ─────────────────────────
+      // Merge local deletions with remote deletions
+      const localDels  = JSON.parse(localStorage.getItem('_deletions') || '{}');
+      const remoteDels = backup._deletions || {};
+      const mergedDels = { ...localDels };
+      for (const [id, ts] of Object.entries(remoteDels)) {
+        mergedDels[id] = Math.max(mergedDels[id] || 0, ts);
+      }
+      localStorage.setItem('_deletions', JSON.stringify(mergedDels));
+
+      // Build lookup maps
+      const localMap  = new Map(state.todos.map(t => [t.id, t]));
+      const remoteMap = new Map(backup.calendar.map(t => [t.id, t]));
+      const allIds    = new Set([...localMap.keys(), ...remoteMap.keys()]);
+
+      let hadLocalOnly = false;
+      const merged = [];
+
+      for (const id of allIds) {
+        const delTs    = mergedDels[id] || 0;
+        const local    = localMap.get(id);
+        const remote   = remoteMap.get(id);
+        const localTs  = local?.updatedAt  || parseInt(id) || 0;
+        const remoteTs = remote?.updatedAt || parseInt(id) || 0;
+
+        // Skip if deleted after last edit
+        if (delTs > Math.max(localTs, remoteTs)) continue;
+
+        if (local && remote) {
+          merged.push(localTs >= remoteTs ? local : remote);
+        } else if (local) {
+          merged.push(local);
+          hadLocalOnly = true; // local item unknown to remote → push back
+        } else {
+          merged.push(remote);
+        }
+      }
+
+      // Preserve local order; append remote-only items at the end
+      const localOrder = new Map(state.todos.map((t, i) => [t.id, i]));
+      merged.sort((a, b) => {
+        const ai = localOrder.has(a.id) ? localOrder.get(a.id) : Infinity;
+        const bi = localOrder.has(b.id) ? localOrder.get(b.id) : Infinity;
+        return ai !== bi ? ai - bi : (a.updatedAt || 0) - (b.updatedAt || 0);
+      });
+
+      const mergedJSON = JSON.stringify(merged);
+      if (mergedJSON !== JSON.stringify(state.todos)) {
+        state.setTodos(merged);
+        localStorage.setItem('todos', mergedJSON);
         changed = true;
+      }
+
+      // Push merged result back if we had local items or deletions the remote didn't know about
+      const delsChanged = JSON.stringify(mergedDels) !== JSON.stringify(remoteDels);
+      if (hadLocalOnly || delsChanged) {
+        saveTodos(state.todos);
       }
     }
     if (backup.categories)     localStorage.setItem('categories',         JSON.stringify(backup.categories));
@@ -4585,15 +4938,14 @@ class TodoApp {
     if (backup.intentions)     localStorage.setItem('intentions',        JSON.stringify(backup.intentions));
     if (backup.projects)  saveProjects(backup.projects);
     if (backup.config) {
-      if (backup.config.theme)      localStorage.setItem('theme',      backup.config.theme);
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
       if (backup.config.lang)       localStorage.setItem('lang',       backup.config.lang);
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
-      if (backup.config.bgPalette)  this.setPalette(backup.config.bgPalette, { sync: false });
-      if (backup.config.bgColor)    _setBgColor(backup.config.bgColor);
-      if (backup.config.glassMode !== undefined) { localStorage.setItem('glassMode', backup.config.glassMode); this.initGlassMode(); }
+      const _bPal2 = backup.config.bgPalette;
+      if (_bPal2)  this.setPalette(_bPal2, { sync: false });
+      if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
@@ -4631,7 +4983,7 @@ class TodoApp {
     if (avatarData?.type === 'emoji' && avatarData.value) {
       if (logoAvatar) {
         logoAvatar.classList.add('logo-avatar--has-avatar');
-        logoAvatar.innerHTML = `<span class="logo-avatar-emoji">${avatarData.value}</span>`;
+        logoAvatar.innerHTML = `<span class="logo-avatar-emoji" style="--ed-s:${avatarData.scale ?? 1.4};--ed-x:${avatarData.x ?? 0}px;--ed-y:${avatarData.y ?? 0}px">${avatarData.value}</span>`;
       }
       if (btn) { btn.classList.add('user-btn--has-avatar'); btn.innerHTML = `<span class="user-btn-emoji">${avatarData.value}</span>`; }
     } else if (avatarData?.type === 'photo' && avatarData.data) {
@@ -5114,6 +5466,74 @@ class TodoApp {
   parseDS(s) { return parseDS(s); }
   getNavDate() { return state.navDate; }
 }
+
+// ── Global todo context menu ─────────────────────────────
+const _todoCtxMenu = document.createElement('div');
+_todoCtxMenu.className = 'todo-ctx-menu hidden';
+_todoCtxMenu.innerHTML = `
+  <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
+  <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
+  <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" data-action="delete"><span>×</span> Supprimer</div>
+`;
+document.body.appendChild(_todoCtxMenu);
+
+let _ctxTarget = null;
+
+function _showTodoCtxMenu(anchor, id, ds) {
+  _ctxTarget = { id, ds };
+  _todoCtxMenu.classList.remove('hidden');
+  // Position below the anchor button, or at mouse position if anchor is the item itself
+  const rect = anchor.getBoundingClientRect();
+  const mw = 180, mh = 160;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = rect.right - mw;
+  let y = rect.bottom + 4;
+  if (y + mh > vh) y = rect.top - mh - 4;
+  if (x < 8) x = 8;
+  _todoCtxMenu.style.left = x + 'px';
+  _todoCtxMenu.style.top  = y + 'px';
+}
+
+function _hideTodoCtxMenu() {
+  _todoCtxMenu.classList.add('hidden');
+  _ctxTarget = null;
+}
+
+_todoCtxMenu.addEventListener('click', e => {
+  const item = e.target.closest('.ctx-item');
+  if (!item || !_ctxTarget) return;
+  const { id, ds } = _ctxTarget;
+  _hideTodoCtxMenu();
+  const action = item.dataset.action;
+  if (action === 'edit')       window.app.openEditModal(id, ds);
+  if (action === 'add-after')  window.app.addTaskAfter(id, ds);
+  if (action === 'duplicate')  window.app.duplicateTodo(id, ds);
+  if (action === 'delete')     window.app.deleteTodo(id, ds);
+});
+
+document.addEventListener('click', e => {
+  if (!_todoCtxMenu.contains(e.target)) _hideTodoCtxMenu();
+});
+
+document.addEventListener('contextmenu', e => {
+  const item = e.target.closest('.todo-item');
+  if (!item) return;
+  e.preventDefault();
+  const id = item.getAttribute('data-id');
+  const ds = item.getAttribute('data-date');
+  _ctxTarget = { id, ds };
+  _todoCtxMenu.classList.remove('hidden');
+  const mw = 180, mh = 160;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX + 4;
+  let y = e.clientY;
+  if (x + mw > vw) x = e.clientX - mw - 4;
+  if (y + mh > vh) y = vh - mh - 8;
+  _todoCtxMenu.style.left = x + 'px';
+  _todoCtxMenu.style.top  = y + 'px';
+});
 
 // Create global app instance
 window.app = new TodoApp();

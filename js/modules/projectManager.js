@@ -122,7 +122,7 @@ function _renderProjectTasks(projectId, p) {
   const todos = state.todos || [];
   const pending = [], done = [];
   for (const t of todos) {
-    if (t.projectId === projectId && (!t.recurrence || t.recurrence === 'none'))
+    if ((t.projectIds || (t.projectId ? [t.projectId] : [])).includes(projectId) && (!t.recurrence || t.recurrence === 'none'))
       (t.completed ? done : pending).push(t);
   }
   const projectTodos = pending.length + done.length;
@@ -157,6 +157,34 @@ function _renderProjectTasks(projectId, p) {
     </div>
     ${pendingHTML}
     ${doneHTML}`;
+}
+
+function _getIntentions() {
+  try { return JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { return []; }
+}
+
+function _renderProjectIntentions(projectId, p) {
+  const intentions  = _getIntentions();
+  const linkedIds   = p.intentionIds || [];
+  const linked      = linkedIds.map(id => intentions.find(i => i.id === id)).filter(Boolean);
+  const unlinked    = intentions.filter(i => !linkedIds.includes(i.id));
+
+  const chips = linked.map(i =>
+    `<span class="cv-intention-chip" style="border-color:${i.color};">
+      <span class="cv-intention-chip-dot" style="background:${i.color};"></span>
+      <span>${esc(i.title)}</span>
+      <button class="cv-intention-chip-remove" onclick="event.stopPropagation();window.app.toggleProjectIntention('${projectId}','${i.id}')">✕</button>
+    </span>`
+  ).join('');
+
+  const addSelect = unlinked.length > 0
+    ? `<select class="cv-intention-add-select" onchange="if(this.value){window.app.toggleProjectIntention('${projectId}',this.value);this.value='';}">
+        <option value="">＋ Lier une intention</option>
+        ${unlinked.map(i => `<option value="${i.id}">${esc(i.title)}</option>`).join('')}
+      </select>`
+    : '';
+
+  return `<div class="cv-intention-chips">${chips}${addSelect}</div>`;
 }
 
 export function renderProjectPanel(projectId) {
@@ -211,6 +239,11 @@ export function renderProjectPanel(projectId) {
             onclick="this.showPicker()">
         </div>
       </div>
+      ${_getIntentions().length > 0 ? `
+      <div class="cv-intentions-section">
+        <label class="cv-meta-label">Intentions</label>
+        ${_renderProjectIntentions(projectId, p)}
+      </div>` : ''}
     </div>
 
     <div class="cv-body">

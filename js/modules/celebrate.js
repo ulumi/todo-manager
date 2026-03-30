@@ -372,7 +372,7 @@ export function celebrateSlideshow(quotes, lang = 'fr', startIdx = 0) {
 }
 
 // ── Public entry point ─────────────────────────────────
-export function celebrate(lang = 'en') {
+export function celebrate(lang = 'en', debug = false) {
   recordCompletion();
   const personalBanned = getBannedQuotes();
   const globalBanned   = _globalQuotes.banned;
@@ -404,7 +404,7 @@ export function celebrate(lang = 'en') {
 
   const mascot = mascotPool[Math.floor(Math.random() * mascotPool.length)];
   const font = fontPool[Math.floor(Math.random() * fontPool.length)];
-  _reportDebug(quote, mascot, font);
+  if (debug) _reportDebug(quote, mascot, font);
   buildScene(quote, stats, mascot, {}, font);
 }
 

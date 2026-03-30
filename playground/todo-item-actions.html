@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo Actions — 9 approches sans layout shift</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0a1a 0%, #1a0f2e 25%, #0d2247 50%, #0a1f2e 75%, #0f1420 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: rgba(255,255,255,.5); margin-bottom: 8px; }
+    .notice {
+      display: inline-block;
+      background: rgba(59,130,246,.2);
+      border: 1px solid rgba(59,130,246,.4);
+      color: #93c5fd;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 36px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 28px;
+    }
+
+    .card {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.35);
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,.45);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+
+    .demo-area {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ─────────── Shared todo base ─────────── */
+    .todo {
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 12px;
+      color: #0f172a;
+      font-size: 14px;
+      position: relative;
+      user-select: none;
+    }
+
+    .todo-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+    }
+
+    .todo-check {
+      width: 20px; height: 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 50%;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .todo:hover .todo-check { border-color: #10b981; }
+
+    .todo-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 500;
+    }
+
+    .todo-tag {
+      font-size: 11px;
+      background: #eff6ff;
+      color: #3b82f6;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 1px 6px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background .15s, color .15s, transform .15s;
+      flex-shrink: 0;
+    }
+    .action-btn:hover { background: #f1f5f9; color: #0f172a; transform: scale(1.1); }
+    .action-btn.danger:hover { background: #fef2f2; color: #ef4444; }
+
+    /* ─────────── OPTION A — Gradient overlay ─────────── */
+    .opt-a .todo {
+      overflow: hidden;
+      transition: border-color .18s;
+    }
+    .opt-a .todo:hover { border-color: #3b82f6; }
+
+    .opt-a .todo-actions-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 10px;
+      background: linear-gradient(to bottom, transparent, rgba(241,245,249,.95) 40%);
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity .15s ease, transform .18s cubic-bezier(.34, 1.4, .64, 1);
+      pointer-events: none;
+    }
+    .opt-a .todo:hover .todo-actions-overlay {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .opt-a .todo-inner { padding-bottom: 10px; }
+
+    /* ─────────── OPTION B — Right column ─────────── */
+    .opt-b .todo { transition: border-color .18s; }
+    .opt-b .todo:hover { border-color: #3b82f6; }
+
+    .opt-b .todo-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .opt-b .action-btn {
+      opacity: 0;
+      transform: translateX(4px);
+      transition: opacity .12s ease, transform .15s ease, background .15s, color .15s;
+    }
+    .opt-b .action-btn:nth-child(1) { transition-delay: 0ms; }
+    .opt-b .action-btn:nth-child(2) { transition-delay: 30ms; }
+    .opt-b .action-btn:nth-child(3) { transition-delay: 60ms; }
+    .opt-b .action-btn:nth-child(4) { transition-delay: 90ms; }
+    .opt-b .todo:hover .action-btn { opacity: 1; transform: translateX(0); }
+
+    /* ─────────── OPTION C — Ellipsis popover ─────────── */
+    .opt-c .todo { transition: border-color .18s; }
+    .opt-c .todo:hover { border-color: #3b82f6; }
+
+    .opt-c .ellipsis-btn {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity .15s, background .15s, color .15s;
+    }
+    .opt-c .todo:hover .ellipsis-btn { opacity: 1; }
+    .opt-c .ellipsis-btn:hover { background: #f1f5f9; color: #0f172a; }
+
+    .opt-c .popover {
+      position: absolute;
+      right: 8px; top: calc(100% + 4px);
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.12);
+      z-index: 10;
+      opacity: 0;
+      transform: scale(.92) translateY(-6px);
+      transform-origin: top right;
+      pointer-events: none;
+      transition: opacity .15s ease, transform .18s cubic-bezier(.34, 1.4, .64, 1);
+    }
+    .opt-c .popover.open {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: all;
+    }
+    .opt-c .pop-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      white-space: nowrap;
+      transition: background .1s;
+    }
+    .opt-c .pop-item:hover { background: #f8fafc; }
+    .opt-c .pop-item.danger:hover { background: #fef2f2; color: #ef4444; }
+    .opt-c .pop-item span:first-child { font-size: 15px; }
+
+    /* ─────────── OPTION D — Fixed height ─────────── */
+    .opt-d .todo {
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .opt-d .todo:hover { border-color: #3b82f6; box-shadow: 0 4px 14px rgba(59,130,246,.12); }
+
+    .opt-d .todo-fixed-row {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 10px 8px 44px;
+    }
+    .opt-d .action-btn {
+      opacity: 0;
+      transition: opacity .15s ease, background .15s, color .15s;
+    }
+    .opt-d .todo:hover .action-btn { opacity: 1; }
+
+    /* ─────────── OPTION E — Floating pill above ─────────── */
+    .opt-e .todo { transition: border-color .18s; }
+    .opt-e .todo:hover { border-color: #3b82f6; }
+
+    .opt-e .float-pill {
+      position: absolute;
+      top: -38px;
+      right: 8px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 3px 6px;
+      display: flex;
+      gap: 2px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity .15s ease, transform .2s cubic-bezier(.34, 1.4, .64, 1);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .opt-e .todo:hover .float-pill {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .opt-e .float-pill .action-btn { width: 26px; height: 26px; border-radius: 50%; }
+
+    /* ─────────── OPTION F — Slide from right ─────────── */
+    .opt-f .todo { overflow: hidden; transition: border-color .18s; }
+    .opt-f .todo:hover { border-color: #3b82f6; }
+
+    .opt-f .slide-actions {
+      position: absolute;
+      right: 0; top: 0; bottom: 0;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 8px;
+      background: linear-gradient(to right, transparent, rgba(241,245,249,.97) 25%);
+      transform: translateX(100%);
+      transition: transform .2s cubic-bezier(.25, .46, .45, .94);
+    }
+    .opt-f .todo:hover .slide-actions { transform: translateX(0); }
+
+    /* ─────────── OPTION G — Inline after text ─────────── */
+    .opt-g .todo { transition: border-color .18s; }
+    .opt-g .todo:hover { border-color: #3b82f6; }
+
+    .opt-g .todo-text-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .opt-g .todo-text { flex-shrink: 1; }
+
+    .opt-g .inline-actions {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+      flex-shrink: 0;
+      opacity: 0;
+      transform: translateX(-4px);
+      transition: opacity .15s ease, transform .18s ease;
+    }
+    .opt-g .todo:hover .inline-actions { opacity: 1; transform: translateX(0); }
+    .opt-g .action-btn { width: 22px; height: 22px; font-size: 12px; border-radius: 6px; }
+
+    /* ─────────── OPTION H — Scale reveal ─────────── */
+    .opt-h .todo {
+      transition: border-color .2s, transform .2s cubic-bezier(.34, 1.1, .64, 1), box-shadow .2s;
+    }
+    .opt-h .todo:hover {
+      border-color: #3b82f6;
+      transform: scaleX(1.008) scaleY(1.04);
+      box-shadow: 0 6px 20px rgba(59,130,246,.15);
+      z-index: 2;
+    }
+
+    .opt-h .todo-actions-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 10px;
+      background: linear-gradient(to bottom, transparent, rgba(241,245,249,.9) 50%);
+      opacity: 0;
+      transition: opacity .15s ease .05s;
+      pointer-events: none;
+    }
+    .opt-h .todo:hover .todo-actions-overlay {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ─────────── OPTION I — Context menu (right click) ─────────── */
+    .opt-i .todo { transition: border-color .18s; cursor: context-menu; }
+    .opt-i .todo:hover { border-color: #3b82f6; }
+
+    .context-menu {
+      position: fixed;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 4px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.15);
+      z-index: 1000;
+      display: none;
+      min-width: 160px;
+    }
+    .context-menu.open { display: block; }
+    .ctx-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      transition: background .1s;
+    }
+    .ctx-item:hover { background: #f8fafc; }
+    .ctx-item.danger:hover { background: #fef2f2; color: #ef4444; }
+    .ctx-separator { height: 1px; background: #f1f5f9; margin: 3px 0; }
+
+    .opt-i .right-click-hint {
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: right;
+      margin-top: -4px;
+      margin-bottom: 6px;
+    }
+
+    /* ─── Option badge colors ─── */
+    .badge-a { background: rgba(16,185,129,.15); color: #10b981; border: 1px solid rgba(16,185,129,.3); }
+    .badge-b { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.3); }
+    .badge-c { background: rgba(168,85,247,.15); color: #c084fc; border: 1px solid rgba(168,85,247,.3); }
+    .badge-d { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+    .badge-e { background: rgba(239,68,68,.15); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+    .badge-f { background: rgba(20,184,166,.15); color: #2dd4bf; border: 1px solid rgba(20,184,166,.3); }
+    .badge-g { background: rgba(99,102,241,.15); color: #818cf8; border: 1px solid rgba(99,102,241,.3); }
+    .badge-h { background: rgba(236,72,153,.15); color: #f472b6; border: 1px solid rgba(236,72,153,.3); }
+    .badge-i { background: rgba(251,146,60,.15); color: #fb923c; border: 1px solid rgba(251,146,60,.3); }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Todo Item Actions — 9 approches</h1>
+<p class="subtitle">Toutes sans layout shift · Survole les items pour voir les actions</p>
+<span class="notice">Aucun item ne change de taille ou ne décale ses voisins</span>
+
+<div class="grid">
+
+  <!-- ═══ OPTION A ═══ -->
+  <div class="card opt-a">
+    <div class="badge badge-a">Option A</div>
+    <div class="card-title">Gradient overlay</div>
+    <div class="card-desc">Les icônes glissent depuis le bas avec un fond dégradé qui couvre le contenu. Comme une nappe de brume.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Préparer la réunion produit</span>
+          <span class="todo-tag">Work</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Réviser les specs du backend</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Appel avec le client à 14h</span>
+          <span class="todo-tag">Urgent</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION B ═══ -->
+  <div class="card opt-b">
+    <div class="badge badge-b">Option B</div>
+    <div class="card-title">Colonne droite</div>
+    <div class="card-desc">Espace réservé à droite, icônes qui apparaissent en cascade avec un micro-décalage. Très propre.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Mettre à jour les dépendances</span>
+          <span class="todo-tag">Dev</span>
+          <div class="todo-right-actions">
+            <button class="action-btn">✏️</button>
+            <button class="action-btn">📌</button>
+            <button class="action-btn">🔁</button>
+            <button class="action-btn danger">🗑️</button>
+          </div>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Écrire les tests unitaires</span>
+          <div class="todo-right-actions">
+            <button class="action-btn">✏️</button>
+            <button class="action-btn">📌</button>
+            <button class="action-btn">🔁</button>
+            <button class="action-btn danger">🗑️</button>
+          </div>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Déployer en staging</span>
+          <span class="todo-tag">Infra</span>
+          <div class="todo-right-actions">
+            <button class="action-btn">✏️</button>
+            <button class="action-btn">📌</button>
+            <button class="action-btn">🔁</button>
+            <button class="action-btn danger">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION C ═══ -->
+  <div class="card opt-c">
+    <div class="badge badge-c">Option C</div>
+    <div class="card-title">Bouton ⋯ + popover</div>
+    <div class="card-desc">Un seul bouton, popover contextuel. Très compact. Clique sur ⋯ pour voir.</div>
+    <div class="demo-area">
+      <div class="todo" id="todo-c1">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Faire la revue de code</span>
+          <span class="todo-tag">PR</span>
+          <button class="ellipsis-btn" data-target="pop-c1">⋯</button>
+        </div>
+        <div class="popover" id="pop-c1">
+          <div class="pop-item"><span>✏️</span> Modifier</div>
+          <div class="pop-item"><span>📌</span> Épingler</div>
+          <div class="pop-item"><span>🔁</span> Répéter</div>
+          <div class="pop-item"><span>↗️</span> Déplacer</div>
+          <div class="pop-item danger"><span>🗑️</span> Supprimer</div>
+        </div>
+      </div>
+      <div class="todo" id="todo-c2">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Analyser les métriques</span>
+          <button class="ellipsis-btn" data-target="pop-c2">⋯</button>
+        </div>
+        <div class="popover" id="pop-c2">
+          <div class="pop-item"><span>✏️</span> Modifier</div>
+          <div class="pop-item"><span>📌</span> Épingler</div>
+          <div class="pop-item"><span>🔁</span> Répéter</div>
+          <div class="pop-item"><span>↗️</span> Déplacer</div>
+          <div class="pop-item danger"><span>🗑️</span> Supprimer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION D ═══ -->
+  <div class="card opt-d">
+    <div class="badge badge-d">Option D</div>
+    <div class="card-title">Hauteur fixe permanente</div>
+    <div class="card-desc">Rangée d'icônes toujours présente, simplement invisible. Aucune animation de taille.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Organiser les fichiers du projet</span>
+          <span class="todo-tag">Admin</span>
+        </div>
+        <div class="todo-fixed-row">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Mettre à jour la documentation</span>
+        </div>
+        <div class="todo-fixed-row">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION E ═══ -->
+  <div class="card opt-e">
+    <div class="badge badge-e">Option E</div>
+    <div class="card-title">Pill flottante au-dessus</div>
+    <div class="card-desc">Une pill d'actions apparaît hors du bloc, au-dessus à droite. Style Notion block toolbar.</div>
+    <div class="demo-area" style="padding-top: 44px;">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Revoir le wireframe</span>
+          <span class="todo-tag">Design</span>
+        </div>
+        <div class="float-pill">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Valider les maquettes finales</span>
+        </div>
+        <div class="float-pill">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Exporter les assets SVG</span>
+          <span class="todo-tag">Design</span>
+        </div>
+        <div class="float-pill">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION F ═══ -->
+  <div class="card opt-f">
+    <div class="badge badge-f">Option F</div>
+    <div class="card-title">Slide depuis la droite</div>
+    <div class="card-desc">Un panneau d'actions glisse depuis la droite, recouvrant le texte avec un fond dégradé.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Configurer le CI/CD pipeline</span>
+          <span class="todo-tag">Infra</span>
+        </div>
+        <div class="slide-actions">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Monitorer les logs en prod</span>
+        </div>
+        <div class="slide-actions">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Vérifier les alertes Sentry</span>
+          <span class="todo-tag">Ops</span>
+        </div>
+        <div class="slide-actions">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION G ═══ -->
+  <div class="card opt-g">
+    <div class="badge badge-g">Option G</div>
+    <div class="card-title">Icônes inline après le texte</div>
+    <div class="card-desc">Petites icônes qui apparaissent directement après le texte de la tâche. Très discret.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <div class="todo-text-wrap">
+            <span class="todo-text">Nettoyer la base de données</span>
+            <div class="inline-actions">
+              <button class="action-btn">✏️</button>
+              <button class="action-btn">📌</button>
+              <button class="action-btn">🔁</button>
+              <button class="action-btn danger">🗑️</button>
+            </div>
+          </div>
+          <span class="todo-tag">DB</span>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <div class="todo-text-wrap">
+            <span class="todo-text">Optimiser les requêtes lentes</span>
+            <div class="inline-actions">
+              <button class="action-btn">✏️</button>
+              <button class="action-btn">📌</button>
+              <button class="action-btn">🔁</button>
+              <button class="action-btn danger">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <div class="todo-text-wrap">
+            <span class="todo-text">Migrer vers PostgreSQL</span>
+            <div class="inline-actions">
+              <button class="action-btn">✏️</button>
+              <button class="action-btn">📌</button>
+              <button class="action-btn">🔁</button>
+              <button class="action-btn danger">🗑️</button>
+            </div>
+          </div>
+          <span class="todo-tag">Big</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION H ═══ -->
+  <div class="card opt-h">
+    <div class="badge badge-h">Option H</div>
+    <div class="card-title">Scale reveal</div>
+    <div class="card-desc">L'item grossit légèrement (transform: scale) sans affecter le layout. Les voisins ne bougent pas.</div>
+    <div class="demo-area">
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Planifier le sprint Q2</span>
+          <span class="todo-tag">Planning</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Estimer les tickets en retard</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+      <div class="todo">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Assigner les tâches à l'équipe</span>
+          <span class="todo-tag">Team</span>
+        </div>
+        <div class="todo-actions-overlay">
+          <button class="action-btn">✏️</button>
+          <button class="action-btn">📌</button>
+          <button class="action-btn">🔁</button>
+          <button class="action-btn">↗️</button>
+          <button class="action-btn danger">🗑️</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPTION I ═══ -->
+  <div class="card opt-i">
+    <div class="badge badge-i">Option I</div>
+    <div class="card-title">Menu contextuel (clic droit)</div>
+    <div class="card-desc">Clic droit sur un item. Aucun élément visible au survol. Zero bruit visuel.</div>
+    <div class="right-click-hint">↩ Clic droit sur un item</div>
+    <div class="demo-area">
+      <div class="todo ctx-target">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Préparer la démo client</span>
+          <span class="todo-tag">Sales</span>
+        </div>
+      </div>
+      <div class="todo ctx-target">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Finaliser le deck de présentation</span>
+        </div>
+      </div>
+      <div class="todo ctx-target">
+        <div class="todo-inner">
+          <div class="todo-check"></div>
+          <span class="todo-text">Envoyer le compte-rendu</span>
+          <span class="todo-tag">Follow-up</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Context menu shared -->
+<div class="context-menu" id="ctx-menu">
+  <div class="ctx-item"><span>✏️</span> Modifier</div>
+  <div class="ctx-item"><span>📌</span> Épingler</div>
+  <div class="ctx-item"><span>🔁</span> Répéter</div>
+  <div class="ctx-item"><span>↗️</span> Déplacer vers…</div>
+  <div class="ctx-separator"></div>
+  <div class="ctx-item danger"><span>🗑️</span> Supprimer</div>
+</div>
+
+<script>
+  // ── Option C: ellipsis popover ──
+  let openPop = null;
+  document.querySelectorAll('.ellipsis-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const target = document.getElementById(btn.dataset.target);
+      if (openPop && openPop !== target) { openPop.classList.remove('open'); }
+      target.classList.toggle('open');
+      openPop = target.classList.contains('open') ? target : null;
+    });
+  });
+  document.addEventListener('click', () => {
+    if (openPop) { openPop.classList.remove('open'); openPop = null; }
+  });
+
+  // ── Option I: context menu ──
+  const ctxMenu = document.getElementById('ctx-menu');
+  document.querySelectorAll('.ctx-target').forEach(el => {
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      ctxMenu.style.left = e.clientX + 'px';
+      ctxMenu.style.top  = e.clientY + 'px';
+      ctxMenu.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => ctxMenu.classList.remove('open'));
+  document.addEventListener('contextmenu', e => {
+    if (!e.target.closest('.ctx-target')) ctxMenu.classList.remove('open');
+  });
+</script>
+</body>
+</html>

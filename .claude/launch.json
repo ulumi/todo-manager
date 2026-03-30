@@ -10,7 +10,7 @@
     {
       "name": "SCSS Watcher",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["sass", "--watch", "css/styles.scss:css/styles.css", "--style=expanded", "--no-source-map"],
+      "runtimeArgs": ["sass", "--watch", "css/styles.scss:css/styles.css", "--style=expanded"],
       "port": 0
     }
   ]

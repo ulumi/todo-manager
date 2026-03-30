@@ -81,16 +81,6 @@
 - **Module :** `projectManager.js`
 - **Stockage :** localStorage key `projects`, Firestore champ `projects`
 
-### Résumé
-| | Tags (categories) | Projets (projects) |
-|--|--|--|
-| Clé localStorage | `categories` | `projects` |
-| Clé Firestore | `categories` | `projects` |
-| Champ todo | `categoryId` | `projectId` |
-| Vue | `categories` | `projects` |
-| Module | `admin.js` | `projectManager.js` |
-| Concept | Tag/contexte | Projet avec cycle de vie |
-
 ---
 
 ## Data model

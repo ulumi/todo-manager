@@ -8,6 +8,14 @@ import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 
+// Helper: get category/project/intention IDs (back-compat with old single-ID format)
+function _getCatIds(t) { return t.categoryIds || (t.categoryId ? [t.categoryId] : []); }
+function _getProjIds(t) { return t.projectIds || (t.projectId ? [t.projectId] : []); }
+function _getIntIds(t) { return t.intentionIds || (t.intentionId ? [t.intentionId] : []); }
+function _hasCat(t, id) { return _getCatIds(t).includes(id); }
+function _hasProj(t, id) { return _getProjIds(t).includes(id); }
+function _hasInt(t, id) { return _getIntIds(t).includes(id); }
+
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
 // ── Stats viz color helpers ───────────────────────────────────────────────
@@ -28,35 +36,37 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const rec = recLabel(todo, dayView);
   const isRec = todo.recurrence && todo.recurrence !== 'none';
   const ds = DS(date);
-  const dragHandleHTML = group ? `<div class="todo-drag-handle" title="Déplacer">${_dragHandleSVG}</div>` : '';
+  const dragHandleHTML = '';
   const categoryBadge = (() => {
-    if (hideCategoryBadge || !todo.categoryId) return '';
-    const cat = getCategories().find(p => p.id === todo.categoryId);
-    if (!cat) return '';
-    return `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
+    if (hideCategoryBadge) return '';
+    const ids = todo.categoryIds || (todo.categoryId ? [todo.categoryId] : []);
+    if (!ids.length) return '';
+    return ids.map(cid => {
+      const cat = getCategories().find(p => p.id === cid);
+      if (!cat) return '';
+      return `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`;
+    }).join('');
   })();
   const projectBadge = (() => {
-    if (!todo.projectId) return '';
-    const proj = getProjects().find(p => p.id === todo.projectId);
-    if (!proj) return '';
-    return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectPanel('${proj.id}')">${esc(proj.name)}</span>`;
+    const ids = todo.projectIds || (todo.projectId ? [todo.projectId] : []);
+    if (!ids.length) return '';
+    return ids.map(pid => {
+      const proj = getProjects().find(p => p.id === pid);
+      if (!proj) return '';
+      return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectPanel('${proj.id}')">${esc(proj.name)}</span>`;
+    }).join('');
   })();
   const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
   const hasMeta = categoryBadge || projectBadge || rec;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
-      <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'))"></div>
+      <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)"></div>
       <div class="todo-content">
         <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
-      <div class="todo-actions">
-        <button class="todo-add-after" onclick="window.app.addTaskAfter('${todo.id}','${ds}')" title="Ajouter après">＋</button>
-        <button class="todo-edit" onclick="window.app.openEditModal('${todo.id}','${ds}')">✎</button>
-        <button class="todo-duplicate" onclick="window.app.duplicateTodo('${todo.id}','${ds}')" title="Dupliquer">⧉</button>
-        <button class="todo-delete" onclick="window.app.deleteTodo('${todo.id}','${ds}')">×</button>
-      </div>
+      <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}
     </div>`;
 }
@@ -334,14 +344,14 @@ export function renderDayView(todos) {
     // Group by category/tag — sections draggable to reorder
     const categories = getCategories();
     const tagOrder = JSON.parse(localStorage.getItem('dayTagOrder') || '[]');
-    const catGroups = categories.filter(c => itemsForRender.some(t => t.categoryId === c.id));
-    const untagged = itemsForRender.filter(t => !t.categoryId);
+    const catGroups = categories.filter(c => itemsForRender.some(t => _hasCat(t, c.id)));
+    const untagged = itemsForRender.filter(t => !_getCatIds(t).length);
 
     // Tag cloud filter — excluded tags are hidden
     const excludedTags = JSON.parse(localStorage.getItem('dayTagExcluded') || '[]');
     const allTags = [
       ...catGroups.map(c => {
-        const count = itemsForRender.filter(t => t.categoryId === c.id).length;
+        const count = itemsForRender.filter(t => _hasCat(t, c.id)).length;
         return { id: c.id, name: c.name, color: c.color, count };
       }),
       ...(untagged.length ? [{ id: 'none', name: 'Sans tag', color: '#999', count: untagged.length }] : [])
@@ -369,7 +379,7 @@ export function renderDayView(todos) {
       // Grouped view
       let grouped = catGroups.map(c => {
         const isVisible = !excludedTags.includes(c.id);
-        const items = itemsForRender.filter(t => t.categoryId === c.id);
+        const items = itemsForRender.filter(t => _hasCat(t, c.id));
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
@@ -381,7 +391,11 @@ export function renderDayView(todos) {
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
-      const filteredItems = itemsForRender.filter(t => !excludedTags.includes(t.categoryId || 'none'));
+      const filteredItems = itemsForRender.filter(t => {
+        const cids = _getCatIds(t);
+        if (!cids.length) return !excludedTags.includes('none');
+        return cids.some(cid => !excludedTags.includes(cid));
+      });
       const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
@@ -475,7 +489,7 @@ export function renderDayView(todos) {
   const hasPunctual = sortedPunctual.length > 0;
   const actionBar = `
     <div class="day-action-bar">
-      <button class="day-action-btn day-action-btn--add" onclick="window.app.openModal()">＋ Ajouter</button>
+      <div class="day-add-item" onclick="window.app.openModal()">＋ Ajouter</div>
       <button class="day-action-btn" onclick="window.app.openTemplateModal()">☰ Insérer</button>
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
@@ -580,7 +594,7 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
           return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
-            <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+            <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)"></div>
             <span class="week-todo-text" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">${esc(t.title)}</span>
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
@@ -760,7 +774,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
       return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}>
-        <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
+        <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
         <button class="month-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
@@ -1053,7 +1067,7 @@ export function renderCategoriesView(todos) {
 
   // Compute stats for all categories
   const data = categories.map(p => {
-    const tasks = todos.filter(t => t.categoryId === p.id);
+    const tasks = todos.filter(t => _hasCat(t, p.id));
     const total = tasks.length;
     const punctual  = tasks.filter(t => !t.recurrence || t.recurrence === 'none');
     const recurring = tasks.filter(t => t.recurrence && t.recurrence !== 'none');
@@ -1155,7 +1169,7 @@ export function renderInboxView(todos) {
   const sorted = [...inboxItems].sort((a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (a.categoryId || '').localeCompare(b.categoryId || '');
+    if (sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
     return b.id.localeCompare(a.id); // newest first (default)
   });
 
@@ -1230,7 +1244,7 @@ export function renderBacklogView(todos) {
   const sorted = [...backlogItems].sort((a, b) => {
     if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
     if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (a.categoryId || '').localeCompare(b.categoryId || '');
+    if (sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
     return b.id.localeCompare(a.id);
   });
 
@@ -1310,8 +1324,8 @@ export function setupTodoItemHoverAnimations() {
 
 // ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
 
-export function renderPlanInboxList(todos) {
-  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+export function renderPlanInboxList(todos, overdueSelected = new Set()) {
+  const todayStr = DS(new Date());
   const grouped = localStorage.getItem('planGrouped') === 'true';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
   const cats = getCategories();
@@ -1323,13 +1337,34 @@ export function renderPlanInboxList(todos) {
       let cmp = 0;
       if (s === 'priority') cmp = (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
       else if (s === 'tag') {
-        const ca = cats.find(c => c.id === a.categoryId)?.name || 'zzz';
-        const cb = cats.find(c => c.id === b.categoryId)?.name || 'zzz';
+        const ca = cats.find(c => _hasCat(a, c.id))?.name || 'zzz';
+        const cb = cats.find(c => _hasCat(b, c.id))?.name || 'zzz';
         cmp = ca.localeCompare(cb);
       } else cmp = b.id.localeCompare(a.id);
       return d === 'asc' ? -cmp : cmp;
     };
   };
+
+  const _mkOverdueSortFn = () => {
+    const s = localStorage.getItem('planSort_overdue') || 'date';
+    const d = localStorage.getItem('planSortDir_overdue') || 'desc';
+    return (a, b) => {
+      let cmp = 0;
+      if (s === 'priority') cmp = (priorityOrder[a.priority||'']??3) - (priorityOrder[b.priority||'']??3);
+      else if (s === 'tag') {
+        const ca = cats.find(c => _hasCat(a, c.id))?.name || 'zzz';
+        const cb = cats.find(c => _hasCat(b, c.id))?.name || 'zzz';
+        cmp = ca.localeCompare(cb);
+      } else cmp = b.date.localeCompare(a.date); // plus récent (plus proche d'aujourd'hui) en premier
+      return d === 'asc' ? -cmp : cmp;
+    };
+  };
+
+  const overdueItems = todos
+    .filter(t => t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none'))
+    .sort(_mkOverdueSortFn());
+
+  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
 
   const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(_mkSortFn('inbox'));
   const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(_mkSortFn('backlog'));
@@ -1483,29 +1518,90 @@ export function renderPlanInboxList(todos) {
     ? `<div class="plan-backlog-empty">Backlog vide</div>`
     : '';
 
+  const overdueCollapsed  = localStorage.getItem('planOverdueCollapsed')  === 'true';
+  const inboxCollapsed   = localStorage.getItem('planInboxCollapsed')   === 'true';
+  const backlogCollapsed = localStorage.getItem('planBacklogCollapsed') === 'true';
+
+  const _sectionChevron = `<button class="day-ctrl-toggle plan-section-collapse-btn" onclick="window.app.togglePlanSection('SECTION')" title="Réduire/déplier"><svg class="day-ctrl-chevron plan-section-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  const _daysAgo = (dateStr) => {
+    const d = Math.round((new Date(todayStr + 'T00:00:00') - new Date(dateStr + 'T00:00:00')) / 86400000);
+    return d === 1 ? 'hier' : `il y a ${d}j`;
+  };
+
+  const _checkSVG = `<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 6 5 9 10 3"/></svg>`;
+
+  const overdueItemRow = (t) => {
+    const sel = overdueSelected.has(t.id);
+    const cat = t.categoryId ? cats.find(c => c.id === t.categoryId) : null;
+    const categoryBadge = cat
+      ? `<span class="todo-category-badge" style="background:${cat.color};color:#fff;border-color:${cat.color};cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
+      : '';
+    const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    const agobadge = `<span class="plan-stat-badge plan-stat-overdue">${_daysAgo(t.date)}</span>`;
+    const meta = [categoryBadge, _prioBadge(t), agobadge, _histBadge(t)].filter(Boolean).join('');
+    return `
+      <div class="todo-item${prioCls}${sel ? ' overdue-selected' : ''}" data-id="${t.id}" draggable="true" data-group="plan"
+        ondragstart="window.app.planDragStart(event,'${t.id}')"
+        ondragend="this.classList.remove('dragging')"
+        onclick="window.app.openEditModal('${t.id}',null)">
+        <div class="overdue-checkbox${sel ? ' checked' : ''}" onclick="event.stopPropagation();window.app.overdueToggleSelect('${t.id}')">${sel ? _checkSVG : ''}</div>
+        <div class="todo-content">
+          <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
+          ${meta ? `<div class="todo-meta">${meta}</div>` : `<div class="todo-meta">${agobadge}</div>`}
+        </div>
+        <div class="todo-actions" onclick="event.stopPropagation()">
+          <button class="todo-action-btn todo-action-btn--today" onclick="window.app.overdueToToday('${t.id}')" title="Reporter à aujourd'hui">Auj.</button>
+          <button class="todo-action-btn" onclick="window.app.overdueToBacklog('${t.id}')" title="Mettre en backlog">BL</button>
+        </div>
+        <div class="plan-drag-handle" title="Glisser vers le calendrier">${_dragHandleSVG}</div>
+      </div>`;
+  };
+
+  const overdueCtrlBtns = `<div class="day-col-controls">
+    ${_mkSortCtrl('overdue')}${colCtrl}
+    ${_sectionChevron.replace('SECTION', 'overdue')}
+  </div>`;
+
+  const overdueSection = overdueItems.length === 0 ? '' : `
+    <div class="plan-overdue-section${overdueCollapsed ? ' collapsed' : ''}">
+      <div class="plan-inbox-header plan-overdue-header">
+        <span class="plan-inbox-header-title">En retard</span>
+        <span class="plan-inbox-count plan-overdue-count">${overdueItems.length}</span>
+        ${overdueCtrlBtns}
+      </div>
+      <div class="plan-overdue-list" style="${gridCss}">
+        ${overdueItems.map(overdueItemRow).join('')}
+      </div>
+      <div class="plan-overdue-footer">
+        <button id="overdueFooterToday" class="plan-overdue-big-btn plan-overdue-big-btn--primary" onclick="window.app.overdueActionToday()">Reporter tout à aujourd'hui</button>
+        <button id="overdueFooterBacklog" class="plan-overdue-big-btn" onclick="window.app.overdueActionBacklog()">Tout en backlog</button>
+      </div>
+    </div>`;
+
   return `
-    <div class="plan-inbox-section"
+    ${overdueSection}
+    <div class="plan-inbox-section${inboxCollapsed ? ' collapsed' : ''}"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
       ondrop="window.app.planDropToInbox(event)">
       <div class="plan-inbox-header">
         <span class="plan-inbox-header-title">Inbox</span>
         <span class="plan-inbox-count">${inboxItems.length}</span>
-<div class="day-col-controls">${inboxSortCtrl}${colCtrl}${groupToggle}</div>
+        <div class="day-col-controls">${inboxSortCtrl}${colCtrl}${groupToggle}${_sectionChevron.replace('SECTION', 'inbox')}</div>
       </div>
       <div class="plan-inbox-list" ${grouped ? groupedStyle : colStyle}>
         ${inboxEmpty}${_renderGrouped(inboxItems, itemRow, 'inbox')}
         <div class="plan-add-item plan-add-item--full" onclick="window.app.openModalForInbox()">＋ Capturer</div>
       </div>
     </div>
-    <div class="plan-backlog-section"
+    <div class="plan-backlog-section${backlogCollapsed ? ' collapsed' : ''}"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"
       ondrop="window.app.planDropToBacklog(event)">
       <div class="plan-backlog-header">
         <span class="plan-backlog-title">Backlog</span>
         <span class="plan-backlog-count">${backlogItems.length}</span>
-<div class="day-col-controls">${backlogSortCtrl}${colCtrl}${groupToggle}</div>
+        <div class="day-col-controls">${backlogSortCtrl}${colCtrl}${groupToggle}${_sectionChevron.replace('SECTION', 'backlog')}</div>
       </div>
       <div class="plan-backlog-list" ${grouped ? groupedStyle : colStyle}>
         ${backlogEmpty}${_renderGrouped(backlogItems, itemRow, 'backlog')}
@@ -1608,12 +1704,28 @@ export function renderIntentionsView(todos) {
   const intentions = _getIntentions();
 
 
+  const allProjects = getProjects();
   const cards = intentions.map(int => {
-    const intTasks = todos.filter(t => t.intentionId === int.id);
+    const intTasks = todos.filter(t => _hasInt(t, int.id));
     const count = intTasks.length;
     const chips = intTasks.slice(0, 6).map(t =>
       `<span class="intention-task-chip">${esc(t.title)}</span>`
     ).join('') + (count > 6 ? `<span class="intention-task-chip">+${count - 6}</span>` : '');
+
+    const linkedProjects = allProjects.filter(p => (p.intentionIds || []).includes(int.id));
+    const projectChips = linkedProjects.map(p =>
+      `<span class="intention-project-chip" style="border-color:${p.color};" onclick="event.stopPropagation();window.app.openProjectPanel('${p.id}')">
+        <span style="width:6px;height:6px;border-radius:50%;background:${p.color};flex-shrink:0;display:inline-block;"></span>
+        ${esc(p.name)}
+      </span>`
+    ).join('');
+    const projectsSection = linkedProjects.length > 0
+      ? `<details class="intention-card-projects" onclick="event.stopPropagation()">
+          <summary>${linkedProjects.length} projet${linkedProjects.length > 1 ? 's' : ''} lié${linkedProjects.length > 1 ? 's' : ''}</summary>
+          <div class="intention-card-project-chips">${projectChips}</div>
+        </details>`
+      : '';
+
     return `
       <div class="intention-card" style="border-top:3px solid ${int.color};" onclick="window.app.openIntentionPanel('${int.id}')">
         <div class="intention-card-header">
@@ -1622,6 +1734,7 @@ export function renderIntentionsView(todos) {
           <span class="intention-card-count">${count} tâche${count !== 1 ? 's' : ''}</span>
         </div>
         ${int.description ? `<div class="intention-card-description">${esc(int.description)}</div>` : ''}
+        ${projectsSection}
         ${count > 0 ? `<div class="intention-card-tasks">${chips}</div>` : ''}
       </div>`;
   }).join('');
@@ -1728,7 +1841,7 @@ export function renderAnalyseView(todos) {
   // Per intention
   const intentions = _getIntentions();
   const intentionRows = intentions.map(int => {
-    const intTasks = todos.filter(t => t.intentionId === int.id && (!t.recurrence || t.recurrence === 'none'));
+    const intTasks = todos.filter(t => _hasInt(t, int.id) && (!t.recurrence || t.recurrence === 'none'));
     const count = intTasks.length;
     const done  = intTasks.filter(t => t.completed).length;
     const pct   = count > 0 ? Math.round(done / count * 100) : 0;
@@ -1736,7 +1849,7 @@ export function renderAnalyseView(todos) {
       <span class="analyse-list-dot" style="background:${int.color};"></span>
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="analyse-list-name">${esc(int.title)}</span>
+          <span class="analyse-list-name">${esc(int.codename || int.title)}</span>
           <span class="analyse-list-count">${count} tâche${count !== 1 ? 's' : ''}</span>
         </div>
         <div class="analyse-progress-bar">
@@ -1749,7 +1862,7 @@ export function renderAnalyseView(todos) {
   // Per project
   const projects = getProjects();
   const projRows = projects.map(p => {
-    const pTasks = todos.filter(t => t.projectId === p.id && (!t.recurrence || t.recurrence === 'none'));
+    const pTasks = todos.filter(t => _hasProj(t, p.id) && (!t.recurrence || t.recurrence === 'none'));
     const count = pTasks.length;
     const done  = pTasks.filter(t => t.completed).length;
     const pct   = count > 0 ? Math.round(done / count * 100) : 0;

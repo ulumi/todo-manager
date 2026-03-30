@@ -55,7 +55,7 @@ export function renderCategoryPanel(categoryId) {
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayDS = DS(today);
-  const categoryTasks = state.todos.filter(t => t.projectId === categoryId);
+  const categoryTasks = state.todos.filter(t => (t.projectIds || (t.projectId ? [t.projectId] : [])).includes(categoryId));
   const punctual  = categoryTasks.filter(t => !t.recurrence || t.recurrence === 'none');
   const recurring = categoryTasks.filter(t => t.recurrence && t.recurrence !== 'none');
 

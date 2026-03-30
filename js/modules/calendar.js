@@ -47,6 +47,7 @@ export function toggleTodo(id, d, todos) {
   } else {
     t.completed = !t.completed;
   }
+  t.updatedAt = Date.now();
 }
 
 export function deleteOneOccurrence(id, date, todos) {
@@ -54,6 +55,7 @@ export function deleteOneOccurrence(id, date, todos) {
   if (t) {
     t.excludedDates = t.excludedDates || [];
     t.excludedDates.push(DS(date));
+    t.updatedAt = Date.now();
   }
 }
 
@@ -65,6 +67,7 @@ export function deleteFutureOccurrences(id, date, todos) {
       return todos.filter(x => x.id !== id);
     } else {
       t.endDate = endDate;
+      t.updatedAt = Date.now();
     }
   }
   return todos;
@@ -72,12 +75,14 @@ export function deleteFutureOccurrences(id, date, todos) {
 
 export function addTask(data, todos) {
   const startDate = (data.recurrence && data.recurrence !== 'none') ? (data.date || DS(today())) : undefined;
+  const id = Date.now().toString();
   todos.push({
-    id: Date.now().toString(),
+    id,
     ...data,
     ...(startDate ? {startDate} : {}),
     completedDates: [],
-    completed: false
+    completed: false,
+    updatedAt: parseInt(id),
   });
 }
 

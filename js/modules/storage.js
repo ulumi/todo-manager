@@ -92,7 +92,6 @@ export function initCrossTabSync(onUpdate) {
 export function getAppConfig() {
   const icalFilters = localStorage.getItem('icalFilters');
   return {
-    theme: localStorage.getItem('theme'),
     zoom: localStorage.getItem('zoom'),
     lang: localStorage.getItem('lang'),
     timezone: localStorage.getItem('timezone'),
@@ -100,7 +99,6 @@ export function getAppConfig() {
     icalFilters: icalFilters ? JSON.parse(icalFilters) : null,
     bgPalette: localStorage.getItem('bgPalette'),
     bgColor:   localStorage.getItem('bgColor'),
-    glassMode: localStorage.getItem('glassMode'),
   };
 }
 
@@ -108,6 +106,7 @@ export function getFullBackup(todos) {
   const raw = key => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; };
   const backup = {
     calendar: todos,
+    _deletions: JSON.parse(localStorage.getItem('_deletions') || '{}'),
     config: getAppConfig(),
     categories: raw('categories'),
     templates: raw('dayTemplates'),
