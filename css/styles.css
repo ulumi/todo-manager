@@ -4321,34 +4321,44 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
 }
 
-.todo-item--add-placeholder {
+.add-item-placeholder {
   margin-top: 10px;
-  gap: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
   cursor: pointer;
-  border-style: dotted !important;
-  border-color: rgba(var(--primary), 0.3);
-  transition: border-color 0.2s ease;
+  width: fit-content;
 }
-.todo-item--add-placeholder:hover {
-  border-color: var(--primary);
-}
-.todo-item--add-placeholder .add-placeholder-icon {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
+.add-item-placeholder .add-item-placeholder-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--primary);
+  font-size: 20px;
+  font-weight: 400;
+  color: #fff;
   transform-origin: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.todo-item--add-placeholder .todo-content {
-  flex: 1;
-}
-.todo-item--add-placeholder .todo-text {
+.add-item-placeholder .add-item-placeholder-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
   opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.add-item-placeholder:hover .add-item-placeholder-icon {
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.add-item-placeholder:hover .add-item-placeholder-label {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .template-day-float-btn,
