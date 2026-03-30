@@ -441,15 +441,18 @@ export function renderDayView(todos) {
           if (t) cur.items.push(todoItemHTML(t, navDate, 'punctual'));
         }
       }
-      rightColItems = groups.map((g, idx) => {
+      rightColItems = groups.map(g => {
         let itemsHtml = '';
         if (g.items.length) {
-          const addPlaceholder = idx === groups.length - 1 ? addItemPlaceholderHTML() : '';
-          itemsHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${g.items.join('')}${addPlaceholder}</div>`;
+          itemsHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${g.items.join('')}</div>`;
         }
         if (!g.spacer) return itemsHtml;
         return `<div class="day-spacer-group">${g.spacer}${itemsHtml}</div>`;
       }).join('');
+      // Add placeholder at the end of all items
+      if (sortedPunctual.length > 0) {
+        rightColItems += addItemPlaceholderHTML();
+      }
     } else {
       rightColItems = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
     }
