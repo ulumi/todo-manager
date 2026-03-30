@@ -33,8 +33,9 @@ function _pctHsl(pct, a = 1) {
 
 function addItemPlaceholderHTML() {
   return `<div class="todo-item todo-item--add-placeholder" onclick="window.app.openModal()">
+    <div class="add-placeholder-icon">＋</div>
     <div class="todo-content">
-      <span class="todo-text">＋ Ajouter</span>
+      <span class="todo-text">Ajouter</span>
     </div>
   </div>`;
 }
