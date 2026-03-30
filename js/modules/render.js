@@ -1325,10 +1325,7 @@ export function renderBacklogView(todos) {
     </div>`;
 }
 
-let _hoverAnimsInit = false;
-
 export function setupTodoItemHoverAnimations() {
-  // Todo items — re-bind chaque render (DOM recréé)
   document.querySelectorAll('.todo-item').forEach(item => {
     item.addEventListener('mouseenter', () =>
       gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
@@ -1337,38 +1334,6 @@ export function setupTodoItemHoverAnimations() {
       gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
     );
   });
-
-  // Placeholder — délégation sur document, initialisée une seule fois
-  if (_hoverAnimsInit) return;
-  _hoverAnimsInit = true;
-
-  const labelWidth = 72;
-  const collapsedW = 36;
-  const expandedW  = collapsedW + labelWidth;
-
-  document.addEventListener('mouseenter', e => {
-    const placeholder = e.target.closest('.add-item-placeholder');
-    if (!placeholder) return;
-    const pill  = placeholder.querySelector('.add-item-placeholder-pill');
-    const icon  = placeholder.querySelector('.add-item-placeholder-icon');
-    const label = placeholder.querySelector('.add-item-placeholder-label');
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    tl.to(pill,  { width: expandedW, duration: 0.38 }, 0);
-    tl.to(label, { opacity: 1, duration: 0.25 }, 0.1);
-    tl.to(icon,  { x: labelWidth, rotation: 135, duration: 0.42, ease: 'back.out(1.8)' }, 0);
-  }, true);
-
-  document.addEventListener('mouseleave', e => {
-    const placeholder = e.target.closest('.add-item-placeholder');
-    if (!placeholder) return;
-    const pill  = placeholder.querySelector('.add-item-placeholder-pill');
-    const icon  = placeholder.querySelector('.add-item-placeholder-icon');
-    const label = placeholder.querySelector('.add-item-placeholder-label');
-    const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
-    tl.to(label, { opacity: 0, duration: 0.18 }, 0);
-    tl.to(icon,  { x: 0, rotation: 0, duration: 0.35, ease: 'back.out(1.5)' }, 0);
-    tl.to(pill,  { width: collapsedW, duration: 0.32 }, 0.05);
-  }, true);
 }
 
 // ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
