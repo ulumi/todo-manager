@@ -449,10 +449,6 @@ export function renderDayView(todos) {
         if (!g.spacer) return itemsHtml;
         return `<div class="day-spacer-group">${g.spacer}${itemsHtml}</div>`;
       }).join('');
-      // Add placeholder at the end of all items
-      if (sortedPunctual.length > 0) {
-        rightColItems += addItemPlaceholderHTML();
-      }
     } else {
       rightColItems = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
     }
@@ -463,6 +459,11 @@ export function renderDayView(todos) {
     const emptyMsg = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
     const noPeriodHtml = rightColItems !== emptyMsg ? rightColItems : '';
     rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
+  }
+
+  // Add placeholder at the very end of ALL items (after period sections)
+  if (rightColItems && rightColItems !== `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`) {
+    rightColItems += addItemPlaceholderHTML();
   }
 
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
