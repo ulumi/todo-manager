@@ -6,7 +6,12 @@ export function setupEventListeners(app) {
   // View tabs
   document.querySelectorAll('.view-tab').forEach(b => {
     b.addEventListener('click', () => {
-      app.setView(b.dataset.view);
+      // If clicking "Aujourd'hui", reset navDate to today
+      if (b.dataset.view === 'day') {
+        app.setNavDateAndView(new Date(), 'day');
+      } else {
+        app.setView(b.dataset.view);
+      }
     });
   });
 
