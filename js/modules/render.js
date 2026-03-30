@@ -33,8 +33,10 @@ function _pctHsl(pct, a = 1) {
 
 function addItemPlaceholderHTML() {
   return `<div class="add-item-placeholder" onclick="window.app.openModal()">
-    <div class="add-item-placeholder-icon">＋</div>
-    <span class="add-item-placeholder-label">Ajouter</span>
+    <div class="add-item-placeholder-pill">
+      <span class="add-item-placeholder-label">Ajouter</span>
+      <div class="add-item-placeholder-icon">＋</div>
+    </div>
   </div>`;
 }
 
@@ -1335,13 +1337,30 @@ export function setupTodoItemHoverAnimations() {
 
   const placeholder = document.querySelector('.add-item-placeholder');
   if (!placeholder) return;
-  const icon = placeholder.querySelector('.add-item-placeholder-icon');
+  const pill  = placeholder.querySelector('.add-item-placeholder-pill');
+  const icon  = placeholder.querySelector('.add-item-placeholder-icon');
+  const label = placeholder.querySelector('.add-item-placeholder-label');
+
+  // Measure expanded width once
+  const labelWidth = 72; // "Ajouter" + padding
+  const collapsedW = 36;
+  const expandedW  = collapsedW + labelWidth;
 
   placeholder.addEventListener('mouseenter', () => {
-    gsap.to(icon, { rotation: 90, scale: 1.15, duration: 0.45, ease: 'back.out(2)' });
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    // 1. Pill s'élargit
+    tl.to(pill, { width: expandedW, duration: 0.38 }, 0);
+    // 2. Label fade in
+    tl.to(label, { opacity: 1, duration: 0.25 }, 0.1);
+    // 3. + glisse à droite et tourne
+    tl.to(icon, { x: labelWidth, rotation: 135, duration: 0.42, ease: 'back.out(1.8)' }, 0);
   });
+
   placeholder.addEventListener('mouseleave', () => {
-    gsap.to(icon, { rotation: 0, scale: 1, duration: 0.35, ease: 'power2.inOut' });
+    const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
+    tl.to(label, { opacity: 0, duration: 0.18 }, 0);
+    tl.to(icon, { x: 0, rotation: 0, duration: 0.35, ease: 'back.out(1.5)' }, 0);
+    tl.to(pill,  { width: collapsedW, duration: 0.32 }, 0.05);
   });
 }
 

@@ -4323,19 +4323,37 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .add-item-placeholder {
   margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 8px;
   cursor: pointer;
   width: fit-content;
 }
-.add-item-placeholder .add-item-placeholder-icon {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  border-radius: 50%;
+.add-item-placeholder .add-item-placeholder-pill {
+  position: relative;
+  height: 36px;
+  width: 36px;
+  border-radius: 18px;
   background: var(--primary);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+}
+.add-item-placeholder .add-item-placeholder-label {
+  position: absolute;
+  left: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.add-item-placeholder .add-item-placeholder-icon {
+  position: relative;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4343,22 +4361,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight: 400;
   color: #fff;
   transform-origin: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.add-item-placeholder .add-item-placeholder-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--primary);
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 0.25s ease, transform 0.25s ease;
-}
-.add-item-placeholder:hover .add-item-placeholder-icon {
-  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 40%, transparent);
-}
-.add-item-placeholder:hover .add-item-placeholder-label {
-  opacity: 1;
-  transform: translateX(0);
 }
 
 .template-day-float-btn,
