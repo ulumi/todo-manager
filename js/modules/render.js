@@ -461,8 +461,11 @@ export function renderDayView(todos) {
     rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
   }
 
-  // Add placeholder at the very end of ALL items (after period sections)
-  if (rightColItems && rightColItems !== `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`) {
+  // Add placeholder at the very end (replace empty message or append to items)
+  const emptyMsg = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
+  if (rightColItems === emptyMsg) {
+    rightColItems = addItemPlaceholderHTML();
+  } else if (rightColItems) {
     rightColItems += addItemPlaceholderHTML();
   }
 
