@@ -1342,7 +1342,7 @@ export function setupTodoItemHoverAnimations() {
   const label = placeholder.querySelector('.add-item-placeholder-label');
 
   // Reset GSAP state (survit aux re-renders)
-  gsap.set(pill,  { width: 36 });
+  gsap.set(pill,  { width: 40 });
   gsap.set(icon,  { rotation: 0 });
   gsap.set(label, { opacity: 0 });
 
