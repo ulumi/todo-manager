@@ -969,9 +969,6 @@ class TodoApp {
         });
       }
     }, 220);
-
-    // Setup hover animations
-    setupTodoItemHoverAnimations();
   }
 
   _animateViewTabs() {
@@ -2388,6 +2385,7 @@ class TodoApp {
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
+    if (state.view === 'day') setupTodoItemHoverAnimations();
   }
 
   _renderPlanView() {
