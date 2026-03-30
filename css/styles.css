@@ -4337,7 +4337,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .add-item-placeholder .add-item-placeholder-label {
   position: absolute;
   left: 0;
-  right: 36px;
+  right: 42px;
   top: 0;
   bottom: 0;
   display: flex;
