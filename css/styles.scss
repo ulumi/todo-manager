@@ -4126,6 +4126,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-top: 10px;
   gap: 14px;
   cursor: pointer;
+  border-style: dotted !important;
+  border-color: rgba(var(--primary), 0.3);
+  transition: border-color .2s ease;
+
+  &:hover {
+    border-color: var(--primary);
+  }
 
   .add-placeholder-icon {
     width: 44px;

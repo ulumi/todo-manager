@@ -4325,6 +4325,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-top: 10px;
   gap: 14px;
   cursor: pointer;
+  border-style: dotted !important;
+  border-color: rgba(var(--primary), 0.3);
+  transition: border-color 0.2s ease;
+}
+.todo-item--add-placeholder:hover {
+  border-color: var(--primary);
 }
 .todo-item--add-placeholder .add-placeholder-icon {
   width: 44px;
