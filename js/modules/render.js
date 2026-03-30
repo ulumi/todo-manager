@@ -499,12 +499,7 @@ export function renderDayView(todos) {
     </div>
   </div>`;
 
-  const hasPunctual = sortedPunctual.length > 0;
-  const actionBar = `
-    <div class="day-action-bar">
-      <button class="day-action-btn" onclick="window.app.openTemplateModal()">☰ Insérer</button>
-      ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
-    </div>`;
+  const actionBar = '';
 
   return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
