@@ -4125,27 +4125,16 @@ body:has(.bottom-panel:not(.hidden))::before {
 .todo-item--add-placeholder {
   margin-top: 10px;
   border-style: dotted !important;
-  background: repeating-linear-gradient(
-    45deg,
-    var(--surface),
-    var(--surface) 10px,
-    rgba(100, 116, 139, 0.03) 10px,
-    rgba(100, 116, 139, 0.03) 20px
-  );
+  background: linear-gradient(135deg, rgba(var(--primary), 0.04), rgba(var(--primary), 0.02));
   color: var(--text-muted);
   cursor: pointer;
-  transition: border-color .15s, color .15s, background .15s;
+  transition: all .15s ease;
 
   &:hover {
     border-color: var(--primary);
     color: var(--primary);
-    background: repeating-linear-gradient(
-      45deg,
-      var(--surface),
-      var(--surface) 10px,
-      rgba(var(--primary-rgb), 0.06) 10px,
-      rgba(var(--primary-rgb), 0.06) 20px
-    );
+    background: linear-gradient(135deg, rgba(var(--primary), 0.08), rgba(var(--primary), 0.04));
+    box-shadow: 0 2px 8px rgba(var(--primary), 0.1);
   }
 }
 
