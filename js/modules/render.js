@@ -1325,7 +1325,10 @@ export function renderBacklogView(todos) {
     </div>`;
 }
 
+let _hoverAnimsInit = false;
+
 export function setupTodoItemHoverAnimations() {
+  // Todo items — re-bind chaque render (DOM recréé)
   document.querySelectorAll('.todo-item').forEach(item => {
     item.addEventListener('mouseenter', () =>
       gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
@@ -1335,33 +1338,37 @@ export function setupTodoItemHoverAnimations() {
     );
   });
 
-  const placeholder = document.querySelector('.add-item-placeholder');
-  if (!placeholder) return;
-  const pill  = placeholder.querySelector('.add-item-placeholder-pill');
-  const icon  = placeholder.querySelector('.add-item-placeholder-icon');
-  const label = placeholder.querySelector('.add-item-placeholder-label');
+  // Placeholder — délégation sur document, initialisée une seule fois
+  if (_hoverAnimsInit) return;
+  _hoverAnimsInit = true;
 
-  // Measure expanded width once
-  const labelWidth = 72; // "Ajouter" + padding
+  const labelWidth = 72;
   const collapsedW = 36;
   const expandedW  = collapsedW + labelWidth;
 
-  placeholder.addEventListener('mouseenter', () => {
+  document.addEventListener('mouseenter', e => {
+    const placeholder = e.target.closest('.add-item-placeholder');
+    if (!placeholder) return;
+    const pill  = placeholder.querySelector('.add-item-placeholder-pill');
+    const icon  = placeholder.querySelector('.add-item-placeholder-icon');
+    const label = placeholder.querySelector('.add-item-placeholder-label');
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    // 1. Pill s'élargit
-    tl.to(pill, { width: expandedW, duration: 0.38 }, 0);
-    // 2. Label fade in
+    tl.to(pill,  { width: expandedW, duration: 0.38 }, 0);
     tl.to(label, { opacity: 1, duration: 0.25 }, 0.1);
-    // 3. + glisse à droite et tourne
-    tl.to(icon, { x: labelWidth, rotation: 135, duration: 0.42, ease: 'back.out(1.8)' }, 0);
-  });
+    tl.to(icon,  { x: labelWidth, rotation: 135, duration: 0.42, ease: 'back.out(1.8)' }, 0);
+  }, true);
 
-  placeholder.addEventListener('mouseleave', () => {
+  document.addEventListener('mouseleave', e => {
+    const placeholder = e.target.closest('.add-item-placeholder');
+    if (!placeholder) return;
+    const pill  = placeholder.querySelector('.add-item-placeholder-pill');
+    const icon  = placeholder.querySelector('.add-item-placeholder-icon');
+    const label = placeholder.querySelector('.add-item-placeholder-label');
     const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
     tl.to(label, { opacity: 0, duration: 0.18 }, 0);
-    tl.to(icon, { x: 0, rotation: 0, duration: 0.35, ease: 'back.out(1.5)' }, 0);
+    tl.to(icon,  { x: 0, rotation: 0, duration: 0.35, ease: 'back.out(1.5)' }, 0);
     tl.to(pill,  { width: collapsedW, duration: 0.32 }, 0.05);
-  });
+  }, true);
 }
 
 // ─── Plan Inbox List (stripped, for plan split-pane) ─────────────────────────
