@@ -4126,21 +4126,18 @@ body:has(.bottom-panel:not(.hidden))::before {
   margin-top: 10px;
   gap: 14px;
   cursor: pointer;
-  transition: all .2s ease;
 
   .add-placeholder-icon {
     width: 44px;
     height: 44px;
     min-width: 44px;
-    border-radius: 50%;
-    background: #fbbf24;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    font-weight: 600;
-    color: #92400e;
-    transition: transform .3s ease;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--primary);
+    transform-origin: center;
   }
 
   .todo-content {
@@ -4149,19 +4146,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   .todo-text {
     opacity: 0;
-    transition: opacity .2s ease;
-  }
-
-  &:hover {
-    .add-placeholder-icon {
-      transform: rotate(90deg) scale(1.1);
-      background: #f59e0b;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-
-    .todo-text {
-      opacity: 1;
-    }
   }
 }
 

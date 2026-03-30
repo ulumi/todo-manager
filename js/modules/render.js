@@ -1324,12 +1324,85 @@ export function renderBacklogView(todos) {
 
 export function setupTodoItemHoverAnimations() {
   document.querySelectorAll('.todo-item').forEach(item => {
-    item.addEventListener('mouseenter', () =>
-      gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
-    );
-    item.addEventListener('mouseleave', () =>
-      gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
-    );
+    const isAddPlaceholder = item.classList.contains('todo-item--add-placeholder');
+
+    if (isAddPlaceholder) {
+      const icon = item.querySelector('.add-placeholder-icon');
+      const text = item.querySelector('.todo-text');
+
+      item.addEventListener('mouseenter', () => {
+        const tl = gsap.timeline();
+
+        // Icon: scale up, rotate, glow
+        tl.to(icon, {
+          scale: 1.3,
+          rotation: 360,
+          duration: 0.6,
+          ease: 'elastic.out(1.2, 0.75)',
+        }, 0);
+
+        // Icon glow effect
+        tl.to(icon, {
+          textShadow: '0 0 16px rgba(59, 130, 246, 0.6), 0 0 32px rgba(59, 130, 246, 0.3)',
+          duration: 0.3,
+        }, 0);
+
+        // Text fade in with slide
+        tl.to(text, {
+          opacity: 1,
+          x: 0,
+          duration: 0.4,
+          ease: 'power2.out',
+        }, 0.15);
+
+        // Item lift
+        tl.to(item, {
+          y: -4,
+          duration: 0.3,
+          ease: 'power2.out',
+        }, 0);
+      });
+
+      item.addEventListener('mouseleave', () => {
+        const tl = gsap.timeline();
+
+        // Icon: scale down, reset rotation
+        tl.to(icon, {
+          scale: 1,
+          rotation: 0,
+          duration: 0.4,
+          ease: 'power2.inOut',
+        }, 0);
+
+        // Icon glow fade
+        tl.to(icon, {
+          textShadow: '0 0 0px rgba(59, 130, 246, 0)',
+          duration: 0.2,
+        }, 0);
+
+        // Text fade out
+        tl.to(text, {
+          opacity: 0,
+          x: -8,
+          duration: 0.3,
+          ease: 'power2.in',
+        }, 0);
+
+        // Item drop
+        tl.to(item, {
+          y: 0,
+          duration: 0.3,
+          ease: 'power2.inOut',
+        }, 0);
+      });
+    } else {
+      item.addEventListener('mouseenter', () =>
+        gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
+      );
+      item.addEventListener('mouseleave', () =>
+        gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
+      );
+    }
   });
 }
 
