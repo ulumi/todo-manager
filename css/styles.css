@@ -4321,24 +4321,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
 }
 
-.day-add-item {
-  background: transparent;
-  border: 2px dotted var(--border);
-  border-radius: var(--radius);
-  padding: 10px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.todo-item--add-placeholder {
+  border-style: dotted !important;
+  color: var(--text-muted);
   cursor: pointer;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
-  text-align: center;
-  justify-content: center;
-  transition: border-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, color 0.15s;
 }
-.day-add-item:hover {
+.todo-item--add-placeholder:hover {
   border-color: var(--primary);
   color: var(--primary);
 }

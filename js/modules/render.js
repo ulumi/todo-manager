@@ -31,6 +31,15 @@ function _pctHsl(pct, a = 1) {
   return `hsla(${h},${s}%,${l}%,${a})`;
 }
 
+function addItemPlaceholderHTML() {
+  return `<div class="todo-item todo-item--add-placeholder" onclick="window.app.openModal()">
+    <div class="todo-check"></div>
+    <div class="todo-content">
+      <span class="todo-text">＋ Ajouter</span>
+    </div>
+  </div>`;
+}
+
 export function todoItemHTML(todo, date, group = null, dayView = false, hideCategoryBadge = false) {
   const done = isCompleted(todo, date);
   const rec = recLabel(todo, dayView);
@@ -449,6 +458,16 @@ export function renderDayView(todos) {
     rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
   }
 
+  // Append add-item placeholder to the list
+  if (rightColItems && rightColItems !== `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`) {
+    const todoLists = rightColItems.match(/<div class="todo-list"[^>]*>[\s\S]*?<\/div>/g) || [];
+    if (todoLists.length > 0) {
+      const lastList = todoLists[todoLists.length - 1];
+      const addPlaceholder = addItemPlaceholderHTML();
+      rightColItems = rightColItems.replace(lastList, lastList.replace('</div>', addPlaceholder + '</div>'));
+    }
+  }
+
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
@@ -489,7 +508,6 @@ export function renderDayView(todos) {
   const hasPunctual = sortedPunctual.length > 0;
   const actionBar = `
     <div class="day-action-bar">
-      <div class="day-add-item" onclick="window.app.openModal()">＋ Ajouter</div>
       <button class="day-action-btn" onclick="window.app.openTemplateModal()">☰ Insérer</button>
       ${hasPunctual ? `<button class="day-action-btn day-action-btn--danger" onclick="window.app.clearDay()">⊘ Vider</button>` : ''}
     </div>`;
