@@ -4327,25 +4327,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   width: fit-content;
 }
 .add-item-placeholder .add-item-placeholder-pill {
-  position: relative;
   height: 36px;
-  width: 40px;
+  width: 36px;
   border-radius: 18px;
   background: var(--primary);
   overflow: hidden;
-}
-.add-item-placeholder .add-item-placeholder-label {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+}
+.add-item-placeholder .add-item-placeholder-label {
+  flex: 1;
+  padding-left: 16px;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: #fff;
   white-space: nowrap;
@@ -4353,11 +4348,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   pointer-events: none;
 }
 .add-item-placeholder .add-item-placeholder-icon {
-  position: absolute;
-  right: 10px;
-  top: calc(50% - 12px);
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;

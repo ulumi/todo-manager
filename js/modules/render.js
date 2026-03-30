@@ -1341,23 +1341,26 @@ export function setupTodoItemHoverAnimations() {
   const icon  = placeholder.querySelector('.add-item-placeholder-icon');
   const label = placeholder.querySelector('.add-item-placeholder-label');
 
-  // Reset GSAP state (survit aux re-renders)
-  gsap.set(pill,  { width: 40 });
+  // Reset state au repos : pill = 36px (juste l'icon)
+  gsap.set(pill,  { width: 36 });
   gsap.set(icon,  { rotation: 0 });
   gsap.set(label, { opacity: 0 });
 
   placeholder.addEventListener('mouseenter', () => {
     const tl = gsap.timeline();
-    tl.to(pill,  { width: 118, duration: 0.5, ease: 'elastic.out(1, 0.6)' }, 0);
-    tl.to(icon,  { rotation: 135, duration: 0.45, ease: 'back.out(2.5)' }, 0);
-    tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.15);
+    // Pill s'élargit pour révéler le label (36px icon + ~90px label)
+    tl.to(pill,  { width: 130, duration: 0.45, ease: 'elastic.out(1, 0.65)' }, 0);
+    // + tourne en ×
+    tl.to(icon,  { rotation: 135, duration: 0.4, ease: 'back.out(2.5)' }, 0);
+    // Label fade in après que la pill commence à s'ouvrir
+    tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.18);
   });
 
   placeholder.addEventListener('mouseleave', () => {
     const tl = gsap.timeline();
-    tl.to(label, { opacity: 0, duration: 0.15, ease: 'power2.in' }, 0);
-    tl.to(icon,  { rotation: 0, duration: 0.4, ease: 'back.out(2)' }, 0.05);
-    tl.to(pill,  { width: 36, duration: 0.4, ease: 'power3.inOut' }, 0.05);
+    tl.to(label, { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0);
+    tl.to(icon,  { rotation: 0, duration: 0.35, ease: 'back.out(2)' }, 0.05);
+    tl.to(pill,  { width: 36, duration: 0.35, ease: 'power3.inOut' }, 0.08);
   });
 }
 
