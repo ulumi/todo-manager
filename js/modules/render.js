@@ -441,8 +441,12 @@ export function renderDayView(todos) {
           if (t) cur.items.push(todoItemHTML(t, navDate, 'punctual'));
         }
       }
-      rightColItems = groups.map(g => {
-        const itemsHtml = g.items.length ? `<div class="todo-list" data-group="punctual" style="${colStyle}">${g.items.join('')}</div>` : '';
+      rightColItems = groups.map((g, idx) => {
+        let itemsHtml = '';
+        if (g.items.length) {
+          const addPlaceholder = idx === groups.length - 1 ? addItemPlaceholderHTML() : '';
+          itemsHtml = `<div class="todo-list" data-group="punctual" style="${colStyle}">${g.items.join('')}${addPlaceholder}</div>`;
+        }
         if (!g.spacer) return itemsHtml;
         return `<div class="day-spacer-group">${g.spacer}${itemsHtml}</div>`;
       }).join('');
@@ -456,16 +460,6 @@ export function renderDayView(todos) {
     const emptyMsg = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
     const noPeriodHtml = rightColItems !== emptyMsg ? rightColItems : '';
     rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
-  }
-
-  // Append add-item placeholder to the list
-  if (rightColItems && rightColItems !== `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`) {
-    const todoLists = rightColItems.match(/<div class="todo-list"[^>]*>[\s\S]*?<\/div>/g) || [];
-    if (todoLists.length > 0) {
-      const lastList = todoLists[todoLists.length - 1];
-      const addPlaceholder = addItemPlaceholderHTML();
-      rightColItems = rightColItems.replace(lastList, lastList.replace('</div>', addPlaceholder + '</div>'));
-    }
   }
 
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
