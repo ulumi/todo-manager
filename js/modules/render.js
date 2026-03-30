@@ -1348,19 +1348,16 @@ export function setupTodoItemHoverAnimations() {
 
   placeholder.addEventListener('mouseenter', () => {
     const tl = gsap.timeline();
-    // Pill s'élargit pour révéler le label (36px icon + ~90px label)
     tl.to(pill,  { width: 130, duration: 0.45, ease: 'elastic.out(1, 0.65)' }, 0);
-    // + tourne en ×
     tl.to(icon,  { rotation: 135, duration: 0.4, ease: 'back.out(2.5)' }, 0);
-    // Label fade in après que la pill commence à s'ouvrir
-    tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.18);
+    tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.2);
   });
 
   placeholder.addEventListener('mouseleave', () => {
     const tl = gsap.timeline();
     tl.to(label, { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0);
     tl.to(icon,  { rotation: 0, duration: 0.35, ease: 'back.out(2)' }, 0.05);
-    tl.to(pill,  { width: 36, duration: 0.35, ease: 'power3.inOut' }, 0.08);
+    tl.to(pill,  { width: 36, duration: 0.32, ease: 'power3.inOut' }, 0.08);
   });
 }
 
