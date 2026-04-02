@@ -1,6 +1,16 @@
 {
   "playgrounds": [
     {
+      "id": "style-guide",
+      "title": "Style Guide",
+      "description": "Référence look & feel — tokens, typographie, boutons, inputs, badges, cards, todo items, labels, toggles, stats. Sélecteur de variants pour choisir le style définitif de chaque composant.",
+      "file": "style-guide.html",
+      "prompt": "Design system reference",
+      "createdAt": "2026-03-30",
+      "tags": ["design-system", "reference"],
+      "pinned": true
+    },
+    {
       "id": "todo-item-actions",
       "title": "Todo Actions — 9 approches sans layout shift",
       "description": "9 patterns interactifs pour révéler les actions d'un item au hover, sans jamais changer la taille des blocs ni décaler le layout : gradient overlay, colonne droite, popover ⋯, hauteur fixe, pill flottante, slide depuis droite, inline après texte, scale reveal, menu contextuel.",

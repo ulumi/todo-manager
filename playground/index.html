@@ -173,6 +173,39 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ─── Pinned section ─── */
+    .pinned-section {
+      margin-bottom: 28px;
+    }
+    .pinned-label {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.3); margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .pinned-label::after {
+      content: ''; flex: 1; height: 1px; background: rgba(255,255,255,.08);
+    }
+    .card.card--pinned {
+      border-color: rgba(167,139,250,.3);
+      background: rgba(167,139,250,.06);
+      flex-direction: row; align-items: center; gap: 16px;
+    }
+    .card.card--pinned:hover {
+      border-color: rgba(167,139,250,.6);
+      background: rgba(167,139,250,.12);
+    }
+    .card.card--pinned .card-title { font-size: 15px; }
+    .card.card--pinned .card-desc-inline {
+      font-size: 12px; color: rgba(255,255,255,.4); line-height: 1.4;
+      flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .card.card--pinned .card-cta { margin-top: 0; opacity: .5; }
+    .card.card--pinned:hover .card-cta { opacity: 1; }
+    .pin-icon {
+      width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+      background: rgba(167,139,250,.2); border: 1px solid rgba(167,139,250,.3);
+      display: flex; align-items: center; justify-content: center; color: #a78bfa; font-size: 14px;
+    }
+
     /* NEW badge */
     .badge-new {
       display: inline-flex; align-items: center; gap: 4px;
@@ -214,6 +247,10 @@
       <span class="toolbar-count" id="count"></span>
     </div>
 
+    <div class="pinned-section" id="pinnedSection" style="display:none">
+      <div class="pinned-label">Épinglé</div>
+      <div id="pinnedGrid"></div>
+    </div>
     <div class="playground-grid" id="grid"><div class="loading"><div class="spinner"></div></div></div>
 
     <div class="footer">
@@ -255,36 +292,63 @@
       return age <= NEW_DAYS;
     }
 
-    function render() {
-      const grid = document.getElementById('grid');
-      const sorted = sortData(playgrounds);
-      document.getElementById('count').textContent = `${sorted.length} experiments`;
+    function cardHTML(pg, pinned) {
+      const date = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(pg.createdAt));
+      const fresh = isNew(pg.createdAt);
+      const tagHTML = pg.tags.map(t => {
+        const cls = ['design', 'design-system'].some(k => t.includes(k)) ? 'design'
+          : t.includes('animation') ? 'animation'
+          : t.includes('generative') ? 'generative' : '';
+        return `<span class="tag ${cls}">${t}</span>`;
+      }).join('');
 
-      grid.innerHTML = sorted.map(pg => {
-        const date = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(pg.createdAt));
-        const fresh = isNew(pg.createdAt);
-        const tagHTML = pg.tags.map(t => {
-          const cls = ['design', 'design-system'].some(k => t.includes(k)) ? 'design'
-            : t.includes('animation') ? 'animation'
-            : t.includes('generative') ? 'generative' : '';
-          return `<span class="tag ${cls}">${t}</span>`;
-        }).join('');
-
+      if (pinned) {
         return `
-          <a href="${pg.file}" class="card${fresh ? ' is-new' : ''}">
-            <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:1">
-              <div class="card-title" style="flex:1">${pg.title}</div>
-              ${fresh ? '<span class="badge-new">new</span>' : ''}
-            </div>
-            <div class="card-date">${date}</div>
-            <div class="tags">${tagHTML}</div>
-            <div class="card-details">
-              <div class="card-desc">${pg.description}</div>
-              <div class="card-prompt">${pg.prompt}</div>
+          <a href="${pg.file}" class="card card--pinned">
+            <div class="pin-icon">◈</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="card-title" style="flex:1">${pg.title}</div>
+                <div class="tags" style="flex-shrink:0">${tagHTML}</div>
+              </div>
+              <div class="card-desc-inline">${pg.description}</div>
             </div>
             <div class="card-cta">Open</div>
           </a>`;
-      }).join('');
+      }
+
+      return `
+        <a href="${pg.file}" class="card${fresh ? ' is-new' : ''}">
+          <div style="display:flex;align-items:center;gap:8px;position:relative;z-index:1">
+            <div class="card-title" style="flex:1">${pg.title}</div>
+            ${fresh ? '<span class="badge-new">new</span>' : ''}
+          </div>
+          <div class="card-date">${date}</div>
+          <div class="tags">${tagHTML}</div>
+          <div class="card-details">
+            <div class="card-desc">${pg.description}</div>
+            <div class="card-prompt">${pg.prompt}</div>
+          </div>
+          <div class="card-cta">Open</div>
+        </a>`;
+    }
+
+    function render() {
+      const pinned  = playgrounds.filter(pg => pg.pinned);
+      const regular = playgrounds.filter(pg => !pg.pinned);
+      const sorted  = sortData(regular);
+      document.getElementById('count').textContent = `${sorted.length} experiments`;
+
+      const pinnedSection = document.getElementById('pinnedSection');
+      const pinnedGrid    = document.getElementById('pinnedGrid');
+      if (pinned.length) {
+        pinnedGrid.innerHTML = pinned.map(pg => cardHTML(pg, true)).join('');
+        pinnedSection.style.display = '';
+      } else {
+        pinnedSection.style.display = 'none';
+      }
+
+      document.getElementById('grid').innerHTML = sorted.map(pg => cardHTML(pg, false)).join('');
     }
 
     // Toolbar events

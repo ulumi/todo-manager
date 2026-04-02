@@ -470,9 +470,10 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
 
   // Quote (words stagger in from small scale)
   const quoteEl = el('div', `
-    font-size:clamp(32px,5.8vw,72px);font-weight:900;
+    font-size:clamp(22px,3.5vw,48px);font-weight:900;
     color:#fff;text-align:center;
-    line-height:1.25;letter-spacing:-0.01em;
+    line-height:1.2;letter-spacing:-0.01em;
+    max-width:75vw;
     text-shadow:0 0 100px rgba(255,180,255,0.98),0 4px 40px rgba(0,0,0,0.95);
     font-family:${randomFont};
   `);
@@ -604,7 +605,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   if (counterEl) tl.to(counterEl, { opacity: 1, duration: 0.3 }, '<');
 
   // Auto-dismiss only in non-slideshow mode
-  if (!isSlideshow) tl.call(() => dismiss(), [], '+=4.5');
+  if (!isSlideshow) tl.call(() => dismiss(), [], '+=8.0');
 
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;

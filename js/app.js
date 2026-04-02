@@ -1893,15 +1893,16 @@ class TodoApp {
   initDayDragDrop() {
     const container = document.querySelector('.day-columns');
     if (!container) return;
-    let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null;
+    let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null, dropPeriod = null;
     let draggedHeight = 0;
 
     // Gap placeholder
     const placeholder = document.createElement('div');
     placeholder.className = 'drop-gap';
-    let activeDropSpacer = null;
+    let activeDropSpacer = null, activeHeureLabel = null;
     const clearDropSpacer = () => {
       if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
+      if (activeHeureLabel) { activeHeureLabel.classList.remove('drop-target'); activeHeureLabel = null; }
     };
     const removePlaceholder = () => {
       placeholder.style.height = '0px';
@@ -1933,25 +1934,37 @@ class TodoApp {
       showDragged();
       removePlaceholder();
       container.classList.remove('dragging-active');
-      draggedEl = null; draggedGroup = null; dropTarget = null;
+      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null;
     });
 
     container.addEventListener('dragover', e => {
       e.preventDefault();
       if (!draggedEl) return;
 
+      const _ds = localStorage.getItem('daySort');
+      const isHeureDrop = _ds === 'chrono' || _ds === 'heure';
+      const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
+
       // Hover on a todo-item → drop after it
       const todoTarget = e.target.closest('.todo-item[draggable]');
-      if (todoTarget && todoTarget !== draggedEl && todoTarget.dataset.group === draggedGroup) {
-        clearDropSpacer();
-        dropTarget = todoTarget.dataset.id;
-        dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
-        todoTarget.parentNode.insertBefore(placeholder, todoTarget.nextSibling);
-        requestAnimationFrame(() => {
-          placeholder.style.height = draggedHeight + 'px';
-          placeholder.classList.add('visible');
-        });
-        return;
+      if (todoTarget && todoTarget !== draggedEl) {
+        const sameGroup  = todoTarget.dataset.group === draggedGroup;
+        const heureGroup = isHeureDrop && isPunctGroup(todoTarget.dataset.group) && isPunctGroup(draggedGroup);
+        if (sameGroup || heureGroup) {
+          clearDropSpacer();
+          dropTarget = todoTarget.dataset.id;
+          dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
+          if (isHeureDrop) {
+            const grp = todoTarget.dataset.group;
+            dropPeriod = grp === 'punctual' ? '' : grp.replace('punctual-', '');
+          }
+          todoTarget.parentNode.insertBefore(placeholder, todoTarget.nextSibling);
+          requestAnimationFrame(() => {
+            placeholder.style.height = draggedHeight + 'px';
+            placeholder.classList.add('visible');
+          });
+          return;
+        }
       }
 
       // Hover on a spacer → drop right after it (= bottom of its section)
@@ -2014,6 +2027,36 @@ class TodoApp {
         return;
       }
 
+      // Hover on a heure period label or empty section → change moment
+      if (isHeureDrop && !e.target.closest('.todo-item')) {
+        const heureLabel   = e.target.closest('.day-heure-label[data-period]');
+        const heureSection = !heureLabel && e.target.closest('.day-heure-section[data-period]');
+        const heureTarget  = heureLabel || heureSection;
+        if (heureTarget) {
+          clearDropSpacer();
+          activeHeureLabel = heureLabel || heureTarget.querySelector('.day-heure-label');
+          if (activeHeureLabel) activeHeureLabel.classList.add('drop-target');
+          dropPeriod = heureTarget.dataset.period;
+          const section  = heureTarget.closest('.day-heure-section') || heureTarget;
+          const todoList = section?.querySelector('.todo-list[data-group]');
+          if (todoList) {
+            const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
+            if (lastItem) {
+              dropTarget = lastItem.dataset.id;
+              lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
+            } else {
+              todoList.appendChild(placeholder);
+              dropTarget = '__heure_empty__';
+            }
+            requestAnimationFrame(() => {
+              placeholder.style.height = draggedHeight + 'px';
+              placeholder.classList.add('visible');
+            });
+          }
+          return;
+        }
+      }
+
       // Hover on empty space inside a spacer group → drop at end of that group
       const spacerGroup = e.target.closest('.day-spacer-group');
       if (spacerGroup && !e.target.closest('.todo-item, .day-spacer')) {
@@ -2064,7 +2107,21 @@ class TodoApp {
     container.addEventListener('drop', e => {
       e.preventDefault();
       removePlaceholder();
-      if (!draggedEl || !dropTarget) return;
+      if (!draggedEl) return;
+
+      // In chrono sort mode, change the item's dayPeriod to match the target section
+      const _dsMode = localStorage.getItem('daySort');
+      if ((_dsMode === 'chrono' || _dsMode === 'heure') && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
+        const t = state.todos.find(x => x.id === draggedEl.dataset.id);
+        if (t) {
+          if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
+          saveTodos(state.todos);
+        }
+        this.render();
+        return;
+      }
+
+      if (!dropTarget) return;
 
       // In priority sort mode, change the item's priority to match the target group
       if (localStorage.getItem('daySort') === 'priority' && dropPriority != null) {
@@ -3990,6 +4047,12 @@ class TodoApp {
     this.render();
   }
 
+  toggleRecControls() {
+    const cur = localStorage.getItem('recCtrlsCollapsed') !== 'false';
+    localStorage.setItem('recCtrlsCollapsed', !cur ? 'true' : 'false');
+    this.render();
+  }
+
   toggleDaySort() {
     const cur = localStorage.getItem('daySortCollapsed') !== 'false';
     localStorage.setItem('daySortCollapsed', !cur ? 'true' : 'false');
@@ -4034,6 +4097,12 @@ class TodoApp {
 
   setRecColCount(n) {
     localStorage.setItem('recColCount', n);
+    this.render();
+  }
+
+  toggleRecPeriodGroups() {
+    const cur = localStorage.getItem('recPeriodGroups') !== 'false';
+    localStorage.setItem('recPeriodGroups', cur ? 'false' : 'true');
     this.render();
   }
 

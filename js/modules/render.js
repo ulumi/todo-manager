@@ -66,14 +66,17 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     }).join('');
   })();
   const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
-  const hasMeta = categoryBadge || projectBadge || rec;
+  const timeBadge = todo.startTime
+    ? `<span class="todo-time-badge"><svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><polyline points="6 3.5 6 6 8 7.2"/></svg>${todo.startTime}</span>`
+    : '';
+  const hasMeta = categoryBadge || projectBadge || rec || timeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)"></div>
       <div class="todo-content">
         <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}
@@ -192,10 +195,15 @@ export function renderDayView(todos) {
   const dailyEvening   = dailyItems.filter(t => t.dayPeriod === 'evening');
   const dailyNoPeriod  = dailyItems.filter(t => !t.dayPeriod);
 
-  const sortedDailyMorning   = sortByOrder(dailyMorning,   recOrd['daily-morning']   || []);
-  const sortedDailyAfternoon = sortByOrder(dailyAfternoon, recOrd['daily-afternoon'] || []);
-  const sortedDailyEvening   = sortByOrder(dailyEvening,   recOrd['daily-evening']   || []);
-  const sortedDailyNoPeriod  = sortByOrder(dailyNoPeriod,  recOrd['daily']           || []);
+  const _recSortApply = items => {
+    const timed   = [...items].filter(t => t.startTime).sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const untimed = items.filter(t => !t.startTime);
+    return [...timed, ...untimed];
+  };
+  const sortedDailyMorning   = _recSortApply(sortByOrder(dailyMorning,   recOrd['daily-morning']   || []));
+  const sortedDailyAfternoon = _recSortApply(sortByOrder(dailyAfternoon, recOrd['daily-afternoon'] || []));
+  const sortedDailyEvening   = _recSortApply(sortByOrder(dailyEvening,   recOrd['daily-evening']   || []));
+  const sortedDailyNoPeriod  = _recSortApply(sortByOrder(dailyNoPeriod,  recOrd['daily']           || []));
   const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
   const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
@@ -242,17 +250,26 @@ export function renderDayView(todos) {
   const recColBtns = [1,2,3,4].map(n =>
     `<button class="day-ctrl-btn${n===recColCount?' active':''}" onclick="window.app.setRecColCount(${n}); window.app.closeRecCol();" onmouseenter="window.app.resetAutoCloseRecCol()" title="${n} colonne${n>1?'s':''}">${n} col${n>1?'s':''}</button>`
   ).join('');
+  const recPeriodGroups = localStorage.getItem('recPeriodGroups') !== 'false';
+  const recCtrlsCollapsed = localStorage.getItem('recCtrlsCollapsed') !== 'false';
+  const periodToggleSvg = recPeriodGroups
+    ? `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>`
+    : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
   const dailyGroupLabel = `<div class="day-group-label day-group-label--with-ctrl">
     <span>${state.T.recDaily}</span>
     <div class="day-group-label-line"></div>
-    <div class="day-col-controls">
-      <div class="day-ctrl-expandable${!recColCollapsed ? ' expanded' : ''}">
+    <div class="day-col-controls${recCtrlsCollapsed ? ' collapsed' : ''}">
+      <button class="day-ctrl-btn${recPeriodGroups ? ' active' : ''}${recCtrlsCollapsed ? ' hidden' : ''}" onclick="window.app.toggleRecPeriodGroups()" title="Grouper par moment">${periodToggleSvg} Moments</button>
+      <div class="day-ctrl-expandable${!recColCollapsed ? ' expanded' : ''}${recCtrlsCollapsed ? ' hidden' : ''}">
         <button class="day-ctrl-toggle" onclick="window.app.toggleRecCol()" title="Colonnes" onmouseenter="window.app.resetAutoCloseRecCol()">
           <span class="day-ctrl-label">Colonnes</span>
           <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="day-ctrl-group" onmouseenter="window.app.resetAutoCloseRecCol()">${recColBtns}</div>
       </div>
+      <button class="day-ctrl-gear" onclick="window.app.toggleRecControls()" title="Options">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></svg>
+      </button>
     </div>
   </div>`;
 
@@ -262,14 +279,19 @@ export function renderDayView(todos) {
   const hasDailyPeriods = sortedDailyMorning.length > 0 || sortedDailyAfternoon.length > 0 || sortedDailyEvening.length > 0 || sortedDailyNoPeriod.length > 0;
   if (hasDailyPeriods) {
     leftCol += dailyGroupLabel;
-    if (sortedDailyNoPeriod.length > 0)
-      leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-    if (sortedDailyMorning.length > 0)
-      leftCol += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="daily-morning" style="${recColStyle}">${sortedDailyMorning.map(t => todoItemHTML(t, navDate, 'daily-morning', true)).join('')}</div>`;
-    if (sortedDailyAfternoon.length > 0)
-      leftCol += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="daily-afternoon" style="${recColStyle}">${sortedDailyAfternoon.map(t => todoItemHTML(t, navDate, 'daily-afternoon', true)).join('')}</div>`;
-    if (sortedDailyEvening.length > 0)
-      leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
+    if (recPeriodGroups) {
+      if (sortedDailyNoPeriod.length > 0)
+        leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+      if (sortedDailyMorning.length > 0)
+        leftCol += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="daily-morning" style="${recColStyle}">${sortedDailyMorning.map(t => todoItemHTML(t, navDate, 'daily-morning', true)).join('')}</div>`;
+      if (sortedDailyAfternoon.length > 0)
+        leftCol += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="daily-afternoon" style="${recColStyle}">${sortedDailyAfternoon.map(t => todoItemHTML(t, navDate, 'daily-afternoon', true)).join('')}</div>`;
+      if (sortedDailyEvening.length > 0)
+        leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
+    } else {
+      const allDaily = sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []);
+      leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${allDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+    }
   }
   if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
   if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
@@ -290,12 +312,13 @@ export function renderDayView(todos) {
   const colBtns = [2,3,4,6].map(n =>
     `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n}); window.app.closeDayCol();" onmouseenter="window.app.resetAutoCloseDayCol()" title="${n} colonnes">${n} cols</button>`
   ).join('');
-  const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 12 12" width="12" height="12"><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/></svg> Spacer</button>`;
+  const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 16 10" width="14" height="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="0" y1="2" x2="16" y2="2"/><line x1="0" y1="8" x2="16" y2="8"/></svg> Spacer</button>`;
 
   // Sort / group mode
-  const daySort = localStorage.getItem('daySort') || 'manual';
+  const _rawDaySort = localStorage.getItem('daySort');
+  const daySort = (!_rawDaySort || _rawDaySort === 'manual' || _rawDaySort === 'heure') ? 'chrono' : _rawDaySort;
   const sortOpts = [
-    { id: 'manual',   label: 'Manuel' },
+    { id: 'chrono',   label: 'Chrono' },
     { id: 'priority', label: 'Priorité' },
     { id: 'tag',      label: 'Tag' },
   ];
@@ -305,16 +328,16 @@ export function renderDayView(todos) {
 
   // Auto-prioritize checkbox
   const autoPrio = localStorage.getItem('dayAutoPrio') === 'true';
-  const autoPrioCheck = `<label class="day-ctrl-check" title="Remonter automatiquement les tâches prioritaires"><input type="checkbox" ${autoPrio?'checked':''} onchange="window.app.toggleDayAutoPrio()"><span>Auto-prio</span></label>`;
+  const autoPrioCheck = `<label class="day-ctrl-toggle" title="Remonter automatiquement les tâches prioritaires"><input type="checkbox" ${autoPrio?'checked':''} onchange="window.app.toggleDayAutoPrio()"><span class="toggle-track"></span><span>Auto-prio</span></label>`;
 
   const dayPeriodGroupsForRender = localStorage.getItem('dayPeriodGroups') !== 'false';
-  const periodGroupsCheck = `<label class="day-ctrl-check" title="Grouper les tâches par moment de la journée"><input type="checkbox" ${dayPeriodGroupsForRender?'checked':''} onchange="window.app.toggleDayPeriodGroups()"><span>Moments</span></label>`;
+  const periodGroupsCheck = `<label class="day-ctrl-toggle" title="Grouper les tâches par moment de la journée"><input type="checkbox" ${dayPeriodGroupsForRender?'checked':''} onchange="window.app.toggleDayPeriodGroups()"><span class="toggle-track"></span><span>Moments</span></label>`;
 
-  // Apply auto-prioritize: sort by priority weight before manual order
-  // When period groups are disabled, include period items in the flat list
-  let itemsForRender = dayPeriodGroupsForRender
-    ? [...sortedPunctual]
-    : sortByOrder([...punctualNoPeriod, ...punctualMorning, ...punctualAfternoon, ...punctualEvening], dayOrd);
+  // priority/tag modes always include all items; chrono handles its own grouping
+  const _allPunctual = sortByOrder([...punctualNoPeriod, ...punctualMorning, ...punctualAfternoon, ...punctualEvening], dayOrd);
+  let itemsForRender = (daySort === 'priority' || daySort === 'tag')
+    ? _allPunctual
+    : (dayPeriodGroupsForRender ? [...sortedPunctual] : _allPunctual);
   if (autoPrio) {
     const prioW = { high: 0, medium: 1, low: 2 };
     itemsForRender.sort((a, b) => (prioW[a.priority] ?? 3) - (prioW[b.priority] ?? 3));
@@ -385,18 +408,19 @@ export function renderDayView(todos) {
     });
 
     if (tagGrouped) {
-      // Grouped view
-      let grouped = catGroups.map(c => {
+      // Grouped view — untagged items first, no header
+      let grouped = '';
+      if (untagged.length) {
+        const isVisible = !excludedTags.includes('none');
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
+        grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none">${listHtml}</div>`;
+      }
+      grouped += catGroups.map(c => {
         const isVisible = !excludedTags.includes(c.id);
         const items = itemsForRender.filter(t => _hasCat(t, c.id));
         const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
-      if (untagged.length) {
-        const isVisible = !excludedTags.includes('none');
-        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
-        grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none"><div class="day-auto-group-label" style="background:#999">Sans tag</div>${listHtml}</div>`;
-      }
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
     } else {
       // Flat view with tag indicator
@@ -408,6 +432,41 @@ export function renderDayView(todos) {
       const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
+
+  } else if (daySort === 'chrono') {
+    // Group by moment, sort within each group by startTime
+    const sortByTime = items => {
+      const timed   = [...items].filter(t => t.startTime).sort((a, b) => a.startTime.localeCompare(b.startTime));
+      const untimed = items.filter(t => !t.startTime);
+      return [...timed, ...untimed];
+    };
+    const hNone = sortByTime(punctualItems.filter(t => !t.dayPeriod));
+    const hMorn = sortByTime(punctualItems.filter(t => t.dayPeriod === 'morning'));
+    const hAftn = sortByTime(punctualItems.filter(t => t.dayPeriod === 'afternoon'));
+    const hEvng = sortByTime(punctualItems.filter(t => t.dayPeriod === 'evening'));
+
+    const _sunriseSvg = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="16 5 12 9 8 5"/></svg>`;
+    const _sunSvg     = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>`;
+    const _moonSvg    = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
+    const mkHeureSection = (items, group, period, label, icon) => {
+      const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
+      const listContent = items.length
+        ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+        : `<div class="period-dropzone"></div>`;
+      const listHtml  = `<div class="todo-list" data-group="${group}" style="${colStyle}">${listContent}</div>`;
+      return `<div class="day-heure-section${items.length ? '' : ' day-heure-section--empty'}" data-period="${period}">${labelHtml}${listHtml}</div>`;
+    };
+
+    let hHtml = '';
+    if (hNone.length) hHtml += `<div class="todo-list" data-group="punctual" style="${colStyle}">${hNone.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+    const heureSections =
+      mkHeureSection(hMorn, 'punctual-morning',   'morning',   'Matin',      _sunriseSvg) +
+      mkHeureSection(hAftn, 'punctual-afternoon', 'afternoon', 'Après-midi', _sunSvg) +
+      mkHeureSection(hEvng, 'punctual-evening',   'evening',   'Soir',       _moonSvg);
+    hHtml += `<div class="day-heure-grid">${heureSections}</div>`;
+
+    rightColItems = punctualItems.length ? hHtml : `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
 
   } else {
     // Manual mode — with spacers
@@ -454,8 +513,8 @@ export function renderDayView(todos) {
     }
   }
 
-  // Append period sections after no-period items (period groups shown last)
-  if (hasPunctualPeriods && dayPeriodGroupsForRender) {
+  // Append period sections after no-period items — manual mode only
+  if (hasPunctualPeriods && dayPeriodGroupsForRender && (daySort !== 'heure' && daySort !== 'chrono' && daySort !== 'priority' && daySort !== 'tag')) {
     const emptyMsg = `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
     const noPeriodHtml = rightColItems !== emptyMsg ? rightColItems : '';
     rightColItems = (noPeriodHtml + punctualPeriodSections) || emptyMsg;
@@ -495,9 +554,6 @@ export function renderDayView(todos) {
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
-        <div class="day-ctrl-sep"></div>
-        ${autoPrioCheck}
-        ${periodGroupsCheck}
       </div>
 
       <button class="day-ctrl-gear" onclick="window.app.toggleDayControls()" title="Options">

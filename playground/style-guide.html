@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Style Guide — Todo Manager</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* ── Page shell ───────────────────────────────────────── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sg-layout { display: flex; min-height: 100vh; }
+
+    /* ── Sidebar nav ─────────────────────────────────────── */
+    .sg-nav {
+      width: 200px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1.5px solid var(--border);
+      padding: 24px 0 40px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sg-nav-title {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--text-muted);
+      padding: 0 16px 10px;
+    }
+    .sg-nav-link {
+      display: block;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      border-radius: 0;
+      transition: background .12s, color .12s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      text-align: left;
+      width: 100%;
+    }
+    .sg-nav-link:hover { background: var(--surface2); color: var(--text); }
+    .sg-nav-link.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+    .sg-nav-sep {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 16px;
+    }
+
+    /* ── Main content ────────────────────────────────────── */
+    .sg-main {
+      flex: 1;
+      padding: 40px 48px;
+      max-width: 1100px;
+      overflow-x: hidden;
+    }
+
+    .sg-header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1.5px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .sg-header h1 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin: 0 0 6px;
+    }
+    .sg-header-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .sg-header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* ── Section ─────────────────────────────────────────── */
+    .sg-section {
+      margin-bottom: 56px;
+      scroll-margin-top: 24px;
+    }
+    .sg-section-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sg-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Token grid ──────────────────────────────────────── */
+    .sg-token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .sg-token {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+    }
+    .sg-token-swatch {
+      height: 48px;
+      width: 100%;
+    }
+    .sg-token-info {
+      padding: 8px 10px;
+      background: var(--surface);
+    }
+    .sg-token-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      font-family: 'SF Mono', monospace;
+    }
+    .sg-token-value {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: 'SF Mono', monospace;
+      margin-top: 2px;
+    }
+
+    /* ── Component row ───────────────────────────────────── */
+    .sg-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .sg-row-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      min-width: 90px;
+    }
+
+    /* ── Variant chooser ─────────────────────────────────── */
+    .sg-variant-block {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+    .sg-variant-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .sg-variant-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+    }
+    .sg-variant-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .sg-variant-tab {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .sg-variant-tab:hover { color: var(--text); border-color: var(--text-muted); }
+    .sg-variant-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .sg-variant-body {
+      padding: 24px;
+      background: var(--surface2);
+    }
+    .sg-variant-panel { display: none; }
+    .sg-variant-panel.active { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+
+    /* ── Shadow demo ─────────────────────────────────────── */
+    .sg-shadow-demo {
+      width: 80px; height: 48px;
+      border-radius: 10px;
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--text-muted);
+    }
+
+    /* ── Radius demo ─────────────────────────────────────── */
+    .sg-radius-demo {
+      width: 64px; height: 40px;
+      background: var(--primary-light);
+      border: 2px solid var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: var(--primary); font-weight: 700;
+    }
+
+    /* ── Type scale ──────────────────────────────────────── */
+    .sg-type-row {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .sg-type-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: monospace;
+      width: 110px;
+      flex-shrink: 0;
+    }
+
+    /* ── Dark bg demo area ───────────────────────────────── */
+    .sg-on-dark {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1.5px solid var(--border);
+    }
+
+    /* ── Theme toggle in header ──────────────────────────── */
+    .sg-theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .sg-theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ── Accent picker ───────────────────────────────────── */
+    .sg-accent-picker { display: flex; gap: 6px; align-items: center; }
+    .sg-accent-btn {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform .12s, border-color .12s;
+    }
+    .sg-accent-btn:hover, .sg-accent-btn.active { transform: scale(1.2); border-color: #fff; }
+
+    /* ── Todo item preview ───────────────────────────────── */
+    .sg-todo-preview { max-width: 380px; }
+  </style>
+</head>
+<body>
+<div class="sg-layout">
+
+  <!-- Sidebar -->
+  <nav class="sg-nav">
+    <div class="sg-nav-title">Style Guide</div>
+    <a class="sg-nav-link" onclick="scrollTo('tokens')">Tokens</a>
+    <a class="sg-nav-link" onclick="scrollTo('typography')">Typographie</a>
+    <a class="sg-nav-link" onclick="scrollTo('buttons')">Boutons</a>
+    <a class="sg-nav-link" onclick="scrollTo('inputs')">Inputs</a>
+    <a class="sg-nav-link" onclick="scrollTo('badges')">Badges & Pills</a>
+    <a class="sg-nav-link" onclick="scrollTo('cards')">Cards & Surfaces</a>
+    <a class="sg-nav-link" onclick="scrollTo('todo')">Todo Item</a>
+    <a class="sg-nav-link" onclick="scrollTo('labels')">Labels de groupe</a>
+    <a class="sg-nav-link" onclick="scrollTo('toggles')">Toggles</a>
+    <a class="sg-nav-link" onclick="scrollTo('stats')">Stat Cards</a>
+    <a class="sg-nav-link" onclick="scrollTo('shadows')">Shadows & Radius</a>
+    <a class="sg-nav-link" onclick="scrollTo('motion')">Motion</a>
+  </nav>
+
+  <!-- Main -->
+  <main class="sg-main">
+
+    <div class="sg-header">
+      <div>
+        <h1>Style Guide</h1>
+        <div class="sg-header-sub">Référence look & feel — Todo Manager</div>
+      </div>
+      <div class="sg-header-controls">
+        <div class="sg-accent-picker" id="accentPicker"></div>
+        <button class="sg-theme-toggle" onclick="toggleTheme()" id="themeBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="themeIcon"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>
+          <span id="themeBtnLabel">Light</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── TOKENS ───────────────────────────────────────── -->
+    <section class="sg-section" id="tokens">
+      <div class="sg-section-title">Design Tokens</div>
+
+      <div class="sg-row" style="margin-bottom:8px">
+        <span class="sg-row-label">Couleurs</span>
+      </div>
+      <div class="sg-token-grid" id="colorTokens"></div>
+
+      <div class="sg-row" style="margin-top:24px; margin-bottom:8px">
+        <span class="sg-row-label">Surfaces</span>
+      </div>
+      <div class="sg-token-grid" id="surfaceTokens"></div>
+    </section>
+
+    <!-- ── TYPOGRAPHIE ──────────────────────────────────── -->
+    <section class="sg-section" id="typography">
+      <div class="sg-section-title">Typographie</div>
+      <div id="typeScale"></div>
+    </section>
+
+    <!-- ── BOUTONS ──────────────────────────────────────── -->
+    <section class="sg-section" id="buttons">
+      <div class="sg-section-title">Boutons</div>
+
+      <div class="sg-row">
+        <span class="sg-row-label">Primary</span>
+        <button class="btn btn-primary">Sauvegarder</button>
+        <button class="btn btn-primary" disabled>Désactivé</button>
+      </div>
+      <div class="sg-row">
+        <span class="sg-row-label">Ghost</span>
+        <button class="btn btn-ghost">Annuler</button>
+        <button class="btn btn-ghost" disabled>Désactivé</button>
+      </div>
+      <div class="sg-row">
+        <span class="sg-row-label">Danger</span>
+        <button class="btn btn-danger">Supprimer</button>
+      </div>
+
+      <!-- Variant chooser: day-action-btn -->
+      <div class="sg-variant-block">
+        <div class="sg-variant-header">
+          <span class="sg-variant-name">Boutons d'action du jour</span>
+          <div class="sg-variant-tabs">
+            <button class="sg-variant-tab active" onclick="setVariant('dayBtn','pill')" data-group="dayBtn" data-id="pill">Pill</button>
+            <button class="sg-variant-tab" onclick="setVariant('dayBtn','flat')" data-group="dayBtn" data-id="flat">Flat</button>
+            <button class="sg-variant-tab" onclick="setVariant('dayBtn','icon')" data-group="dayBtn" data-id="icon">Icon only</button>
+          </div>
+        </div>
+        <div class="sg-variant-body">
+          <div class="sg-variant-panel active" id="dayBtn-pill">
+            <button class="day-action-btn day-action-btn--add">+ Ajouter</button>
+            <button class="day-action-btn">Spacer</button>
+          </div>
+          <div class="sg-variant-panel" id="dayBtn-flat">
+            <button class="btn btn-primary" style="flex:1;height:48px;border-radius:10px;font-size:14px">+ Ajouter</button>
+            <button class="btn btn-ghost" style="flex:1;height:48px;border-radius:10px;font-size:14px">Spacer</button>
+          </div>
+          <div class="sg-variant-panel" id="dayBtn-icon">
+            <button class="btn btn-primary" style="width:48px;height:48px;border-radius:50%;padding:0;font-size:20px;line-height:1">+</button>
+            <button class="btn-icon" style="width:40px;height:40px">⋯</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── INPUTS ───────────────────────────────────────── -->
+    <section class="sg-section" id="inputs">
+      <div class="sg-section-title">Inputs & Forms</div>
+
+      <div class="sg-row" style="flex-direction:column; align-items:flex-start; max-width:400px; gap:12px">
+        <div style="width:100%">
+          <label class="form-label">Label</label>
+          <input class="form-input" type="text" placeholder="Placeholder…">
+        </div>
+        <div style="width:100%">
+          <label class="form-label">Focused</label>
+          <input class="form-input" type="text" value="Texte saisi" id="focusInput">
+        </div>
+        <div style="width:100%">
+          <label class="form-label">Textarea</label>
+          <textarea class="form-input" rows="3" placeholder="Description…" style="resize:vertical"></textarea>
+        </div>
+      </div>
+
+      <!-- Variant chooser: task title input -->
+      <div class="sg-variant-block" style="max-width:480px;margin-top:16px">
+        <div class="sg-variant-header">
+          <span class="sg-variant-name">Champ titre de tâche</span>
+          <div class="sg-variant-tabs">
+            <button class="sg-variant-tab active" onclick="setVariant('titleInput','standard')" data-group="titleInput" data-id="standard">Standard</button>
+            <button class="sg-variant-tab" onclick="setVariant('titleInput','floating')" data-group="titleInput" data-id="floating">Floating label</button>
+            <button class="sg-variant-tab" onclick="setVariant('titleInput','minimal')" data-group="titleInput" data-id="minimal">Minimal</button>
+          </div>
+        </div>
+        <div class="sg-variant-body">
+          <div class="sg-variant-panel active" id="titleInput-standard" style="width:100%">
+            <input class="form-input" type="text" placeholder="Nom de la tâche…" style="width:100%">
+          </div>
+          <div class="sg-variant-panel" id="titleInput-floating" style="width:100%">
+            <div class="fl-group" style="width:100%">
+              <input class="fl-input form-input" type="text" id="fl1" placeholder=" ">
+              <label class="fl-label" for="fl1">Nom de la tâche</label>
+            </div>
+          </div>
+          <div class="sg-variant-panel" id="titleInput-minimal" style="width:100%">
+            <input type="text" placeholder="Nom de la tâche…" style="
+              width:100%; border:none; border-bottom:2px solid var(--border);
+              background:transparent; color:var(--text); font-size:16px;
+              font-weight:600; padding:8px 0; outline:none;
+              transition:border-color .15s; font-family:inherit;
+            " onfocus="this.style.borderBottomColor='var(--primary)'"
+               onblur="this.style.borderBottomColor='var(--border)'">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── BADGES & PILLS ────────────────────────────────── -->
+    <section class="sg-section" id="badges">
+      <div class="sg-section-title">Badges & Pills</div>
+
+      <div class="sg-row">
+        <span class="sg-row-label">Tag pills</span>
+        <span class="tag-pill selected" style="background:#3b82f6;border-color:#3b82f6;color:#fff">
+          <span class="tag-pill-dot" style="background:#fff"></span>Travail
+        </span>
+        <span class="tag-pill selected" style="background:#10b981;border-color:#10b981;color:#fff">
+          <span class="tag-pill-dot" style="background:#fff"></span>Santé
+        </span>
+        <span class="tag-pill">
+          <span class="tag-pill-dot" style="background:var(--text-muted)"></span>Non sélectionné
+        </span>
+        <button class="tag-pill-add">+ Ajouter</button>
+      </div>
+
+      <div class="sg-row">
+        <span class="sg-row-label">Profile badge</span>
+        <span class="profile-stat-badge">42</span>
+        <span class="profile-stat-badge">7</span>
+      </div>
+
+      <div class="sg-row">
+        <span class="sg-row-label">Chip</span>
+        <button class="chip">Sans priorité</button>
+        <button class="chip rec">Récurrent</button>
+        <button class="chip rec done">Terminé</button>
+      </div>
+
+      <!-- Variant chooser: category badge on todo -->
+      <div class="sg-variant-block">
+        <div class="sg-variant-header">
+          <span class="sg-variant-name">Badge catégorie sur item</span>
+          <div class="sg-variant-tabs">
+            <button class="sg-variant-tab active" onclick="setVariant('catBadge','pill')" data-group="catBadge" data-id="pill">Pill</button>
+            <button class="sg-variant-tab" onclick="setVariant('catBadge','dot')" data-group="catBadge" data-id="dot">Dot</button>
+            <button class="sg-variant-tab" onclick="setVariant('catBadge','border')" data-group="catBadge" data-id="border">Border left</button>
+          </div>
+        </div>
+        <div class="sg-variant-body">
+          <div class="sg-variant-panel active" id="catBadge-pill">
+            <span class="tag-pill selected" style="background:#8b5cf6;border-color:#8b5cf6;color:#fff;font-size:11px;padding:3px 9px">
+              <span class="tag-pill-dot" style="background:#fff;width:6px;height:6px"></span>Perso
+            </span>
+            <span class="tag-pill selected" style="background:#f97316;border-color:#f97316;color:#fff;font-size:11px;padding:3px 9px">
+              <span class="tag-pill-dot" style="background:#fff;width:6px;height:6px"></span>Travail
+            </span>
+          </div>
+          <div class="sg-variant-panel" id="catBadge-dot">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)">
+              <span style="width:9px;height:9px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>Perso
+            </span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)">
+              <span style="width:9px;height:9px;border-radius:50%;background:#f97316;flex-shrink:0"></span>Travail
+            </span>
+          </div>
+          <div class="sg-variant-panel" id="catBadge-border">
+            <div style="border-left:3px solid #8b5cf6;padding-left:10px;font-size:13px;font-weight:500;color:var(--text)">Perso</div>
+            <div style="border-left:3px solid #f97316;padding-left:10px;font-size:13px;font-weight:500;color:var(--text)">Travail</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CARDS & SURFACES ──────────────────────────────── -->
+    <section class="sg-section" id="cards">
+      <div class="sg-section-title">Cards & Surfaces</div>
+
+      <div class="sg-row" style="align-items:flex-start">
+        <span class="sg-row-label" style="padding-top:8px">Profile section</span>
+        <div class="profile-section" style="max-width:300px;padding:16px">
+          <h3 class="profile-section-title">Section type</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin:0">Contenu de la section.</p>
+        </div>
+        <div class="profile-section profile-section--clickable" style="max-width:300px;padding:16px">
+          <div class="profile-section-header">
+            <h3 class="profile-section-title" style="margin:0">Cliquable</h3>
+            <span class="profile-stat-badge">12</span>
+          </div>
+          <p style="font-size:13px;color:var(--text-muted);margin:6px 0 0">Hover pour voir l'effet.</p>
+        </div>
+      </div>
+
+      <!-- Variant chooser: modal style -->
+      <div class="sg-variant-block" style="margin-top:20px">
+        <div class="sg-variant-header">
+          <span class="sg-variant-name">Style de modal</span>
+          <div class="sg-variant-tabs">
+            <button class="sg-variant-tab active" onclick="setVariant('modalStyle','default')" data-group="modalStyle" data-id="default">Default</button>
+            <button class="sg-variant-tab" onclick="setVariant('modalStyle','glass')" data-group="modalStyle" data-id="glass">Glass</button>
+            <button class="sg-variant-tab" onclick="setVariant('modalStyle','compact')" data-group="modalStyle" data-id="compact">Compact</button>
+          </div>
+        </div>
+        <div class="sg-variant-body" style="min-height:180px">
+          <div class="sg-variant-panel active" id="modalStyle-default">
+            <div class="modal" style="position:static;max-width:320px;padding:20px;animation:none">
+              <div class="modal-header" style="font-size:15px;font-weight:700;margin-bottom:12px">Titre de la modal</div>
+              <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">Contenu de la modal.</p>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary" style="flex:1">Confirmer</button>
+                <button class="btn btn-ghost">Annuler</button>
+              </div>
+            </div>
+          </div>
+          <div class="sg-variant-panel" id="modalStyle-glass">
+            <div style="
+              position:static; max-width:320px; padding:20px; border-radius:16px; animation:none;
+              background:rgba(255,255,255,.06); backdrop-filter:blur(20px);
+              border:1.5px solid rgba(255,255,255,.12); box-shadow:0 20px 48px rgba(0,0,0,.3);
+            ">
+              <div style="font-size:15px;font-weight:700;margin-bottom:12px;color:var(--text)">Titre de la modal</div>
+              <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px">Contenu de la modal.</p>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-primary" style="flex:1">Confirmer</button>
+                <button class="btn btn-ghost">Annuler</button>
+              </div>
+            </div>
+          </div>
+          <div class="sg-variant-panel" id="modalStyle-compact">
+            <div style="
+              position:static; max-width:320px; padding:14px 16px; border-radius:10px; animation:none;
+              background:var(--surface); border:1.5px solid var(--border); box-shadow:var(--shadow-md);
+            ">
+              <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text)">Titre de la modal</div>
+              <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Contenu de la modal.</p>
+              <div style="display:flex;gap:6px">
+                <button class="btn btn-primary" style="flex:1;padding:7px 12px;font-size:12px">Confirmer</button>
+                <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── TODO ITEM ─────────────────────────────────────── -->
+    <section class="sg-section" id="todo">
+      <div class="sg-section-title">Todo Item</div>
+
+      <!-- Variant chooser -->
+      <div class="sg-variant-block">
+        <div class="sg-variant-header">
+          <span class="sg-variant-name">Style d'item</span>
+          <div class="sg-variant-tabs">
+            <button class="sg-variant-tab active" onclick="setVariant('todoItem','current')" data-group="todoItem" data-id="current">Actuel</button>
+            <button class="sg-variant-tab" onclick="setVariant('todoItem','flat')" data-group="todoItem" data-id="flat">Flat</button>
+            <button class="sg-variant-tab" onclick="setVariant('todoItem','pill')" data-group="todoItem" data-id="pill">Pill</button>
+          </div>
+        </div>
+        <div class="sg-variant-body">
+          <div class="sg-variant-panel active sg-todo-preview" id="todoItem-current" style="flex-direction:column;gap:6px;width:100%">
+            <div class="todo-item" style="cursor:default">
+              <div class="todo-check" style="flex-shrink:0"></div>
+              <div class="todo-content">
+                <span class="todo-text">Tâche active</span>
+                <div class="todo-meta">
+                  <span class="tag-pill selected" style="background:#3b82f6;border-color:#3b82f6;color:#fff;font-size:10px;padding:2px 7px">Travail</span>
+                </div>
+              </div>
+            </div>
+            <div class="todo-item done" style="cursor:default">
+              <div class="todo-check checked" style="flex-shrink:0;background:var(--success);border-color:var(--success);color:#fff;display:flex;align-items:center;justify-content:center">✓</div>
+              <div class="todo-content">
+                <span class="todo-text">Tâche terminée</span>
+              </div>
+            </div>
+            <div class="todo-item" style="cursor:default;border-color:var(--danger)">
+              <div class="todo-check" style="flex-shrink:0;border-color:var(--danger)"></div>
+              <div class="todo-content">
+                <span class="todo-text">Haute priorité</span>
+                <div class="todo-meta">
+                  <span style="font-size:10px;font-weight:700;color:var(--danger);letter-spacing:.05em">● HAUTE</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sg-variant-panel" id="todoItem-flat" style="flex-direction:column;gap:6px;width:100%">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px;border:none;box-shadow:none">
+              <div class="todo-check" style="flex-shrink:0"></div>
+              <span style="font-size:14px;font-weight:500;color:var(--text)">Tâche active</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border-radius:8px;opacity:.6">
+              <div class="todo-check checked" style="flex-shrink:0;background:var(--success);border-color:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✓</div>
+              <span style="font-size:14px;font-weight:400;color:var(--text-muted);text-decoration:line-through">Tâche terminée</span>
+            </div>
+          </div>
+
+          <div class="sg-variant-panel" id="todoItem-pill" style="flex-direction:column;gap:6px;width:100%">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-radius:99px;border:1.5px solid var(--border);box-shadow:var(--shadow)">
+              <div class="todo-check" style="flex-shrink:0"></div>
+              <span style="font-size:14px;font-weight:500;color:var(--text);flex:1">Tâche active</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border-radius:99px;border:1.5px solid var(--border);opacity:.55">
+              <div class="todo-check checked" style="flex-shrink:0;background:var(--success);border-color:var(--success);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">✓</div>
+              <span style="font-size:14px;font-weight:400;color:var(--text-muted);text-decoration:line-through;flex:1">Tâche terminée</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LABELS DE GROUPE ──────────────────────────────── -->
+    <section class="sg-section" id="labels">
+      <div class="sg-section-title">Labels de groupe</div>
+
+      <div class="sg-on-dark" style="display:flex;flex-direction:column;gap:12px">
+        <div class="day-group-label" style="margin:0">QUOTIDIEN</div>
+        <div class="day-period-label">Matin</div>
+        <div class="day-group-label" style="margin:0">HEBDOMADAIRE</div>
+      </div>
+
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+        <div class="day-auto-group-label">Haute priorité</div>
+        <div class="day-auto-group-label" style="background:#10b981">Travail</div>
+        <div class="day-auto-group-label" style="background:#f97316">Perso</div>
+        <div class="day-auto-group-label" style="background:#8b5cf6">Santé</div>
+      </div>
+    </section>
+
+    <!-- ── TOGGLES ───────────────────────────────────────── -->
+    <section class="sg-section" id="toggles">
+      <div class="sg-section-title">Toggles & Contrôles</div>
+
+      <div class="sg-on-dark" style="display:flex;flex-direction:column;gap:10px">
+        <label class="day-ctrl-toggle">
+          <input type="checkbox">
+          <span class="toggle-track"></span>
+          <span>Moments</span>
+        </label>
+        <label class="day-ctrl-toggle">
+          <input type="checkbox" checked>
+          <span class="toggle-track"></span>
+          <span>Auto-prio (activé)</span>
+        </label>
+      </div>
+
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px">
+        <button class="day-ctrl-btn">Manuel</button>
+        <button class="day-ctrl-btn active">Priorité</button>
+        <button class="day-ctrl-btn">Tag</button>
+        <button class="day-ctrl-btn">Heure</button>
+      </div>
+
+      <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px">
+        <div class="day-period-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><polyline points="16 5 12 9 8 5"/></svg>
+          <span>Matin</span>
+        </div>
+        <div class="day-period-btn active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          <span>Après-midi</span>
+        </div>
+        <div class="day-period-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span>Soir</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STAT CARDS ────────────────────────────────────── -->
+    <section class="sg-section" id="stats">
+      <div class="sg-section-title">Stat Cards</div>
+
+      <div class="profile-stats-grid" style="max-width:560px">
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="profile-stat-num">2<span class="profile-stat-slash">/5</span></div>
+          <div class="profile-stat-label">aujourd'hui</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <div class="profile-stat-num">65<span class="profile-stat-unit">%</span></div>
+          <div class="profile-stat-label">complétion</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="profile-stat-num">79</div>
+          <div class="profile-stat-label">tâches</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="profile-stat-num">51</div>
+          <div class="profile-stat-label">complétées</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg></div>
+          <div class="profile-stat-num">9</div>
+          <div class="profile-stat-label">récurrentes</div>
+        </div>
+        <div class="profile-stat-card">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+          <div class="profile-stat-num">7</div>
+          <div class="profile-stat-label">catégories</div>
+        </div>
+        <div class="profile-stat-card profile-stat-card--warn">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+          <div class="profile-stat-num">3</div>
+          <div class="profile-stat-label">en retard</div>
+        </div>
+        <div class="profile-stat-card profile-stat-card--accent">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div class="profile-stat-num">7</div>
+          <div class="profile-stat-label">priorité haute</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SHADOWS & RADIUS ──────────────────────────────── -->
+    <section class="sg-section" id="shadows">
+      <div class="sg-section-title">Shadows & Border Radius</div>
+
+      <div class="sg-row">
+        <span class="sg-row-label">Shadows</span>
+        <div class="sg-shadow-demo" style="box-shadow:var(--shadow)">sm</div>
+        <div class="sg-shadow-demo" style="box-shadow:var(--shadow-md)">md</div>
+        <div class="sg-shadow-demo" style="box-shadow:var(--shadow-lg)">lg</div>
+      </div>
+
+      <div class="sg-row" style="margin-top:20px">
+        <span class="sg-row-label">Radius</span>
+        <div class="sg-radius-demo" style="border-radius:6px">6px</div>
+        <div class="sg-radius-demo" style="border-radius:8px">8px</div>
+        <div class="sg-radius-demo" style="border-radius:10px">10px</div>
+        <div class="sg-radius-demo" style="border-radius:var(--radius)">12px</div>
+        <div class="sg-radius-demo" style="border-radius:14px">14px</div>
+        <div class="sg-radius-demo" style="border-radius:99px">pill</div>
+      </div>
+    </section>
+
+    <!-- ── MOTION ────────────────────────────────────────── -->
+    <section class="sg-section" id="motion">
+      <div class="sg-section-title">Motion & Transitions</div>
+
+      <div class="sg-row" style="gap:16px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--text-muted);background:var(--surface);padding:12px 16px;border-radius:10px;border:1.5px solid var(--border)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px">Easing standard</div>
+          <code style="font-size:11px;font-family:monospace">.24s cubic-bezier(.25, .46, .45, .94)</code>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);background:var(--surface);padding:12px 16px;border-radius:10px;border:1.5px solid var(--border)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px">Rapide</div>
+          <code style="font-size:11px;font-family:monospace">.15s ease</code>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);background:var(--surface);padding:12px 16px;border-radius:10px;border:1.5px solid var(--border)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px">Modal in</div>
+          <code style="font-size:11px;font-family:monospace">.35s cubic-bezier(.25, .46, .45, .94)</code>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);background:var(--surface);padding:12px 16px;border-radius:10px;border:1.5px solid var(--border)">
+          <div style="font-weight:700;color:var(--text);margin-bottom:4px">Hover lift</div>
+          <code style="font-size:11px;font-family:monospace">translateY(-2px) box-shadow</code>
+        </div>
+      </div>
+
+      <div class="sg-row" style="margin-top:20px">
+        <span class="sg-row-label">Demo hover</span>
+        <button class="btn btn-primary" style="transition:all .24s cubic-bezier(.25,.46,.45,.94)">Hover moi</button>
+        <div class="todo-item" style="max-width:220px;cursor:pointer">
+          <div class="todo-check" style="flex-shrink:0"></div>
+          <span class="todo-text">Item — hover</span>
+        </div>
+        <div class="profile-stat-card" style="width:90px">
+          <div class="profile-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <div class="profile-stat-num">7</div>
+          <div class="profile-stat-label">stat</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  /* ── Theme ───────────────────────────────────────────── */
+  const ACCENT_COLORS_DARK  = ['#60a5fa','#f87171','#4ade80','#a78bfa','#f472b6','#fb923c'];
+  const ACCENT_COLORS_LIGHT = ['#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899','#f97316'];
+
+  function getTheme()  { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+  function isDark()    { return getTheme() === 'dark'; }
+  function getPrimary(){ return localStorage.getItem('sg_primary') || (isDark() ? '#60a5fa' : '#3b82f6'); }
+
+  function applyPrimary(color) {
+    document.documentElement.style.setProperty('--primary', color);
+    localStorage.setItem('sg_primary', color);
+    renderAccentPicker();
+  }
+
+  function toggleTheme() {
+    const next = isDark() ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    const colors = next === 'dark' ? ACCENT_COLORS_DARK : ACCENT_COLORS_LIGHT;
+    // Switch to equivalent accent in new mode
+    const curIdx = (isDark() ? ACCENT_COLORS_DARK : ACCENT_COLORS_LIGHT).indexOf(getPrimary());
+    applyPrimary(colors[curIdx] || colors[0]);
+    updateThemeBtn();
+    renderColorTokens();
+  }
+
+  function updateThemeBtn() {
+    const dark = isDark();
+    document.getElementById('themeBtnLabel').textContent = dark ? 'Light' : 'Dark';
+    const icon = document.getElementById('themeIcon');
+    icon.innerHTML = dark
+      ? `<circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>`
+      : `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>`;
+  }
+
+  function renderAccentPicker() {
+    const colors = isDark() ? ACCENT_COLORS_DARK : ACCENT_COLORS_LIGHT;
+    const cur = getPrimary();
+    document.getElementById('accentPicker').innerHTML = colors.map(c =>
+      `<button class="sg-accent-btn${c===cur?' active':''}" style="background:${c}" onclick="applyPrimary('${c}')" title="${c}"></button>`
+    ).join('');
+  }
+
+  /* ── Color tokens ────────────────────────────────────── */
+  function renderColorTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    const colorVars = ['--primary','--success','--danger','--text','--text-muted'];
+    document.getElementById('colorTokens').innerHTML = colorVars.map(v => {
+      const val = cs.getPropertyValue(v).trim();
+      return `<div class="sg-token">
+        <div class="sg-token-swatch" style="background:${val}"></div>
+        <div class="sg-token-info">
+          <div class="sg-token-name">${v}</div>
+          <div class="sg-token-value">${val}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const surfaceVars = [
+      {v:'--bg', label:'--bg'},
+      {v:'--surface', label:'--surface'},
+      {v:'--surface2', label:'--surface2'},
+      {v:'--border', label:'--border'},
+      {v:'--primary-light', label:'--primary-light'},
+    ];
+    document.getElementById('surfaceTokens').innerHTML = surfaceVars.map(({v, label}) => {
+      const val = cs.getPropertyValue(v).trim();
+      return `<div class="sg-token">
+        <div class="sg-token-swatch" style="background:${val};border-bottom:1px solid var(--border)"></div>
+        <div class="sg-token-info">
+          <div class="sg-token-name">${label}</div>
+          <div class="sg-token-value">${val || '—'}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  /* ── Type scale ──────────────────────────────────────── */
+  function renderTypeScale() {
+    const scale = [
+      { size:'28px', weight:900, label:'Page title', sample:'Todo Manager' },
+      { size:'22px', weight:700, label:'Section heading', sample:'Statistiques' },
+      { size:'15px', weight:600, label:'Body / item title', sample:'Faire la vaisselle ce soir' },
+      { size:'14px', weight:600, label:'Button / label', sample:'Sauvegarder les modifications' },
+      { size:'13px', weight:500, label:'Secondary text', sample:'Tâches capturées rapidement, sans date.' },
+      { size:'12px', weight:600, label:'Small label', sample:'Aujourd\'hui · 3 tâches' },
+      { size:'11px', weight:800, label:'UPPERCASE LABEL', sample:'QUOTIDIEN', transform:'uppercase', spacing:'.08em' },
+      { size:'10px', weight:700, label:'Micro label', sample:'MATIN', transform:'uppercase', spacing:'.12em' },
+      { size:'9px',  weight:700, label:'Tag / badge', sample:'DESIGN-SYSTEM', transform:'uppercase', spacing:'.04em' },
+    ];
+    document.getElementById('typeScale').innerHTML = scale.map(t =>
+      `<div class="sg-type-row">
+        <div class="sg-type-meta">${t.size} · ${t.weight}</div>
+        <div style="font-size:${t.size};font-weight:${t.weight};${t.transform?`text-transform:${t.transform};letter-spacing:${t.spacing};`:''}color:var(--text);line-height:1.2">${t.sample}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-left:auto">${t.label}</div>
+      </div>`
+    ).join('');
+  }
+
+  /* ── Variant switcher ────────────────────────────────── */
+  function setVariant(group, id) {
+    document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+    document.querySelectorAll(`[id^="${group}-"]`).forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+    document.querySelector(`[data-group="${group}"][data-id="${id}"]`).classList.add('active');
+    const panel = document.getElementById(`${group}-${id}`);
+    if (panel) { panel.classList.add('active'); panel.style.display = ''; }
+  }
+
+  /* ── Sidebar active link on scroll ──────────────────── */
+  function scrollTo(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.sg-nav-link').forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.sg-nav-link[onclick="scrollTo('${e.target.id}')"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  document.querySelectorAll('.sg-section').forEach(s => observer.observe(s));
+
+  // Focus demo input
+  document.getElementById('focusInput')?.focus();
+
+  /* ── Init ────────────────────────────────────────────── */
+  applyPrimary(getPrimary());
+  updateThemeBtn();
+  renderColorTokens();
+  renderTypeScale();
+
+  // Init all variant panels (hide non-active)
+  document.querySelectorAll('.sg-variant-panel').forEach(p => {
+    if (!p.classList.contains('active')) p.style.display = 'none';
+  });
+</script>
+</body>
+</html>

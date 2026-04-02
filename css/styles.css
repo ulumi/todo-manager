@@ -1177,9 +1177,17 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .day-spacer-btn {
-  padding: 0 10px;
+  padding: 0 8px;
   gap: 5px;
   letter-spacing: 0.03em;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 5px !important;
+  color: rgba(255, 255, 255, 0.4);
+}
+.day-spacer-btn:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .day-ctrl-expandable {
@@ -1187,6 +1195,9 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   overflow: hidden;
   transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.day-ctrl-expandable.hidden {
+  display: none;
 }
 .day-ctrl-expandable.expanded .day-ctrl-group {
   max-width: 280px;
@@ -1443,32 +1454,57 @@ input:checked + .cal-sid-toggle-track::after {
   letter-spacing: 0.05em;
 }
 
-.day-ctrl-check {
+.day-ctrl-toggle {
   display: flex;
   align-items: center;
   gap: 5px;
   cursor: pointer;
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.35);
   letter-spacing: 0.03em;
   white-space: nowrap;
+  user-select: none;
 }
-.day-ctrl-check input {
-  accent-color: var(--primary);
-  width: 13px;
+.day-ctrl-toggle input {
+  display: none;
+}
+.day-ctrl-toggle .toggle-track {
+  width: 24px;
   height: 13px;
-  cursor: pointer;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.15);
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.15s;
 }
-.day-ctrl-check:has(input:checked) {
-  color: rgba(255, 255, 255, 0.75);
+.day-ctrl-toggle .toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s, background 0.15s;
+}
+.day-ctrl-toggle:has(input:checked) {
+  color: rgba(255, 255, 255, 0.8);
+}
+.day-ctrl-toggle:has(input:checked) .toggle-track {
+  background: rgba(255, 255, 255, 0.45);
+}
+.day-ctrl-toggle:has(input:checked) .toggle-track::after {
+  transform: translateX(11px);
+  background: #fff;
 }
 
 .day-auto-group-label {
   display: inline-block;
   font-size: 10px;
   font-weight: 800;
-  color: #000;
+  color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   background: var(--primary);
@@ -1829,6 +1865,44 @@ input:checked + .cal-sid-toggle-track::after {
   margin-top: 14px;
 }
 
+.day-heure-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.day-heure-section {
+  min-width: 0;
+}
+
+.period-dropzone {
+  height: 44px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  margin: 2px 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dragging-active .period-dropzone {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.day-heure-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 6px;
+  margin-left: -6px;
+  border-radius: 6px;
+  cursor: default;
+  transition: background 0.12s, color 0.12s;
+}
+.day-heure-label.drop-target {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+
 .day-period-select {
   display: flex;
   gap: 8px;
@@ -1951,7 +2025,7 @@ input:checked + .cal-sid-toggle-track::after {
   transition: box-shadow 0.18s ease, border-color 0.18s ease;
 }
 .todo-item:hover {
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.11);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border-color: var(--primary);
 }
 .todo-item:hover .todo-reorder-btn {
@@ -2128,6 +2202,18 @@ input:checked + .cal-sid-toggle-track::after {
   border: 1px solid var(--border);
   color: var(--text-muted);
   background: var(--border);
+}
+
+.todo-time-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .todo-reorder {
@@ -4337,7 +4423,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .add-item-placeholder .add-item-placeholder-label {
   position: absolute;
   left: 0;
-  right: 24px;
+  right: 10px;
   top: 0;
   bottom: 0;
   display: flex;
@@ -6660,18 +6746,19 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .profile-stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
   gap: 10px;
 }
 
 .profile-stat-card {
+  --stat-color: var(--primary);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 14px 8px 12px;
+  gap: 6px;
+  padding: 16px 8px 14px;
   background: var(--surface2);
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -6679,22 +6766,40 @@ body:has(.bottom-panel:not(.hidden))::before {
   transform: translateY(-2px);
   box-shadow: var(--shadow);
 }
-.profile-stat-card--warn .profile-stat-num {
-  color: var(--danger);
+.profile-stat-card:nth-child(1) {
+  --stat-color: var(--primary);
 }
-.profile-stat-card--warn .profile-stat-icon {
-  color: var(--danger);
+.profile-stat-card:nth-child(2) {
+  --stat-color: #f97316;
 }
-.profile-stat-card--accent .profile-stat-num {
-  color: var(--primary-dark);
+.profile-stat-card:nth-child(3) {
+  --stat-color: #8b5cf6;
 }
-.profile-stat-card--accent .profile-stat-icon {
-  color: var(--primary-dark);
+.profile-stat-card:nth-child(4) {
+  --stat-color: #10b981;
+}
+.profile-stat-card:nth-child(5) {
+  --stat-color: #14b8a6;
+}
+.profile-stat-card:nth-child(6) {
+  --stat-color: #6366f1;
+}
+.profile-stat-card--warn {
+  --stat-color: var(--danger);
+}
+.profile-stat-card--accent {
+  --stat-color: #f59e0b;
 }
 
 .profile-stat-icon {
-  color: var(--text-muted);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--stat-color) 15%, transparent);
+  color: var(--stat-color);
 }
 .profile-stat-icon svg {
   width: 18px;
@@ -6704,7 +6809,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .profile-stat-num {
   font-size: 22px;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--stat-color);
   line-height: 1;
 }
 
@@ -6828,9 +6933,6 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 @media (max-width: 480px) {
-  .profile-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
   .profile-columns {
     grid-template-columns: 1fr;
   }
@@ -7616,7 +7718,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .cal-sid-label, .glass-mode .cal-sid-value,
 .glass-mode h1, .glass-mode h2, .glass-mode h3, .glass-mode h4,
 .glass-mode .section-title, .glass-mode .day-col-title,
-.glass-mode .day-group-label, .glass-mode .day-auto-group-label {
+.glass-mode .day-group-label {
   color: #f1f5f9;
 }
 .glass-mode .text-muted, .glass-mode .text-secondary,
