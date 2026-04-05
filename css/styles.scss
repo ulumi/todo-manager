@@ -1988,7 +1988,9 @@ main {
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
+  cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,.05);
   transition: box-shadow .18s ease, border-color .18s ease;
 
@@ -2075,6 +2077,219 @@ main {
   }
 
   .ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+}
+
+// ── Subtasks ──────────────────────────────────────────────────────────────────
+
+.subtask-dots {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background .15s;
+
+  &:hover { background: var(--surface2); }
+
+  .st-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    transition: background .15s, border-color .15s;
+
+    &.done {
+      background: var(--success);
+      border-color: var(--success);
+    }
+  }
+
+  .st-dot-more {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1;
+  }
+}
+
+.subtask-list {
+  flex: 0 0 100%;
+  margin-left: 34px; // check (22px) + gap (12px)
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 4px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 4px;
+  border-radius: 5px;
+  transition: background .1s;
+
+  &:hover {
+    background: var(--surface2);
+    .subtask-del { opacity: 1; }
+  }
+
+  .subtask-check {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    position: relative;
+
+    &:hover { border-color: var(--success); }
+
+    &.done {
+      background: var(--success);
+      border-color: var(--success);
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 2px; top: 0px;
+        width: 5px; height: 8px;
+        border: 1.5px solid #fff;
+        border-top: none; border-left: none;
+        transform: rotate(45deg);
+        transform-origin: 60% 60%;
+      }
+    }
+  }
+
+  .subtask-title {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.3;
+    cursor: text;
+    outline: none;
+    border-radius: 3px;
+    padding: 0 2px;
+
+    &.done {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    &[contenteditable="true"] {
+      background: var(--surface2);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+  }
+
+  .subtask-del {
+    flex-shrink: 0;
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 3px;
+    border-radius: 3px;
+    transition: opacity .15s, color .15s;
+
+    &:hover { color: #ef4444; }
+  }
+}
+
+.subtask-add-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px 2px;
+  text-align: left;
+  transition: opacity .15s, color .15s;
+
+  &:hover { color: var(--primary); }
+}
+
+.todo-item:hover .subtask-add-btn,
+.subtask-list:hover .subtask-add-btn { opacity: 1; }
+
+.subtask-new-input {
+  flex: 1;
+  font-size: 13px;
+  background: var(--surface2);
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.subtask-warning-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 34px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.14);
+  z-index: 500;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+
+  .stw-label { color: var(--text-muted); margin-bottom: 8px; }
+
+  .stw-actions {
+    display: flex;
+    gap: 6px;
+
+    button {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text);
+      transition: opacity .15s;
+      white-space: nowrap;
+
+      &:first-child {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+
+      &:hover { opacity: .8; }
+    }
+  }
+}
+
+// Modal subtask section
+.modal-subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 5px;
+
+  &:hover {
+    background: var(--surface2);
+    .subtask-del { opacity: 1; }
+  }
+}
+
+#modalSubtaskSection {
+  .subtask-add-btn { opacity: 1; margin-top: 4px; }
 }
 
 
@@ -9190,7 +9405,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .schedule-mode-context {
-  padding: 12px 0;
+  padding: 18px 0 14px;
 }
 
 .schedule-mode-option {
@@ -9323,8 +9538,43 @@ body:has(.bottom-panel:not(.hidden))::before {
   gap: 8px;
   align-items: center;
 
-  input[type="date"] { flex: 1; }
   input[type="time"] { width: 120px; flex-shrink: 0; }
+}
+
+.date-trigger-wrap {
+  position: relative;
+  flex: 1;
+
+  input[type="date"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    z-index: 1;
+  }
+}
+
+.date-trigger-btn {
+  display: block;
+  width: 100%;
+  padding: 12px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, color .15s;
+
+  &.is-empty { color: var(--text-muted); opacity: 0.45; }
+  &:not(.is-empty) { color: var(--text); }
+  &:hover { border-color: var(--primary); opacity: 1; }
 }
 
 // Duration row
@@ -9332,7 +9582,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   gap: 12px;
   align-items: flex-end;
-  margin-top: 10px;
+  margin-top: 16px;
 }
 
 .timing-field {
@@ -9347,18 +9597,60 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
-.timing-input-wrap {
+// Duration stepper widget
+.duration-stepper {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
 
-  .form-input { width: 70px; }
-}
+  .dur-btn {
+    flex: 0 0 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0;
+    transition: background 0.15s, color 0.15s;
 
-.timing-unit {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
+    svg { pointer-events: none; }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+
+    &:active {
+      background: rgba(91, 94, 247, 0.12);
+      color: var(--primary);
+    }
+  }
+
+  .dur-btn--minus { border-right: 1px solid var(--border); }
+  .dur-btn--plus  { border-left:  1px solid var(--border); }
+
+  .dur-display {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    padding: 10px 4px;
+    line-height: 1;
+    white-space: nowrap;
+
+    &.is-empty {
+      color: var(--text-muted);
+      font-weight: 400;
+      opacity: 0.4;
+    }
+  }
 }
 
 .timing-flex {

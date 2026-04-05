@@ -300,7 +300,7 @@ export function openAdminModal() {
                 </div>
                 <div style="display:flex;flex-direction:column;gap:4px;">
                   <label style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;">Heure de début</label>
-                  <input id="adminIcalHour" type="time" class="form-input" style="font-size:13px;width:100px;">
+                  <input id="adminIcalHour" type="text" class="form-input" style="font-size:13px;width:100px;" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
                 </div>
               </div>
               <div style="height:1px;background:var(--border);margin:10px 0;opacity:.5;"></div>

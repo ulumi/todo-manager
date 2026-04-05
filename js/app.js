@@ -32,7 +32,8 @@ import {
   cancelModal, clearDraft, discardDraft,
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
-  guidedToggleNewCat, guidedAddCategory
+  guidedToggleNewCat, guidedAddCategory,
+  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -87,6 +88,7 @@ class TodoApp {
     this.punctualPeriodOrder = JSON.parse(localStorage.getItem('punctualPeriodOrder') || '{}');
     this._clickTimer = null;
     this._quickAddInDayMode = false;
+    this._expandedSubtasks = new Set();
     this.init();
   }
 
@@ -1004,7 +1006,18 @@ class TodoApp {
       celebrate(state.lang, true);
       return;
     }
-    const wasCompleted = isCompleted(state.todos.find(x => x.id === id), d);
+    const todo = state.todos.find(x => x.id === id);
+    const wasCompleted = isCompleted(todo, d);
+
+    // Warn if completing a todo that has incomplete subtasks
+    if (!wasCompleted && todo?.subtasks?.length) {
+      const incomplete = todo.subtasks.filter(s => !s.completed);
+      if (incomplete.length) {
+        this._showSubtaskWarning(id, d, incomplete.length);
+        return;
+      }
+    }
+
     snapshot(state.todos);
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
@@ -1021,6 +1034,161 @@ class TodoApp {
       }
     }, 0);
   }
+
+  _showSubtaskWarning(id, d, count) {
+    document.querySelectorAll('.subtask-warning-popover').forEach(el => el.remove());
+    const ds = DS(d);
+    const item = document.querySelector(`[data-id="${id}"]`);
+    if (!item) return;
+    const label = count === 1 ? '1 sous-tâche incomplète' : `${count} sous-tâches incomplètes`;
+    const popover = document.createElement('div');
+    popover.className = 'subtask-warning-popover';
+    popover.onclick = e => e.stopPropagation();
+    popover.innerHTML = `
+      <div class="stw-label">${label}</div>
+      <div class="stw-actions">
+        <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','all')">Tout compléter</button>
+        <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','skip')">Ignorer</button>
+        <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','cancel')">Annuler</button>
+      </div>`;
+    item.appendChild(popover);
+    setTimeout(() => {
+      const dismiss = e => {
+        if (!popover.contains(e.target)) {
+          popover.remove();
+          document.removeEventListener('click', dismiss);
+        }
+      };
+      document.addEventListener('click', dismiss);
+    }, 10);
+  }
+
+  completeWithSubtasks(id, dsStr, mode) {
+    document.querySelectorAll('.subtask-warning-popover').forEach(el => el.remove());
+    if (mode === 'cancel') return;
+    const todo = state.todos.find(x => x.id === id);
+    if (!todo) return;
+    snapshot(state.todos);
+    if (mode === 'all' && todo.subtasks) {
+      todo.subtasks.forEach(s => s.completed = true);
+    }
+    const d = this.parseDS(dsStr);
+    toggleTodo(id, d, state.todos);
+    saveTodos(state.todos);
+    celebrate(state.lang);
+    this.render();
+    this._refreshCategoryPanel();
+  }
+
+  // ── Subtask methods ────────────────────────────────────────────────────────
+
+  isSubtasksExpanded(id) {
+    return this._expandedSubtasks.has(id);
+  }
+
+  toggleSubtasks(id) {
+    if (this._expandedSubtasks.has(id)) {
+      this._expandedSubtasks.delete(id);
+    } else {
+      this._expandedSubtasks.add(id);
+    }
+    this.render();
+  }
+
+  toggleSubtask(todoId, stid, ds) {
+    const t = state.todos.find(x => x.id === todoId);
+    const s = t?.subtasks?.find(x => x.id === stid);
+    if (!s) return;
+    snapshot(state.todos);
+    s.completed = !s.completed;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  deleteSubtask(todoId, stid) {
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t?.subtasks) return;
+    snapshot(state.todos);
+    t.subtasks = t.subtasks.filter(x => x.id !== stid);
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  addSubtaskInline(todoId) {
+    const list = document.querySelector(`[data-id="${todoId}"] .subtask-list`);
+    if (!list) return;
+    const addBtn = list.querySelector('.subtask-add-btn');
+    if (!addBtn) return;
+    const input = document.createElement('input');
+    input.className = 'subtask-new-input';
+    input.placeholder = 'Nouvelle sous-tâche…';
+    input.autocomplete = 'off';
+    let saved = false;
+    const confirm = () => {
+      if (saved) return;
+      saved = true;
+      const title = input.value.trim();
+      input.remove();
+      addBtn.style.display = '';
+      if (title) this._saveNewSubtask(todoId, title);
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
+    });
+    input.addEventListener('blur', confirm);
+    addBtn.style.display = 'none';
+    list.appendChild(input);
+    input.focus();
+  }
+
+  _saveNewSubtask(todoId, title) {
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t) return;
+    snapshot(state.todos);
+    if (!t.subtasks) t.subtasks = [];
+    t.subtasks.push({ id: Date.now().toString(), title, completed: false });
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  editSubtaskTitle(el, todoId, stid) {
+    const t = state.todos.find(x => x.id === todoId);
+    const s = t?.subtasks?.find(x => x.id === stid);
+    if (!s) return;
+    el.contentEditable = 'true';
+    el.focus();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    const save = () => {
+      el.contentEditable = 'false';
+      const newTitle = el.textContent.trim();
+      if (newTitle && newTitle !== s.title) {
+        snapshot(state.todos);
+        s.title = newTitle;
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+      } else {
+        el.textContent = esc(s.title);
+      }
+    };
+    el.addEventListener('blur', save, { once: true });
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      if (e.key === 'Escape') { el.textContent = esc(s.title); el.contentEditable = 'false'; }
+    }, { once: true });
+  }
+
+  // ── Modal subtask delegates (called via window.app from modal HTML) ────────
+  toggleModalSubtask(stid)    { toggleModalSubtask(stid); }
+  removeModalSubtask(stid)    { removeModalSubtask(stid); }
+  addModalSubtaskInline()     { addModalSubtaskInline(); }
+  editModalSubtask(el, stid)  { editModalSubtask(el, stid); }
 
   _trackDeletion(id) {
     const dels = JSON.parse(localStorage.getItem('_deletions') || '{}');
@@ -1105,8 +1273,9 @@ class TodoApp {
   // MODAL
   // ═══════════════════════════════════════════════════
   openModal(date) {
-    openModal(date, state.todos);
-    const dateStr = typeof date === 'string' ? date : DS(date);
+    const d = date || today();
+    openModal(d, state.todos);
+    const dateStr = typeof d === 'string' ? d : DS(d);
     history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'add', date: dateStr }));
   }
 
@@ -1635,11 +1804,7 @@ class TodoApp {
   }
 
   clickTodo(e, id, ds) {
-    if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle')) return;
-    if (e.target.closest('.todo-text')) {
-      // dblclick handled by ondblclick on the span — single click ignored on text
-      return;
-    }
+    if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-dots, .subtask-list, .subtask-warning-popover')) return;
     clearTimeout(this._clickTimer);
     this._clickTimer = setTimeout(() => {
       this._clickTimer = null;
@@ -3297,8 +3462,9 @@ class TodoApp {
               </div>
               <div style="display:flex;flex-direction:column;gap:3px;">
                 <label style="font-size:11px;color:var(--text-muted);">Heure des tâches</label>
-                <input id="icalHour" type="time" class="form-input" style="font-size:12px;width:90px;"
-                  onchange="window.app.saveICalSettings()">
+                <input id="icalHour" type="text" class="form-input" style="font-size:12px;width:90px;" placeholder="HH:MM" maxlength="5" inputmode="numeric"
+                  oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v"
+                  onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value;window.app.saveICalSettings()">
               </div>
             </div>
           </div>

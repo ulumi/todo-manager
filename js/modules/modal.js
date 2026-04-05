@@ -33,6 +33,68 @@ function _slideOut(el) {
   );
 }
 
+// ─── Duration stepper ──────────────────────────────────────────────────────
+
+function _formatDuration(minutes) {
+  const m = parseInt(minutes);
+  if (!m || m <= 0) return '—';
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const rem = m % 60;
+  return rem === 0 ? `${h}h` : `${h}h ${rem}`;
+}
+
+function _syncDurationStepper(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const stepper = input.closest('.duration-stepper');
+  if (!stepper) return;
+  const display = stepper.querySelector('.dur-display');
+  if (!display) return;
+  const val = parseInt(input.value) || 0;
+  display.textContent = _formatDuration(val);
+  display.classList.toggle('is-empty', !val);
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.dur-btn');
+  if (!btn) return;
+  const stepper = btn.closest('.duration-stepper');
+  if (!stepper) return;
+  const inputId = stepper.dataset.target;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPlus = btn.classList.contains('dur-btn--plus');
+  const current = parseInt(input.value) || 0;
+  const step = (current > 0 && current < 60) ? 15 : (current >= 60 ? 30 : 15);
+  let next = current + (isPlus ? step : -step);
+  if (isPlus && current > 0 && current < 60 && next >= 60) next = 60;
+  if (!isPlus && current >= 60 && next < 60) next = 45;
+  next = Math.max(0, next);
+  input.value = next || '';
+  _syncDurationStepper(inputId);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+// ─── Date trigger button ───────────────────────────────────────────────────
+
+const _MONTHS_SHORT = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+
+function _syncDateBtn() {
+  const input = document.getElementById('taskDate');
+  const btn   = document.getElementById('taskDateBtn');
+  if (!input || !btn) return;
+  const val = input.value;
+  if (!val) { btn.textContent = 'DATE'; btn.classList.add('is-empty'); return; }
+  const d = parseDS(val);
+  if (!d) { btn.textContent = 'DATE'; btn.classList.add('is-empty'); return; }
+  btn.classList.remove('is-empty');
+  if (val === DS(new Date())) { btn.textContent = "Auj."; return; }
+  btn.textContent = `${d.getDate()} ${_MONTHS_SHORT[d.getMonth()]}`;
+}
+
+document.addEventListener('change', e => { if (e.target.id === 'taskDate') _syncDateBtn(); });
+
 // ─── Day period (Moment) button builder ───────────────────────────────────
 
 const _PERIOD_ICONS = {
@@ -48,6 +110,94 @@ function _dayPeriodHTML(currentPeriod) {
     `<button type="button" class="day-period-btn${currentPeriod === p ? ' active' : ''}" data-period="${p}" onclick="window.app.toggleDayPeriod('${p}')">${_PERIOD_ICONS[p]}<span>${_PERIOD_LABELS[p]}</span></button>`
   ).join('');
   return `<label class="form-label">Moment <span class="timing-flex-hint" title="Matin, après-midi ou soir — aide à planifier sans fixer d'heure précise">?</span></label><div class="day-period-select">${buttons}<input type="hidden" id="taskDayPeriod" value="${currentPeriod}"></div>`;
+}
+
+// ─── Modal subtasks ───────────────────────────────────────────────────────
+
+let _modalSubtasks = [];
+
+export function getModalSubtasks() { return _modalSubtasks; }
+
+function _renderModalSubtasks() {
+  const el = document.getElementById('modalSubtaskList');
+  if (!el) return;
+  el.innerHTML = _modalSubtasks.map(s => `
+    <div class="modal-subtask-item">
+      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}')"></div>
+      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}')">${esc(s.title)}</span>
+      <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}')">×</button>
+    </div>`).join('')
+  + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
+}
+
+export function populateModalSubtasks(subtasks) {
+  _modalSubtasks = subtasks ? JSON.parse(JSON.stringify(subtasks)) : [];
+  _renderModalSubtasks();
+}
+
+export function toggleModalSubtask(stid) {
+  const s = _modalSubtasks.find(x => x.id === stid);
+  if (s) { s.completed = !s.completed; _renderModalSubtasks(); }
+}
+
+export function removeModalSubtask(stid) {
+  _modalSubtasks = _modalSubtasks.filter(x => x.id !== stid);
+  _renderModalSubtasks();
+}
+
+export function addModalSubtask(title) {
+  _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
+  _renderModalSubtasks();
+}
+
+export function editModalSubtask(el, stid) {
+  const s = _modalSubtasks.find(x => x.id === stid);
+  if (!s) return;
+  el.contentEditable = 'true';
+  el.focus();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  const save = () => {
+    el.contentEditable = 'false';
+    const newTitle = el.textContent.trim();
+    if (newTitle) s.title = newTitle;
+    else el.textContent = esc(s.title);
+  };
+  el.addEventListener('blur', save, { once: true });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = esc(s.title); el.contentEditable = 'false'; }
+  }, { once: true });
+}
+
+export function addModalSubtaskInline() {
+  const list = document.getElementById('modalSubtaskList');
+  if (!list) return;
+  const addBtn = list.querySelector('.subtask-add-btn');
+  if (!addBtn) return;
+  const input = document.createElement('input');
+  input.className = 'subtask-new-input';
+  input.placeholder = 'Nouvelle sous-tâche…';
+  input.autocomplete = 'off';
+  let saved = false;
+  const confirm = () => {
+    if (saved) return;
+    saved = true;
+    const title = input.value.trim();
+    input.remove();
+    addBtn.style.display = '';
+    if (title) { addModalSubtask(title); }
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+    if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
+  });
+  input.addEventListener('blur', confirm);
+  addBtn.style.display = 'none';
+  list.appendChild(input);
+  input.focus();
 }
 
 // ─── Draft management ─────────────────────────────────────────────────────
@@ -101,11 +251,14 @@ export function discardDraft() {
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskDescription').value = '';
   document.getElementById('taskDate').value = DS(state.navDate);
+  _syncDateBtn();
   document.getElementById('taskStartTime').value = '';
   document.getElementById('taskEndTime').value = '';
   document.getElementById('taskFlexibleTime').checked = false;
   document.getElementById('taskDurationEstimated').value = '';
   document.getElementById('taskDurationReal').value = '';
+  _syncDurationStepper('taskDurationEstimated');
+  _syncDurationStepper('taskDurationReal');
   selectPriority('');
   populateCategoryTags([]);
   populateProjectTags([]);
@@ -131,11 +284,14 @@ function _tryRestoreDraft() {
   if (d.title) document.getElementById('taskTitle').value = d.title;
   if (d.description) document.getElementById('taskDescription').value = d.description;
   if (d.date) document.getElementById('taskDate').value = d.date;
+  _syncDateBtn();
   if (d.startTime) document.getElementById('taskStartTime').value = d.startTime;
   if (d.endTime) document.getElementById('taskEndTime').value = d.endTime;
   if (d.flexibleTime) document.getElementById('taskFlexibleTime').checked = true;
   if (d.durationEstimated) document.getElementById('taskDurationEstimated').value = d.durationEstimated;
   if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
+  _syncDurationStepper('taskDurationEstimated');
+  _syncDurationStepper('taskDurationReal');
   if (d.priority !== undefined) selectPriority(d.priority);
   if (d.categoryIds?.length) populateCategoryTags(d.categoryIds);
   if (d.projectIds?.length) populateProjectTags(d.projectIds);
@@ -215,7 +371,7 @@ export function selectBigMode(mode) {
     const d = new Date();
     if (mode === 'tomorrow') d.setDate(d.getDate() + 1);
     const dateInput = document.getElementById('taskDate');
-    if (dateInput) dateInput.value = d.toISOString().slice(0, 10);
+    if (dateInput) { dateInput.value = d.toISOString().slice(0, 10); _syncDateBtn(); }
     state.setScheduleMode('date');
     state.setSelectedRecurrence('none');
     const recSel0 = document.getElementById('taskRecurrence');
@@ -450,11 +606,14 @@ export function openModal(date, todos, scheduleMode = 'date') {
   document.getElementById('taskTitle').value = '';
   document.getElementById('taskDescription').value = '';
   document.getElementById('taskDate').value = DS(date);
+  _syncDateBtn();
   document.getElementById('taskStartTime').value = '';
   document.getElementById('taskEndTime').value = '';
   document.getElementById('taskFlexibleTime').checked = false;
   document.getElementById('taskDurationEstimated').value = '';
   document.getElementById('taskDurationReal').value = '';
+  _syncDurationStepper('taskDurationEstimated');
+  _syncDurationStepper('taskDurationReal');
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = 'none';
   const recSel = document.getElementById('taskRecurrence');
@@ -475,6 +634,10 @@ export function openModal(date, todos, scheduleMode = 'date') {
   populateProjectTags([]);
   populateIntentionTags([]);
   switchTagTab('categories');
+  // Subtasks — hidden for new tasks
+  const _stSection = document.getElementById('modalSubtaskSection');
+  if (_stSection) _stSection.style.display = 'none';
+  populateModalSubtasks([]);
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
   const hadDraft = _tryRestoreDraft();
@@ -554,6 +717,8 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskFlexibleTime').checked = t.flexibleTime || false;
   document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
   document.getElementById('taskDurationReal').value = t.durationReal || '';
+  _syncDurationStepper('taskDurationEstimated');
+  _syncDurationStepper('taskDurationReal');
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
   populateCategoryTags(t.categoryIds || (t.categoryId ? [t.categoryId] : []));
@@ -615,6 +780,7 @@ export function openEditModal(id, dateStr, todos) {
     if (recSubOptions) recSubOptions.style.display = 'none';
     dateGroup.style.display = '';
     document.getElementById('taskDate').value = t.date || dateStr || '';
+    _syncDateBtn();
     detail.innerHTML = _dayPeriodHTML(t.dayPeriod || '');
   }
 
@@ -635,6 +801,10 @@ export function openEditModal(id, dateStr, todos) {
   _initCombobox(todos);
   _initModalSwipe();
   _initContextReveal();
+  // Subtasks
+  const subtaskSection = document.getElementById('modalSubtaskSection');
+  if (subtaskSection) subtaskSection.style.display = '';
+  populateModalSubtasks(t.subtasks || []);
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
@@ -941,6 +1111,7 @@ export function saveTaskLogic(todos) {
       delete t.categoryId; delete t.projectId; delete t.intentionId;
       t.priority    = data.priority;
       t.description = data.description;
+      t.subtasks    = getModalSubtasks();
       t.updatedAt   = Date.now();
     }
   } else {
@@ -1519,6 +1690,7 @@ function _syncGuidedToMain() {
     const m = document.getElementById(mId);
     if (g && m) m.value = g.value;
   });
+  _syncDurationStepper('taskDurationEstimated');
   // Sync priority to state
   const p = document.getElementById('taskPriority')?.value || '';
   selectPriority(p);

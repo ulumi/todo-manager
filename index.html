@@ -258,6 +258,11 @@
           <textarea class="form-input fl-input" id="taskDescription" autocomplete="off" rows="2" placeholder=" " style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
           <label class="fl-label fl-label-textarea">Notes, détails...</label>
         </div>
+        <!-- Subtasks (edit mode only) -->
+        <div id="modalSubtaskSection" style="display:none">
+          <div class="modal-section-label" style="margin-top:8px">Sous-tâches</div>
+          <div id="modalSubtaskList"></div>
+        </div>
       </div>
 
       <!-- ═══ Section 2: QUAND ═══ -->
@@ -302,8 +307,11 @@
             <div class="form-group" id="dateGroup">
               <label class="form-label">Date / Heure</label>
               <div class="date-time-row" id="dateInputRow">
-                <input class="form-input" type="date" id="taskDate" autocomplete="off" onclick="this.showPicker()">
-                <input type="time" class="form-input" id="taskStartTime" autocomplete="off">
+                <div class="date-trigger-wrap">
+                  <button type="button" class="date-trigger-btn is-empty" id="taskDateBtn">DATE</button>
+                  <input type="date" id="taskDate" autocomplete="off">
+                </div>
+                <input type="text" class="form-input" id="taskStartTime" autocomplete="off" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
                 <label class="timing-flex">
                   <input type="checkbox" id="taskFlexibleTime">
                   <span class="timing-flex-label">Flexible</span>
@@ -314,17 +322,21 @@
             <!-- Duration -->
             <div class="duration-row">
               <div class="timing-field">
-                <label class="form-label" for="taskDurationEstimated">Durée estimée</label>
-                <div class="timing-input-wrap">
-                  <input type="number" class="form-input" id="taskDurationEstimated" autocomplete="off" min="0" placeholder="min">
-                  <span class="timing-unit">min</span>
+                <label class="form-label">Durée estimée</label>
+                <div class="duration-stepper" data-target="taskDurationEstimated">
+                  <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                  <span class="dur-display is-empty">—</span>
+                  <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                  <input type="hidden" id="taskDurationEstimated">
                 </div>
               </div>
               <div class="timing-field" id="durationRealField">
-                <label class="form-label" for="taskDurationReal">Durée réelle</label>
-                <div class="timing-input-wrap">
-                  <input type="number" class="form-input" id="taskDurationReal" autocomplete="off" min="0" placeholder="min">
-                  <span class="timing-unit">min</span>
+                <label class="form-label">Durée réelle</label>
+                <div class="duration-stepper" data-target="taskDurationReal">
+                  <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                  <span class="dur-display is-empty">—</span>
+                  <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                  <input type="hidden" id="taskDurationReal">
                 </div>
               </div>
             </div>
@@ -505,7 +517,7 @@
                 <div class="guided-detail-grid">
                   <div class="guided-detail-item">
                     <label>Heure <span class="guided-tip" data-tip="L'heure à laquelle tu prévois commencer.">?</span></label>
-                    <input type="time" class="form-input" id="guidedStartTime">
+                    <input type="text" class="form-input" id="guidedStartTime" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
                   </div>
                   <div class="guided-detail-item">
                     <label>Durée <span class="guided-tip" data-tip="Combien de minutes tu penses que ça prendra.">?</span></label>

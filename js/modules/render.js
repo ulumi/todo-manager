@@ -18,6 +18,32 @@ function _hasInt(t, id) { return _getIntIds(t).includes(id); }
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
+function _subtaskDotsHTML(subtasks, todoId, ds) {
+  if (!subtasks?.length) return '';
+  const total = subtasks.length;
+  const done  = subtasks.filter(s => s.completed).length;
+  const shown = Math.min(total, 5);
+  let dots = '';
+  for (let i = 0; i < shown; i++) {
+    dots += `<span class="st-dot${i < done ? ' done' : ''}"></span>`;
+  }
+  if (total > 5) dots += `<span class="st-dot-more">+${total - 5}</span>`;
+  return `<span class="subtask-dots" onclick="event.stopPropagation();window.app.toggleSubtasks('${todoId}')" title="${done}/${total} sous-tâches">${dots}</span>`;
+}
+
+function _subtaskListHTML(subtasks, todoId, ds) {
+  const items = (subtasks || []).map(s => `
+    <div class="subtask-item">
+      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}')"></div>
+      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}')">${esc(s.title)}</span>
+      <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}')">×</button>
+    </div>`).join('');
+  return `<div class="subtask-list">
+    ${items}
+    <button class="subtask-add-btn" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')">+ sous-tâche</button>
+  </div>`;
+}
+
 // ── Stats viz color helpers ───────────────────────────────────────────────
 function _pctColor(pct) {
   if (pct >= 85) return { h: 148, s: 58, l: 52 }; // green
@@ -71,15 +97,21 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     : '';
   const hasMeta = categoryBadge || projectBadge || rec || timeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
+  const subtasks = todo.subtasks || [];
+  const isExpanded = window.app?.isSubtasksExpanded?.(todo.id) || false;
+  const dotsHTML = _subtaskDotsHTML(subtasks, todo.id, ds);
+  const expandedHTML = isExpanded ? _subtaskListHTML(subtasks, todo.id, ds) : '';
   return `
     <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)"></div>
       <div class="todo-content">
-        <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditTitle(this,'${todo.id}','${ds}')">${esc(todo.title)}</span>
+        <span class="todo-text">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
       </div>
+      ${dotsHTML}
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}
+      ${expandedHTML}
     </div>`;
 }
 
