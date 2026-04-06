@@ -4,6 +4,7 @@
 
 import { esc } from './utils.js';
 import { updatePresenceAvatar } from './presence.js';
+import { pushFirestoreNow } from './storage.js';
 
 const AVATAR_KEY = 'profileAvatar';
 const SIZE = 400; // compressed canvas size
@@ -128,6 +129,7 @@ export async function saveAvatar() {
   closeAvatarEditor();
   window.app.render();
   updatePresenceAvatar();
+  pushFirestoreNow();
 }
 
 // ── Crop controls (exported) ──────────────────────────
