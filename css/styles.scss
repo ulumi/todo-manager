@@ -2087,8 +2087,8 @@ main {
   align-items: center;
   gap: 3px;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
   transition: background .15s;
 
   &:hover { background: var(--surface2); }
@@ -2111,6 +2111,16 @@ main {
     color: var(--text-muted);
     line-height: 1;
   }
+
+  .st-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 3px;
+    font-weight: 500;
+    line-height: 1;
+
+    &.all-done { color: var(--success); }
+  }
 }
 
 .subtask-list {
@@ -2118,49 +2128,54 @@ main {
   margin-left: 34px; // check (22px) + gap (12px)
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding-bottom: 4px;
+  gap: 2px;
+  padding: 4px 0 6px;
+  border-left: 2px solid var(--border);
+  margin-top: 2px;
 }
 
 .subtask-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 4px;
-  border-radius: 5px;
-  transition: background .1s;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background .12s;
 
   &:hover {
     background: var(--surface2);
-    .subtask-del { opacity: 1; }
+  }
+
+  &.done {
+    opacity: .65;
   }
 
   .subtask-check {
     flex-shrink: 0;
-    width: 13px;
-    height: 13px;
+    width: 16px;
+    height: 16px;
     border: 1.5px solid var(--border);
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background .15s, border-color .15s;
-    position: relative;
+    transition: background .15s, border-color .15s, transform .1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    &:hover { border-color: var(--success); }
+    svg { opacity: 0; transition: opacity .12s; color: var(--text-muted); }
+
+    &:hover {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, .08);
+      svg { opacity: .4; color: var(--success); }
+    }
+
+    &:active { transform: scale(.9); }
 
     &.done {
       background: var(--success);
       border-color: var(--success);
-
-      &::after {
-        content: '';
-        position: absolute;
-        left: 2px; top: 0px;
-        width: 5px; height: 8px;
-        border: 1.5px solid #fff;
-        border-top: none; border-left: none;
-        transform: rotate(45deg);
-        transform-origin: 60% 60%;
-      }
+      svg { opacity: 1; color: #fff; }
     }
   }
 
@@ -2168,11 +2183,11 @@ main {
     flex: 1;
     font-size: 13px;
     color: var(--text);
-    line-height: 1.3;
+    line-height: 1.4;
     cursor: text;
     outline: none;
-    border-radius: 3px;
-    padding: 0 2px;
+    border-radius: 4px;
+    padding: 1px 4px;
 
     &.done {
       text-decoration: line-through;
@@ -2181,55 +2196,64 @@ main {
 
     &[contenteditable="true"] {
       background: var(--surface2);
-      box-shadow: 0 0 0 1px var(--primary);
+      box-shadow: 0 0 0 1.5px var(--primary);
     }
   }
 
   .subtask-del {
     flex-shrink: 0;
-    opacity: 0;
+    opacity: .35;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1;
-    padding: 0 3px;
-    border-radius: 3px;
-    transition: opacity .15s, color .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    transition: opacity .12s, color .12s, background .12s;
 
-    &:hover { color: #ef4444; }
+    &:hover {
+      opacity: 1;
+      color: #ef4444;
+      background: rgba(239, 68, 68, .08);
+    }
   }
 }
 
 .subtask-add-btn {
-  opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
   font-size: 12px;
-  padding: 4px 2px;
+  padding: 4px 8px;
   text-align: left;
-  transition: opacity .15s, color .15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  transition: color .12s, background .12s;
 
-  &:hover { color: var(--primary); }
+  &:hover {
+    color: var(--primary);
+    background: rgba(var(--primary-rgb, 99, 102, 241), .06);
+  }
 }
-
-.todo-item:hover .subtask-add-btn,
-.subtask-list:hover .subtask-add-btn { opacity: 1; }
 
 .subtask-new-input {
   flex: 1;
   font-size: 13px;
   background: var(--surface2);
-  border: 1px solid var(--primary);
-  border-radius: 4px;
-  padding: 2px 6px;
+  border: 1.5px solid var(--primary);
+  border-radius: 6px;
+  padding: 4px 8px;
   color: var(--text);
   outline: none;
-  width: 100%;
-  margin-top: 2px;
+  width: calc(100% - 16px);
+  margin: 2px 8px;
 }
 
 .subtask-warning-popover {
@@ -2280,16 +2304,67 @@ main {
   align-items: center;
   gap: 8px;
   padding: 5px 4px;
-  border-radius: 5px;
+  border-radius: 6px;
+  transition: background .12s;
+
+  &.done { opacity: .65; }
 
   &:hover {
     background: var(--surface2);
-    .subtask-del { opacity: 1; }
+  }
+
+  .subtask-check {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg { opacity: 0; transition: opacity .12s; color: var(--text-muted); }
+
+    &:hover {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, .08);
+      svg { opacity: .4; color: var(--success); }
+    }
+
+    &.done {
+      background: var(--success);
+      border-color: var(--success);
+      svg { opacity: 1; color: #fff; }
+    }
+  }
+
+  .subtask-del {
+    flex-shrink: 0;
+    opacity: .35;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    transition: opacity .12s, color .12s, background .12s;
+
+    &:hover {
+      opacity: 1;
+      color: #ef4444;
+      background: rgba(239, 68, 68, .08);
+    }
   }
 }
 
 #modalSubtaskSection {
-  .subtask-add-btn { opacity: 1; margin-top: 4px; }
+  .subtask-add-btn { margin-top: 4px; }
 }
 
 

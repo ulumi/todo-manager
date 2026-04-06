@@ -122,12 +122,16 @@ function _renderModalSubtasks() {
   const el = document.getElementById('modalSubtaskList');
   if (!el) return;
   el.innerHTML = _modalSubtasks.map(s => `
-    <div class="modal-subtask-item">
-      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}')"></div>
+    <div class="modal-subtask-item${s.completed ? ' done' : ''}">
+      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}')" title="${s.completed ? 'Marquer non fait' : 'Compléter'}">
+        <svg viewBox="0 0 16 16" width="16" height="16"><polyline points="3.5 8 6.5 11 12.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}')">${esc(s.title)}</span>
-      <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}')">×</button>
+      <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}')" title="Supprimer">
+        <svg viewBox="0 0 16 16" width="12" height="12"><line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
     </div>`).join('')
-  + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
+  + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()"><svg viewBox="0 0 16 16" width="12" height="12"><line x1="8" y1="3" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> sous-tâche</button>`;
 }
 
 export function populateModalSubtasks(subtasks) {
