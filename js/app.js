@@ -5281,6 +5281,7 @@ class TodoApp {
       requestAnimationFrame(() => requestAnimationFrame(() => {
         logoAvatar.classList.add('logo-avatar--entering');
         logoAvatar.addEventListener('animationend', () => {
+          logoAvatar.style.opacity = '1';
           logoAvatar.classList.remove('logo-avatar--entering');
         }, { once: true });
       }));
