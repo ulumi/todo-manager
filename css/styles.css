@@ -2350,6 +2350,74 @@ input:checked + .cal-sid-toggle-track::after {
 .modal-subtask-item:hover .subtask-del {
   opacity: 1;
 }
+.modal-subtask-item .subtask-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.modal-subtask-item .subtask-check:hover {
+  border-color: var(--success);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  transform: scale(1.1);
+  background: rgba(16, 185, 129, 0.08);
+}
+.modal-subtask-item .subtask-check.done {
+  background: var(--success);
+  border-color: var(--success);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+.modal-subtask-item .subtask-check.done::after {
+  content: "✓";
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.modal-subtask-item .subtask-check.done:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.4);
+}
+.modal-subtask-item .subtask-title {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+  cursor: text;
+  outline: none;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.modal-subtask-item .subtask-title.done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.modal-subtask-item .subtask-title[contenteditable=true] {
+  background: var(--surface2);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.modal-subtask-item .subtask-del {
+  flex-shrink: 0;
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.modal-subtask-item .subtask-del:hover {
+  color: #ef4444;
+  background: var(--surface2);
+}
 
 #modalSubtaskSection .subtask-add-btn {
   opacity: 1;

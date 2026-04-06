@@ -2303,6 +2303,75 @@ main {
     background: var(--surface2);
     .subtask-del { opacity: 1; }
   }
+
+  .subtask-check {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .24s cubic-bezier(.25, .46, .45, .94);
+
+    &:hover {
+      border-color: var(--success);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, .15);
+      transform: scale(1.1);
+      background: rgba(16, 185, 129, .08);
+    }
+
+    &.done {
+      background: var(--success);
+      border-color: var(--success);
+      box-shadow: 0 2px 6px rgba(16, 185, 129, .3);
+
+      &::after { content: '✓'; font-size: 9px; font-weight: 700; color: #fff; }
+      &:hover { transform: scale(1.15); box-shadow: 0 3px 8px rgba(16, 185, 129, .4); }
+    }
+  }
+
+  .subtask-title {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+    cursor: text;
+    outline: none;
+    border-radius: 3px;
+    padding: 0 2px;
+
+    &.done {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    &[contenteditable="true"] {
+      background: var(--surface2);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+  }
+
+  .subtask-del {
+    flex-shrink: 0;
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 3px;
+    border-radius: 3px;
+    transition: opacity .15s, color .15s, background .15s;
+
+    &:hover {
+      color: #ef4444;
+      background: var(--surface2);
+    }
+  }
 }
 
 #modalSubtaskSection {
