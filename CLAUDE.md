@@ -207,3 +207,4 @@ npx sass css/styles.scss css/styles.css --style=expanded
 - **Undo:** snapshot before each mutation, stack of 50, check `canUndo()`
 - **Modal draft:** autosave 300ms debounce in `modalDraft` localStorage key
 - **Recurrence:** single todo object, not instances — `completedDates[]` tracks done dates
+- **Style consistency:** New UI elements must match existing patterns — round checkboxes with `::after '✓'` (not SVG), `opacity: 0` → hover reveal for secondary actions (like `todo-menu-btn`), `cubic-bezier(.25,.46,.45,.94)` transitions on interactive elements, `var(--surface2)` hover backgrounds, `var(--success)` for completion states. No hardcoded `rgba()` — use CSS variables.

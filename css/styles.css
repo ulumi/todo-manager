@@ -2169,61 +2169,59 @@ input:checked + .cal-sid-toggle-track::after {
   margin-left: 34px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 4px 0 6px;
-  border-left: 2px solid var(--border);
-  margin-top: 2px;
+  gap: 1px;
+  padding-bottom: 4px;
 }
 
 .subtask-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px;
+  padding: 3px 4px;
   border-radius: 6px;
-  transition: background 0.12s;
+  transition: background 0.15s;
 }
 .subtask-item:hover {
   background: var(--surface2);
 }
+.subtask-item:hover .subtask-del {
+  opacity: 1;
+}
 .subtask-item.done {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 .subtask-item .subtask-check {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
   border: 1.5px solid var(--border);
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.1s;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.subtask-item .subtask-check svg {
-  opacity: 0;
-  transition: opacity 0.12s;
-  color: var(--text-muted);
+  transition: all 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .subtask-item .subtask-check:hover {
   border-color: var(--success);
-  background: rgba(34, 197, 94, 0.08);
-}
-.subtask-item .subtask-check:hover svg {
-  opacity: 0.4;
-  color: var(--success);
-}
-.subtask-item .subtask-check:active {
-  transform: scale(0.9);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+  transform: scale(1.1);
+  background: rgba(16, 185, 129, 0.08);
 }
 .subtask-item .subtask-check.done {
   background: var(--success);
   border-color: var(--success);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
 }
-.subtask-item .subtask-check.done svg {
-  opacity: 1;
+.subtask-item .subtask-check.done::after {
+  content: "✓";
+  font-size: 9px;
+  font-weight: 700;
   color: #fff;
+}
+.subtask-item .subtask-check.done:hover {
+  transform: scale(1.15);
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.4);
 }
 .subtask-item .subtask-title {
   flex: 1;
@@ -2232,8 +2230,8 @@ input:checked + .cal-sid-toggle-track::after {
   line-height: 1.4;
   cursor: text;
   outline: none;
-  border-radius: 4px;
-  padding: 1px 4px;
+  border-radius: 3px;
+  padding: 0 2px;
 }
 .subtask-item .subtask-title.done {
   text-decoration: line-through;
@@ -2241,59 +2239,57 @@ input:checked + .cal-sid-toggle-track::after {
 }
 .subtask-item .subtask-title[contenteditable=true] {
   background: var(--surface2);
-  box-shadow: 0 0 0 1.5px var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
 }
 .subtask-item .subtask-del {
   flex-shrink: 0;
-  opacity: 0.35;
+  opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
 }
 .subtask-item .subtask-del:hover {
-  opacity: 1;
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--surface2);
 }
 
 .subtask-add-btn {
+  opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 4px 2px;
   text-align: left;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 6px;
-  transition: color 0.12s, background 0.12s;
+  transition: opacity 0.15s, color 0.15s;
 }
 .subtask-add-btn:hover {
   color: var(--primary);
-  background: rgba(var(--primary-rgb, 99, 102, 241), 0.06);
+}
+
+.todo-item:hover .subtask-add-btn,
+.subtask-list:hover .subtask-add-btn {
+  opacity: 1;
 }
 
 .subtask-new-input {
   flex: 1;
   font-size: 13px;
   background: var(--surface2);
-  border: 1.5px solid var(--primary);
-  border-radius: 6px;
-  padding: 4px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  padding: 2px 6px;
   color: var(--text);
   outline: none;
-  width: calc(100% - 16px);
-  margin: 2px 8px;
+  width: 100%;
+  margin-top: 2px;
 }
 
 .subtask-warning-popover {
@@ -2343,70 +2339,20 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   gap: 8px;
   padding: 5px 4px;
-  border-radius: 6px;
-  transition: background 0.12s;
+  border-radius: 5px;
 }
 .modal-subtask-item.done {
-  opacity: 0.65;
+  opacity: 0.6;
 }
 .modal-subtask-item:hover {
   background: var(--surface2);
 }
-.modal-subtask-item .subtask-check {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.modal-subtask-item .subtask-check svg {
-  opacity: 0;
-  transition: opacity 0.12s;
-  color: var(--text-muted);
-}
-.modal-subtask-item .subtask-check:hover {
-  border-color: var(--success);
-  background: rgba(34, 197, 94, 0.08);
-}
-.modal-subtask-item .subtask-check:hover svg {
-  opacity: 0.4;
-  color: var(--success);
-}
-.modal-subtask-item .subtask-check.done {
-  background: var(--success);
-  border-color: var(--success);
-}
-.modal-subtask-item .subtask-check.done svg {
+.modal-subtask-item:hover .subtask-del {
   opacity: 1;
-  color: #fff;
-}
-.modal-subtask-item .subtask-del {
-  flex-shrink: 0;
-  opacity: 0.35;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
-}
-.modal-subtask-item .subtask-del:hover {
-  opacity: 1;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
 }
 
 #modalSubtaskSection .subtask-add-btn {
+  opacity: 1;
   margin-top: 4px;
 }
 
