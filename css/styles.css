@@ -2165,9 +2165,8 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .subtask-list {
-  flex: 0 0 100%;
+  flex: 0 0 calc(100% - 34px);
   margin-left: 34px;
-  margin-right: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
