@@ -2297,6 +2297,38 @@ main {
   padding: 5px 4px;
   border-radius: 5px;
 
+  .subtask-reorder {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+
+  &:hover .subtask-reorder { opacity: 1; }
+
+  .subtask-move-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 3px;
+    transition: color .15s, background .15s;
+
+    &:hover:not(.disabled) {
+      color: var(--primary);
+      background: var(--surface2);
+    }
+
+    &.disabled {
+      opacity: .25;
+      cursor: default;
+    }
+  }
+
   &.done { opacity: .6; }
 
   &:hover {
@@ -7662,7 +7694,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Step 1 (1381–1750px): collapse empty space + shrink search ─────────────
-@media (max-width: 1750px) and (min-width: 961px) {
+@media (max-width: 1750px) and (min-width: 1081px) {
   .header-top    { gap: 10px; }
   .view-tab      { padding: 5px 8px; }
   .header-spacer { display: none; }
@@ -7670,19 +7702,19 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Step 2 (961–1500px): hide utility tab labels (space exhausted) ─────────
-@media (max-width: 1500px) and (min-width: 961px) {
+@media (max-width: 1500px) and (min-width: 1081px) {
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
   .intentions-tab, .analyse-tab {
     span:not(.nav-badge) { display: none; }
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   #calSidebar { display: none; }
 }
 
-// ── Tablet (601px – 960px) ────────────────────────────────────────────────
-@media (max-width: 960px) {
+// ── Tablet (601px – 1080px) ───────────────────────────────────────────────
+@media (max-width: 1080px) {
   header { padding: 0 16px; }
   main   { padding: 16px; }
 

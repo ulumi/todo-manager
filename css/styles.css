@@ -2341,6 +2341,35 @@ input:checked + .cal-sid-toggle-track::after {
   padding: 5px 4px;
   border-radius: 5px;
 }
+.modal-subtask-item .subtask-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.modal-subtask-item:hover .subtask-reorder {
+  opacity: 1;
+}
+.modal-subtask-item .subtask-move-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+}
+.modal-subtask-item .subtask-move-btn:hover:not(.disabled) {
+  color: var(--primary);
+  background: var(--surface2);
+}
+.modal-subtask-item .subtask-move-btn.disabled {
+  opacity: 0.25;
+  cursor: default;
+}
 .modal-subtask-item.done {
   opacity: 0.6;
 }
@@ -8169,7 +8198,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-@media (max-width: 1750px) and (min-width: 961px) {
+@media (max-width: 1750px) and (min-width: 1081px) {
   .header-top {
     gap: 10px;
   }
@@ -8184,18 +8213,18 @@ body:has(.bottom-panel:not(.hidden))::before {
     flex-shrink: 1;
   }
 }
-@media (max-width: 1500px) and (min-width: 961px) {
+@media (max-width: 1500px) and (min-width: 1081px) {
   .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
   .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
     display: none;
   }
 }
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   #calSidebar {
     display: none;
   }
 }
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   header {
     padding: 0 16px;
   }

@@ -33,7 +33,7 @@ import {
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
-  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask
+  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -1189,6 +1189,7 @@ class TodoApp {
   removeModalSubtask(stid)    { removeModalSubtask(stid); }
   addModalSubtaskInline()     { addModalSubtaskInline(); }
   editModalSubtask(el, stid)  { editModalSubtask(el, stid); }
+  moveModalSubtask(stid, dir) { moveModalSubtask(stid, dir); }
 
   _trackDeletion(id) {
     const dels = JSON.parse(localStorage.getItem('_deletions') || '{}');

@@ -10,6 +10,7 @@
     "dev": "npx sass --watch css/styles.scss:css/styles.css --style=expanded"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
     "firebase-admin": "^12.0.0",
     "interactjs": "^1.10.27"
   },

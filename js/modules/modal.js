@@ -121,8 +121,13 @@ export function getModalSubtasks() { return _modalSubtasks; }
 function _renderModalSubtasks() {
   const el = document.getElementById('modalSubtaskList');
   if (!el) return;
-  el.innerHTML = _modalSubtasks.map(s => `
-    <div class="modal-subtask-item${s.completed ? ' done' : ''}">
+  const len = _modalSubtasks.length;
+  el.innerHTML = _modalSubtasks.map((s, i) => `
+    <div class="modal-subtask-item${s.completed ? ' done' : ''}" data-stid="${s.id}">
+      <div class="subtask-reorder">
+        <button class="subtask-move-btn${i === 0 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',-1)" title="Monter"${i === 0 ? ' disabled' : ''}>&#8593;</button>
+        <button class="subtask-move-btn${i === len - 1 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',1)" title="Descendre"${i === len - 1 ? ' disabled' : ''}>&#8595;</button>
+      </div>
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}')"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}')">${esc(s.title)}</span>
       <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}')">×</button>
@@ -147,6 +152,15 @@ export function removeModalSubtask(stid) {
 
 export function addModalSubtask(title) {
   _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
+  _renderModalSubtasks();
+}
+
+export function moveModalSubtask(stid, dir) {
+  const idx = _modalSubtasks.findIndex(x => x.id === stid);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= _modalSubtasks.length) return;
+  [_modalSubtasks[idx], _modalSubtasks[newIdx]] = [_modalSubtasks[newIdx], _modalSubtasks[idx]];
   _renderModalSubtasks();
 }
 
@@ -634,9 +648,9 @@ export function openModal(date, todos, scheduleMode = 'date') {
   populateProjectTags([]);
   populateIntentionTags([]);
   switchTagTab('categories');
-  // Subtasks — hidden for new tasks
+  // Subtasks — visible for all task types (today, date, recurrent)
   const _stSection = document.getElementById('modalSubtaskSection');
-  if (_stSection) _stSection.style.display = 'none';
+  if (_stSection) _stSection.style.display = '';
   populateModalSubtasks([]);
   // Restore draft (new tasks only)
   const draftBanner = document.getElementById('draftBanner');
