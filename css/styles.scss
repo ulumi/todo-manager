@@ -2085,16 +2085,13 @@ main {
 // ── Subtasks ──────────────────────────────────────────────────────────────────
 
 .subtask-dots {
-  flex-shrink: 0;
+  flex-basis: 100%;
   display: flex;
   align-items: center;
   gap: 3px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 0;
   border-radius: 8px;
-  transition: background .15s;
-
-  &:hover { background: var(--surface2); }
 
   .st-dot {
     width: 7px;
@@ -7718,7 +7715,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 // ── Step 3 (601–1100px): iPad / tablet — compact single-line header ───────
 @media (max-width: 1100px) and (min-width: 601px) {
-  .header-top       { gap: 0; padding: 8px 0; justify-content: space-evenly; }
+  .header-top       { gap: 0; padding: 8px 0; justify-content: space-between; }
   .header-sep       { display: none; }
   .header-spacer    { display: none; }
   .app-title        { flex-shrink: 0; margin-right: 0; }
@@ -7731,20 +7728,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   .utility-tabs--insights { flex-shrink: 0; margin-left: 0; padding: 2px; gap: 1px; }
   .utility-sep      { margin: 0 1px; }
   .nav-btn          { width: 26px; height: 26px; }
-  .quick-find-wrapper { display: none; }
-  .lang-select       { display: none; }
-  .chat-inbox-btn    { display: none; }
-  .settings-btn-wrap { display: none; }
-  .playground-link   { display: none; }
-  .add-btn           { display: none; }
-  .zoom-group        { display: none; }
+  .quick-find-wrapper { display: none !important; }
+  .lang-select       { display: none !important; }
+  .chat-inbox-btn    { display: none !important; }
+  .settings-btn-wrap { display: none !important; }
+  .playground-link   { display: none !important; }
+  .add-btn           { display: none !important; }
+  .zoom-group        { display: none !important; }
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
   .intentions-tab, .analyse-tab {
     span:not(.nav-badge) { display: none; }
   }
   .nav-group         { flex-shrink: 0; margin-left: 0; }
   .period-label      { min-width: auto; font-size: 13px; }
-  #hamburgerBtn      { margin-left: auto; flex-shrink: 0; }
+  #hamburgerBtn      { flex-shrink: 0; }
 }
 
 @media (max-width: 960px) {

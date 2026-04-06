@@ -2128,17 +2128,13 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .subtask-dots {
-  flex-shrink: 0;
+  flex-basis: 100%;
   display: flex;
   align-items: center;
   gap: 3px;
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 2px 0;
   border-radius: 8px;
-  transition: background 0.15s;
-}
-.subtask-dots:hover {
-  background: var(--surface2);
 }
 .subtask-dots .st-dot {
   width: 7px;
@@ -8225,7 +8221,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .header-top {
     gap: 0;
     padding: 8px 0;
-    justify-content: space-evenly;
+    justify-content: space-between;
   }
   .header-sep {
     display: none;
@@ -8276,25 +8272,25 @@ body:has(.bottom-panel:not(.hidden))::before {
     height: 26px;
   }
   .quick-find-wrapper {
-    display: none;
+    display: none !important;
   }
   .lang-select {
-    display: none;
+    display: none !important;
   }
   .chat-inbox-btn {
-    display: none;
+    display: none !important;
   }
   .settings-btn-wrap {
-    display: none;
+    display: none !important;
   }
   .playground-link {
-    display: none;
+    display: none !important;
   }
   .add-btn {
-    display: none;
+    display: none !important;
   }
   .zoom-group {
-    display: none;
+    display: none !important;
   }
   .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
   .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
@@ -8309,7 +8305,6 @@ body:has(.bottom-panel:not(.hidden))::before {
     font-size: 13px;
   }
   #hamburgerBtn {
-    margin-left: auto;
     flex-shrink: 0;
   }
 }

@@ -108,8 +108,8 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${dotsHTML}
       </div>
-      ${dotsHTML}
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}
       ${expandedHTML}
