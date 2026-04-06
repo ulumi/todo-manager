@@ -4771,6 +4771,9 @@ class TodoApp {
     pushFirestoreNow();
   }
 
+  /** Force push all local data to Firestore (useful for manual sync recovery) */
+  forcePush() { pushFirestoreNow(); console.log('[sync] force push done'); }
+
   addIntentionFromView() {
     const intentions = this._getIntentions();
     const color = TodoApp._INTENTION_COLORS[intentions.length % TodoApp._INTENTION_COLORS.length];
