@@ -5058,17 +5058,22 @@ class TodoApp {
       return;
     }
 
+    const { _firestoreUpdatedAt, ...cleanBackup } = backup;
+
     // Primary guard: if local has todos AND a push is pending (last push failed or
     // page reloaded before push completed), retry the push — BUT only if local data
     // is not clearly older than Firestore (prevents stale devices from overwriting).
     if (state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') {
       const localWriteTime  = parseInt(localStorage.getItem('_localWriteTime') || '0');
-      const firestoreTime   = backup._firestoreUpdatedAt || 0;
+      const firestoreTime   = _firestoreUpdatedAt || 0;
       if (firestoreTime > localWriteTime + 5000) {
         // Firestore is clearly newer — our pending push is stale, discard it
         localStorage.removeItem('_pendingSync');
       } else {
+        // Merge first, THEN push — never overwrite remote-only items
+        this._applyBackup(cleanBackup, { silent: true });
         await pushToFirestore(getFullBackup(state.todos));
+        this.render();
         return;
       }
     }
@@ -5076,13 +5081,14 @@ class TodoApp {
     // Secondary guard: compare timestamps. Local wins if it's strictly newer than
     // Firestore by more than 5s (tolerates clock drift between client and server).
     const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
-    const firestoreTime  = backup._firestoreUpdatedAt || 0;
+    const firestoreTime  = _firestoreUpdatedAt || 0;
     if (localWriteTime > 0 && firestoreTime > 0 && localWriteTime > firestoreTime + 5000) {
+      // Merge first, THEN push — never overwrite remote-only items
+      this._applyBackup(cleanBackup, { silent: true });
       await pushToFirestore(getFullBackup(state.todos));
+      this.render();
       return;
     }
-
-    const { _firestoreUpdatedAt, ...cleanBackup } = backup;
 
     // If local config was changed after the last Firestore push, preserve it.
     // This prevents BrowserSync reloads (or any page reload) from reverting
@@ -5164,12 +5170,36 @@ class TodoApp {
         saveTodos(state.todos);
       }
     }
-    if (backup.categories)     localStorage.setItem('categories',         JSON.stringify(backup.categories));
-    if (backup.templates)      localStorage.setItem('dayTemplates',      JSON.stringify(backup.templates));
-    if (backup.suggestedTasks) localStorage.setItem('suggestedTasks',    JSON.stringify(backup.suggestedTasks));
-    if (backup.taskOrder)      localStorage.setItem('projectTaskOrder',  JSON.stringify(backup.taskOrder));
-    if (backup.intentions)     localStorage.setItem('intentions',        JSON.stringify(backup.intentions));
-    if (backup.projects)  saveProjects(backup.projects);
+    if (backup.categories) {
+      const prev = localStorage.getItem('categories');
+      const next = JSON.stringify(backup.categories);
+      if (prev !== next) { localStorage.setItem('categories', next); changed = true; }
+    }
+    if (backup.templates) {
+      const prev = localStorage.getItem('dayTemplates');
+      const next = JSON.stringify(backup.templates);
+      if (prev !== next) { localStorage.setItem('dayTemplates', next); changed = true; }
+    }
+    if (backup.suggestedTasks) {
+      const prev = localStorage.getItem('suggestedTasks');
+      const next = JSON.stringify(backup.suggestedTasks);
+      if (prev !== next) { localStorage.setItem('suggestedTasks', next); changed = true; }
+    }
+    if (backup.taskOrder) {
+      const prev = localStorage.getItem('projectTaskOrder');
+      const next = JSON.stringify(backup.taskOrder);
+      if (prev !== next) { localStorage.setItem('projectTaskOrder', next); changed = true; }
+    }
+    if (backup.intentions) {
+      const prev = localStorage.getItem('intentions');
+      const next = JSON.stringify(backup.intentions);
+      if (prev !== next) { localStorage.setItem('intentions', next); changed = true; }
+    }
+    if (backup.projects) {
+      const prev = localStorage.getItem('projects');
+      const next = JSON.stringify(backup.projects);
+      if (prev !== next) { saveProjects(backup.projects); changed = true; }
+    }
     if (backup.config) {
       if (backup.config.zoom)       localStorage.setItem('zoom',       backup.config.zoom);
       if (backup.config.lang)       localStorage.setItem('lang',       backup.config.lang);
@@ -5179,6 +5209,7 @@ class TodoApp {
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);
+      changed = true;
     }
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
