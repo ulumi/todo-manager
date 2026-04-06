@@ -379,15 +379,20 @@ export function renderDayView(todos) {
   const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
   let rightColItems = '';
 
-  // Punctual period sections (rendered before sort-mode items)
-  const hasPunctualPeriods = sortedPunctualMorning.length > 0 || sortedPunctualAfternoon.length > 0 || sortedPunctualEvening.length > 0;
+  // Punctual period sections — always render all 3 when period groups enabled (for drop targets)
+  const hasPunctualPeriods = dayPeriodGroupsForRender;
   let punctualPeriodSections = '';
-  if (sortedPunctualMorning.length > 0)
-    punctualPeriodSections += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="punctual-morning" style="${colStyle}">${sortedPunctualMorning.map(t => todoItemHTML(t, navDate, 'punctual-morning')).join('')}</div>`;
-  if (sortedPunctualAfternoon.length > 0)
-    punctualPeriodSections += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="punctual-afternoon" style="${colStyle}">${sortedPunctualAfternoon.map(t => todoItemHTML(t, navDate, 'punctual-afternoon')).join('')}</div>`;
-  if (sortedPunctualEvening.length > 0)
-    punctualPeriodSections += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="punctual-evening" style="${colStyle}">${sortedPunctualEvening.map(t => todoItemHTML(t, navDate, 'punctual-evening')).join('')}</div>`;
+  const _mkPeriodSection = (items, group, label) => {
+    const content = items.length
+      ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+      : `<div class="period-dropzone"></div>`;
+    return `<div class="day-heure-section${items.length ? '' : ' day-heure-section--empty'}" data-period="${group.replace('punctual-', '')}"><div class="day-period-label day-heure-label" data-period="${group.replace('punctual-', '')}">${label}</div><div class="todo-list" data-group="${group}" style="${colStyle}">${content}</div></div>`;
+  };
+  if (dayPeriodGroupsForRender && daySort !== 'chrono') {
+    punctualPeriodSections += _mkPeriodSection(sortedPunctualMorning, 'punctual-morning', 'Matin');
+    punctualPeriodSections += _mkPeriodSection(sortedPunctualAfternoon, 'punctual-afternoon', 'Après-midi');
+    punctualPeriodSections += _mkPeriodSection(sortedPunctualEvening, 'punctual-evening', 'Soir');
+  }
 
   if (daySort === 'priority') {
     // Group by priority

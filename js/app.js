@@ -2108,7 +2108,8 @@ class TodoApp {
       if (!draggedEl) return;
 
       const _ds = localStorage.getItem('daySort');
-      const isHeureDrop = _ds === 'chrono' || _ds === 'heure';
+      const _periodGroups = localStorage.getItem('dayPeriodGroups') !== 'false';
+      const isHeureDrop = _ds === 'chrono' || _ds === 'heure' || _periodGroups;
       const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
 
       // Hover on a todo-item → drop after it
@@ -2275,9 +2276,10 @@ class TodoApp {
       removePlaceholder();
       if (!draggedEl) return;
 
-      // In chrono sort mode, change the item's dayPeriod to match the target section
+      // Change the item's dayPeriod to match the target section (chrono or period groups)
       const _dsMode = localStorage.getItem('daySort');
-      if ((_dsMode === 'chrono' || _dsMode === 'heure') && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
+      const _pgMode = localStorage.getItem('dayPeriodGroups') !== 'false';
+      if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
         const t = state.todos.find(x => x.id === draggedEl.dataset.id);
         if (t) {
           if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
