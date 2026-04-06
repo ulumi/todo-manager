@@ -5213,23 +5213,32 @@ class TodoApp {
     const defaultLogoSVG = `<svg class="logo-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="26" height="26" rx="7" fill="var(--primary)"/><path d="M7 13.5L11 17.5L19 9" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const defaultBtnSVG  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 
+    // Build desired HTML to avoid unnecessary innerHTML replacement (prevents animation replay)
+    let logoHTML = defaultLogoSVG, btnHTML = defaultBtnSVG;
+    let hasAvatar = false;
+
     if (avatarData?.type === 'emoji' && avatarData.value) {
-      if (logoAvatar) {
-        logoAvatar.classList.add('logo-avatar--has-avatar');
-        logoAvatar.innerHTML = `<span class="logo-avatar-emoji" style="--ed-s:${avatarData.scale ?? 1.4};--ed-x:${avatarData.x ?? 0}px;--ed-y:${avatarData.y ?? 0}px">${avatarData.value}</span>`;
-      }
-      if (btn) { btn.classList.add('user-btn--has-avatar'); btn.innerHTML = `<span class="user-btn-emoji">${avatarData.value}</span>`; }
+      hasAvatar = true;
+      logoHTML = `<span class="logo-avatar-emoji" style="--ed-s:${avatarData.scale ?? 1.4};--ed-x:${avatarData.x ?? 0}px;--ed-y:${avatarData.y ?? 0}px">${avatarData.value}</span>`;
+      btnHTML = `<span class="user-btn-emoji">${avatarData.value}</span>`;
     } else if (avatarData?.type === 'photo' && avatarData.data) {
+      hasAvatar = true;
       const f = FILTERS.find(f => f.id === avatarData.filter);
       const styleAttr = (f?.css && !f.canvas) ? ` style="filter:${f.css}"` : '';
-      if (logoAvatar) {
-        logoAvatar.classList.add('logo-avatar--has-avatar');
-        logoAvatar.innerHTML = `<img src="${avatarData.data}" class="logo-avatar-photo"${styleAttr}>`;
+      logoHTML = `<img src="${avatarData.data}" class="logo-avatar-photo"${styleAttr}>`;
+      btnHTML = `<img src="${avatarData.data}" class="user-btn-photo"${styleAttr}>`;
+    }
+
+    if (logoAvatar) {
+      logoAvatar.classList.toggle('logo-avatar--has-avatar', hasAvatar);
+      if (logoAvatar.dataset.avatarKey !== (avatarData ? JSON.stringify({t: avatarData.type, v: avatarData.value || '', f: avatarData.filter || ''}) : '')) {
+        logoAvatar.dataset.avatarKey = avatarData ? JSON.stringify({t: avatarData.type, v: avatarData.value || '', f: avatarData.filter || ''}) : '';
+        logoAvatar.innerHTML = logoHTML;
       }
-      if (btn) { btn.classList.add('user-btn--has-avatar'); btn.innerHTML = `<img src="${avatarData.data}" class="user-btn-photo"${styleAttr}>`; }
-    } else {
-      if (logoAvatar) { logoAvatar.classList.remove('logo-avatar--has-avatar'); logoAvatar.innerHTML = defaultLogoSVG; }
-      if (btn) { btn.classList.remove('user-btn--has-avatar'); btn.innerHTML = defaultBtnSVG; }
+    }
+    if (btn) {
+      btn.classList.toggle('user-btn--has-avatar', hasAvatar);
+      btn.innerHTML = btnHTML;
     }
 
     // Trigger logo entrance animation AFTER content is set (first call only)
@@ -5237,6 +5246,9 @@ class TodoApp {
       logoAvatar.dataset.animated = '1';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         logoAvatar.classList.add('logo-avatar--entering');
+        logoAvatar.addEventListener('animationend', () => {
+          logoAvatar.classList.remove('logo-avatar--entering');
+        }, { once: true });
       }));
     }
   }
