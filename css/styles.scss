@@ -2126,10 +2126,13 @@ main {
 .subtask-list {
   flex: 0 0 100%;
   margin-left: 34px; // check (22px) + gap (12px)
+  margin-right: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding-bottom: 4px;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
 .subtask-item {
@@ -2138,10 +2141,8 @@ main {
   gap: 8px;
   padding: 3px 4px;
   border-radius: 6px;
-  transition: background .15s;
 
   &:hover {
-    background: var(--surface2);
     .subtask-del { opacity: 1; }
   }
 
@@ -2220,15 +2221,20 @@ main {
 .subtask-add-btn {
   opacity: 0;
   background: none;
-  border: none;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
   cursor: pointer;
   color: var(--text-muted);
   font-size: 12px;
-  padding: 4px 2px;
+  padding: 3px 4px;
   text-align: left;
-  transition: opacity .15s, color .15s;
+  width: 100%;
+  transition: opacity .15s, color .15s, border-color .15s;
 
-  &:hover { color: var(--primary); }
+  &:hover {
+    color: var(--primary);
+    border-color: var(--primary);
+  }
 }
 
 .todo-item:hover .subtask-add-btn,
@@ -2300,22 +2306,19 @@ main {
   .subtask-reorder {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    opacity: 0;
-    transition: opacity .15s;
+    gap: 0;
+    flex-shrink: 0;
   }
-
-  &:hover .subtask-reorder { opacity: 1; }
 
   .subtask-move-btn {
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: 16px;
     line-height: 1;
-    padding: 1px 3px;
-    border-radius: 3px;
+    padding: 0 4px;
+    border-radius: 4px;
     transition: color .15s, background .15s;
 
     &:hover:not(.disabled) {
@@ -2324,7 +2327,7 @@ main {
     }
 
     &.disabled {
-      opacity: .25;
+      opacity: .2;
       cursor: default;
     }
   }
@@ -7694,7 +7697,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Step 1 (1381–1750px): collapse empty space + shrink search ─────────────
-@media (max-width: 1750px) and (min-width: 1081px) {
+@media (max-width: 1750px) and (min-width: 961px) {
   .header-top    { gap: 10px; }
   .view-tab      { padding: 5px 8px; }
   .header-spacer { display: none; }
@@ -7702,75 +7705,55 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Step 2 (961–1500px): hide utility tab labels (space exhausted) ─────────
-@media (max-width: 1500px) and (min-width: 1081px) {
+@media (max-width: 1500px) and (min-width: 961px) {
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
   .intentions-tab, .analyse-tab {
     span:not(.nav-badge) { display: none; }
   }
 }
 
-@media (max-width: 1080px) {
+// ── Step 3 (601–1100px): iPad / tablet — compact single-line header ───────
+@media (max-width: 1100px) and (min-width: 601px) {
+  .header-top       { gap: 6px; padding: 8px 0; }
+  .header-sep       { display: none; }
+  .header-spacer    { display: none; }
+  .app-title        { margin-right: 2px; }
+  .logo-avatar      { width: 36px; height: 36px; border-radius: 10px; }
+  .logo-avatar--has-avatar { clip-path: circle(18px at center); }
+  .logo-text        { display: none; }
+  .view-tabs        { padding: 2px; gap: 1px; }
+  .view-tab         { padding: 4px 6px; font-size: 12px; }
+  .utility-tabs     { padding: 2px; gap: 1px; }
+  .utility-tabs--insights { margin-left: 3px; padding: 2px; gap: 1px; }
+  .utility-sep      { margin: 0 1px; }
+  .nav-btn          { width: 26px; height: 26px; }
+  .quick-find-wrapper {
+    #quickFindInput       { display: none; }
+    .search-btn-label     { display: none; }
+    .quick-find-search-btn { border-radius: 6px; padding: 5px 7px; }
+  }
+  .lang-select       { display: none; }
+  .chat-inbox-btn    { display: none; }
+  .settings-btn-wrap { display: none; }
+  .playground-link   { display: none; }
+  .add-btn           { display: none; }
+  .zoom-group        { display: none; }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
+    span:not(.nav-badge) { display: none; }
+  }
+  .nav-group         { margin-left: 0; }
+  .period-label      { min-width: auto; font-size: 13px; }
+}
+
+@media (max-width: 960px) {
   #calSidebar { display: none; }
 }
 
-// ── Tablet (601px – 1080px) ───────────────────────────────────────────────
-@media (max-width: 1080px) {
+// ── Tablet content (601px – 960px) ────────────────────────────────────────
+@media (max-width: 960px) {
   header { padding: 0 16px; }
   main   { padding: 16px; }
-
-  // Header: wrap into rows (prevents app-title squishing)
-  .header-top {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    padding: 8px 4px;
-    gap: 8px;
-  }
-
-  .header-sep    { display: none; }
-  .header-spacer { display: none; }
-
-  // Row 1: [logo] [chat] [spacer→] [settings] [playground] [lang] [user] [hamburger]
-  .app-title           { order: 1; flex-shrink: 0; }
-  .chat-inbox-btn      { order: 2; flex-shrink: 0; }
-  .settings-btn-wrap   { order: 3; margin-left: auto; }
-  .playground-link     { order: 4; }
-  .lang-select         { display: block; order: 5; }
-  .user-btn            { order: 6; }
-  #hamburgerBtn        { order: 7; }
-  .add-btn         { display: none; }
-  .zoom-group      { display: none; }
-
-  // Flex break after row 1
-  .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
-
-  // Row 2: view tabs + utility tabs + search
-  .view-tabs      { order: 10; flex: 1; justify-content: center; }
-  .utility-tabs, .utility-tabs--insights { display: contents; } // transparent wrapper on mobile
-  .view-tab       { flex: 1; text-align: center; padding: 6px 6px; font-size: 13px; }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab { order: 10; flex: none; }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab {
-    span:not(.nav-badge) { display: none; }
-  }
-  .utility-sep { display: none; }
-  .today-btn      { order: 10; margin-right: 0; }
-
-  // Search: icon-only on mobile, right side of row 2
-  .quick-find-wrapper {
-    order: 10;
-    flex: none;
-    #quickFindInput       { display: none; }
-    .search-btn-label     { display: none; }
-    .quick-find-search-btn {
-      border-radius: 6px;
-      padding: 6px 8px;
-    }
-  }
-
-  // Row 3: nav group
-  .nav-group    { order: 20; width: 100%; justify-content: center; margin-left: 0; }
-  .period-label { min-width: 100px; font-size: 14px; }
 
   // Day mini-week: hidden on tablet/mobile
   .day-mini-week { display: none; }
@@ -7815,12 +7798,54 @@ body:has(.bottom-panel:not(.hidden))::before {
   header { padding: 0 12px; }
   main   { padding: 12px; }
 
-  .header-top { padding: 8px 4px; gap: 8px; }
+  .header-top {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    padding: 8px 4px;
+    gap: 8px;
+  }
 
-  // Row 2: smaller tabs
-  .view-tab { padding: 6px 4px; font-size: 12px; }
+  .header-sep    { display: none; }
+  .header-spacer { display: none; }
 
-  // Row 3: smaller period label
+  // Row 1: [logo] [spacer→] [user] [hamburger]
+  .app-title           { order: 1; flex-shrink: 0; }
+  .chat-inbox-btn      { display: none; }
+  .settings-btn-wrap   { display: none; }
+  .playground-link     { display: none; }
+  .lang-select         { display: none; }
+  .user-btn            { order: 6; }
+  #hamburgerBtn        { order: 7; margin-left: auto; }
+  .add-btn             { display: none; }
+  .zoom-group          { display: none; }
+
+  // Flex break after row 1
+  .header-top::after { content: ''; order: 9; width: 100%; height: 0; }
+
+  // Row 2: view tabs + utility tabs + search
+  .view-tabs      { order: 10; flex: 1; justify-content: center; }
+  .utility-tabs, .utility-tabs--insights { display: contents; }
+  .view-tab       { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab { order: 10; flex: none; }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
+    span:not(.nav-badge) { display: none; }
+  }
+  .utility-sep { display: none; }
+  .today-btn   { order: 10; margin-right: 0; }
+
+  // Search: icon-only
+  .quick-find-wrapper {
+    order: 10;
+    flex: none;
+    #quickFindInput       { display: none; }
+    .search-btn-label     { display: none; }
+    .quick-find-search-btn { border-radius: 6px; padding: 6px 8px; }
+  }
+
+  // Row 3: nav group
+  .nav-group    { order: 20; width: 100%; justify-content: center; margin-left: 0; }
   .period-label { font-size: 13px; min-width: 90px; }
 
   // Day columns: stack to single column

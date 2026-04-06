@@ -2167,10 +2167,13 @@ input:checked + .cal-sid-toggle-track::after {
 .subtask-list {
   flex: 0 0 100%;
   margin-left: 34px;
+  margin-right: 0;
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding-bottom: 4px;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
 .subtask-item {
@@ -2179,10 +2182,6 @@ input:checked + .cal-sid-toggle-track::after {
   gap: 8px;
   padding: 3px 4px;
   border-radius: 6px;
-  transition: background 0.15s;
-}
-.subtask-item:hover {
-  background: var(--surface2);
 }
 .subtask-item:hover .subtask-del {
   opacity: 1;
@@ -2262,16 +2261,19 @@ input:checked + .cal-sid-toggle-track::after {
 .subtask-add-btn {
   opacity: 0;
   background: none;
-  border: none;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
   cursor: pointer;
   color: var(--text-muted);
   font-size: 12px;
-  padding: 4px 2px;
+  padding: 3px 4px;
   text-align: left;
-  transition: opacity 0.15s, color 0.15s;
+  width: 100%;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
 }
 .subtask-add-btn:hover {
   color: var(--primary);
+  border-color: var(--primary);
 }
 
 .todo-item:hover .subtask-add-btn,
@@ -2344,22 +2346,18 @@ input:checked + .cal-sid-toggle-track::after {
 .modal-subtask-item .subtask-reorder {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.modal-subtask-item:hover .subtask-reorder {
-  opacity: 1;
+  gap: 0;
+  flex-shrink: 0;
 }
 .modal-subtask-item .subtask-move-btn {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 16px;
   line-height: 1;
-  padding: 1px 3px;
-  border-radius: 3px;
+  padding: 0 4px;
+  border-radius: 4px;
   transition: color 0.15s, background 0.15s;
 }
 .modal-subtask-item .subtask-move-btn:hover:not(.disabled) {
@@ -2367,7 +2365,7 @@ input:checked + .cal-sid-toggle-track::after {
   background: var(--surface2);
 }
 .modal-subtask-item .subtask-move-btn.disabled {
-  opacity: 0.25;
+  opacity: 0.2;
   cursor: default;
 }
 .modal-subtask-item.done {
@@ -8198,7 +8196,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-@media (max-width: 1750px) and (min-width: 1081px) {
+@media (max-width: 1750px) and (min-width: 961px) {
   .header-top {
     gap: 10px;
   }
@@ -8213,29 +8211,16 @@ body:has(.bottom-panel:not(.hidden))::before {
     flex-shrink: 1;
   }
 }
-@media (max-width: 1500px) and (min-width: 1081px) {
+@media (max-width: 1500px) and (min-width: 961px) {
   .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
   .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
     display: none;
   }
 }
-@media (max-width: 1080px) {
-  #calSidebar {
-    display: none;
-  }
-}
-@media (max-width: 1080px) {
-  header {
-    padding: 0 16px;
-  }
-  main {
-    padding: 16px;
-  }
+@media (max-width: 1100px) and (min-width: 601px) {
   .header-top {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    padding: 8px 4px;
-    gap: 8px;
+    gap: 6px;
+    padding: 8px 0;
   }
   .header-sep {
     display: none;
@@ -8244,75 +8229,42 @@ body:has(.bottom-panel:not(.hidden))::before {
     display: none;
   }
   .app-title {
-    order: 1;
-    flex-shrink: 0;
+    margin-right: 2px;
   }
-  .chat-inbox-btn {
-    order: 2;
-    flex-shrink: 0;
+  .logo-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
   }
-  .settings-btn-wrap {
-    order: 3;
-    margin-left: auto;
+  .logo-avatar--has-avatar {
+    clip-path: circle(18px at center);
   }
-  .playground-link {
-    order: 4;
-  }
-  .lang-select {
-    display: block;
-    order: 5;
-  }
-  .user-btn {
-    order: 6;
-  }
-  #hamburgerBtn {
-    order: 7;
-  }
-  .add-btn {
+  .logo-text {
     display: none;
-  }
-  .zoom-group {
-    display: none;
-  }
-  .header-top::after {
-    content: "";
-    order: 9;
-    width: 100%;
-    height: 0;
   }
   .view-tabs {
-    order: 10;
-    flex: 1;
-    justify-content: center;
-  }
-  .utility-tabs, .utility-tabs--insights {
-    display: contents;
+    padding: 2px;
+    gap: 1px;
   }
   .view-tab {
-    flex: 1;
-    text-align: center;
-    padding: 6px 6px;
-    font-size: 13px;
+    padding: 4px 6px;
+    font-size: 12px;
   }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab {
-    order: 10;
-    flex: none;
+  .utility-tabs {
+    padding: 2px;
+    gap: 1px;
   }
-  .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
-  .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
-    display: none;
+  .utility-tabs--insights {
+    margin-left: 3px;
+    padding: 2px;
+    gap: 1px;
   }
   .utility-sep {
-    display: none;
+    margin: 0 1px;
   }
-  .today-btn {
-    order: 10;
-    margin-right: 0;
-  }
-  .quick-find-wrapper {
-    order: 10;
-    flex: none;
+  .nav-btn {
+    width: 26px;
+    height: 26px;
   }
   .quick-find-wrapper #quickFindInput {
     display: none;
@@ -8322,17 +8274,49 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
   .quick-find-wrapper .quick-find-search-btn {
     border-radius: 6px;
-    padding: 6px 8px;
+    padding: 5px 7px;
+  }
+  .lang-select {
+    display: none;
+  }
+  .chat-inbox-btn {
+    display: none;
+  }
+  .settings-btn-wrap {
+    display: none;
+  }
+  .playground-link {
+    display: none;
+  }
+  .add-btn {
+    display: none;
+  }
+  .zoom-group {
+    display: none;
+  }
+  .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
+  .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
+    display: none;
   }
   .nav-group {
-    order: 20;
-    width: 100%;
-    justify-content: center;
     margin-left: 0;
   }
   .period-label {
-    min-width: 100px;
-    font-size: 14px;
+    min-width: auto;
+    font-size: 13px;
+  }
+}
+@media (max-width: 960px) {
+  #calSidebar {
+    display: none;
+  }
+}
+@media (max-width: 960px) {
+  header {
+    padding: 0 16px;
+  }
+  main {
+    padding: 16px;
   }
   .day-mini-week {
     display: none;
@@ -8399,12 +8383,101 @@ body:has(.bottom-panel:not(.hidden))::before {
     padding: 12px;
   }
   .header-top {
+    flex-wrap: wrap;
+    justify-content: flex-start;
     padding: 8px 4px;
     gap: 8px;
   }
+  .header-sep {
+    display: none;
+  }
+  .header-spacer {
+    display: none;
+  }
+  .app-title {
+    order: 1;
+    flex-shrink: 0;
+  }
+  .chat-inbox-btn {
+    display: none;
+  }
+  .settings-btn-wrap {
+    display: none;
+  }
+  .playground-link {
+    display: none;
+  }
+  .lang-select {
+    display: none;
+  }
+  .user-btn {
+    order: 6;
+  }
+  #hamburgerBtn {
+    order: 7;
+    margin-left: auto;
+  }
+  .add-btn {
+    display: none;
+  }
+  .zoom-group {
+    display: none;
+  }
+  .header-top::after {
+    content: "";
+    order: 9;
+    width: 100%;
+    height: 0;
+  }
+  .view-tabs {
+    order: 10;
+    flex: 1;
+    justify-content: center;
+  }
+  .utility-tabs, .utility-tabs--insights {
+    display: contents;
+  }
   .view-tab {
+    flex: 1;
+    text-align: center;
     padding: 6px 4px;
     font-size: 12px;
+  }
+  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+  .intentions-tab, .analyse-tab {
+    order: 10;
+    flex: none;
+  }
+  .inbox-tab span:not(.nav-badge), .backlog-tab span:not(.nav-badge), .plan-icon-tab span:not(.nav-badge), .projects-tab span:not(.nav-badge),
+  .intentions-tab span:not(.nav-badge), .analyse-tab span:not(.nav-badge) {
+    display: none;
+  }
+  .utility-sep {
+    display: none;
+  }
+  .today-btn {
+    order: 10;
+    margin-right: 0;
+  }
+  .quick-find-wrapper {
+    order: 10;
+    flex: none;
+  }
+  .quick-find-wrapper #quickFindInput {
+    display: none;
+  }
+  .quick-find-wrapper .search-btn-label {
+    display: none;
+  }
+  .quick-find-wrapper .quick-find-search-btn {
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  .nav-group {
+    order: 20;
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
   }
   .period-label {
     font-size: 13px;

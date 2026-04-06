@@ -142,17 +142,19 @@ export function populateModalSubtasks(subtasks) {
 
 export function toggleModalSubtask(stid) {
   const s = _modalSubtasks.find(x => x.id === stid);
-  if (s) { s.completed = !s.completed; _renderModalSubtasks(); }
+  if (s) { s.completed = !s.completed; _renderModalSubtasks(); _scheduleDraftSave(); }
 }
 
 export function removeModalSubtask(stid) {
   _modalSubtasks = _modalSubtasks.filter(x => x.id !== stid);
   _renderModalSubtasks();
+  _scheduleDraftSave();
 }
 
 export function addModalSubtask(title) {
   _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
   _renderModalSubtasks();
+  _scheduleDraftSave();
 }
 
 export function moveModalSubtask(stid, dir) {
@@ -162,6 +164,7 @@ export function moveModalSubtask(stid, dir) {
   if (newIdx < 0 || newIdx >= _modalSubtasks.length) return;
   [_modalSubtasks[idx], _modalSubtasks[newIdx]] = [_modalSubtasks[newIdx], _modalSubtasks[idx]];
   _renderModalSubtasks();
+  _scheduleDraftSave();
 }
 
 export function editModalSubtask(el, stid) {
@@ -176,7 +179,7 @@ export function editModalSubtask(el, stid) {
   const save = () => {
     el.contentEditable = 'false';
     const newTitle = el.textContent.trim();
-    if (newTitle) s.title = newTitle;
+    if (newTitle) { s.title = newTitle; _scheduleDraftSave(); }
     else el.textContent = esc(s.title);
   };
   el.addEventListener('blur', save, { once: true });
@@ -250,6 +253,7 @@ function _saveDraft() {
     monthLastDay: state.selectedMonthLastDay,
     yearMonth: state.selectedYearMonth,
     yearDay: state.selectedYearDay,
+    subtasks: _modalSubtasks.length ? _modalSubtasks : undefined,
   }));
 }
 
@@ -278,6 +282,7 @@ export function discardDraft() {
   populateProjectTags([]);
   populateIntentionTags([]);
   switchTagTab('categories');
+  populateModalSubtasks([]);
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
@@ -325,6 +330,7 @@ function _tryRestoreDraft() {
     selectRecurrence(d.recurrence);
   }
   if (d.dayPeriod) window.app?.selectDayPeriod(d.dayPeriod);
+  if (d.subtasks?.length) populateModalSubtasks(d.subtasks);
   return true;
 }
 
