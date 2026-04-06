@@ -1065,6 +1065,9 @@ input:checked + .cal-sid-toggle-track::after {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+.day-col--punctual .todo-list .todo-item:has(.subtask-list) {
+  grid-column: 1/-1;
+}
 .day-col--recurring .todo-list {
   display: grid;
   gap: 10px;
@@ -8218,8 +8221,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 @media (max-width: 1100px) and (min-width: 601px) {
   .header-top {
-    gap: 6px;
+    gap: 0;
     padding: 8px 0;
+    justify-content: space-between;
   }
   .header-sep {
     display: none;
@@ -8228,7 +8232,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     display: none;
   }
   .app-title {
-    margin-right: 2px;
+    margin-right: 0;
+    flex: 1;
   }
   .logo-avatar {
     width: 36px;
@@ -8242,6 +8247,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     display: none;
   }
   .view-tabs {
+    flex: 3;
+    justify-content: center;
     padding: 2px;
     gap: 1px;
   }
@@ -8250,11 +8257,15 @@ body:has(.bottom-panel:not(.hidden))::before {
     font-size: 12px;
   }
   .utility-tabs {
+    flex: 3;
+    justify-content: center;
     padding: 2px;
     gap: 1px;
   }
   .utility-tabs--insights {
-    margin-left: 3px;
+    flex: 2;
+    justify-content: center;
+    margin-left: 0;
     padding: 2px;
     gap: 1px;
   }
@@ -8265,15 +8276,8 @@ body:has(.bottom-panel:not(.hidden))::before {
     width: 26px;
     height: 26px;
   }
-  .quick-find-wrapper #quickFindInput {
+  .quick-find-wrapper {
     display: none;
-  }
-  .quick-find-wrapper .search-btn-label {
-    display: none;
-  }
-  .quick-find-wrapper .quick-find-search-btn {
-    border-radius: 6px;
-    padding: 5px 7px;
   }
   .lang-select {
     display: none;
@@ -8298,11 +8302,17 @@ body:has(.bottom-panel:not(.hidden))::before {
     display: none;
   }
   .nav-group {
+    flex: 1;
     margin-left: 0;
+    justify-content: center;
   }
   .period-label {
     min-width: auto;
     font-size: 13px;
+  }
+  #hamburgerBtn {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 }
 @media (max-width: 960px) {
