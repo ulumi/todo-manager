@@ -1,29 +1,9 @@
 // Vercel Serverless Function — GET /api/ical?token=<token>
 // Generates a live iCal feed from the user's Supabase todos.
 
-let _supabase;
-function getSupabase() {
-  if (!_supabase) {
-    try { _supabase = require('./_supabase').supabase; }
-    catch(e) { return { error: e.message }; }
-  }
-  return _supabase;
-}
+const { supabase } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
-  // Quick debug: if ?debug=1, show env info
-  if (req.query?.debug === '1') {
-    const s = getSupabase();
-    return res.status(200).json({
-      node: process.version,
-      hasUrl: !!process.env.SUPABASE_URL,
-      hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      supabaseType: typeof s?.from,
-      error: s?.error,
-    });
-  }
-
-  const supabase = getSupabase();
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'GET') { res.status(405).end(); return; }
