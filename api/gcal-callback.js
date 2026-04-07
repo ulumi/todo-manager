@@ -1,9 +1,9 @@
 // GET /api/gcal-callback — Handles Google OAuth2 redirect.
 // Exchanges authorization code for refresh token and stores it in Supabase.
 
-const { supabase, APP_URL } = require('./_supabase');
+import { supabase, APP_URL } from './_supabase.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const { code, state: uid, error } = req.query;
 
   if (error) {

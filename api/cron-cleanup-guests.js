@@ -4,12 +4,12 @@
 //   2. Disabled (banned) accounts older than 7 days
 //   3. Orphan presence/messages for deleted users
 
-const { supabase, ADMIN_UIDS } = require('./_supabase');
+import { supabase, ADMIN_UIDS } from './_supabase.js';
 
 const FORTY_EIGHT_H = 48 * 60 * 60 * 1000;
 const SEVEN_DAYS    =  7 * 24 * 60 * 60 * 1000;
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') { res.status(405).end(); return; }
 
   const secret = process.env.CRON_SECRET;

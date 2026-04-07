@@ -1,8 +1,8 @@
 // Vercel Serverless Function — GET /api/admin-messages?uid=xxx  /  POST send
 
-const { supabase, verifyAdmin, corsHeaders, parseBody } = require('./_supabase');
+import { supabase, verifyAdmin, corsHeaders, parseBody } from './_supabase.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
 

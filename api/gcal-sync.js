@@ -1,6 +1,6 @@
 // POST /api/gcal-sync — Push todos to Google Calendar.
 
-const { supabase, verifyToken, corsHeaders } = require('./_supabase');
+import { supabase, verifyToken, corsHeaders } from './_supabase.js';
 
 // ── Google API helpers ─────────────────────────────────────
 
@@ -78,7 +78,7 @@ function todoToEvent(todo, tz, baseMins, idx) {
 
 // ── Handler ───────────────────────────────────────────────
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).end(); return; }

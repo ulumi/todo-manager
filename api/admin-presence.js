@@ -1,8 +1,8 @@
 // Vercel Serverless Function — GET /api/admin-presence
 
-const { supabase, verifyAdmin, corsHeaders } = require('./_supabase');
+import { supabase, verifyAdmin, corsHeaders } from './_supabase.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
 

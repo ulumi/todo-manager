@@ -1,8 +1,8 @@
 // GET /api/gcal-auth — Returns Google OAuth URL for Calendar access.
 
-const { verifyToken, corsHeaders, APP_URL } = require('./_supabase');
+import { verifyToken, corsHeaders, APP_URL } from './_supabase.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'GET') { res.status(405).end(); return; }

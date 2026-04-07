@@ -3,9 +3,9 @@
 //       { action: 'broadcast', message: '...' }
 //       { action: 'clean-sessions' }
 
-const { supabase, ADMIN_UIDS, verifyAdmin, corsHeaders, parseBody } = require('./_supabase');
+import { supabase, ADMIN_UIDS, verifyAdmin, corsHeaders, parseBody } from './_supabase.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }

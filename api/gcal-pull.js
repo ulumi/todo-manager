@@ -1,6 +1,6 @@
 // GET /api/gcal-pull — Pull changes from Google Calendar back to the app.
 
-const { supabase, verifyToken, corsHeaders } = require('./_supabase');
+import { supabase, verifyToken, corsHeaders } from './_supabase.js';
 
 async function getAccessToken(refreshToken) {
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -36,7 +36,7 @@ async function getAllCalendarIds(accessToken) {
   return (data.items || []).map(c => c.id).filter(Boolean);
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   corsHeaders(req, res);
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
