@@ -5,10 +5,10 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ztibrrmebnpzmflzghjb.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const ADMIN_UIDS = (process.env.ADMIN_UIDS || '')
   .split(',').map(s => s.trim()).filter(Boolean);
