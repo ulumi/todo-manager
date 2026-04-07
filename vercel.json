@@ -2,12 +2,7 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
-  "functions": {
-    "api/*.js": {
-      "includeFiles": "api/_supabase.js"
-    }
-  },
-  "crons": [
+    "crons": [
     {
       "path": "/api/cron-cleanup-guests",
       "schedule": "0 3 * * *"
