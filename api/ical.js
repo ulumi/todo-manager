@@ -1,7 +1,17 @@
 // Vercel Serverless Function — GET /api/ical?token=<token>
 // Generates a live iCal feed from the user's Supabase todos.
 
-const { supabase } = require('./_supabase');
+let supabase;
+try {
+  supabase = require('./_supabase').supabase;
+} catch (e) {
+  // Inline fallback if _supabase helper fails
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(
+    process.env.SUPABASE_URL || 'https://ztibrrmebnpzmflzghjb.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3NzE4MCwiZXhwIjoyMDg4MjUzMTgwfQ.VkgQULfdcqY1S6x8UF6CPNDy3vOh5AwUUkMh-B-zFJs'
+  );
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
