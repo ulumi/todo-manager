@@ -8,7 +8,7 @@ import http  from 'http';
 import fs    from 'fs';
 import path  from 'path';
 import os    from 'os';
-import admin from 'firebase-admin';
+import { createClient } from '@supabase/supabase-js';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -26,20 +26,19 @@ const API_PORT  = 3333;
 const APP_PORT  = 3000;
 const DATA_DIR  = path.join(os.homedir(), '.todo-hugues');
 const APP_DIR   = __dirname;
-const SA_PATH   = path.join(APP_DIR, 'firebase-service-account.json');
 
 // UIDs that have super-admin access (comma-separated env var)
 const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
 
-// ── Firebase Admin init ──────────────────────────────────
-let adminReady = false;
-if (fs.existsSync(SA_PATH)) {
-  const serviceAccount = JSON.parse(fs.readFileSync(SA_PATH, 'utf8'));
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-  adminReady = true;
-  console.log('  Auth → Firebase Admin ready');
+// ── Supabase init ────────────────────────────────────────
+const SUPABASE_URL  = process.env.SUPABASE_URL  || 'https://ztibrrmebnpzmflzghjb.supabase.co';
+const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
+let supabase = null;
+if (SUPABASE_KEY) {
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('  Auth → Supabase ready');
 } else {
-  console.warn('  Auth → firebase-service-account.json not found — auth disabled (dev mode)');
+  console.warn('  Auth → No SUPABASE_SERVICE_ROLE_KEY — auth disabled (dev mode)');
 }
 
 // ── Data helpers ────────────────────────────────────────
@@ -82,18 +81,19 @@ function readBody(req) {
 }
 
 // ── Auth middleware ──────────────────────────────────────
-// Verifies the Firebase ID token from Authorization: Bearer <token>.
+// Verifies the Supabase access token from Authorization: Bearer <token>.
 // Returns the uid, or null if auth is disabled / token invalid.
 async function verifyToken(req) {
-  if (!adminReady) return 'dev-user'; // no service account → single dev user
+  if (!supabase) return 'dev-user'; // no Supabase key → single dev user
 
   const header = req.headers['authorization'] || '';
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return null;
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    return decoded.uid;
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    return user.id;
   } catch {
     return null;
   }
@@ -102,15 +102,16 @@ async function verifyToken(req) {
 // ── Admin auth middleware ────────────────────────────────
 // Returns uid if the request comes from a super-admin, null otherwise.
 async function verifyAdmin(req) {
-  if (!adminReady) return 'dev-admin';
+  if (!supabase) return 'dev-admin';
 
   const header = req.headers['authorization'] || '';
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return null;
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
-    if (ADMIN_UIDS.includes(decoded.uid) || decoded.admin === true) return decoded.uid;
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return null;
+    if (ADMIN_UIDS.includes(user.id)) return user.id;
     return null;
   } catch {
     return null;
@@ -148,68 +149,62 @@ http.createServer(async (req, res) => {
         return;
       }
 
-      // GET /admin/users — list all Firebase Auth accounts
+      // GET /admin/users — list all auth accounts
       if (req.method === 'GET' && req.url === '/admin/users') {
-        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
-        const result = await admin.auth().listUsers(1000);
-        const users  = result.users.map(u => ({
-          uid:          u.uid,
-          email:        u.email        || null,
-          displayName:  u.displayName  || null,
-          isAnonymous:  u.providerData.length === 0,
-          creationTime: u.metadata.creationTime,
-          lastSignIn:   u.metadata.lastSignInTime,
-          disabled:     u.disabled,
+        if (!supabase) { res.writeHead(503); res.end(JSON.stringify({ error: 'Supabase not ready' })); return; }
+        const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const users = (authData?.users || []).map(u => ({
+          uid:          u.id,
+          email:        u.email || null,
+          displayName:  u.user_metadata?.display_name || u.user_metadata?.full_name || null,
+          isAnonymous:  u.is_anonymous ?? (!u.email),
+          creationTime: u.created_at,
+          lastSignIn:   u.last_sign_in_at,
+          disabled:     u.banned_until != null,
         }));
         res.writeHead(200);
         res.end(JSON.stringify(users));
 
-      // GET /admin/presence — list currently online users (from Firestore)
+      // GET /admin/presence — list currently online users
       } else if (req.method === 'GET' && req.url === '/admin/presence') {
-        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
-        const snap   = await admin.firestore().collection('presence').where('online', '==', true).get();
-        const online = [];
-        snap.forEach(d => online.push({ uid: d.id, ...d.data(), lastSeen: d.data().lastSeen?.toMillis?.() ?? null }));
+        if (!supabase) { res.writeHead(503); res.end(JSON.stringify({ error: 'Supabase not ready' })); return; }
+        const { data } = await supabase.from('presence').select('*').eq('online', true);
+        const online = (data || []).map(d => ({
+          uid: d.user_id, ...d,
+          lastSeen: d.last_seen ? new Date(d.last_seen).getTime() : null,
+        }));
         res.writeHead(200);
         res.end(JSON.stringify(online));
 
       // POST /admin/message — send a message to a specific user
       } else if (req.method === 'POST' && req.url === '/admin/message') {
-        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        if (!supabase) { res.writeHead(503); res.end(JSON.stringify({ error: 'Supabase not ready' })); return; }
         const { targetUid, message } = await readBody(req);
         if (!targetUid || !message) {
           res.writeHead(400);
           res.end(JSON.stringify({ error: 'Missing targetUid or message' }));
           return;
         }
-        await admin.firestore()
-          .collection('admin_messages').doc(targetUid)
-          .collection('inbox').add({
-            message,
-            from:   'admin',
-            sentAt: admin.firestore.FieldValue.serverTimestamp(),
-            read:   false,
-          });
+        await supabase.from('admin_messages').insert({
+          user_id: targetUid, message, sender: 'admin',
+          sent_at: new Date().toISOString(), read: false,
+        });
         res.writeHead(200);
         res.end(JSON.stringify({ ok: true }));
 
       // GET /admin/messages/:uid — full thread for a user
       } else if (req.method === 'GET' && req.url.startsWith('/admin/messages/')) {
-        if (!adminReady) { res.writeHead(503); res.end(JSON.stringify({ error: 'Firebase Admin not ready' })); return; }
+        if (!supabase) { res.writeHead(503); res.end(JSON.stringify({ error: 'Supabase not ready' })); return; }
         const targetUid = decodeURIComponent(req.url.slice('/admin/messages/'.length));
         if (!targetUid) { res.writeHead(400); res.end(JSON.stringify({ error: 'Missing uid' })); return; }
-        const snap = await admin.firestore()
-          .collection('admin_messages').doc(targetUid)
-          .collection('inbox')
-          .orderBy('sentAt', 'asc')
-          .get();
-        const messages = [];
-        snap.forEach(d => messages.push({
-          id:      d.id,
-          message: d.data().message,
-          from:    d.data().from || 'admin',
-          sentAt:  d.data().sentAt?.toMillis?.() ?? null,
-          read:    d.data().read,
+        const { data } = await supabase
+          .from('admin_messages')
+          .select('*')
+          .eq('user_id', targetUid)
+          .order('sent_at', { ascending: true });
+        const messages = (data || []).map(m => ({
+          id: m.id, message: m.message, from: m.sender,
+          sentAt: new Date(m.sent_at).getTime(), read: m.read,
         }));
         res.writeHead(200);
         res.end(JSON.stringify(messages));

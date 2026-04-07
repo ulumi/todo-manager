@@ -857,27 +857,15 @@
   </div>
 </div>
 
-<!-- ══════════ FIREBASE + SCRIPT ══════════ -->
+<!-- ══════════ SUPABASE + SCRIPT ══════════ -->
 <script type="module">
-  import { initializeApp }                                          from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
-  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
-    from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-  import { getFirestore, doc, setDoc, serverTimestamp }
-    from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-  const firebaseConfig = {
-    apiKey:            'AIzaSyCp3bbr6hMjP7oo7bfUmRNfIA4O6IKbtkQ',
-    authDomain:        'huge-todo.firebaseapp.com',
-    projectId:         'huge-todo',
-    storageBucket:     'huge-todo.firebasestorage.app',
-    messagingSenderId: '708112988153',
-    appId:             '1:708112988153:web:af75de9f76959816dc2f28',
-  };
+  const SUPABASE_URL  = 'https://ztibrrmebnpzmflzghjb.supabase.co';
+  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzcxODAsImV4cCI6MjA4ODI1MzE4MH0.Qe0fFvwZWZWyBgYzG1rrlTMO6fnfrCxhQ9Z5CkJTEak';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-  const API  = '/api';
-  const app  = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+  const API = '/api';
 
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -885,9 +873,14 @@
   let _presenceInterval = null;
   function startPresence(user) {
     stopPresence();
-    const ref = doc(db, 'presence', user.uid);
-    const setOnline  = () => setDoc(ref, { online: true, lastSeen: serverTimestamp(), email: user.email || null, displayName: 'Admin', isAnonymous: false }, { merge: true }).catch(() => {});
-    const setOffline = () => setDoc(ref, { online: false, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+    const uid = user.id;
+    const setOnline = () => supabase.from('presence').upsert({
+      user_id: uid, online: true, last_seen: new Date().toISOString(),
+      email: user.email || null, display_name: 'Admin', is_anonymous: false,
+    }).then(() => {}).catch(() => {});
+    const setOffline = () => supabase.from('presence').upsert({
+      user_id: uid, online: false, last_seen: new Date().toISOString(),
+    }).then(() => {}).catch(() => {});
     setOnline();
     _presenceInterval = setInterval(setOnline, 30_000);
     window.addEventListener('beforeunload', setOffline);
@@ -1004,24 +997,29 @@
     loginError.style.display = 'none';
     loginBtn.disabled = true; loginBtn.textContent = 'Signing in…';
     try {
-      await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.value.trim(),
+        password: loginPassword.value,
+      });
+      if (error) throw error;
     } catch (e) {
       loginError.textContent = e.message; loginError.style.display = 'block';
       loginBtn.disabled = false; loginBtn.textContent = 'Sign in';
     }
   });
   loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
-  document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+  document.getElementById('logoutBtn').addEventListener('click', () => supabase.auth.signOut());
 
   // ── Auth state ────────────────────────────────────────
-  onAuthStateChanged(auth, async user => {
-    if (user) {
-      _token = await user.getIdToken();
+  async function handleAuthChange(session) {
+    if (session) {
+      const user = session.user;
+      _token = session.access_token;
       try { await api('/admin-users'); } catch (e) {
         loginError.textContent = e.message.startsWith('403') ? 'Access denied.' : `Error: ${e.message}`;
         loginError.style.display = 'block';
         loginBtn.disabled = false; loginBtn.textContent = 'Sign in';
-        await signOut(auth); return;
+        await supabase.auth.signOut(); return;
       }
       adminEmail.textContent = user.email;
       loginScreen.style.display = 'none';
@@ -1046,7 +1044,11 @@
       dashboard.style.display = 'none';
       loginBtn.disabled = false; loginBtn.textContent = 'Sign in';
     }
-  });
+  }
+
+  supabase.auth.onAuthStateChange((_event, session) => handleAuthChange(session));
+  // Check for existing session on load
+  supabase.auth.getSession().then(({ data: { session } }) => handleAuthChange(session));
 
   // ── Users ─────────────────────────────────────────────
   async function loadUsers(silent = false) {

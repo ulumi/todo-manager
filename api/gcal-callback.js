@@ -1,16 +1,7 @@
 // GET /api/gcal-callback — Handles Google OAuth2 redirect.
-// Exchanges authorization code for refresh token and stores it in Firestore.
+// Exchanges authorization code for refresh token and stores it in Supabase.
 
-const admin = require('firebase-admin');
-
-if (!admin.apps.length) {
-  const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || 'null');
-  if (!sa) throw new Error('FIREBASE_SERVICE_ACCOUNT env var not set');
-  admin.initializeApp({ credential: admin.credential.cert(sa) });
-}
-
-const db = admin.firestore();
-const APP_URL = 'https://todo.hugues.app';
+const { supabase, APP_URL } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
   const { code, state: uid, error } = req.query;
@@ -43,8 +34,19 @@ module.exports = async function handler(req, res) {
       return res.redirect(`${APP_URL}?gcal=error&msg=no_refresh_token`);
     }
 
-    await db.collection('users').doc(uid).collection('data').doc('main')
-      .set({ gcalRefreshToken: tokens.refresh_token, gcalConnected: true }, { merge: true });
+    // Merge gcalRefreshToken + gcalConnected into user_data JSONB
+    const { data: row } = await supabase
+      .from('user_data')
+      .select('data')
+      .eq('user_id', uid)
+      .maybeSingle();
+
+    const existing = row?.data || {};
+    await supabase.from('user_data').upsert({
+      user_id: uid,
+      data: { ...existing, gcalRefreshToken: tokens.refresh_token, gcalConnected: true },
+      updated_at: new Date().toISOString(),
+    });
 
     return res.redirect(`${APP_URL}?gcal=connected`);
   } catch (err) {

@@ -1,68 +1,34 @@
 // Vercel Serverless Function — GET /api/admin-users
-// Lists all Firebase Auth accounts (requires Admin SDK).
-// All other admin operations (presence, messages) use Firestore client SDK directly.
+// Lists all Supabase Auth accounts + presence data.
 
-const admin = require('firebase-admin');
-
-// Singleton init (Vercel may reuse warm instances)
-if (!admin.apps.length) {
-  const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || 'null');
-  if (!sa) throw new Error('FIREBASE_SERVICE_ACCOUNT env var not set');
-  admin.initializeApp({ credential: admin.credential.cert(sa) });
-}
-
-const ADMIN_UIDS = (process.env.ADMIN_UIDS || '')
-  .split(',').map(s => s.trim()).filter(Boolean);
+const { supabase, verifyAdmin, corsHeaders } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
-  const origin = req.headers.origin || '';
-  const allowedOrigins = ['https://todo.hugues.app', 'http://localhost:5500', 'http://localhost:3000', 'http://127.0.0.1:5500'];
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : 'https://todo.hugues.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-
+  corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
-  if (req.method !== 'GET')     { res.status(405).json({ error: 'Method not allowed' }); return; }
+  if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  const header = req.headers['authorization'] || '';
-  const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return; }
-
-  let decoded;
-  try {
-    decoded = await admin.auth().verifyIdToken(token);
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
-    return;
-  }
-
-  if (!ADMIN_UIDS.includes(decoded.uid) && decoded.admin !== true) {
-    res.status(403).json({ error: 'Forbidden — not an admin' });
-    return;
-  }
+  if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
   try {
-    // Fetch auth users + presence docs in parallel.
-    // Presence docs may contain displayName set via in-app guest prompt
-    // even when Firebase Auth u.displayName is null.
-    const [authResult, presenceSnap] = await Promise.all([
-      admin.auth().listUsers(1000),
-      admin.firestore().collection('presence').get(),
+    const [authResult, presenceResult] = await Promise.all([
+      supabase.auth.admin.listUsers({ perPage: 1000 }),
+      supabase.from('presence').select('*'),
     ]);
 
     const presenceMap = {};
-    presenceSnap.forEach(d => { presenceMap[d.id] = d.data(); });
+    (presenceResult.data || []).forEach(p => { presenceMap[p.user_id] = p; });
 
-    const users = authResult.users.map(u => {
-      const p = presenceMap[u.uid] || {};
+    const users = (authResult.data?.users || []).map(u => {
+      const p = presenceMap[u.id] || {};
       return {
-        uid:          u.uid,
-        email:        u.email       || null,
-        displayName:  u.displayName || p.displayName || null,
-        isAnonymous:  u.providerData.length === 0,
-        creationTime: u.metadata.creationTime,
-        lastSignIn:   u.metadata.lastSignInTime,
-        disabled:     u.disabled,
+        uid:          u.id,
+        email:        u.email || null,
+        displayName:  u.user_metadata?.display_name || u.user_metadata?.full_name || p.display_name || null,
+        isAnonymous:  u.is_anonymous ?? (!u.email),
+        creationTime: u.created_at,
+        lastSignIn:   u.last_sign_in_at,
+        disabled:     u.banned_until != null,
       };
     });
     res.status(200).json(users);

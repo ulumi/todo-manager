@@ -1,16 +1,6 @@
 // POST /api/gcal-sync — Push todos to Google Calendar.
-// Creates/updates/deletes GCal events to match app todos.
-// Requires Firebase ID token in Authorization header.
 
-const admin = require('firebase-admin');
-
-if (!admin.apps.length) {
-  const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || 'null');
-  if (!sa) throw new Error('FIREBASE_SERVICE_ACCOUNT env var not set');
-  admin.initializeApp({ credential: admin.credential.cert(sa) });
-}
-
-const db = admin.firestore();
+const { supabase, verifyToken, corsHeaders } = require('./_supabase');
 
 // ── Google API helpers ─────────────────────────────────────
 
@@ -42,13 +32,10 @@ async function gcalReq(method, path, accessToken, body) {
   if (res.status === 204 || res.status === 404 || res.status === 410) return null;
   if (!res.ok) {
     const text = await res.text();
-    console.error(`[gcal] ${method} ${path} → ${res.status}:`, text.slice(0, 500));
     throw new Error(`GCal ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
   }
   return res.json();
 }
-
-// ── iCal time helpers (mirror api/ical.js) ────────────────
 
 function minsToTimeStr(mins) {
   const m = ((mins % 1440) + 1440) % 1440;
@@ -74,16 +61,12 @@ function todoToEvent(todo, tz, baseMins, idx) {
   if (isRec) {
     const dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
     let rrule = '';
-    if (todo.recurrence === 'daily') {
-      rrule = 'FREQ=DAILY';
-    } else if (todo.recurrence === 'weekly') {
+    if (todo.recurrence === 'daily') rrule = 'FREQ=DAILY';
+    else if (todo.recurrence === 'weekly') {
       const byDay = (todo.recDays || []).map(d => dayNames[d]).join(',');
       rrule = byDay ? `FREQ=WEEKLY;BYDAY=${byDay}` : 'FREQ=WEEKLY';
-    } else if (todo.recurrence === 'monthly') {
-      rrule = 'FREQ=MONTHLY';
-    } else if (todo.recurrence === 'yearly') {
-      rrule = 'FREQ=YEARLY';
-    }
+    } else if (todo.recurrence === 'monthly') rrule = 'FREQ=MONTHLY';
+    else if (todo.recurrence === 'yearly') rrule = 'FREQ=YEARLY';
     if (rrule) {
       if (todo.endDate) rrule += `;UNTIL=${todo.endDate.replace(/-/g, '')}T${startTime.replace(/:/g, '')}`;
       event.recurrence = [`RRULE:${rrule}`];
@@ -96,32 +79,34 @@ function todoToEvent(todo, tz, baseMins, idx) {
 // ── Handler ───────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) { res.status(401).send('Missing token'); return; }
+  const user = await verifyToken(req);
+  if (!user) { res.status(401).send('Missing token'); return; }
+  const uid = user.id;
 
   try {
-    const decoded = await admin.auth().verifyIdToken(authHeader.slice(7));
-    const uid = decoded.uid;
+    const { data: row } = await supabase
+      .from('user_data')
+      .select('data')
+      .eq('user_id', uid)
+      .maybeSingle();
 
-    const snap = await db.collection('users').doc(uid).collection('data').doc('main').get();
-    if (!snap.exists) { res.status(404).send('No data'); return; }
+    if (!row) { res.status(404).send('No data'); return; }
 
-    const data = snap.data();
-    if (!data.gcalRefreshToken) { res.json({ skipped: 'not_connected' }); return; }
+    const userData = row.data;
+    if (!userData.gcalRefreshToken) { res.json({ skipped: 'not_connected' }); return; }
 
-    const accessToken = await getAccessToken(data.gcalRefreshToken);
-    const todos       = data.calendar || data.todos || [];
-    const config      = data.config || {};
+    const accessToken = await getAccessToken(userData.gcalRefreshToken);
+    const todos       = userData.calendar || userData.todos || [];
+    const config      = userData.config || {};
     const tz          = config.timezone || 'America/Montreal';
     const [hh, mm]    = (config.icalHour || '05:00').split(':');
     const baseMins    = parseInt(hh, 10) * 60 + parseInt(mm, 10);
     const f           = config.icalFilters || {};
 
-    // Apply same filters as iCal feed
     const toSync = todos.filter(t => {
       if (t.completed && !f.completed) return false;
       const isRec = t.recurrence && t.recurrence !== 'none';
@@ -130,13 +115,10 @@ module.exports = async function handler(req, res) {
       return true;
     });
 
-    console.log(`[gcal-sync] todos=${todos.length} toSync=${toSync.length} filters=`, JSON.stringify(f));
-
-    let gcalEventIds = data.gcalEventIds || {};
+    let gcalEventIds = userData.gcalEventIds || {};
     const calId = 'primary';
     let syncCount = 0;
 
-    // Create or update events
     let idx = 0;
     for (const todo of toSync) {
       const event = todoToEvent(todo, tz, baseMins, idx++);
@@ -148,7 +130,6 @@ module.exports = async function handler(req, res) {
           await gcalReq('PUT', `/calendars/${encodeURIComponent(calId)}/events/${existingGcalId}`, accessToken, event);
           syncCount++;
         } catch {
-          // Event was deleted in GCal; recreate
           const created = await gcalReq('POST', `/calendars/${encodeURIComponent(calId)}/events`, accessToken, event);
           if (created?.id) { gcalEventIds[todo.id] = created.id; syncCount++; }
         }
@@ -158,7 +139,6 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Delete GCal events for todos no longer in the sync list
     const syncedTodoIds = new Set(toSync.map(t => t.id));
     for (const [todoId, gcalId] of Object.entries(gcalEventIds)) {
       if (!syncedTodoIds.has(todoId)) {
@@ -168,8 +148,11 @@ module.exports = async function handler(req, res) {
     }
 
     // Save updated mapping + timestamp
-    await db.collection('users').doc(uid).collection('data').doc('main')
-      .set({ gcalEventIds, gcalLastSync: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await supabase.from('user_data').upsert({
+      user_id: uid,
+      data: { ...userData, gcalEventIds, gcalLastSync: new Date().toISOString() },
+      updated_at: new Date().toISOString(),
+    });
 
     res.json({ synced: syncCount });
   } catch (err) {

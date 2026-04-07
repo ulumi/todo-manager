@@ -2,7 +2,7 @@
 //  SERVICE WORKER — Full offline support
 // ════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'todo-v2';
+const CACHE_NAME = 'todo-v3-supabase';
 
 const LOCAL_ASSETS = [
   '/',
@@ -22,7 +22,7 @@ const LOCAL_ASSETS = [
   '/js/modules/events.js',
   '/js/modules/modal.js',
   '/js/modules/auth.js',
-  '/js/modules/firebase.js',
+  '/js/modules/supabase.js',
   '/js/modules/sync.js',
   '/js/modules/storage.js',
   '/js/modules/version.js',
@@ -30,16 +30,12 @@ const LOCAL_ASSETS = [
 
 const CDN_ASSETS = [
   'https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js',
+  'https://esm.sh/@supabase/supabase-js@2',
 ];
 
 // Only these CDN prefixes are intercepted by the SW.
-// Everything else (googleapis.com etc.) passes through untouched so
-// Firestore's IndexedDB offline persistence works unimpeded.
 const CDN_PREFIXES = [
-  'https://www.gstatic.com/firebasejs/',
+  'https://esm.sh/@supabase/',
   'https://cdn.jsdelivr.net/npm/gsap',
 ];
 

@@ -1,61 +1,42 @@
 // Vercel Serverless Function — GET /api/admin-messages?uid=xxx  /  POST send
-const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(
-    JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  )});
-}
-
-const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
-
-async function verifyAdmin(req) {
-  const token = (req.headers['authorization'] || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const d = await admin.auth().verifyIdToken(token);
-    return (ADMIN_UIDS.includes(d.uid) || d.admin === true) ? d.uid : null;
-  } catch { return null; }
-}
+const { supabase, verifyAdmin, corsHeaders, parseBody } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
-  const origin = req.headers.origin || '';
-  const allowedOrigins = ['https://todo.hugues.app', 'http://localhost:5500', 'http://localhost:3000', 'http://127.0.0.1:5500'];
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : 'https://todo.hugues.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
 
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
-  // GET /api/admin-messages?incoming=N — recent user→admin messages (collection group)
-  // No .where() or .orderBy() to avoid requiring any Firestore composite/collection-group index.
-  // Filter and sort entirely in JS after fetching.
+  // GET /api/admin-messages?incoming=N — recent user→admin messages
   if (req.method === 'GET' && req.query?.incoming) {
     const limit = Math.min(parseInt(req.query.incoming) || 5, 20);
-    const snap = await admin.firestore().collectionGroup('inbox').get();
-    const msgs = [];
-    snap.forEach(d => {
-      const data = d.data();
-      if (data.from !== 'user') return;
-      const uid = d.ref.parent.parent.id;
-      msgs.push({ id: d.id, uid, message: data.message, from: 'user', sentAt: data.sentAt?.toMillis?.() ?? 0, read: data.read });
-    });
-    msgs.sort((a, b) => b.sentAt - a.sentAt);
-    res.status(200).json(msgs.slice(0, limit));
+    const { data, error } = await supabase
+      .from('admin_messages')
+      .select('*')
+      .eq('sender', 'user')
+      .order('sent_at', { ascending: false })
+      .limit(limit);
+
+    if (error) { res.status(500).json({ error: error.message }); return; }
+
+    const msgs = (data || []).map(m => ({
+      id: m.id, uid: m.user_id, message: m.message,
+      from: 'user', sentAt: new Date(m.sent_at).getTime(), read: m.read,
+    }));
+    res.status(200).json(msgs);
 
   // GET /api/admin-messages?broadcasts=1 — fetch broadcast history
   } else if (req.method === 'GET' && req.query?.broadcasts) {
-    const snap = await admin.firestore()
-      .collection('broadcasts').orderBy('sentAt', 'desc').get();
-    const list = [];
-    snap.forEach(d => list.push({
-      id:             d.id,
-      message:        d.data().message,
-      from:           'admin',
-      sentAt:         d.data().sentAt?.toMillis?.() ?? null,
-      recipientCount: d.data().recipientCount ?? null,
-      broadcast:      true,
+    const { data } = await supabase
+      .from('broadcasts')
+      .select('*')
+      .order('sent_at', { ascending: false });
+
+    const list = (data || []).map(b => ({
+      id: b.id, message: b.message, from: 'admin',
+      sentAt: new Date(b.sent_at).getTime(),
+      recipientCount: b.recipient_count, broadcast: true,
     }));
     res.status(200).json(list);
 
@@ -63,32 +44,29 @@ module.exports = async function handler(req, res) {
   } else if (req.method === 'GET') {
     const uid = req.query?.uid;
     if (!uid) { res.status(400).json({ error: 'Missing uid' }); return; }
-    const snap = await admin.firestore()
-      .collection('admin_messages').doc(uid).collection('inbox')
-      .orderBy('sentAt', 'asc').get();
-    const msgs = [];
-    snap.forEach(d => msgs.push({
-      id:          d.id,
-      message:     d.data().message,
-      from:        d.data().from || 'admin',
-      sentAt:      d.data().sentAt?.toMillis?.() ?? null,
-      read:        d.data().read,
-      broadcastId: d.data().broadcastId ?? null,
+
+    const { data } = await supabase
+      .from('admin_messages')
+      .select('*')
+      .eq('user_id', uid)
+      .order('sent_at', { ascending: true });
+
+    const msgs = (data || []).map(m => ({
+      id: m.id, message: m.message, from: m.sender,
+      sentAt: new Date(m.sent_at).getTime(), read: m.read,
+      broadcastId: m.broadcast_id,
     }));
     res.status(200).json(msgs);
 
   // POST /api/admin-messages — send a message
   } else if (req.method === 'POST') {
-    let body = '';
-    await new Promise(r => { req.on('data', c => body += c); req.on('end', r); });
-    const { uid, message } = JSON.parse(body);
+    const { uid, message } = await parseBody(req);
     if (!uid || !message) { res.status(400).json({ error: 'Missing uid or message' }); return; }
-    await admin.firestore()
-      .collection('admin_messages').doc(uid).collection('inbox').add({
-        message, from: 'admin',
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        read: false,
-      });
+
+    await supabase.from('admin_messages').insert({
+      user_id: uid, message, sender: 'admin',
+      sent_at: new Date().toISOString(), read: false,
+    });
     res.status(200).json({ ok: true });
 
   } else {

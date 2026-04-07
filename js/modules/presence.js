@@ -1,33 +1,15 @@
 // ════════════════════════════════════════════════════════
-//  PRESENCE — track online status + receive admin messages
-//
-//  Firestore structure:
-//    presence/{uid}                           — online status
-//    admin_messages/{uid}/inbox/{messageId}   — incoming messages
-//
-//  Required Firestore security rules (add to your rules):
-//    match /presence/{uid} {
-//      allow read, write: if request.auth.uid == uid;
-//    }
-//    match /admin_messages/{uid}/inbox/{msg} {
-//      allow read, write: if request.auth.uid == uid;
-//    }
+//  PRESENCE — track online status + receive admin messages (Supabase)
 // ════════════════════════════════════════════════════════
 
-import {
-  doc, setDoc, updateDoc, collection, query, addDoc,
-  onSnapshot, serverTimestamp,
-} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
-
-import { db } from './firebase.js';
+import { supabase } from './supabase.js';
 
 let _heartbeat         = null;
-let _inboxUnsub        = null;
+let _inboxChannel      = null;
 let _setOffline        = null;
 let _onMessagesUpdate  = null;
 let _allMessages       = [];
 let _userId            = null;
-let _presenceRef       = null;
 let _clickCount        = 0;
 let _sessionStartMs    = null;
 
@@ -42,125 +24,158 @@ export function initPresence(user, { onMessagesUpdate } = {}) {
   _clickCount = 0;
   _sessionStartMs = Date.now();
 
-  _presenceRef = doc(db, 'presence', user.uid);
-  const presenceRef = _presenceRef;
+  const uid = user.uid;
 
-  // First call: set sessionStart for this session
-  setDoc(presenceRef, {
-    online:       true,
-    lastSeen:     serverTimestamp(),
-    sessionStart: serverTimestamp(),
-    clickCount:   0,
-    email:        user.email       || null,
-    displayName:  user.displayName || null,
-    isAnonymous:  user.isAnonymous,
-  }, { merge: true }).catch(() => {});
+  // First call: set sessionStart + online for this session
+  supabase.from('presence').upsert({
+    user_id:       uid,
+    online:        true,
+    last_seen:     new Date().toISOString(),
+    session_start: new Date().toISOString(),
+    click_count:   0,
+    email:         user.email       || null,
+    display_name:  user.displayName || null,
+    is_anonymous:  user.isAnonymous,
+  }).then(({ error }) => { if (error) console.warn('[presence] init:', error.message); });
 
-  // Heartbeat: update lastSeen + clickCount only (keeps sessionStart intact)
-  _setOnline = () => setDoc(presenceRef, {
-    online:     true,
-    lastSeen:   serverTimestamp(),
-    clickCount: _clickCount,
-  }, { merge: true }).catch(() => {});
+  // Heartbeat: update last_seen + click_count
+  _setOnline = () => supabase.from('presence').upsert({
+    user_id:     uid,
+    online:      true,
+    last_seen:   new Date().toISOString(),
+    click_count: _clickCount,
+  }).then(() => {}).catch(() => {});
 
-  _setOffline = () => setDoc(presenceRef, {
-    online:   false,
-    lastSeen: serverTimestamp(),
-  }, { merge: true }).catch(() => {});
+  _setOffline = () => supabase.from('presence').upsert({
+    user_id:   uid,
+    online:    false,
+    last_seen: new Date().toISOString(),
+  }).then(() => {}).catch(() => {});
 
   _heartbeat = setInterval(_setOnline, 30_000);
   document.addEventListener('click', _onUserClick, { capture: true });
 
   // Write avatar asynchronously (fire-and-forget)
   _getPresenceAvatar().then(avatar => {
-    setDoc(presenceRef, { avatar: avatar ?? null }, { merge: true }).catch(() => {});
+    supabase.from('presence').upsert({
+      user_id: uid,
+      avatar:  avatar ?? null,
+    }).then(() => {}).catch(() => {});
   });
 
   window.addEventListener('beforeunload', _setOffline);
   document.addEventListener('visibilitychange', _onVisibility);
 
-  // Listen to ALL inbox messages (not just unread) for the chat widget.
-  // Toasts are only shown for messages that arrive AFTER the initial load.
-  const inboxRef = collection(db, 'admin_messages', user.uid, 'inbox');
-  let _initialLoadDone = false;
+  // Load all inbox messages
+  _loadMessages(uid);
 
-  _inboxUnsub = onSnapshot(
-    query(inboxRef),
-    snap => {
-      _allMessages = [];
-      snap.forEach(d => _allMessages.push({ id: d.id, ref: d.ref, ...d.data() }));
-      // Sort by sentAt ascending (serverTimestamp → seconds field)
-      _allMessages.sort((a, b) => {
-        const ta = a.sentAt?.seconds ?? 0;
-        const tb = b.sentAt?.seconds ?? 0;
-        return ta - tb;
-      });
-
-      if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
-
-      // Show toasts only for NEW unread messages FROM admin (after initial load)
-      if (_initialLoadDone) {
-        snap.docChanges().forEach(change => {
-          const d = change.doc.data();
-          if (change.type === 'added' && !d.read && d.from !== 'user') {
-            _showMessage(d, change.doc.ref);
+  // Subscribe to realtime changes on admin_messages for this user
+  _inboxChannel = supabase
+    .channel(`admin_messages:${uid}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'admin_messages',
+        filter: `user_id=eq.${uid}`,
+      },
+      (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const msg = payload.new;
+          _allMessages.push(msg);
+          _allMessages.sort((a, b) => new Date(a.sent_at) - new Date(b.sent_at));
+          if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
+          // Show toast for new admin messages
+          if (!msg.read && msg.sender !== 'user') {
+            _showMessage(msg);
           }
-        });
-      }
-      _initialLoadDone = true;
-    },
-    err => console.warn('[presence] inbox:', err.message),
-  );
+        } else if (payload.eventType === 'UPDATE') {
+          const idx = _allMessages.findIndex(m => m.id === payload.new.id);
+          if (idx >= 0) _allMessages[idx] = payload.new;
+          if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
+        } else if (payload.eventType === 'DELETE') {
+          _allMessages = _allMessages.filter(m => m.id !== payload.old.id);
+          if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
+        }
+      },
+    )
+    .subscribe();
+}
+
+// ── Load all messages for user ──────────────────────────
+async function _loadMessages(uid) {
+  const { data, error } = await supabase
+    .from('admin_messages')
+    .select('*')
+    .eq('user_id', uid)
+    .order('sent_at', { ascending: true });
+
+  if (error) { console.warn('[presence] loadMessages:', error.message); return; }
+  _allMessages = data || [];
+  if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
 }
 
 // ── Send a reply from the user to admin ──────────────────
 export async function sendUserMessage(text) {
   if (!_userId || !text) return;
-  await addDoc(collection(db, 'admin_messages', _userId, 'inbox'), {
+  await supabase.from('admin_messages').insert({
+    user_id: _userId,
     message: text,
-    from:    'user',
-    sentAt:  serverTimestamp(),
+    sender:  'user',
+    sent_at: new Date().toISOString(),
     read:    true, // user's own message — no unread badge for themselves
   });
 }
 
 // ── Mark all admin messages as read ──────────────────────
 export function markAllMessagesRead() {
-  _allMessages.forEach(m => {
-    if (!m.read) {
-      m.read = true; // optimistic
-      updateDoc(m.ref, { read: true }).catch(() => {});
-    }
-  });
+  const unread = _allMessages.filter(m => !m.read);
+  if (!unread.length) return;
+
+  // Optimistic update
+  unread.forEach(m => { m.read = true; });
+  if (_onMessagesUpdate) _onMessagesUpdate([..._allMessages]);
+
+  // Batch update in Supabase
+  const ids = unread.map(m => m.id);
+  supabase
+    .from('admin_messages')
+    .update({ read: true })
+    .in('id', ids)
+    .then(() => {}).catch(() => {});
 }
 
 // ── Update avatar in presence (call after user changes avatar) ──────────
 export async function updatePresenceAvatar() {
-  if (!_presenceRef) return;
+  if (!_userId) return;
   const avatar = await _getPresenceAvatar();
-  setDoc(_presenceRef, { avatar: avatar ?? null }, { merge: true }).catch(() => {});
+  supabase.from('presence').upsert({
+    user_id: _userId,
+    avatar:  avatar ?? null,
+  }).then(() => {}).catch(() => {});
 }
 
 // ── Update displayName in presence (call after updateProfile) ────────────
-// updateProfile() does NOT trigger onAuthStateChanged in Firebase v9,
-// so initPresence is never re-called — we must push the name manually.
 export function updatePresenceName(displayName) {
-  if (!_presenceRef || !displayName) return;
-  setDoc(_presenceRef, { displayName }, { merge: true }).catch(() => {});
+  if (!_userId || !displayName) return;
+  supabase.from('presence').upsert({
+    user_id:      _userId,
+    display_name: displayName,
+  }).then(() => {}).catch(() => {});
 }
 
 // ── Cleanup ───────────────────────────────────────────────
 export function destroyPresence() {
-  if (_heartbeat)  { clearInterval(_heartbeat); _heartbeat = null; }
-  if (_inboxUnsub) { _inboxUnsub(); _inboxUnsub = null; }
-  if (_setOffline) { window.removeEventListener('beforeunload', _setOffline); _setOffline = null; }
+  if (_heartbeat)    { clearInterval(_heartbeat); _heartbeat = null; }
+  if (_inboxChannel) { supabase.removeChannel(_inboxChannel); _inboxChannel = null; }
+  if (_setOffline)   { window.removeEventListener('beforeunload', _setOffline); _setOffline = null; }
   _setOnline = null;
   _onMessagesUpdate = null;
   _allMessages = [];
   _userId = null;
   _clickCount = 0;
   _sessionStartMs = null;
-  _presenceRef = null;
   document.removeEventListener('click', _onUserClick, { capture: true });
   document.removeEventListener('visibilitychange', _onVisibility);
 }
@@ -178,7 +193,7 @@ async function _getPresenceAvatar() {
       return { type: 'emoji', value: saved.value, scale: saved.scale ?? 1.2, x: saved.x ?? 0, y: saved.y ?? 0 };
     }
     if (saved.type === 'photo' && saved.data) {
-      // Downscale to 48px thumbnail — lightweight for Firestore
+      // Downscale to 48px thumbnail — lightweight for Supabase
       return new Promise(resolve => {
         const img = new Image();
         img.onload = () => {
@@ -200,8 +215,8 @@ function _onVisibility() {
   else                  { if (_setOnline)  _setOnline();  }
 }
 
-function _showMessage(data, docRef) {
-  const label = data.broadcastId ? 'Envoyé à tous' : 'Admin';
+function _showMessage(data) {
+  const label = data.broadcast_id ? 'Envoyé à tous' : 'Admin';
   const toast = document.createElement('div');
   toast.className = 'admin-toast';
   toast.innerHTML = `
@@ -225,7 +240,7 @@ function _showMessage(data, docRef) {
   // Main area → open chat + focus reply
   const main = toast.querySelector('.admin-toast__main');
   const openAndReply = () => {
-    updateDoc(docRef, { read: true }).catch(() => {});
+    supabase.from('admin_messages').update({ read: true }).eq('id', data.id).then(() => {}).catch(() => {});
     dismiss();
     window.app?.openChat?.();
   };
@@ -234,7 +249,7 @@ function _showMessage(data, docRef) {
 
   // ✕ button → dismiss only, mark as read
   toast.querySelector('.admin-toast__close').addEventListener('click', () => {
-    updateDoc(docRef, { read: true }).catch(() => {});
+    supabase.from('admin_messages').update({ read: true }).eq('id', data.id).then(() => {}).catch(() => {});
     dismiss();
   });
 }

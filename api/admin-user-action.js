@@ -1,40 +1,17 @@
 // Vercel Serverless Function — POST /api/admin-user-action
-// Body: { action: 'disable'|'enable'|'delete'|'revoke', uid }
-const admin = require('firebase-admin');
+// Body: { action: 'disable'|'enable'|'delete', uid }
 
-if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(
-    JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
-  )});
-}
-
-const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
-
-async function verifyAdmin(req) {
-  const token = (req.headers['authorization'] || '').replace('Bearer ', '');
-  if (!token) return null;
-  try {
-    const d = await admin.auth().verifyIdToken(token);
-    return (ADMIN_UIDS.includes(d.uid) || d.admin === true) ? d.uid : null;
-  } catch { return null; }
-}
+const { supabase, ADMIN_UIDS, verifyAdmin, corsHeaders, parseBody } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
-  const origin = req.headers.origin || '';
-  const allowedOrigins = ['https://todo.hugues.app', 'http://localhost:5500', 'http://localhost:3000', 'http://127.0.0.1:5500'];
-  res.setHeader('Access-Control-Allow-Origin', allowedOrigins.includes(origin) ? origin : 'https://todo.hugues.app');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+  corsHeaders(req, res);
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
   if (!await verifyAdmin(req)) { res.status(403).json({ error: 'Forbidden' }); return; }
 
-  let body = '';
-  await new Promise(r => { req.on('data', c => body += c); req.on('end', r); });
-  const { action, uid } = JSON.parse(body);
+  const { action, uid } = await parseBody(req);
   if (!action || !uid) { res.status(400).json({ error: 'Missing action or uid' }); return; }
 
-  // Prevent admin from acting on themselves
   if (ADMIN_UIDS.includes(uid)) {
     res.status(400).json({ error: 'Cannot perform this action on an admin account' });
     return;
@@ -42,11 +19,22 @@ module.exports = async function handler(req, res) {
 
   try {
     switch (action) {
-      case 'disable': await admin.auth().updateUser(uid, { disabled: true });  break;
-      case 'enable':  await admin.auth().updateUser(uid, { disabled: false }); break;
-      case 'delete':  await admin.auth().deleteUser(uid);                      break;
-      case 'revoke':  await admin.auth().revokeRefreshTokens(uid);             break;
-      default: res.status(400).json({ error: `Unknown action: ${action}` }); return;
+      case 'disable': {
+        // Supabase uses ban_duration to disable users
+        await supabase.auth.admin.updateUser(uid, { ban_duration: '876000h' }); // ~100 years
+        break;
+      }
+      case 'enable': {
+        await supabase.auth.admin.updateUser(uid, { ban_duration: 'none' });
+        break;
+      }
+      case 'delete': {
+        await supabase.auth.admin.deleteUser(uid);
+        break;
+      }
+      default:
+        res.status(400).json({ error: `Unknown action: ${action}` });
+        return;
     }
     res.status(200).json({ ok: true });
   } catch (e) {

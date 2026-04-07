@@ -1,23 +1,10 @@
 // Vercel Serverless Function — GET /api/ical?token=<token>
-// Generates a live iCal feed from the user's Firestore todos.
-// The token is a secret stored in the user's Firestore profile doc.
-// Anyone with the URL can subscribe — token acts as a bearer secret.
+// Generates a live iCal feed from the user's Supabase todos.
 
-const admin = require('firebase-admin');
-
-// Singleton init
-if (!admin.apps.length) {
-  const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || 'null');
-  if (!sa) throw new Error('FIREBASE_SERVICE_ACCOUNT env var not set');
-  admin.initializeApp({ credential: admin.credential.cert(sa) });
-}
-
-const db = admin.firestore();
+const { supabase } = require('./_supabase');
 
 module.exports = async function handler(req, res) {
-  // Allow calendar apps to subscribe (no CORS needed — they use direct HTTP)
   res.setHeader('Access-Control-Allow-Origin', '*');
-
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'GET') { res.status(405).end(); return; }
 
@@ -27,8 +14,6 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  // Token format: "{uid}_{secret}" — uid is embedded so we can do a direct
-  // document read at users/{uid}/data/ical without any query or index.
   const sepIdx = token.indexOf('_');
   if (sepIdx < 5) {
     res.status(401).send('Invalid token format');
@@ -37,20 +22,25 @@ module.exports = async function handler(req, res) {
   const uid    = token.slice(0, sepIdx);
   const secret = token.slice(sepIdx + 1);
 
-  // Step 1+2 combined: read data/main — verify icalSecret AND load todos in one shot
   let todos = [];
   let config = {};
   try {
-    const dataSnap = await db.collection('users').doc(uid).collection('data').doc('main').get();
-    if (!dataSnap.exists || dataSnap.data().icalSecret !== secret) {
+    const { data, error } = await supabase
+      .from('user_data')
+      .select('data')
+      .eq('user_id', uid)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data || data.data?.icalSecret !== secret) {
       res.status(401).send('Invalid token');
       return;
     }
-    const d = dataSnap.data();
-    todos  = d.calendar || d.todos || [];
-    config = d.config || {};
+
+    todos  = data.data.calendar || data.data.todos || [];
+    config = data.data.config || {};
   } catch (err) {
-    console.error('Firestore data read error:', err);
+    console.error('ical data read error:', err);
     res.status(500).send('Internal error');
     return;
   }
@@ -60,7 +50,6 @@ module.exports = async function handler(req, res) {
   const [hh, mm] = icalHour.split(':');
   const baseMins = parseInt(hh, 10) * 60 + parseInt(mm, 10);
 
-  // Apply filters
   const f = config.icalFilters || {};
   const filtered = todos.filter(t => {
     if (t.completed && !f.completed) return false;
@@ -80,7 +69,6 @@ module.exports = async function handler(req, res) {
 
 // ─── iCal generation ───────────────────────────────────────────────────────
 
-// Convert total minutes → "HHMMSS" string (wraps past midnight)
 function minsToTime(mins) {
   const m = ((mins % 1440) + 1440) % 1440;
   return String(Math.floor(m / 60)).padStart(2, '0') + String(m % 60).padStart(2, '0') + '00';
@@ -110,10 +98,8 @@ function generateICal(todos, tz, baseMins) {
 
 function buildEvent(t, now, tz, baseMins, idx) {
   const isRec = t.recurrence && t.recurrence !== 'none';
+  if (!isRec && !t.date) return null;
 
-  if (!isRec && !t.date) return null; // inbox task — no date, skip
-
-  // Stagger each event by 30 min from the base hour
   const startMins = baseMins + idx * 30;
   const endMins   = startMins + 30;
   const timeStr    = minsToTime(startMins);
@@ -150,7 +136,6 @@ function buildEvent(t, now, tz, baseMins, idx) {
     }
     if (t.endDate) rrule += `;UNTIL=${t.endDate.replace(/-/g, '')}T${timeStr}`;
 
-    // Build EXDATE for excluded occurrences
     const exdates = (t.excludedDates || []).length > 0
       ? `EXDATE;TZID=${tz}:${t.excludedDates.map(d => d.replace(/-/g, '') + 'T' + timeStr).join(',')}\r\n`
       : '';

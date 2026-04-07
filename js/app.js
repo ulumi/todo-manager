@@ -4162,7 +4162,7 @@ class TodoApp {
   async profileDeleteData() {
     if (!confirm('Effacer toutes tes données ? Cette action est irréversible.')) return;
     await deleteUserFirestoreDoc();
-    Object.keys(localStorage).filter(k => !k.startsWith('firebase:')).forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage).filter(k => !k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
     await signOut();
     location.reload();
   }
@@ -4995,7 +4995,7 @@ class TodoApp {
   }
 
   // ═══════════════════════════════════════════════════
-  // FIREBASE — auth & sync
+  // AUTH & SYNC (Supabase)
   // ═══════════════════════════════════════════════════
   async _initFirebase() {
     // Handle Google Calendar OAuth redirect result
@@ -5010,7 +5010,7 @@ class TodoApp {
       window.history.replaceState({}, '', '/');
     }
 
-    // 1. Wait for Firebase to restore the previous session (or get null)
+    // 1. Wait for auth to restore the previous session (or get null)
     const user = await initAuth();
 
     // 2. No session → sign in as guest automatically, then prompt for name
@@ -5021,7 +5021,7 @@ class TodoApp {
       }
     }
 
-    // 3. Merge Firestore data into the app (first load)
+    // 3. Merge remote data into the app (first load)
     await this._syncFirebase();
 
     // 3b. Sync with Google Calendar if connected (fire-and-forget)
@@ -5440,11 +5440,11 @@ class TodoApp {
   }
 
   async leaveDeleteData() {
-    // Delete Firestore doc
+    // Delete user data
     await deleteUserFirestoreDoc();
     // Clear all app localStorage keys
     Object.keys(localStorage)
-      .filter(k => !k.startsWith('firebase:'))
+      .filter(k => !k.startsWith('sb-'))
       .forEach(k => localStorage.removeItem(k));
     // Get fresh anonymous session
     await signOut();
@@ -5517,7 +5517,7 @@ class TodoApp {
       this._updateUserBtn();
       this.render();
     } catch (err) {
-      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.textContent = this._authErrorMessage(err);
       errEl.classList.remove('hidden');
     }
   }
@@ -5675,7 +5675,7 @@ class TodoApp {
       this._updateUserBtn();
       this.render();
     } catch (err) {
-      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.textContent = this._authErrorMessage(err);
       errEl.classList.remove('hidden');
     }
   }
@@ -5715,7 +5715,7 @@ class TodoApp {
       document.getElementById('upgradePromptOverlay').classList.add('hidden');
       this._updateUserBtn();
     } catch (err) {
-      errEl.textContent = this._firebaseErrorMessage(err.code);
+      errEl.textContent = this._authErrorMessage(err);
       errEl.classList.remove('hidden');
     }
   }
@@ -5724,23 +5724,38 @@ class TodoApp {
     document.getElementById('upgradePromptOverlay').classList.add('hidden');
   }
 
-  _firebaseErrorMessage(code) {
-    const messages = {
+  _authErrorMessage(errOrCode) {
+    // Supabase errors have .message; legacy Firebase errors have .code
+    const msg = typeof errOrCode === 'string' ? errOrCode : (errOrCode?.message || '');
+    const code = typeof errOrCode === 'string' ? errOrCode : (errOrCode?.code || '');
+
+    // Match Supabase error messages
+    if (msg.includes('already registered') || msg.includes('already been registered'))
+      return 'Cet email est déjà utilisé.';
+    if (msg.includes('Invalid login'))
+      return 'Email ou mot de passe incorrect.';
+    if (msg.includes('Email not confirmed'))
+      return 'Veuillez confirmer votre email.';
+    if (msg.includes('Password should be'))
+      return 'Mot de passe trop faible (minimum 6 caractères).';
+    if (msg.includes('rate limit') || msg.includes('too many'))
+      return 'Trop de tentatives. Réessayez plus tard.';
+    if (msg.includes('network') || msg.includes('fetch'))
+      return 'Erreur réseau. Vérifiez votre connexion.';
+    if (msg.includes('popup'))
+      return 'Connexion annulée.';
+
+    // Legacy Firebase error codes (in case)
+    const legacyMessages = {
       'auth/email-already-in-use':    'Cet email est déjà utilisé.',
       'auth/invalid-email':           'Email invalide.',
-      'auth/weak-password':           'Mot de passe trop faible (minimum 6 caractères).',
       'auth/wrong-password':          'Mot de passe incorrect.',
       'auth/user-not-found':          'Aucun compte associé à cet email.',
-      'auth/too-many-requests':       'Trop de tentatives. Réessayez plus tard.',
-      'auth/credential-already-in-use': 'Cet email est déjà associé à un autre compte.',
-      'auth/network-request-failed':  'Erreur réseau. Vérifiez votre connexion.',
-      'auth/popup-closed-by-user':    'Connexion annulée.',
-      'auth/popup-blocked':           'Popup bloquée. Autorisez les popups pour ce site.',
-      'auth/account-exists-with-different-credential': 'Un compte existe déjà avec cet email. Connectez-vous avec la méthode d\'origine.',
     };
-    if (messages[code]) return messages[code];
-    console.error('Firebase auth error:', code);
-    return `Erreur d'authentification (${code}). Veuillez réessayer.`;
+    if (legacyMessages[code]) return legacyMessages[code];
+
+    console.error('Auth error:', msg || code);
+    return `Erreur d'authentification. Veuillez réessayer.`;
   }
 
   // ═══════════════════════════════════════════════════
