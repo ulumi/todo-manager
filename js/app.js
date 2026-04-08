@@ -315,10 +315,9 @@ class TodoApp {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = saved || (prefersDark ? 'dark' : 'light');
     document.documentElement.setAttribute('data-theme', theme);
-    // Restore primary color (migrate old yellow defaults to blue)
-    const _yellows = new Set(['#fbbf24', '#f59e0b', '#d97706', '#fcd34d']);
+    // Restore primary color
     let primaryColor = localStorage.getItem('primaryColor');
-    if (!primaryColor || _yellows.has(primaryColor)) {
+    if (!primaryColor) {
       primaryColor = '#60a5fa';
       localStorage.setItem('primaryColor', primaryColor);
     }
@@ -5016,6 +5015,15 @@ class TodoApp {
     // 2. No session → sign in as guest automatically, then prompt for name
     if (!user) {
       const guest = await signInGuest();
+      // Defaults for new guests: yellow accent + French
+      if (guest?.isAnonymous && !localStorage.getItem('primaryColor')) {
+        localStorage.setItem('primaryColor', '#f59e0b');
+        this._applyPrimaryColor('#f59e0b');
+      }
+      if (guest?.isAnonymous && !localStorage.getItem('lang')) {
+        state.setLang('fr');
+        this.applyLang();
+      }
       if (guest?.isAnonymous && !guest.displayName && !localStorage.getItem('guestNameSkipped')) {
         await this._promptGuestName();
       }
