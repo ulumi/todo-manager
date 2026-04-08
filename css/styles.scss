@@ -4583,6 +4583,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     color: #fff;
     white-space: nowrap;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
   }
 

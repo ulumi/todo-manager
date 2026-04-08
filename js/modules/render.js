@@ -1438,18 +1438,19 @@ export function setupTodoItemHoverAnimations() {
   // Reset state au repos : pill = 36px (juste l'icon)
   gsap.set(pill,  { width: 36 });
   gsap.set(icon,  { rotation: 0 });
-  gsap.set(label, { opacity: 0 });
+  gsap.set(label, { opacity: 0, visibility: 'hidden' });
 
   placeholder.addEventListener('mouseenter', () => {
     const tl = gsap.timeline();
     tl.to(pill,  { width: 130, duration: 0.45, ease: 'elastic.out(1, 0.65)' }, 0);
     tl.to(icon,  { rotation: 135, duration: 0.4, ease: 'back.out(2.5)' }, 0);
+    tl.set(label, { visibility: 'visible' }, 0.2);
     tl.to(label, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.2);
   });
 
   placeholder.addEventListener('mouseleave', () => {
     const tl = gsap.timeline();
-    tl.to(label, { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0);
+    tl.to(label, { opacity: 0, duration: 0.12, ease: 'power2.in', onComplete: () => gsap.set(label, { visibility: 'hidden' }) }, 0);
     tl.to(icon,  { rotation: 0, duration: 0.35, ease: 'back.out(2)' }, 0.05);
     tl.to(pill,  { width: 36, duration: 0.32, ease: 'power3.inOut' }, 0.08);
   });

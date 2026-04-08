@@ -5328,7 +5328,18 @@ class TodoApp {
     }
   }
 
-  openUserArea() {
+  openUserArea(e) {
+    // Option+click on avatar → toggle localhost / todo.hugues.app
+    if (e && e.altKey) {
+      e.preventDefault();
+      const loc = window.location;
+      const isLocal = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1';
+      const target = isLocal
+        ? `https://todo.hugues.app${loc.pathname}${loc.search}${loc.hash}`
+        : `http://localhost:3000${loc.pathname}${loc.search}${loc.hash}`;
+      window.location.href = target;
+      return;
+    }
     if (isGuest()) this.openAuthModal();
     else           this.setView('profile');
   }
