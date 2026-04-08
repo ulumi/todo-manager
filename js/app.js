@@ -318,7 +318,7 @@ class TodoApp {
     // Restore primary color
     let primaryColor = localStorage.getItem('primaryColor');
     if (!primaryColor) {
-      primaryColor = '#60a5fa';
+      primaryColor = '#e07040';
       localStorage.setItem('primaryColor', primaryColor);
     }
     this._applyPrimaryColor(primaryColor);
@@ -645,7 +645,7 @@ class TodoApp {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const zoomIdx = this.zoomIdx ?? 1;
     const glassMode = localStorage.getItem('glassMode') === '1';
-    const primaryColor = localStorage.getItem('primaryColor') || '#60a5fa';
+    const primaryColor = localStorage.getItem('primaryColor') || '#e07040';
     const bgPalette = localStorage.getItem('bgPalette') || 'geo';
     const bgColor = localStorage.getItem('bgColor') || (isDark ? '#0f1117' : '#f8f9fc');
 
@@ -664,8 +664,8 @@ class TodoApp {
 
     // Update accent color picker (presets + custom input)
     const accentColors = isDark
-      ? ['#60a5fa', '#f87171', '#4ade80', '#a78bfa', '#f472b6', '#fb923c']
-      : ['#3b82f6', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
+      ? ['#e07040', '#f87171', '#4ade80', '#a78bfa', '#f472b6', '#fb923c']
+      : ['#c85a2e', '#ef4444', '#10b981', '#8b5cf6', '#ec4899', '#f97316'];
     const pickerHtml = accentColors.map(c =>
       `<button class="settings-accent-btn${primaryColor === c ? ' active' : ''}" style="background:${c};" onclick="window.app.setPrimaryColor('${c}')" title="${c}"></button>`
     ).join('');
