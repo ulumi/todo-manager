@@ -1037,8 +1037,8 @@ main {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
 
-    // Todo with expanded subtasks spans both columns
-    .todo-item:has(.subtask-list) { grid-column: 1 / -1; }
+    // Subtasks stay within their column
+    .todo-item .subtask-list { min-width: 0; }
   }
 
   &--recurring .todo-list {

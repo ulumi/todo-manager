@@ -1065,8 +1065,8 @@ input:checked + .cal-sid-toggle-track::after {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
-.day-col--punctual .todo-list .todo-item:has(.subtask-list) {
-  grid-column: 1/-1;
+.day-col--punctual .todo-list .todo-item .subtask-list {
+  min-width: 0;
 }
 .day-col--recurring .todo-list {
   display: grid;
