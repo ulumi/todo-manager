@@ -176,7 +176,7 @@ class TodoApp {
       if (_mId && _mDate) setTimeout(() => this.openEditModal(_mId, _mDate), 50);
     } else if (_hashModal === 'add') {
       const _mDate = _hash.get('date');
-      setTimeout(() => this.openModal(_mDate ? parseDS(_mDate) : state.navDate), 50);
+      setTimeout(() => openModal(_mDate ? parseDS(_mDate) : state.navDate, state.todos, 'date', { restoreDraft: true }), 50);
     }
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
@@ -4692,7 +4692,7 @@ class TodoApp {
   renderProjectPanelById(id) { if (id) renderProjectPanel(id); }
 
   addTaskForProject(projectId) {
-    this.openModal(state.navDate);
+    openModal(state.navDate, state.todos, 'backlog');
     setTimeout(() => toggleProjectTag(projectId), 60);
   }
 

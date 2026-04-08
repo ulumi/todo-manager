@@ -198,20 +198,30 @@ export function addModalSubtaskInline() {
   input.className = 'subtask-new-input';
   input.placeholder = 'Nouvelle sous-tâche…';
   input.autocomplete = 'off';
-  let saved = false;
-  const confirm = () => {
-    if (saved) return;
-    saved = true;
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
     const title = input.value.trim();
     input.remove();
     addBtn.style.display = '';
     if (title) { addModalSubtask(title); }
   };
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); confirm(); }
-    if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const title = input.value.trim();
+      if (!title) return;
+      done = true; // prevent blur from firing finish()
+      _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
+      _renderModalSubtasks();
+      _scheduleDraftSave();
+      // Re-open inline input immediately for the next subtask
+      addModalSubtaskInline();
+    }
+    if (e.key === 'Escape') { done = true; input.remove(); addBtn.style.display = ''; }
   });
-  input.addEventListener('blur', confirm);
+  input.addEventListener('blur', finish);
   addBtn.style.display = 'none';
   list.appendChild(input);
   input.focus();
@@ -602,7 +612,7 @@ export function selectPriority(p) {
   _scheduleDraftSave();
 }
 
-export function openModal(date, todos, scheduleMode = 'date') {
+export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = false } = {}) {
   date = date || state.navDate;
   state.setEditingId(null);
   state.setScheduleMode(scheduleMode);
@@ -638,7 +648,13 @@ export function openModal(date, todos, scheduleMode = 'date') {
   if (durationRealField) durationRealField.style.display = 'none';
   const recSel = document.getElementById('taskRecurrence');
   if (recSel) recSel.value = 'none';
-  document.getElementById('recDetail').innerHTML = '';
+  // Show day period buttons for date mode, empty for inbox/backlog
+  const recDetail = document.getElementById('recDetail');
+  if (scheduleMode === 'date') {
+    recDetail.innerHTML = _dayPeriodHTML('');
+  } else {
+    recDetail.innerHTML = '';
+  }
   // Big mode UI
   const bigMode = scheduleMode === 'date' ? 'date' : scheduleMode;
   document.querySelectorAll('.schedule-mode-option').forEach(o => o.classList.toggle('active', o.dataset.mode === bigMode));
@@ -658,9 +674,10 @@ export function openModal(date, todos, scheduleMode = 'date') {
   const _stSection = document.getElementById('modalSubtaskSection');
   if (_stSection) _stSection.style.display = '';
   populateModalSubtasks([]);
-  // Restore draft (new tasks only)
+  // Restore draft only on page refresh (not on explicit "new task" click)
   const draftBanner = document.getElementById('draftBanner');
-  const hadDraft = _tryRestoreDraft();
+  const hadDraft = restoreDraft ? _tryRestoreDraft() : false;
+  if (!restoreDraft) clearDraft();
   if (draftBanner) draftBanner.style.display = hadDraft ? '' : 'none';
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   // Context fields — hidden until title has content
