@@ -81,7 +81,7 @@ self.addEventListener('fetch', event => {
   const isSameOrigin = url.origin === self.location.origin;
   const isCDN = CDN_PREFIXES.some(p => request.url.startsWith(p));
 
-  // Pass through anything outside our known set (Firestore API, Auth endpoints…)
+  // Pass through anything outside our known set (Supabase API, Auth endpoints…)
   if (!isSameOrigin && !isCDN) return;
 
   // CDN → cache-first (immutable versioned assets)

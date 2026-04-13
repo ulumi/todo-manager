@@ -4,7 +4,7 @@
 
 import { DS, today } from './utils.js';
 import { getIdToken } from './auth.js';
-import { pushToFirestore } from './sync.js';
+import { pushToSupabase } from './sync.js';
 
 const API = 'http://localhost:3333';
 const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
@@ -64,14 +64,14 @@ export function saveTodos(todos) {
   const json = JSON.stringify(todos);
   localStorage.setItem('todos', json);
   localStorage.setItem('_localWriteTime', Date.now().toString());
-  // Mark as pending until Firestore confirms receipt
+  // Mark as pending until Supabase confirms receipt
   localStorage.setItem('_pendingSync', '1');
   // Safety backup: last known good state, never touched by sync
   if (todos.length > 0) {
     localStorage.setItem('_todosSafetyBackup', JSON.stringify({ todos, ts: Date.now() }));
   }
   serverPost('/todos', todos);
-  pushToFirestore(getFullBackup(todos))
+  pushToSupabase(getFullBackup(todos))
     .then(() => localStorage.removeItem('_pendingSync'))
     .catch(() => {}); // stays pending if push fails — protects local data on next load
 }
@@ -127,11 +127,11 @@ export function getFullBackup(todos) {
   return backup;
 }
 
-export function pushFirestoreNow() {
+export function pushNow() {
   const todos = loadTodos();
   localStorage.setItem('_localWriteTime', Date.now().toString());
   localStorage.setItem('_pendingSync', '1');
-  pushToFirestore(getFullBackup(todos))
+  pushToSupabase(getFullBackup(todos))
     .then(() => localStorage.removeItem('_pendingSync'))
     .catch(() => {});
 }

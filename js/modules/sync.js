@@ -1,6 +1,5 @@
 // ════════════════════════════════════════════════════════
 //  SYNC — Supabase read / write / realtime
-//  (replaces Firestore sync)
 // ════════════════════════════════════════════════════════
 
 import { supabase }      from './supabase.js';
@@ -17,10 +16,10 @@ function userId() {
 }
 
 // ── One-time read from Supabase ──────────────────────────
-// Returns the stored backup object (with _firestoreUpdatedAt in ms),
+// Returns the stored backup object (with _supabaseUpdatedAt in ms),
 // { _empty: true } if no row exists yet (new user),
 // or null on network / auth error.
-export async function loadFromFirestore() {
+export async function loadFromSupabase() {
   try {
     const { data, error } = await supabase
       .from('user_data')
@@ -33,10 +32,10 @@ export async function loadFromFirestore() {
 
     return {
       ...data.data,
-      _firestoreUpdatedAt: new Date(data.updated_at).getTime(),
+      _supabaseUpdatedAt: new Date(data.updated_at).getTime(),
     };
   } catch (err) {
-    console.warn('[sync] loadFromFirestore failed:', err.message);
+    console.warn('[sync] loadFromSupabase failed:', err.message);
     return null;
   }
 }
@@ -44,7 +43,7 @@ export async function loadFromFirestore() {
 // ── Write full backup to Supabase ────────────────────────
 // Fire-and-forget: does not throw, caller doesn't need to await.
 // Includes SESSION_ID so the realtime listener can skip our own echoes.
-export async function pushToFirestore(backup) {
+export async function pushToSupabase(backup) {
   try {
     const uid = userId();
     const clean = JSON.parse(JSON.stringify(backup));
@@ -57,7 +56,7 @@ export async function pushToFirestore(backup) {
       });
     if (error) throw error;
   } catch (err) {
-    console.warn('[sync] pushToFirestore failed:', err.message);
+    console.warn('[sync] pushToSupabase failed:', err.message);
   }
 }
 
@@ -65,7 +64,7 @@ export async function pushToFirestore(backup) {
 // Calls `onData(backup)` every time the user_data row changes
 // (from another device, tab, or external update).
 // Returns an unsubscribe function.
-export function subscribeToFirestore(onData) {
+export function subscribeToSupabase(onData) {
   let uid;
   try { uid = userId(); } catch { return () => {}; }
 
@@ -91,7 +90,7 @@ export function subscribeToFirestore(onData) {
 }
 
 // ── Delete user data row ─────────────────────────────────
-export async function deleteUserFirestoreDoc() {
+export async function deleteUserData() {
   try {
     const { error } = await supabase
       .from('user_data')
@@ -99,7 +98,7 @@ export async function deleteUserFirestoreDoc() {
       .eq('user_id', userId());
     if (error) throw error;
   } catch (err) {
-    console.warn('[sync] deleteUserFirestoreDoc failed:', err.message);
+    console.warn('[sync] deleteUserData failed:', err.message);
   }
 }
 

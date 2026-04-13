@@ -4,7 +4,7 @@
 
 import { esc, DS } from './utils.js';
 import { categoryIconSVG, CATEGORY_ICONS } from './admin.js';
-import { pushFirestoreNow } from './storage.js';
+import { pushNow } from './storage.js';
 import * as state from './state.js';
 
 const STORAGE_KEY = 'projects';
@@ -33,7 +33,7 @@ export function getProjects() {
 export function saveProjects(projects) {
   _projectsCache = projects;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-  pushFirestoreNow();
+  pushNow();
 }
 
 export function addProjectItem(name) {

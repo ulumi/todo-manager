@@ -1,6 +1,6 @@
 # Todo Manager — "2FŨKOI"
 
-> Personal todo app — vanilla JS, no framework, Firestore sync, Vercel deploy.
+> Personal todo app — vanilla JS, no framework, Supabase sync, Vercel deploy.
 > Live: todo.hugues.app | Entry: `index.html` + `js/app.js`
 
 ## Allowed tools (auto-approve)
@@ -11,7 +11,7 @@
 ## Golden rules
 
 1. **SCSS only** — NEVER edit `css/styles.css`, it is auto-generated
-2. **Firestore for all persistent data** — never localStorage alone
+2. **Supabase for all persistent data** — never localStorage alone
 3. **Restore UI state on refresh** — last view, open modals, nav position
 4. **Version is auto-bumped** by PostToolUse hook on every file edit — no manual bump needed
 
@@ -51,10 +51,10 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | Module | Role |
 |--------|------|
 | `state.js` | Global state variables + setters |
-| `storage.js` | localStorage I/O, Firestore push, iCal export, `getFullBackup()` |
-| `sync.js` | Firestore realtime listener, SESSION_ID echo prevention, cross-tab sync, offline IndexedDB |
-| `firebase.js` | Firebase init + auth + Firestore persistent cache |
-| `auth.js` | Guest / email / Google / Facebook auth, upgrade guest→email |
+| `storage.js` | localStorage I/O, Supabase push (`saveTodos()`, `pushNow()`), iCal export, `getFullBackup()` |
+| `sync.js` | Supabase realtime listener, SESSION_ID echo prevention, cross-tab sync |
+| `supabase.js` | Supabase client init |
+| `auth.js` | Guest (anonymous) / email / Google / OAuth auth via Supabase, upgrade guest→email |
 | `calendar.js` | Recurrence logic, `getTodosForDate()`, `toggleTodo()`, `addTask()` |
 | `render.js` | HTML generation — all views |
 | `modal.js` | Add/edit task modal, draft autosave, recurrence UI |
@@ -124,25 +124,29 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 
 ## Data storage & sync
 
-### Rule: Firestore is the source of truth
+### Rule: Supabase is the source of truth
 Every persistent write must:
 1. Save to localStorage
-2. Call `pushFirestoreNow()` or `saveTodos()` (which handles Firestore push)
+2. Call `saveTodos()` or `pushNow()` — both push to Supabase via `sync.js`
 3. Be included in `getFullBackup()` (`storage.js`) and `_applyBackup()` (`app.js`)
 
-### Firestore document: `users/{uid}/data/main`
+### Supabase table: `user_data` row per `uid`
 ```js
-{ calendar, config, categories, templates, suggestedTasks,
+{ uid, data: { calendar, config, categories, templates, suggestedTasks,
   taskOrder, avatar, intentions, projects,
   quotes: { banned, customFR, customEN },
-  icalSecret, _pushedBySession, updatedAt }
+  icalSecret, _pushedBySession }, updated_at }
 ```
 
 ### Sync flow
-1. **Client → Firestore:** `pushFirestoreNow()` → `pushToFirestore(getFullBackup())`
-2. **Firestore → Client:** realtime listener, skip if `_pushedBySession === SESSION_ID`
+1. **Client → Supabase:** `saveTodos()` / `pushNow()` → `supabase.from('user_data').upsert(...)`
+2. **Supabase → Client:** realtime channel subscription, skip if `_pushedBySession === SESSION_ID`
 3. **Cross-tab:** `initCrossTabSync()` via storage events
-4. **Offline:** IndexedDB persistent cache (Firebase SDK)
+4. **Offline:** Supabase JS SDK handles reconnection; no local IndexedDB cache
+
+### API auth (server-side)
+- `api/_supabase.js` — shared Supabase **service role** client + `verifyToken()` + `verifyAdmin()`
+- Admin endpoints require `Authorization: Bearer <supabase-access-token>` + UID in `ADMIN_UIDS` env var
 
 ---
 
@@ -168,20 +172,20 @@ Every persistent write must:
 
 | Endpoint | Method | Role |
 |----------|--------|------|
-| `ical` | GET | Live iCal feed from Firestore (secret token) |
+| `ical` | GET | Live iCal feed from Supabase (secret token) |
 | `gcal-auth` | GET | Google Calendar OAuth2 init |
 | `gcal-callback` | GET | OAuth2 callback, save refresh token |
 | `gcal-sync` | POST | Push todos → Google Calendar |
 | `gcal-pull` | POST | Fetch events ← Google Calendar |
-| `admin-users` | GET | List Firebase Auth accounts |
-| `admin-batch` | POST | Batch Firestore ops |
+| `admin-users` | GET | List Supabase Auth accounts |
+| `admin-batch` | POST | Batch Supabase ops |
 | `admin-messages` | POST | Send message to user |
 | `admin-presence` | GET | Online presence |
 | `admin-stats` | GET | Aggregated user stats |
 | `admin-user-action` | POST | Action on a user |
 | `cron-cleanup-guests` | GET | Cleanup old guest accounts (daily 3am) |
 
-All admin endpoints require Firebase ID token + UID in `ADMIN_UIDS`.
+All admin endpoints require Supabase Bearer token + UID in `ADMIN_UIDS` env var. Shared helper: `api/_supabase.js`.
 
 ---
 

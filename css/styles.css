@@ -942,6 +942,68 @@ input:checked + .cal-sid-toggle-track::after {
   display: flex;
 }
 
+.day-view.stats-mode .day-done-accordion-bd .todo-item {
+  display: flex;
+}
+
+.day-done-accordion {
+  margin-top: 10px;
+}
+
+.day-done-accordion-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.day-done-accordion-hd:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.day-done-chevron {
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.day-done-accordion.open .day-done-chevron {
+  transform: rotate(180deg);
+}
+
+.day-done-accordion-lbl {
+  flex: 1;
+}
+
+.day-done-accordion-cnt {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.day-done-accordion-bd {
+  display: none;
+  margin-top: 2px;
+  opacity: 0.75;
+}
+.day-done-accordion.open .day-done-accordion-bd {
+  display: block;
+}
+
 .day-stats-bar {
   flex: 1;
   height: 8px;
@@ -2005,6 +2067,17 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-project-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.todo-intention-badge {
   font-size: 10px;
   font-weight: 600;
   padding: 2px 7px;

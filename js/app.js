@@ -12,7 +12,7 @@ import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
   downloadICalFile, getICalBlobURL,
-  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushFirestoreNow
+  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushNow
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -63,7 +63,7 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
   signInWithGoogle, signInWithFacebook, getIdToken,
 } from './modules/auth.js';
-import { loadFromFirestore, pushToFirestore, subscribeToFirestore, setupOfflineIndicator, deleteUserFirestoreDoc, SESSION_ID, getOrCreateICalToken, disconnectGCal } from './modules/sync.js';
+import { loadFromSupabase, pushToSupabase, subscribeToSupabase, setupOfflineIndicator, deleteUserData, SESSION_ID, getOrCreateICalToken, disconnectGCal } from './modules/sync.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -235,7 +235,7 @@ class TodoApp {
           break;
       }
     });
-    this._initFirebase(); // async — does not block render
+    this._initSupabase(); // async — does not block render
   }
 
   // ═══════════════════════════════════════════════════
@@ -302,11 +302,11 @@ class TodoApp {
   // THEME & ZOOM
   // ═══════════════════════════════════════════════════
 
-  // Call after any user-triggered config change so Firestore stays in sync
-  // and the local config timestamp prevents Firestore from overwriting it on reload.
+  // Call after any user-triggered config change so Supabase stays in sync
+  // and the local config timestamp prevents Supabase from overwriting it on reload.
   _saveConfigChange() {
     localStorage.setItem('_localConfigTime', Date.now().toString());
-    pushToFirestore(getFullBackup(state.todos)).catch(() => {});
+    pushToSupabase(getFullBackup(state.todos)).catch(() => {});
     saveBackupToServer(getFullBackup(state.todos));
   }
 
@@ -2784,6 +2784,13 @@ class TodoApp {
     }
   }
 
+  toggleDoneAccordion() {
+    const isOpen = localStorage.getItem('dayDoneAccordionOpen') === '1';
+    localStorage.setItem('dayDoneAccordionOpen', isOpen ? '0' : '1');
+    const acc = document.querySelector('.day-done-accordion');
+    if (acc) acc.classList.toggle('open', !isOpen);
+  }
+
   // ═══════════════════════════════════════════════════
   // PLAN MONTH INFINITE SCROLL
   // ═══════════════════════════════════════════════════
@@ -3989,7 +3996,7 @@ class TodoApp {
     const hour = document.getElementById('icalHour')?.value;
     if (tz)   localStorage.setItem('timezone', tz);
     if (hour) localStorage.setItem('icalHour', hour);
-    pushToFirestore(getFullBackup(state.todos));
+    pushToSupabase(getFullBackup(state.todos));
   }
 
   saveICalAdminSettings() {
@@ -4003,7 +4010,7 @@ class TodoApp {
       oneTime:   document.getElementById('icalFilterOneTime')?.checked   !== false,
     };
     localStorage.setItem('icalFilters', JSON.stringify(filters));
-    pushToFirestore(getFullBackup(state.todos));
+    pushToSupabase(getFullBackup(state.todos));
     const msg = document.getElementById('icalAdminSaveMsg');
     if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
   }
@@ -4148,7 +4155,7 @@ class TodoApp {
   selectAvatarFilter(id)       { selectAvatarFilter(id); }
   selectAvatarEmoji(emoji)     { selectAvatarEmoji(emoji); }
   avatarSwitchTab(tab)         { avatarSwitchTab(tab); }
-  async saveAvatar()           { await saveAvatar(); localStorage.setItem('_localWriteTime', Date.now().toString()); this._updateUserBtn(); pushToFirestore(getFullBackup(state.todos)); }
+  async saveAvatar()           { await saveAvatar(); localStorage.setItem('_localWriteTime', Date.now().toString()); this._updateUserBtn(); pushToSupabase(getFullBackup(state.todos)); }
   cropDragStart(e)             { cropDragStart(e); }
   setCropZoom(val)             { setCropZoom(val); }
   setEmojiZoom(val)            { setEmojiZoom(val); }
@@ -4160,7 +4167,7 @@ class TodoApp {
 
   async profileDeleteData() {
     if (!confirm('Effacer toutes tes données ? Cette action est irréversible.')) return;
-    await deleteUserFirestoreDoc();
+    await deleteUserData();
     Object.keys(localStorage).filter(k => !k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
     await signOut();
     location.reload();
@@ -4770,11 +4777,11 @@ class TodoApp {
 
   _saveIntentions(arr) {
     localStorage.setItem('intentions', JSON.stringify(arr));
-    pushFirestoreNow();
+    pushNow();
   }
 
-  /** Force push all local data to Firestore (useful for manual sync recovery) */
-  forcePush() { pushFirestoreNow(); console.log('[sync] force push done'); }
+  /** Force push all local data to Supabase (useful for manual sync recovery) */
+  forcePush() { pushNow(); console.log('[sync] force push done'); }
 
   addIntentionFromView() {
     const intentions = this._getIntentions();
@@ -4996,7 +5003,7 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   // AUTH & SYNC (Supabase)
   // ═══════════════════════════════════════════════════
-  async _initFirebase() {
+  async _initSupabase() {
     // Handle Google Calendar OAuth redirect result
     const urlParams = new URLSearchParams(window.location.search);
     const gcalResult = urlParams.get('gcal');
@@ -5030,7 +5037,7 @@ class TodoApp {
     }
 
     // 3. Merge remote data into the app (first load)
-    await this._syncFirebase();
+    await this._syncSupabase();
 
     // 3b. Sync with Google Calendar if connected (fire-and-forget)
     if (localStorage.getItem('gcalConnected') === '1') {
@@ -5039,8 +5046,8 @@ class TodoApp {
     }
 
     // 4. Listen for realtime updates from other devices (guard against re-init)
-    if (this._firestoreUnsub) this._firestoreUnsub();
-    this._firestoreUnsub = subscribeToFirestore(backup => {
+    if (this._supabaseUnsub) this._supabaseUnsub();
+    this._supabaseUnsub = subscribeToSupabase(backup => {
       this._applyBackup(backup, { silent: false });
     });
 
@@ -5060,65 +5067,64 @@ class TodoApp {
     this._setupLeavePrompt();
   }
 
-  async _syncFirebase() {
-    const backup = await loadFromFirestore();
+  async _syncSupabase() {
+    const backup = await loadFromSupabase();
     if (backup === null) {
       // Network / auth error — work offline, never push blindly
       return;
     }
     if (backup._empty) {
-      // New user or cleared Firestore — push local state to initialise
-      await pushToFirestore(getFullBackup(state.todos));
+      // New user or no remote data — push local state to initialise
+      await pushToSupabase(getFullBackup(state.todos));
       return;
     }
 
-    const { _firestoreUpdatedAt, ...cleanBackup } = backup;
+    const { _supabaseUpdatedAt, ...cleanBackup } = backup;
 
     // Primary guard: if local has todos AND a push is pending (last push failed or
     // page reloaded before push completed), retry the push — BUT only if local data
-    // is not clearly older than Firestore (prevents stale devices from overwriting).
+    // is not clearly older than Supabase (prevents stale devices from overwriting).
     if (state.todos.length > 0 && localStorage.getItem('_pendingSync') === '1') {
-      const localWriteTime  = parseInt(localStorage.getItem('_localWriteTime') || '0');
-      const firestoreTime   = _firestoreUpdatedAt || 0;
-      if (firestoreTime > localWriteTime + 5000) {
-        // Firestore is clearly newer — our pending push is stale, discard it
+      const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
+      const supabaseTime   = _supabaseUpdatedAt || 0;
+      if (supabaseTime > localWriteTime + 5000) {
+        // Supabase is clearly newer — our pending push is stale, discard it
         localStorage.removeItem('_pendingSync');
       } else {
         // Merge first, THEN push — never overwrite remote-only items
         this._applyBackup(cleanBackup, { silent: true });
-        await pushToFirestore(getFullBackup(state.todos));
+        await pushToSupabase(getFullBackup(state.todos));
         this.render();
         return;
       }
     }
 
     // Secondary guard: compare timestamps. Local wins if it's strictly newer than
-    // Firestore by more than 5s (tolerates clock drift between client and server).
+    // Supabase by more than 5s (tolerates clock drift between client and server).
     const localWriteTime = parseInt(localStorage.getItem('_localWriteTime') || '0');
-    const firestoreTime  = _firestoreUpdatedAt || 0;
-    if (localWriteTime > 0 && firestoreTime > 0 && localWriteTime > firestoreTime + 5000) {
+    const supabaseTime   = _supabaseUpdatedAt || 0;
+    if (localWriteTime > 0 && supabaseTime > 0 && localWriteTime > supabaseTime + 5000) {
       // Merge first, THEN push — never overwrite remote-only items
       this._applyBackup(cleanBackup, { silent: true });
-      await pushToFirestore(getFullBackup(state.todos));
+      await pushToSupabase(getFullBackup(state.todos));
       this.render();
       return;
     }
 
-    // If local config was changed after the last Firestore push, preserve it.
-    // This prevents BrowserSync reloads (or any page reload) from reverting
-    // theme, palette, glass mode, etc. to a stale Firestore snapshot.
-    const localConfigTime = parseInt(localStorage.getItem('_localConfigTime') || '0');
-    const firestoreConfigTime = _firestoreUpdatedAt || 0;
-    if (localConfigTime > firestoreConfigTime) {
+    // If local config was changed after the last Supabase push, preserve it.
+    // This prevents page reloads from reverting theme, palette, glass mode, etc.
+    const localConfigTime  = parseInt(localStorage.getItem('_localConfigTime') || '0');
+    const supabaseConfigTime = _supabaseUpdatedAt || 0;
+    if (localConfigTime > supabaseConfigTime) {
       delete cleanBackup.config;
     }
 
     this._applyBackup(cleanBackup, { silent: false });
   }
 
-  // Merge a backup object into the app state (from Firestore or server)
+  // Merge a backup object into the app state (from Supabase or server)
   _applyBackup(backup, { silent }) {
-    // Skip our own Firestore echoes using the session ID stamped in every push.
+    // Skip our own echoes using the session ID stamped in every push.
     if (backup._pushedBySession && backup._pushedBySession === SESSION_ID) return;
 
 
@@ -5460,7 +5466,7 @@ class TodoApp {
 
   async leaveDeleteData() {
     // Delete user data
-    await deleteUserFirestoreDoc();
+    await deleteUserData();
     // Clear all app localStorage keys
     Object.keys(localStorage)
       .filter(k => !k.startsWith('sb-'))
@@ -5530,7 +5536,7 @@ class TodoApp {
     errEl.classList.add('hidden');
     try {
       await providerFn();
-      await this._syncFirebase();
+      await this._syncSupabase();
       document.getElementById('authModalOverlay').classList.add('hidden');
       document.getElementById('upgradePromptOverlay').classList.add('hidden');
       this._updateUserBtn();
@@ -5589,7 +5595,7 @@ class TodoApp {
     input.style.height = '';
     try {
       await sendUserMessage(text);
-      // Firestore listener will pick it up and re-render automatically
+      // Supabase realtime listener will pick it up and re-render automatically
     } catch (e) {
       console.warn('[chat] send failed:', e);
     }
@@ -5687,8 +5693,8 @@ class TodoApp {
         }
       } else {
         await signInWithEmail(email, password);
-        // Pull the newly logged-in user's data from Firestore
-        await this._syncFirebase();
+        // Pull the newly logged-in user's data from Supabase
+        await this._syncSupabase();
       }
       this.closeAuthModal();
       this._updateUserBtn();
@@ -5744,7 +5750,7 @@ class TodoApp {
   }
 
   _authErrorMessage(errOrCode) {
-    // Supabase errors have .message; legacy Firebase errors have .code
+    // Supabase errors have .message; legacy error codes mapped below
     const msg = typeof errOrCode === 'string' ? errOrCode : (errOrCode?.message || '');
     const code = typeof errOrCode === 'string' ? errOrCode : (errOrCode?.code || '');
 
@@ -5764,7 +5770,7 @@ class TodoApp {
     if (msg.includes('popup'))
       return 'Connexion annulée.';
 
-    // Legacy Firebase error codes (in case)
+    // Legacy error codes (fallback)
     const legacyMessages = {
       'auth/email-already-in-use':    'Cet email est déjà utilisé.',
       'auth/invalid-email':           'Email invalide.',

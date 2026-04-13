@@ -7,7 +7,7 @@ import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './cale
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 import { getProjects, saveProjects } from './projectManager.js';
-import { pushFirestoreNow } from './storage.js';
+import { pushNow } from './storage.js';
 
 // ─── Smooth reveal / hide helpers ──────────────────────────────────────────
 
@@ -546,7 +546,7 @@ export function addIntentionInline() {
   const id = Date.now().toString();
   intentions.push({ id, title, color, description: '', codename: '' });
   localStorage.setItem('intentions', JSON.stringify(intentions));
-  pushFirestoreNow();
+  pushNow();
   input.value = '';
   document.getElementById('newIntentionRow').style.display = 'none';
   _selectedIntentionIds.push(id);

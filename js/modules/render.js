@@ -92,11 +92,21 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       return `<span class="todo-project-badge" style="background:${proj.color}20;color:${proj.color};border-color:${proj.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openProjectPanel('${proj.id}')">${esc(proj.name)}</span>`;
     }).join('');
   })();
+  const intentionBadge = (() => {
+    const ids = todo.intentionIds || (todo.intentionId ? [todo.intentionId] : []);
+    if (!ids.length) return '';
+    const intentions = _getIntentions();
+    return ids.map(iid => {
+      const int = intentions.find(i => i.id === iid);
+      if (!int) return '';
+      return `<span class="todo-intention-badge" style="background:${int.color}20;color:${int.color};border-color:${int.color}60;cursor:pointer;" onclick="event.stopPropagation();window.app.openIntentionPanel('${int.id}')">${esc(int.title)}</span>`;
+    }).join('');
+  })();
   const prioCls = todo.priority ? ` prio-${todo.priority}` : '';
   const timeBadge = todo.startTime
     ? `<span class="todo-time-badge"><svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><polyline points="6 3.5 6 6 8 7.2"/></svg>${todo.startTime}</span>`
     : '';
-  const hasMeta = categoryBadge || projectBadge || rec || timeBadge;
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
   const isExpanded = window.app?.isSubtasksExpanded?.(todo.id) || false;
@@ -107,7 +117,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)"></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
         ${dotsHTML}
       </div>
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
@@ -566,6 +576,27 @@ export function renderDayView(todos) {
     rightColItems += addItemPlaceholderHTML();
   }
 
+  // Done accordion (stats mode) — collapsible section for completed punctual items
+  let doneAccordion = '';
+  if (isStatsMode) {
+    const doneItems = punctualItems.filter(t => isCompleted(t, navDate));
+    if (doneItems.length > 0) {
+      const isOpen = localStorage.getItem('dayDoneAccordionOpen') === '1';
+      const chevron = `<svg class="day-done-chevron" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
+      const label = state.lang === 'fr' ? 'Complétées' : 'Completed';
+      doneAccordion = `<div class="day-done-accordion${isOpen ? ' open' : ''}">
+        <button class="day-done-accordion-hd" onclick="window.app.toggleDoneAccordion()">
+          ${chevron}
+          <span class="day-done-accordion-lbl">${label}</span>
+          <span class="day-done-accordion-cnt">${doneItems.length}</span>
+        </button>
+        <div class="day-done-accordion-bd">
+          <div class="todo-list" data-group="punctual">${doneItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>
+        </div>
+      </div>`;
+    }
+  }
+
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
@@ -602,7 +633,7 @@ export function renderDayView(todos) {
 
   const actionBar = '';
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

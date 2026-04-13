@@ -20,10 +20,10 @@
 | Module | Rôle |
 |--------|------|
 | `state.js` | Variables d'état + setters |
-| `storage.js` | localStorage (saveTodos/loadTodos), Firestore push, iCal export, full backup |
-| `sync.js` | Firestore realtime (SESSION_ID anti-écho), subscriptions, offline IndexedDB |
-| `firebase.js` | Init Firebase + auth + Firestore persistent cache |
-| `auth.js` | Guest / email / Google / Facebook, upgrade guest→email |
+| `storage.js` | localStorage (saveTodos/loadTodos), Supabase push, iCal export, full backup |
+| `sync.js` | Supabase realtime (SESSION_ID anti-écho), subscriptions |
+| `supabase.js` | Init client Supabase |
+| `auth.js` | Guest / email / Google / OAuth, upgrade guest→email |
 | `calendar.js` | Récurrence logic, getTodosForDate, toggleTodo, addTask |
 | `render.js` | Génération HTML — toutes les vues |
 | `modal.js` | Modal add/edit tâche, draft, récurrence UI |
@@ -70,7 +70,7 @@
 - **Usage :** Une tâche peut avoir un `categoryId`. Affiché comme badge coloré sur la tâche.
 - **Vue :** `categories` — grille de cards, chaque card = un tag avec ses tâches
 - **Admin :** géré dans le modal admin → section Catégories
-- **Stockage :** localStorage key `categories`, Firestore champ `categories`
+- **Stockage :** localStorage key `categories`, Supabase champ `categories`
 - **Module :** `admin.js`
 
 ### Projets (= "projects" dans le code)
@@ -79,7 +79,7 @@
 - **Usage :** Une tâche peut avoir un `projectId`. Affiché comme badge dans la todo list avec lien vers le panel projet.
 - **Vue :** `projects` — grille de cards avec statuts, sidebar panel par projet
 - **Module :** `projectManager.js`
-- **Stockage :** localStorage key `projects`, Firestore champ `projects`
+- **Stockage :** localStorage key `projects`, Supabase champ `projects`
 
 ---
 
@@ -131,22 +131,20 @@
 ### localStorage (source de vérité côté client)
 `todos`, `categories`, `dayTemplates`, `suggestedTasks`, `projects`, `intentions`, `projectTaskOrder`, `dayOrder`, `recurringOrder`, `punctualPeriodOrder`, `zoom`, `lang`, `theme`, `navDate`, `profileAvatar`, `icalSecret`, `bannedQuotes`, `customQuotesFR`, `customQuotesEN`, `modalDraft`, `glassMode`, `timezone`, `icalHour`, `icalFilters`, `bgPalette`, `bgColor`
 
-### Firestore — `users/{uid}/data/main` (single document)
+### Supabase — table `user_data`, une ligne par `uid`
 ```js
-{
-  calendar, config, categories, templates, suggestedTasks,
+{ uid, data: { calendar, config, categories, templates, suggestedTasks,
   taskOrder, avatar, intentions, projects,
   quotes: { banned, customFR, customEN },
-  icalSecret, _pushedBySession, updatedAt
-}
+  icalSecret, _pushedBySession }, updated_at }
 ```
-Autres collections : `presence/{uid}`, `admin_messages/{uid}/inbox/{id}`
+Autres tables : `presence`, `admin_messages`
 
 ### Sync flow
-1. **Client → Firestore :** `pushFirestoreNow()` après chaque write → `pushToFirestore(getFullBackup())`
-2. **Firestore → Client :** realtime listener, skip si `_pushedBySession === SESSION_ID`
+1. **Client → Supabase :** `pushNow()` après chaque write → `pushToSupabase(getFullBackup())`
+2. **Supabase → Client :** realtime listener, skip si `_pushedBySession === SESSION_ID`
 3. **Cross-tab :** `initCrossTabSync()` via storage events
-4. **Offline :** IndexedDB persistent cache (Firebase SDK)
+4. **Offline :** Supabase JS SDK gère la reconnexion ; pas de cache IndexedDB local
 
 ---
 
@@ -154,20 +152,20 @@ Autres collections : `presence/{uid}`, `admin_messages/{uid}/inbox/{id}`
 
 | Endpoint | Méthode | Rôle |
 |----------|---------|------|
-| `ical` | GET | Feed iCal live depuis Firestore (token secret) |
+| `ical` | GET | Feed iCal live depuis Supabase (token secret) |
 | `gcal-auth` | GET | OAuth2 init Google Calendar |
 | `gcal-callback` | GET | OAuth2 callback, sauve refresh token |
 | `gcal-sync` | POST | Push todos → Google Calendar |
 | `gcal-pull` | POST | Fetch events ← Google Calendar |
-| `admin-users` | GET | Liste comptes Firebase Auth |
-| `admin-batch` | POST | Batch Firestore ops |
+| `admin-users` | GET | Liste comptes Supabase Auth |
+| `admin-batch` | POST | Batch Supabase ops |
 | `admin-messages` | POST | Envoie message à utilisateur |
 | `admin-presence` | GET | Présence online |
 | `admin-stats` | GET | Stats agrégées utilisateurs |
 | `admin-user-action` | POST | Action sur un user |
 | `cron-cleanup-guests` | GET | Nettoie vieux comptes guests |
 
-Tous les admin endpoints : Firebase ID token requis + UID dans `ADMIN_UIDS`. CORS : liste blanche `todo.hugues.app` + localhost.
+Tous les admin endpoints : Bearer token Supabase requis + UID dans `ADMIN_UIDS`. Helper partagé : `api/_supabase.js`.
 
 ---
 
@@ -186,7 +184,7 @@ Tous les admin endpoints : Firebase ID token requis + UID dans `ADMIN_UIDS`. COR
 - **Récurrence :** daily/weekly(dow)/monthly(dom ou lastDay)/yearly — 1 todo, pas d'instances
 - **iCal :** token secret `{uid}_{secret}`, endpoint `/api/ical?token=...`
 - **Celebrate :** GSAP, quotes EN/FR/custom, mascots, ban, debug panel
-- **Avatar :** upload + crop + emoji + filtres, saved Firestore
+- **Avatar :** upload + crop + emoji + filtres, saved Supabase
 - **Présence :** heartbeat 30s, click counter, admin messages inbox
 - **Draft :** modal auto-save 300ms debounce dans `modalDraft`
 - **_showToast(msg) :** toast non-bloquant (réutilise `#undoToast` / `.undo-toast`)

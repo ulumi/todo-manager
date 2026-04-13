@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════
-//  SUPABASE — init client (replaces firebase.js)
+//  SUPABASE — init client
 // ════════════════════════════════════════════════════════
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
