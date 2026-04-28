@@ -578,13 +578,13 @@ main.plan-mode, main.search-mode {
 }
 
 #calSidebar {
-  width: 218px;
+  width: 170px;
   flex-shrink: 0;
   align-self: flex-start;
   position: sticky;
   top: calc(var(--header-h) + 30px);
   z-index: 1;
-  padding: 0 20px 0 0;
+  padding: 0 12px 0 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -598,7 +598,7 @@ main.plan-mode, main.search-mode {
 .cal-sid-month {
   background: var(--surface);
   border-radius: 12px;
-  padding: 12px 12px 10px;
+  padding: 10px 10px 8px;
   box-shadow: var(--shadow-md);
 }
 
