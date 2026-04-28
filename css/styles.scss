@@ -8041,8 +8041,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   .intentions-tab, .analyse-tab, .counters-tab {
     span:not(.nav-badge) { display: none; }
   }
-  .playground-link { display: none; }
-  .hbtn-v26        { display: none; }
+  .playground-link  { display: none; }
+  .chat-inbox-btn   { display: none; }
+  .period-label     { min-width: auto; }
 }
 
 // ── Step 3 (601–1100px): iPad / tablet — compact single-line header ───────

@@ -8595,8 +8595,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   .playground-link {
     display: none;
   }
-  .hbtn-v26 {
+  .chat-inbox-btn {
     display: none;
+  }
+  .period-label {
+    min-width: auto;
   }
 }
 @media (max-width: 1100px) and (min-width: 601px) {
