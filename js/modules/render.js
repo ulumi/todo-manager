@@ -106,6 +106,21 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const timeBadge = todo.startTime
     ? `<span class="todo-time-badge"><svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><polyline points="6 3.5 6 6 8 7.2"/></svg>${todo.startTime}</span>`
     : '';
+  const counterBar = (() => {
+    if (!todo.counterEnabled || todo.countTo === undefined) return '';
+    const cur  = todo.countCurrent ?? todo.countFrom ?? 0;
+    const from = todo.countFrom ?? 0;
+    const to   = todo.countTo;
+    const pct  = to > from ? Math.min(100, Math.round(((cur - from) / (to - from)) * 100)) : 0;
+    const unit = todo.countUnit ? ` ${esc(todo.countUnit)}` : '';
+    return `<div class="todo-counter" onclick="event.stopPropagation()">
+      <button class="todo-counter-btn" onclick="event.stopPropagation();window.app.decrementCount('${todo.id}')" title="Décrémenter">−</button>
+      <span class="todo-counter-val">${cur}${unit}</span>
+      <button class="todo-counter-btn" onclick="event.stopPropagation();window.app.incrementCount('${todo.id}')" title="Incrémenter">+</button>
+      <div class="todo-counter-bar-wrap"><div class="todo-counter-bar-fill" style="width:${pct}%"></div></div>
+      <span class="todo-counter-target">/ ${to}${unit}</span>
+    </div>`;
+  })();
   const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
@@ -118,6 +133,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${counterBar}
         ${dotsHTML}
       </div>
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
@@ -793,8 +809,9 @@ export function renderMonthView(todos) {
   const days = daysInMonth(y,m);
   const todayDS = DS(new Date());
 
+  const numRows = Math.ceil((firstDay + days) / 7);
   let grid = `<div class="month-grid-header">${state.DAYS.map(d=>`<div class="month-dow">${d}</div>`).join('')}</div>
-    <div class="month-grid">`;
+    <div class="month-grid" style="grid-template-rows:repeat(${numRows},1fr)">`;
 
   // Prev month filler
   const prevDays = daysInMonth(y, m-1);
@@ -2293,4 +2310,49 @@ export function renderSearchView() {
         </div>
       </div>
     </div>`;
+}
+
+// ─── Counters View ────────────────────────────────────────────────────────
+
+export function renderCountersView(todos) {
+  const counterTodos = todos.filter(t => t.counterEnabled && t.countTo !== undefined);
+  if (!counterTodos.length) {
+    return `<div class="counters-view counters-view--empty">
+      <div class="view-empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <p>Aucun compteur actif.</p>
+        <p class="view-empty-hint">Active un compteur sur n'importe quelle tâche dans Détails → Compteur de progression.</p>
+      </div>
+    </div>`;
+  }
+  const cards = counterTodos.map(t => {
+    const cur  = t.countCurrent ?? t.countFrom ?? 0;
+    const from = t.countFrom ?? 0;
+    const to   = t.countTo;
+    const unit = t.countUnit ? esc(t.countUnit) : '';
+    const pct  = to > from ? Math.min(100, Math.round(((cur - from) / (to - from)) * 100)) : 0;
+    const done = cur >= to;
+    return `<div class="counter-card${done ? ' counter-card--done' : ''}">
+      <div class="counter-card-header">
+        <span class="counter-card-title">${esc(t.title)}</span>
+        <button class="counter-card-edit-btn" onclick="window.app.openEditModal('${t.id}')" title="Modifier">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </div>
+      <div class="counter-card-progress-bar"><div class="counter-card-progress-fill" style="width:${pct}%"></div></div>
+      <div class="counter-card-controls">
+        <button class="counter-card-btn counter-card-btn--dec" onclick="window.app.decrementCount('${t.id}')" title="Décrémenter"${cur <= from ? ' disabled' : ''}>−</button>
+        <div class="counter-card-values">
+          <span class="counter-card-cur">${cur}</span>
+          <span class="counter-card-sep"> / ${to}${unit ? ' ' + unit : ''}</span>
+          <span class="counter-card-pct">${pct}%</span>
+        </div>
+        <button class="counter-card-btn counter-card-btn--inc" onclick="window.app.incrementCount('${t.id}')" title="Incrémenter"${cur >= to ? ' disabled' : ''}>+</button>
+      </div>
+      ${done ? `<div class="counter-card-done-badge">✓ Objectif atteint !</div>` : ''}
+    </div>`;
+  }).join('');
+  return `<div class="counters-view">
+    <div class="counters-grid">${cards}</div>
+  </div>`;
 }
