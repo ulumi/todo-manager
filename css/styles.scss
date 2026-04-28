@@ -99,6 +99,7 @@ body {
   font-size: 15px;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 
@@ -122,9 +123,10 @@ header {
 .header-top {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
   padding: 14px 0;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .header-sep {
@@ -5631,7 +5633,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   outline: none;
   transition: border-color .15s, background-color .15s;
   width: 200px;
-  flex-shrink: 0;
+  min-width: 120px;
+  flex-shrink: 1;
 
   cursor: text;
   &:empty::before { content: attr(data-placeholder); color: var(--text-muted); pointer-events: none; }
@@ -8035,9 +8038,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ── Step 2 (961–1500px): hide utility tab labels (space exhausted) ─────────
 @media (max-width: 1500px) and (min-width: 961px) {
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab {
+  .intentions-tab, .analyse-tab, .counters-tab {
     span:not(.nav-badge) { display: none; }
   }
+  .playground-link { display: none; }
+  .hbtn-v26        { display: none; }
 }
 
 // ── Step 3 (601–1100px): iPad / tablet — compact single-line header ───────
@@ -8063,7 +8068,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .add-btn           { display: none !important; }
   .zoom-group        { display: none !important; }
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab {
+  .intentions-tab, .analyse-tab, .counters-tab {
     span:not(.nav-badge) { display: none; }
   }
   .nav-group         { flex-shrink: 0; margin-left: 0; }
