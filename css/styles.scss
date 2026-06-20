@@ -390,6 +390,16 @@ header {
   background: color-mix(in srgb, var(--primary) 5%, var(--bg));
 }
 
+// ── Secondary tabs are ICON-ONLY at all widths ────────────────────────────
+// Full text labels on all 11 tabs can never fit a single header row (they
+// need ~2050px, more than a 1920px screen). The primary view-tabs keep their
+// text; the secondary/utility tabs show icons only, with title tooltips for
+// discoverability. This guarantees the whole header fits from ~1150px up.
+.inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
+.intentions-tab, .analyse-tab, .counters-tab {
+  span:not(.nav-badge) { display: none; }
+}
+
 .nav-group {
   display: flex;
   align-items: center;
@@ -2906,16 +2916,6 @@ main {
 }
 
 // ── Header drop zones (Inbox / Backlog buttons during drag) ───────────────────
-.is-dragging-task {
-  .inbox-tab,
-  .backlog-tab,
-  .view-tab[data-view="day"] {
-    outline: 2px dashed var(--primary);
-    outline-offset: -2px;
-    border-radius: 8px;
-  }
-}
-
 // Active hover while dragging over the header button
 .header-drop-hover {
   outline: 2.5px solid var(--primary) !important;
@@ -8035,15 +8035,36 @@ body:has(.bottom-panel:not(.hidden))::before {
   .quick-find-input { width: 140px; flex-shrink: 1; }
 }
 
-// ── Step 2 (961–1500px): hide utility tab labels (space exhausted) ─────────
+// ── Step 2 (961–1500px): drop secondary chrome (space exhausted) ──────────
+// Secondary tab labels are already icon-only globally (see base rule above).
 @media (max-width: 1500px) and (min-width: 961px) {
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab, .counters-tab {
-    span:not(.nav-badge) { display: none; }
-  }
   .playground-link  { display: none; }
   .chat-inbox-btn   { display: none; }
   .period-label     { min-width: auto; }
+}
+
+// ── Step 2.5 (1101–1400px): tighten tabs so the icon header fits down to ──
+// the tablet band. Without this, the icon-only tabs still overflow here
+// because their padding stays full-width.
+@media (max-width: 1400px) and (min-width: 1101px) {
+  .header-top { gap: 8px; }
+  .view-tab   { padding: 5px 9px; }
+  .utility-tabs .view-tab,
+  .utility-tabs--insights .view-tab { padding: 6px 7px; }
+  .quick-find-input { width: 120px; }
+}
+
+// ── Step 2.6 (1101–1340px): tightest desktop — collapse the search label ──
+// and shrink everything to the minimum before the tablet layout takes over.
+@media (max-width: 1340px) and (min-width: 1101px) {
+  .header-top { gap: 6px; }
+  .view-tab   { padding: 5px 8px; }
+  .utility-tabs .view-tab,
+  .utility-tabs--insights .view-tab { padding: 6px 6px; }
+  .search-btn-label { display: none; }
+  .quick-find-input { width: 92px; }
+  .lang-select      { display: none; }
+  .logo-text        { display: none; }
 }
 
 // ── Step 3 (601–1100px): iPad / tablet — compact single-line header ───────
@@ -8158,11 +8179,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .utility-tabs, .utility-tabs--insights { display: contents; }
   .view-tab       { flex: 1; text-align: center; padding: 6px 4px; font-size: 12px; }
   .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab { order: 10; flex: none; }
-  .inbox-tab, .backlog-tab, .plan-icon-tab, .projects-tab,
-  .intentions-tab, .analyse-tab {
-    span:not(.nav-badge) { display: none; }
-  }
+  .intentions-tab, .analyse-tab, .counters-tab { order: 10; flex: none; }
   .utility-sep { display: none; }
   .today-btn   { order: 10; margin-right: 0; }
 
@@ -8173,6 +8190,18 @@ body:has(.bottom-panel:not(.hidden))::before {
     #quickFindInput       { display: none; }
     .search-btn-label     { display: none; }
     .quick-find-search-btn { border-radius: 6px; padding: 6px 8px; }
+  }
+
+  // The results dropdown is absolutely positioned at min-width:300px from the
+  // wrapper's left edge — on a narrow phone that pushes past the viewport and
+  // creates a phantom horizontal scrollbar even while hidden. Anchor it to the
+  // wrapper's right edge and clamp it to the viewport so nothing overflows.
+  .quick-find-dropdown {
+    left: auto;
+    right: 0;
+    min-width: 0;
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
   }
 
   // Row 3: nav group
@@ -9868,6 +9897,11 @@ body:has(.bottom-panel:not(.hidden))::before {
     background: var(--text-muted);
     color:      #fff;
   }
+
+  // When the count is 0, JS adds .hidden — there is no global .hidden rule,
+  // so the badge needs its own or it keeps reserving min-width: 22px on every
+  // tab (a phantom ~27px per tab → chronic header overflow).
+  &.hidden { display: none; }
 }
 
 .inbox-tab.active   .nav-badge          { background: #fff; color: var(--primary); }

@@ -6,3 +6,4 @@ node_modules/
 .vercel
 firebase-service-account.json
 .claude/worktrees/
+.playwright-mcp/

@@ -264,6 +264,10 @@ function _saveDraft() {
     yearMonth: state.selectedYearMonth,
     yearDay: state.selectedYearDay,
     subtasks: _modalSubtasks.length ? _modalSubtasks : undefined,
+    counterEnabled: document.getElementById('taskCounterEnabled')?.checked || false,
+    countFrom: document.getElementById('taskCountFrom')?.value || '',
+    countTo: document.getElementById('taskCountTo')?.value || '',
+    countUnit: document.getElementById('taskCountUnit')?.value || '',
   }));
 }
 
@@ -341,6 +345,15 @@ function _tryRestoreDraft() {
   }
   if (d.dayPeriod) window.app?.selectDayPeriod(d.dayPeriod);
   if (d.subtasks?.length) populateModalSubtasks(d.subtasks);
+  if (d.counterEnabled) {
+    const cEl = document.getElementById('taskCounterEnabled');
+    const fEl = document.getElementById('counterFields');
+    if (cEl) cEl.checked = true;
+    if (fEl) fEl.style.display = '';
+    if (d.countFrom !== undefined) document.getElementById('taskCountFrom').value = d.countFrom;
+    if (d.countTo) document.getElementById('taskCountTo').value = d.countTo;
+    if (d.countUnit) document.getElementById('taskCountUnit').value = d.countUnit;
+  }
   return true;
 }
 
@@ -646,6 +659,17 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   _syncDurationStepper('taskDurationReal');
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = 'none';
+  // Reset counter fields
+  const _cEnabled = document.getElementById('taskCounterEnabled');
+  const _cFields  = document.getElementById('counterFields');
+  if (_cEnabled) _cEnabled.checked = false;
+  if (_cFields)  _cFields.style.display = 'none';
+  const _cFrom = document.getElementById('taskCountFrom');
+  const _cTo   = document.getElementById('taskCountTo');
+  const _cUnit = document.getElementById('taskCountUnit');
+  if (_cFrom) _cFrom.value = '0';
+  if (_cTo)   _cTo.value   = '';
+  if (_cUnit) _cUnit.value = '';
   const recSel = document.getElementById('taskRecurrence');
   if (recSel) recSel.value = 'none';
   // Show day period buttons for date mode, empty for inbox/backlog
@@ -762,6 +786,19 @@ export function openEditModal(id, dateStr, todos) {
   populateProjectTags(t.projectIds || (t.projectId ? [t.projectId] : []));
   populateIntentionTags(t.intentionIds || (t.intentionId ? [t.intentionId] : []));
   selectPriority(t.priority || '');
+  // Counter fields
+  const counterEnabledEl = document.getElementById('taskCounterEnabled');
+  const counterFieldsEl  = document.getElementById('counterFields');
+  if (counterEnabledEl) counterEnabledEl.checked = !!t.counterEnabled;
+  if (counterFieldsEl) counterFieldsEl.style.display = t.counterEnabled ? '' : 'none';
+  if (t.counterEnabled) {
+    const cfrom = document.getElementById('taskCountFrom');
+    const cto   = document.getElementById('taskCountTo');
+    const cunit = document.getElementById('taskCountUnit');
+    if (cfrom) cfrom.value = t.countFrom ?? 0;
+    if (cto)   cto.value   = t.countTo !== undefined ? t.countTo : '';
+    if (cunit) cunit.value = t.countUnit || '';
+  }
 
   // Big mode UI
   const isRecurring = t.recurrence && t.recurrence !== 'none';
@@ -1072,9 +1109,16 @@ export function saveTaskLogic(todos) {
   const durationEstimated = document.getElementById('taskDurationEstimated')?.value ? parseInt(document.getElementById('taskDurationEstimated').value) : undefined;
   const durationReal      = document.getElementById('taskDurationReal')?.value ? parseInt(document.getElementById('taskDurationReal').value) : undefined;
 
+  const counterEnabled = document.getElementById('taskCounterEnabled')?.checked || false;
+  const countFrom = counterEnabled ? (parseInt(document.getElementById('taskCountFrom')?.value) || 0) : undefined;
+  const countTo   = counterEnabled && document.getElementById('taskCountTo')?.value ? parseInt(document.getElementById('taskCountTo').value) : undefined;
+  const countUnit = counterEnabled ? (document.getElementById('taskCountUnit')?.value.trim() || undefined) : undefined;
+
   const dayPeriod = (state.selectedRecurrence === 'daily' || state.selectedRecurrence === 'none')
     ? (document.getElementById('taskDayPeriod')?.value || undefined)
     : undefined;
+
+  const subtasks = _modalSubtasks.length ? getModalSubtasks() : undefined;
 
   const data = {
     title,
@@ -1090,6 +1134,11 @@ export function saveTaskLogic(todos) {
     durationEstimated,
     durationReal,
     dayPeriod: dayPeriod || undefined,
+    counterEnabled: counterEnabled || undefined,
+    countFrom,
+    countTo,
+    countUnit,
+    subtasks,
   };
 
   if (state.selectedRecurrence==='none') {
@@ -1142,6 +1191,17 @@ export function saveTaskLogic(todos) {
       if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
       if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
+      // Counter: update config but preserve countCurrent
+      delete t.counterEnabled; delete t.countFrom; delete t.countTo; delete t.countUnit;
+      if (data.counterEnabled) {
+        t.counterEnabled = true;
+        t.countFrom = data.countFrom ?? 0;
+        t.countTo   = data.countTo;
+        t.countUnit = data.countUnit;
+        if (t.countCurrent === undefined) t.countCurrent = t.countFrom;
+      } else {
+        delete t.countCurrent;
+      }
       t.categoryIds    = data.categoryIds;
       t.projectIds     = data.projectIds;
       t.intentionIds   = data.intentionIds;

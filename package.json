@@ -17,6 +17,7 @@
     "node": ">=20"
   },
   "devDependencies": {
+    "playwright": "^1.59.1",
     "sass": "^1.98.0"
   }
 }

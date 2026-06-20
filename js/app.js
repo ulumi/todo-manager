@@ -41,7 +41,7 @@ import {
   getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
   renderPlanInboxList, renderProjectsView, renderSearchView,
-  renderIntentionsView, renderAnalyseView,
+  renderIntentionsView, renderAnalyseView, renderCountersView,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
@@ -157,8 +157,14 @@ class TodoApp {
     const _hashView = _hash.get('view');
     const _hashNav  = _hash.get('nav');
     const _ALL_VIEWS = ['day','week','month','year','categories','inbox','backlog','plan','projects','superadmin','search','intentions','profile','analyse'];
+    // If last refresh was more than 8h ago, snap back to today's day view
+    const _lastSeen = parseInt(localStorage.getItem('_lastSeen') || '0');
+    const _staleSession = _lastSeen > 0 && Date.now() - _lastSeen > 8 * 3600 * 1000;
+    localStorage.setItem('_lastSeen', Date.now().toString());
     if (_hashView && _ALL_VIEWS.includes(_hashView)) {
       state.setView(_hashView);
+    } else if (_staleSession) {
+      state.setView('day');
     } else {
       const savedView = localStorage.getItem('view');
       if (savedView && _ALL_VIEWS.includes(savedView)) state.setView(savedView);
@@ -166,6 +172,8 @@ class TodoApp {
     if (_hashNav) {
       const [_hy, _hm, _hd] = _hashNav.split('-').map(Number);
       if (!isNaN(_hy)) state.setNavDate(new Date(_hy, _hm - 1, _hd));
+    } else if (_staleSession) {
+      state.setNavDate(today());
     }
     this.render();
     this._syncServer();
@@ -1551,6 +1559,10 @@ class TodoApp {
     const intentionsBadge = document.getElementById('intentionsBadge');
     if (intentionsBadge) { intentionsBadge.textContent = intentionsCount; intentionsBadge.classList.toggle('hidden', intentionsCount === 0); }
 
+    const countersCount = state.todos.filter(t => t.counterEnabled && t.countTo !== undefined).length;
+    const countersBadge = document.getElementById('countersBadge');
+    if (countersBadge) { countersBadge.textContent = countersCount; countersBadge.classList.toggle('hidden', countersCount === 0); }
+
     const todayStr = DS(today());
     const overdueCount = state.todos.filter(t =>
       t.date && t.date < todayStr &&
@@ -1793,6 +1805,8 @@ class TodoApp {
     } else {
       clone.date = ds;
     }
+    if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
+    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
     const idx = state.todos.findIndex(x => x.id === id);
     state.todos.splice(idx + 1, 0, clone);
     saveTodos(state.todos);
@@ -2575,6 +2589,7 @@ class TodoApp {
     if (state.view==='superadmin') html = this._renderSuperadminView();
     if (state.view==='intentions') html = renderIntentionsView(state.todos);
     if (state.view==='analyse')    html = renderAnalyseView(state.todos);
+    if (state.view==='counters')   html = renderCountersView(state.todos);
     const _planScrollMode = state.view === 'plan' && ['month', 'biweek'].includes(localStorage.getItem('planMode') || 'week');
     if (_planScrollMode) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
     if (!_planScrollMode && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
@@ -2585,7 +2600,7 @@ class TodoApp {
     if (_planScrollMode) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse', 'counters'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -2789,6 +2804,36 @@ class TodoApp {
     localStorage.setItem('dayDoneAccordionOpen', isOpen ? '0' : '1');
     const acc = document.querySelector('.day-done-accordion');
     if (acc) acc.classList.toggle('open', !isOpen);
+  }
+
+  toggleCounterFields(checked) {
+    const fields = document.getElementById('counterFields');
+    if (fields) fields.style.display = checked ? '' : 'none';
+  }
+
+  incrementCount(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t || !t.counterEnabled || t.countTo === undefined) return;
+    const cur = t.countCurrent ?? t.countFrom ?? 0;
+    if (cur >= t.countTo) return;
+    snapshot(state.todos);
+    t.countCurrent = cur + 1;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  decrementCount(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t || !t.counterEnabled) return;
+    const cur  = t.countCurrent ?? t.countFrom ?? 0;
+    const from = t.countFrom ?? 0;
+    if (cur <= from) return;
+    snapshot(state.todos);
+    t.countCurrent = cur - 1;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
   }
 
   // ═══════════════════════════════════════════════════

@@ -88,6 +88,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `projects` | Project cards grid. Statuses, lifecycle |
 | `intentions` | Long-term goals. Cards with linked tasks as chips |
 | `analyse` | Stats: completed this week vs last, this month vs last, 7-day bar chart, oldest overdue |
+| `counters` | Progress counters: cards for all tasks with a counter enabled, +/− controls |
 
 ---
 
@@ -106,7 +107,12 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   priority: ''|'low'|'medium'|'high',
   categoryId?, projectId?, intentionId?,
   startTime?, endTime?,
-  durationEstimated?, durationReal?
+  durationEstimated?, durationReal?,
+  counterEnabled?: boolean,          // progress counter active
+  countFrom?: number,                // start value (default 0)
+  countTo?: number,                  // target value
+  countCurrent?: number,             // current value (initialized to countFrom on create)
+  countUnit?: string,                // optional label ("km", "pages", etc.)
 }
 ```
 

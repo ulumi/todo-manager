@@ -14,7 +14,9 @@
       "Bash(git config --global --get alias.deploy)",
       "Bash(curl -s http://localhost:8000/index.html)",
       "Bash(npx sass css/styles.scss css/styles.css --style=expanded)",
-      "Bash(git commit -m \"fix: change month view title truncation to 15 characters:*)"
+      "Bash(git commit -m \"fix: change month view title truncation to 15 characters:*)",
+      "Bash(brew install:*)",
+      "Bash(node /tmp/screenshot-month2.js)"
     ]
   }
 }

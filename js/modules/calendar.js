@@ -80,6 +80,7 @@ export function addTask(data, todos) {
     id,
     ...data,
     ...(startDate ? {startDate} : {}),
+    ...(data.counterEnabled ? {countCurrent: data.countFrom ?? 0} : {}),
     completedDates: [],
     completed: false,
     updatedAt: parseInt(id),
