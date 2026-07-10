@@ -2412,6 +2412,59 @@ main {
   }
 
   .ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+
+  // Badge « N » sur les actions de groupe (sélection multiple)
+  .ctx-count {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  // Ligne de choix rapide de priorité
+  .ctx-prio-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+
+    .ctx-prio-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-right: auto;
+    }
+
+    .ctx-prio-btn {
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s, border-color .15s;
+
+      &:hover { background: var(--surface2); color: var(--text); }
+      &--high.active   { background: #ef4444; border-color: #ef4444; color: #fff; }
+      &--medium.active { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+      &--low.active    { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+      &--none.active   { background: var(--surface2); color: var(--text); }
+    }
+  }
 }
 
 // ── Subtasks ──────────────────────────────────────────────────────────────────

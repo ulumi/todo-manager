@@ -57,7 +57,7 @@ import {
   openProjectPanel, closeProjectPanel, renderProjectPanel, getCurrentProjectId,
 } from './modules/projectManager.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
-import { initMultiSelect, msClear, msRefreshUI } from './modules/multiselect.js';
+import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECTABLE } from './modules/multiselect.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
@@ -1824,6 +1824,104 @@ class TodoApp {
 
   showTodoMenu(e, id, ds) {
     _showTodoCtxMenu(e.currentTarget, id, ds);
+  }
+
+  // ── Actions de lot (menu contextuel, sélection simple ou multiple) ──────
+  // Résout l'occurrence de chaque id : la date affichée de l'élément
+  // (data-date), sinon la date propre de la tâche — jamais navDate.
+  // « Compléter » vaut donc toujours pour la date du jour de la tâche.
+  _resolveOccurrences(ids) {
+    return ids.map(id => {
+      const t = state.todos.find(x => x.id === id);
+      if (!t) return null;
+      const el = document.querySelector(`[data-id="${id}"][data-date]`);
+      return { t, ds: el?.dataset.date || t.date || null };
+    }).filter(Boolean);
+  }
+
+  _isDoneAt(t, ds) {
+    if (t.recurrence && t.recurrence !== 'none') return !!ds && (t.completedDates || []).includes(ds);
+    return !!t.completed;
+  }
+
+  // Toggle : si tout le lot est déjà complété → décomplète, sinon complète tout
+  completeMany(ids) {
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    const allDone = occ.every(({ t, ds }) => this._isDoneAt(t, ds));
+    snapshot(state.todos);
+    occ.forEach(({ t, ds }) => {
+      if (t.recurrence && t.recurrence !== 'none') {
+        if (!ds) return;
+        t.completedDates = t.completedDates || [];
+        if (allDone) t.completedDates = t.completedDates.filter(x => x !== ds);
+        else if (!t.completedDates.includes(ds)) t.completedDates.push(ds);
+      } else {
+        t.completed = !allDone;
+      }
+      t.updatedAt = Date.now();
+    });
+    saveTodos(state.todos);
+    if (!allDone) celebrate(state.lang);
+    if (ids.length > 1) msClear();
+    this.render();
+  }
+
+  duplicateMany(ids) {
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    snapshot(state.todos);
+    const base = Date.now();
+    occ.forEach(({ t, ds }, i) => {
+      const cloneId = String(base + i); // base+i : Date.now() en boucle collisionne
+      const clone = { ...JSON.parse(JSON.stringify(t)), id: cloneId, completed: false, completedDates: [], updatedAt: base + i };
+      if (clone.recurrence && clone.recurrence !== 'none') {
+        if (ds) clone.startDate = ds;
+        delete clone.endDate;
+        delete clone.excludedDates;
+      } else if (ds) {
+        clone.date = ds;
+      }
+      if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
+      if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
+      const idx = state.todos.findIndex(x => x.id === t.id);
+      state.todos.splice(idx + 1, 0, clone);
+    });
+    saveTodos(state.todos);
+    if (ids.length > 1) msClear();
+    this.render();
+  }
+
+  // Suppression de lot : ponctuelles retirées, récurrentes → seule
+  // l'occurrence sélectionnée est exclue (pas de modal en mode groupe)
+  deleteMany(ids) {
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    snapshot(state.todos);
+    const removeIds = [];
+    occ.forEach(({ t, ds }) => {
+      if (!t.recurrence || t.recurrence === 'none') {
+        this._trackDeletion(t.id);
+        removeIds.push(t.id);
+      } else if (ds) {
+        t.excludedDates = t.excludedDates || [];
+        if (!t.excludedDates.includes(ds)) t.excludedDates.push(ds);
+        t.updatedAt = Date.now();
+      }
+    });
+    if (removeIds.length) state.setTodos(state.todos.filter(x => !removeIds.includes(x.id)));
+    saveTodos(state.todos);
+    msClear();
+    this.render();
+  }
+
+  setPriorityMany(ids, prio) {
+    const targets = state.todos.filter(t => ids.includes(t.id));
+    if (!targets.length) return;
+    snapshot(state.todos);
+    targets.forEach(t => { t.priority = prio; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    this.render(); // la sélection est conservée (action modifiante, pas de déplacement)
   }
 
   clickTodo(e, id, ds) {
@@ -5862,33 +5960,75 @@ class TodoApp {
   getNavDate() { return state.navDate; }
 }
 
-// ── Global todo context menu ─────────────────────────────
+// ── Global todo context menu (item seul ou sélection multiple) ──────────
 const _todoCtxMenu = document.createElement('div');
 _todoCtxMenu.className = 'todo-ctx-menu hidden';
-_todoCtxMenu.innerHTML = `
-  <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
-  <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
-  <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer</div>
-  <div class="ctx-sep"></div>
-  <div class="ctx-item danger" data-action="delete"><span>×</span> Supprimer</div>
-`;
 document.body.appendChild(_todoCtxMenu);
 
-let _ctxTarget = null;
+let _ctxTarget = null; // { ids: [...], ds }
 
-function _showTodoCtxMenu(anchor, id, ds) {
-  _ctxTarget = { id, ds };
-  _todoCtxMenu.classList.remove('hidden');
-  // Position below the anchor button, or at mouse position if anchor is the item itself
-  const rect = anchor.getBoundingClientRect();
-  const mw = 180, mh = 160;
+// Contenu dynamique selon la cible : groupe (N > 1) ou item seul,
+// état complété, présence de tâches déplaçables (non récurrentes)
+function _renderCtxMenu() {
+  const { ids } = _ctxTarget;
+  const group = ids.length > 1;
+  const occ = window.app._resolveOccurrences(ids);
+  const allDone = occ.length > 0 && occ.every(({ t, ds }) => window.app._isDoneAt(t, ds));
+  const anyMovable = occ.some(({ t }) => !t.recurrence || t.recurrence === 'none');
+  const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
+  const curPrio = group
+    ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
+    : (occ[0] ? (occ[0].t.priority || '') : null);
+  const prios = [
+    ['high',   'H', 'Priorité haute'],
+    ['medium', 'M', 'Priorité moyenne'],
+    ['low',    'B', 'Priorité basse'],
+    ['',       '—', 'Sans priorité'],
+  ];
+  _todoCtxMenu.innerHTML = `
+    <div class="ctx-item" data-action="complete"><span>${allDone ? '↺' : '✓'}</span> ${allDone ? 'Décompléter' : 'Compléter'}${nb}</div>
+    ${group ? '' : `
+    <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
+    <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>`}
+    <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
+    ${!anyMovable ? '' : `
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="today"><span>☀</span> Aujourd'hui${nb}</div>
+    <div class="ctx-item" data-action="tomorrow"><span>→</span> Demain${nb}</div>
+    <div class="ctx-item" data-action="inbox"><span>📥</span> Inbox${nb}</div>
+    <div class="ctx-item" data-action="backlog"><span>🗂</span> Backlog${nb}</div>`}
+    <div class="ctx-sep"></div>
+    <div class="ctx-prio-row">
+      <span class="ctx-prio-label">Priorité</span>
+      ${prios.map(([v, l, title]) => `<button class="ctx-prio-btn ctx-prio-btn--${v || 'none'}${curPrio === v ? ' active' : ''}" data-prio="${v}" title="${title}">${l}</button>`).join('')}
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" data-action="delete"><span>×</span> Supprimer${nb}</div>
+    ${group ? `<div class="ctx-item" data-action="deselect"><span>✕</span> Désélectionner</div>` : ''}
+  `;
+}
+
+// Si l'item visé fait partie d'une sélection multiple, le menu agit sur
+// toute la sélection; sinon sur l'item seul
+function _ctxIdsFor(id) {
+  return (msHas(id) && msCount() > 1) ? msIds() : [id];
+}
+
+function _positionCtxMenu(x, y) {
   const vw = window.innerWidth, vh = window.innerHeight;
-  let x = rect.right - mw;
-  let y = rect.bottom + 4;
-  if (y + mh > vh) y = rect.top - mh - 4;
-  if (x < 8) x = 8;
+  const mw = _todoCtxMenu.offsetWidth, mh = _todoCtxMenu.offsetHeight;
+  if (x + mw > vw - 8) x = Math.max(8, x - mw - 4);
+  if (y + mh > vh - 8) y = Math.max(8, vh - mh - 8);
   _todoCtxMenu.style.left = x + 'px';
   _todoCtxMenu.style.top  = y + 'px';
+}
+
+function _showTodoCtxMenu(anchor, id, ds) {
+  _ctxTarget = { ids: _ctxIdsFor(id), ds };
+  _renderCtxMenu();
+  _todoCtxMenu.classList.remove('hidden');
+  const rect = anchor.getBoundingClientRect();
+  _positionCtxMenu(rect.right - _todoCtxMenu.offsetWidth, rect.bottom + 4);
 }
 
 function _hideTodoCtxMenu() {
@@ -5897,15 +6037,25 @@ function _hideTodoCtxMenu() {
 }
 
 _todoCtxMenu.addEventListener('click', e => {
+  const prioBtn = e.target.closest('.ctx-prio-btn');
   const item = e.target.closest('.ctx-item');
-  if (!item || !_ctxTarget) return;
-  const { id, ds } = _ctxTarget;
+  if ((!item && !prioBtn) || !_ctxTarget) return;
+  const { ids, ds } = _ctxTarget;
+  const single = ids[0];
   _hideTodoCtxMenu();
+  const app = window.app;
+  if (prioBtn) { app.setPriorityMany(ids, prioBtn.dataset.prio); return; }
   const action = item.dataset.action;
-  if (action === 'edit')       window.app.openEditModal(id, ds);
-  if (action === 'add-after')  window.app.addTaskAfter(id, ds);
-  if (action === 'duplicate')  window.app.duplicateTodo(id, ds);
-  if (action === 'delete')     window.app.deleteTodo(id, ds);
+  if (action === 'complete')   app.completeMany(ids);
+  if (action === 'edit')       app.openEditModal(single, ds);
+  if (action === 'add-after')  app.addTaskAfter(single, ds);
+  if (action === 'duplicate')  app.duplicateMany(ids);
+  if (action === 'today')      app._sendManyTo(ids, { date: DS(today()), backlog: false });
+  if (action === 'tomorrow')   app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });
+  if (action === 'inbox')      app._sendManyTo(ids, { date: null, backlog: false });
+  if (action === 'backlog')    app._sendManyTo(ids, { date: null, backlog: true });
+  if (action === 'delete')     ids.length > 1 ? app.deleteMany(ids) : app.deleteTodo(single, ds);
+  if (action === 'deselect')   msClear();
 });
 
 document.addEventListener('click', e => {
@@ -5913,21 +6063,13 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('contextmenu', e => {
-  const item = e.target.closest('.todo-item');
-  if (!item) return;
+  const item = e.target.closest(MS_SELECTABLE);
+  if (!item || !item.dataset.id) return;
   e.preventDefault();
-  const id = item.getAttribute('data-id');
-  const ds = item.getAttribute('data-date');
-  _ctxTarget = { id, ds };
+  _ctxTarget = { ids: _ctxIdsFor(item.dataset.id), ds: item.getAttribute('data-date') };
+  _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
-  const mw = 180, mh = 160;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  let x = e.clientX + 4;
-  let y = e.clientY;
-  if (x + mw > vw) x = e.clientX - mw - 4;
-  if (y + mh > vh) y = vh - mh - 8;
-  _todoCtxMenu.style.left = x + 'px';
-  _todoCtxMenu.style.top  = y + 'px';
+  _positionCtxMenu(e.clientX + 4, e.clientY);
 });
 
 // Create global app instance
