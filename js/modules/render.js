@@ -1310,15 +1310,15 @@ export function renderCategoriesView(todos) {
 // ─── Inbox View ────────────────────────────────────────────────────────────
 
 export function getInboxCount(todos) {
-  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog).length;
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed).length;
 }
 
 export function getBacklogCount(todos) {
-  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog).length;
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed).length;
 }
 
 export function renderInboxView(todos) {
-  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog);
+  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed);
 
   const sort = localStorage.getItem('inboxSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
@@ -1393,7 +1393,7 @@ export function renderInboxView(todos) {
 }
 
 export function renderBacklogView(todos) {
-  const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date);
+  const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed);
 
   const sort = localStorage.getItem('backlogSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
@@ -1546,7 +1546,7 @@ export function renderPlanInboxList(todos, overdueSelected = new Set()) {
     .filter(t => t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none'))
     .sort(_mkOverdueSortFn());
 
-  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date);
+  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.completed);
 
   const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(_mkSortFn('inbox'));
   const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(_mkSortFn('backlog'));
