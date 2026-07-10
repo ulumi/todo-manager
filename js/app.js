@@ -1288,7 +1288,8 @@ class TodoApp {
   // MODAL
   // ═══════════════════════════════════════════════════
   openModal(date) {
-    const d = date || today();
+    // Sans date explicite : le jour actuellement affiché, pas aujourd'hui
+    const d = date || state.navDate || today();
     openModal(d, state.todos);
     const dateStr = typeof d === 'string' ? d : DS(d);
     history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'add', date: dateStr }));
