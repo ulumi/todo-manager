@@ -22,7 +22,7 @@
 | Shorthand | Action |
 |-----------|--------|
 | `cmt` | Stage all + git commit (do NOT deploy) |
-| `dpl` | Stage all + git commit + deploy to Vercel |
+| `dpl` | Stage all + git commit + **git push** + deploy to Vercel |
 
 ---
 
