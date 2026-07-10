@@ -1,0 +1,368 @@
+// ════════════════════════════════════════════════════════
+//  MODE FOCUS — plein écran, une tâche à la fois
+//  File intelligente des tâches du jour, chrono géant depuis le
+//  début de la tâche, compte à rebours sur durée estimée, Pomodoro,
+//  sous-tâches, compteurs. Voir app.js pour les actions (enterFocus,
+//  focusComplete, focusSkip, …).
+// ════════════════════════════════════════════════════════
+
+import * as state from './state.js';
+import { DS, today, esc } from './utils.js';
+import { getTodosForDate, isCompleted } from './calendar.js';
+import { getCategories } from './admin.js';
+
+const PERIOD_RANK = { morning: 0, afternoon: 1, evening: 2 };
+const PERIOD_LABEL = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
+export const POMO_WORK = 25 * 60;
+export const POMO_BREAK = 5 * 60;
+
+// Ids passés via « Passer » — renvoyés en fin de file (session seulement)
+let _skipped = [];
+// Tâche courante épinglée : elle reste devant même si une tâche à heure
+// fixe devient échue entre-temps (le bandeau propose le basculement,
+// il ne l'impose jamais). Levée à la complétion / passage / report.
+let _pinned = null;
+
+export function focusResetSkipped() { _skipped = []; _pinned = null; }
+
+export function focusMarkSkipped(id) {
+  _skipped = _skipped.filter(x => x !== id);
+  _skipped.push(id);
+}
+
+export function focusPin(id) {
+  _skipped = _skipped.filter(x => x !== id);
+  _pinned = id;
+}
+
+export function focusUnpin() { _pinned = null; }
+
+function _currentPeriodRank() {
+  const h = new Date().getHours();
+  return h < 12 ? 0 : h < 18 ? 1 : 2;
+}
+
+function _nowHM() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// ── File du jour ─────────────────────────────────────────
+// Ordre : tâches à heure fixe échues → période courante/passée et sans
+// période (ordre manuel du jour puis priorité) → heures futures →
+// périodes futures. Les « passées » vont en fin de file.
+export function getFocusQueue(app) {
+  const d = today();
+  const nowHM = _nowHM();
+  const curPer = _currentPeriodRank();
+  const dayOrder = app.dayOrder[DS(d)] || [];
+  const prioRank = { high: 0, medium: 1, low: 2, '': 3 };
+
+  const items = getTodosForDate(d, state.todos).filter(t => !isCompleted(t, d));
+
+  const group = (t) => {
+    if (t.startTime) return t.startTime <= nowHM ? 0 : 2;
+    const p = t.dayPeriod ? PERIOD_RANK[t.dayPeriod] : null;
+    if (p === null || p <= curPer) return 1;
+    return 3 + p;
+  };
+
+  const sorted = [...items].sort((a, b) => {
+    const ga = group(a), gb = group(b);
+    if (ga !== gb) return ga - gb;
+    if (ga === 0 || ga === 2) return (a.startTime || '').localeCompare(b.startTime || '');
+    const ia = dayOrder.indexOf(a.id), ib = dayOrder.indexOf(b.id);
+    if (ia !== -1 && ib !== -1 && ia !== ib) return ia - ib;
+    const pa = prioRank[a.priority || ''] ?? 3, pb = prioRank[b.priority || ''] ?? 3;
+    if (pa !== pb) return pa - pb;
+    return a.id.localeCompare(b.id);
+  });
+
+  const active  = sorted.filter(t => !_skipped.includes(t.id));
+  const skipped = sorted.filter(t => _skipped.includes(t.id))
+    .sort((a, b) => _skipped.indexOf(a.id) - _skipped.indexOf(b.id));
+  const queue = [...active, ...skipped];
+
+  // La tâche épinglée reste en tête
+  if (_pinned) {
+    const i = queue.findIndex(t => t.id === _pinned);
+    if (i > 0) queue.unshift(queue.splice(i, 1)[0]);
+    if (i === -1) _pinned = null; // complétée/supprimée entre-temps
+  }
+  return queue;
+}
+
+// ── Chrono de tâche (persiste au refresh via localStorage) ──
+// { taskId, startedAt (ms, si en cours), accum (sec cumulées), paused }
+export function getTimerState(taskId) {
+  let ts = null;
+  try { ts = JSON.parse(localStorage.getItem('focusTimer')); } catch { /* corrompu */ }
+  if (!ts || ts.taskId !== taskId) {
+    ts = { taskId, startedAt: Date.now(), accum: 0, paused: false };
+    localStorage.setItem('focusTimer', JSON.stringify(ts));
+  }
+  return ts;
+}
+
+export function saveTimerState(ts) {
+  localStorage.setItem('focusTimer', JSON.stringify(ts));
+}
+
+export function clearTimerState() {
+  localStorage.removeItem('focusTimer');
+}
+
+export function elapsedSeconds(ts) {
+  if (!ts) return 0;
+  return Math.floor(ts.accum + (ts.paused ? 0 : (Date.now() - ts.startedAt) / 1000));
+}
+
+export function pauseTimer(ts) {
+  if (ts.paused) return ts;
+  ts.accum += (Date.now() - ts.startedAt) / 1000;
+  ts.paused = true;
+  saveTimerState(ts);
+  return ts;
+}
+
+export function resumeTimer(ts) {
+  if (!ts.paused) return ts;
+  ts.startedAt = Date.now();
+  ts.paused = false;
+  saveTimerState(ts);
+  return ts;
+}
+
+export function fmtElapsed(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const p2 = n => String(n).padStart(2, '0');
+  return h > 0 ? `${h}:${p2(m)}:${p2(s)}` : `${p2(m)}:${p2(s)}`;
+}
+
+// ── Pomodoro ─────────────────────────────────────────────
+// { on, phase: 'work'|'break', phaseStart (ms) }
+export function getPomodoro() {
+  try { return JSON.parse(localStorage.getItem('focusPomodoro')) || { on: false }; }
+  catch { return { on: false }; }
+}
+
+export function savePomodoro(p) {
+  localStorage.setItem('focusPomodoro', JSON.stringify(p));
+}
+
+export function pomodoroRemaining(p) {
+  const dur = p.phase === 'break' ? POMO_BREAK : POMO_WORK;
+  return dur - Math.floor((Date.now() - p.phaseStart) / 1000);
+}
+
+// ── Rendu ────────────────────────────────────────────────
+function _metaBadges(t) {
+  const cats = getCategories();
+  const catIds = t.categoryIds || (t.categoryId ? [t.categoryId] : []);
+  const badges = catIds.map(cid => {
+    const c = cats.find(x => x.id === cid);
+    return c ? `<span class="todo-category-badge" style="background:${c.color};color:#fff;border-color:${c.color}">${esc(c.name.toUpperCase())}</span>` : '';
+  }).filter(Boolean);
+  if (t.priority) {
+    const cfg = { high: ['Haute', '#ef4444'], medium: ['Moyenne', '#f59e0b'], low: ['Basse', '#3b82f6'] };
+    const [label, color] = cfg[t.priority];
+    badges.push(`<span class="focus-prio-badge" style="color:${color};border-color:${color}">${label}</span>`);
+  }
+  if (t.startTime) badges.push(`<span class="focus-time-badge">🕐 ${t.startTime}${t.endTime ? `–${t.endTime}` : ''}</span>`);
+  else if (t.dayPeriod) badges.push(`<span class="focus-time-badge">${PERIOD_LABEL[t.dayPeriod] || ''}</span>`);
+  if (t.recurrence && t.recurrence !== 'none') badges.push(`<span class="focus-time-badge">↻ récurrente</span>`);
+  return badges.join('');
+}
+
+function _subtasksHTML(t) {
+  if (!t.subtasks?.length) return '';
+  const rows = t.subtasks.map(s => `
+    <div class="focus-subtask${s.completed ? ' done' : ''}" onclick="window.app.focusToggleSubtask('${t.id}','${s.id}')">
+      <div class="focus-subtask-check${s.completed ? ' checked' : ''}"></div>
+      <span>${esc(s.title)}</span>
+    </div>`).join('');
+  const done = t.subtasks.filter(s => s.completed).length;
+  return `<div class="focus-subtasks">
+    <div class="focus-subtasks-count">${done}/${t.subtasks.length}</div>
+    ${rows}
+  </div>`;
+}
+
+function _counterHTML(t) {
+  if (!t.counterEnabled || t.countTo === undefined) return '';
+  const cur = t.countCurrent ?? t.countFrom ?? 0;
+  return `<div class="focus-counter">
+    <button class="focus-counter-btn" onclick="window.app.focusCounterStep('${t.id}',-1)">−</button>
+    <div class="focus-counter-value">${cur}<span class="focus-counter-target">/${t.countTo}${t.countUnit ? ' ' + esc(t.countUnit) : ''}</span></div>
+    <button class="focus-counter-btn" onclick="window.app.focusCounterStep('${t.id}',1)">＋</button>
+  </div>`;
+}
+
+export function renderFocusView(app) {
+  const d = today();
+  const queue = getFocusQueue(app);
+  const current = queue[0] || null;
+  // Épingle la courante et mémorise ce qui est affiché (le tick détecte
+  // les désynchronisations, ex. complétion via un autre appareil)
+  if (current) _pinned = current.id;
+  app._focusRenderedId = current?.id || null;
+  const next = queue.slice(1, 4);
+
+  const todayAll = getTodosForDate(d, state.todos);
+  const doneCount = todayAll.filter(t => isCompleted(t, d)).length;
+  const total = todayAll.length;
+  const remainMin = queue.reduce((s, t) => s + (parseInt(t.durationEstimated) || 0), 0);
+  const remainLabel = remainMin > 0
+    ? ` · ~${remainMin >= 60 ? `${Math.floor(remainMin / 60)}h${String(remainMin % 60).padStart(2, '0')}` : `${remainMin} min`} restantes`
+    : '';
+  const pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
+  const pomo = getPomodoro();
+
+  const topbar = `
+    <div class="focus-topbar">
+      <div class="focus-clock" id="focusClock">${_nowHM()}</div>
+      <div class="focus-progress">
+        <div class="focus-progress-bar"><div class="focus-progress-fill" style="width:${pct}%"></div></div>
+        <span class="focus-progress-label">${doneCount}/${total}${remainLabel}</span>
+      </div>
+      <div class="focus-topbar-actions">
+        <button class="focus-pill${pomo.on ? ' active' : ''}" id="focusPomoBtn" onclick="window.app.focusTogglePomodoro()" title="Pomodoro 25/5">🍅<span id="focusPomoLabel">${pomo.on ? '' : ' Pomodoro'}</span></button>
+        <button class="focus-pill" onclick="window.app.exitFocus()" title="Quitter (Échap)">✕</button>
+      </div>
+    </div>`;
+
+  if (!current) {
+    return `<div class="focus-view">
+      ${topbar}
+      <div class="focus-stage focus-stage--done">
+        <div class="focus-done-emoji">🎉</div>
+        <div class="focus-done-title">Journée bouclée</div>
+        <div class="focus-done-sub">${doneCount} tâche${doneCount > 1 ? 's' : ''} complétée${doneCount > 1 ? 's' : ''} aujourd'hui</div>
+        <button class="focus-action focus-action--primary" onclick="window.app.exitFocus()">Quitter le focus</button>
+      </div>
+    </div>`;
+  }
+
+  const est = parseInt(current.durationEstimated) || 0;
+  const isRec = current.recurrence && current.recurrence !== 'none';
+  const ts = getTimerState(current.id);
+
+  const estimateHTML = est > 0 ? `
+    <div class="focus-estimate">
+      <div class="focus-estimate-bar"><div class="focus-estimate-fill" id="focusEstimateFill"></div></div>
+      <span class="focus-estimate-label" id="focusEstimateLabel"></span>
+    </div>` : '';
+
+  const queueHTML = next.length ? `
+    <div class="focus-queue">
+      <div class="focus-queue-title">Ensuite</div>
+      ${next.map(t => `
+        <div class="focus-queue-item" onclick="window.app.focusJumpTo('${t.id}')" title="Passer à cette tâche">
+          <span class="focus-queue-text">${esc(t.title)}</span>
+          ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : ''}
+        </div>`).join('')}
+      ${queue.length - 1 > next.length ? `<div class="focus-queue-more">+${queue.length - 1 - next.length} autres</div>` : ''}
+    </div>` : '';
+
+  return `<div class="focus-view">
+    ${topbar}
+    <div class="focus-alert hidden" id="focusAlert"></div>
+    <div class="focus-stage">
+      <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(elapsedSeconds(ts))}</div>
+      ${estimateHTML}
+      <div class="focus-task-title">${esc(current.title)}</div>
+      ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
+      <div class="focus-task-meta">${_metaBadges(current)}</div>
+      ${_subtasksHTML(current)}
+      ${_counterHTML(current)}
+      <div class="focus-actions">
+        <button class="focus-action focus-action--primary" onclick="window.app.focusComplete()">✓ Terminer <kbd>Espace</kbd></button>
+        <button class="focus-action" onclick="window.app.focusPauseResume()" id="focusPauseBtn">${ts.paused ? '▶ Reprendre' : '⏸ Pause'} <kbd>P</kbd></button>
+        ${queue.length > 1 ? `<button class="focus-action" onclick="window.app.focusSkip()">Passer <kbd>S</kbd></button>` : ''}
+        ${!isRec ? `<button class="focus-action" onclick="window.app.focusTomorrow()">→ Demain <kbd>D</kbd></button>` : ''}
+      </div>
+    </div>
+    ${queueHTML}
+    <div class="focus-break-overlay hidden" id="focusBreakOverlay">
+      <div class="focus-break-emoji">☕</div>
+      <div class="focus-break-title">Pause</div>
+      <div class="focus-break-timer" id="focusBreakTimer">5:00</div>
+      <button class="focus-action" onclick="window.app.focusSkipBreak()">Reprendre maintenant</button>
+    </div>
+  </div>`;
+}
+
+// ── Tick (1 s) — met à jour chrono, estimation, pomodoro, bandeau ──
+// sans re-render complet. Retourne true si un render est nécessaire.
+export function focusTick(app) {
+  const queue = getFocusQueue(app);
+  const current = queue[0];
+  const clock = document.getElementById('focusClock');
+  if (clock) clock.textContent = _nowHM();
+  // Désynchronisation (complétée ailleurs, sync, …) → re-render complet
+  if ((current?.id || null) !== app._focusRenderedId) return true;
+  if (!current) return false;
+
+  const ts = getTimerState(current.id);
+  const sec = elapsedSeconds(ts);
+  const timerEl = document.getElementById('focusTimer');
+  if (timerEl) timerEl.textContent = fmtElapsed(sec);
+
+  // Compte à rebours sur la durée estimée
+  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const fill = document.getElementById('focusEstimateFill');
+  const label = document.getElementById('focusEstimateLabel');
+  if (est > 0 && fill && label) {
+    const ratio = Math.min(1, sec / est);
+    fill.style.width = (ratio * 100) + '%';
+    fill.classList.toggle('over', sec > est);
+    if (sec <= est) {
+      const left = est - sec;
+      label.textContent = `reste ${Math.ceil(left / 60)} min (est. ${Math.round(est / 60)} min)`;
+    } else {
+      label.textContent = `+${Math.ceil((sec - est) / 60)} min au-delà de l'estimation`;
+    }
+  }
+
+  // Pomodoro : transitions de phase + affichage
+  const pomo = getPomodoro();
+  const pomoLabel = document.getElementById('focusPomoLabel');
+  const breakOverlay = document.getElementById('focusBreakOverlay');
+  if (pomo.on) {
+    let left = pomodoroRemaining(pomo);
+    if (left <= 0) {
+      pomo.phase = pomo.phase === 'work' ? 'break' : 'work';
+      pomo.phaseStart = Date.now();
+      savePomodoro(pomo);
+      // La pause du pomodoro met le chrono de tâche en pause
+      if (pomo.phase === 'break') pauseTimer(getTimerState(current.id));
+      else resumeTimer(getTimerState(current.id));
+      left = pomodoroRemaining(pomo);
+    }
+    const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, '0');
+    if (pomoLabel) pomoLabel.textContent = ` ${mm}:${ss}`;
+    if (breakOverlay) {
+      breakOverlay.classList.toggle('hidden', pomo.phase !== 'break');
+      const bt = document.getElementById('focusBreakTimer');
+      if (bt) bt.textContent = `${mm}:${ss}`;
+    }
+  } else if (breakOverlay) {
+    breakOverlay.classList.add('hidden');
+  }
+
+  // Bandeau : une tâche à heure fixe est échue et n'est pas la courante
+  const nowHM = _nowHM();
+  const due = queue.find(t => t.id !== current.id && t.startTime && t.startTime <= nowHM);
+  const alert = document.getElementById('focusAlert');
+  if (alert) {
+    if (due) {
+      alert.classList.remove('hidden');
+      alert.innerHTML = `🕐 Il est l'heure de : <b>${esc(due.title)}</b> (${due.startTime})
+        <button class="focus-pill" onclick="window.app.focusJumpTo('${due.id}')">Y passer</button>`;
+    } else {
+      alert.classList.add('hidden');
+      alert.innerHTML = '';
+    }
+  }
+  return false;
+}

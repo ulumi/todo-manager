@@ -3,8 +3,8 @@
 // ════════════════════════════════════════════════════════
 
 export function setupEventListeners(app) {
-  // View tabs
-  document.querySelectorAll('.view-tab').forEach(b => {
+  // View tabs (la .focus-tab n'a pas de data-view : elle passe par enterFocus)
+  document.querySelectorAll('.view-tab[data-view]').forEach(b => {
     b.addEventListener('click', () => {
       // If clicking "Aujourd'hui", reset navDate to today
       if (b.dataset.view === 'day') {
@@ -80,12 +80,22 @@ export function setupEventListeners(app) {
     if (visible('leavePromptOverlay'))   { app.closeLeavePrompt();   return; }
     if (visible('avatarEditorOverlay'))  { app.closeAvatarEditor();  return; }
     if (visible('guestNameOverlay'))     { app.skipGuestName();      return; }
+    if (document.body.classList.contains('view-focus')) { app.exitFocus(); return; }
   });
 
   // Keyboard shortcuts
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); app.undoAction(); return; }
-    if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA') return;
+    if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA' || document.activeElement.isContentEditable) return;
+    // Mode focus : raccourcis dédiés, pas de navigation générique
+    if (document.body.classList.contains('view-focus')) {
+      if (e.key === ' ') { e.preventDefault(); app.focusComplete(); }
+      if (e.key === 's') app.focusSkip();
+      if (e.key === 'd') app.focusTomorrow();
+      if (e.key === 'p') app.focusPauseResume();
+      return;
+    }
+    if (e.key==='f') { app.enterFocus(); return; }
     if (!document.getElementById('planMonthScroll')) {
       if (e.key==='ArrowLeft')  app.navigate(-1);
       if (e.key==='ArrowRight') app.navigate(1);

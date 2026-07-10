@@ -24,6 +24,8 @@
 | `cmt` | Stage all + git commit (do NOT deploy) |
 | `dpl` | Stage all + git commit + **git push** + deploy to Vercel |
 
+**Règle par défaut : `dpl` automatique.** À la fin de chaque tâche terminée et vérifiée, faire `dpl` sans attendre que l'utilisateur le demande — sauf s'il dit explicitement le contraire (ex. « ne déploie pas », `cmt` seul).
+
 ---
 
 ## Architecture
@@ -65,6 +67,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `celebrate.js` | Victory animations, quotes EN/FR/custom, mascots, ban system |
 | `undo.js` | Undo stack (max 50 snapshots), `canUndo()` |
 | `multiselect.js` | Multi-sélection inter-vues : lasso rectangle à la souris sur zone vide, Ctrl/Cmd+clic, Maj+clic (plage), Échap. Classe `.multi-selected`, barre flottante de comptage, alimente `app._dragMultiIds` pour le drag-and-drop multi-items |
+| `focus.js` | Mode Focus plein écran : file intelligente du jour (heures échues → période courante → ordre manuel/priorité), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |
 | `utils.js` | Date helpers (`DS`, `parseDS`, `today`, `addDays`), `esc()` |
@@ -90,6 +93,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `intentions` | Long-term goals. Cards with linked tasks as chips |
 | `analyse` | Stats: completed this week vs last, this month vs last, 7-day bar chart, oldest overdue |
 | `counters` | Progress counters: cards for all tasks with a counter enabled, +/− controls |
+| `focus` | Mode Focus plein écran : une tâche à la fois + chrono géant. Entrée: touche `F` ou bouton header (`.focus-tab`, sans `data-view`, via `enterFocus()`). Raccourcis: Espace compléter, S passer, D demain, P pause, Échap quitter |
 
 ---
 

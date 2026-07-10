@@ -12495,3 +12495,408 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .analyse-empty { color: var(--text-muted); font-size: 13px; font-style: italic; }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MODE FOCUS — plein écran, une tâche à la fois (voir js/modules/focus.js)
+// ══════════════════════════════════════════════════════════════════════════════
+
+body.view-focus header { display: none; }
+
+.focus-view {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(.8);
+}
+
+// ── Barre du haut ──
+.focus-topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 22px;
+  flex-shrink: 0;
+
+  .focus-clock {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+
+  .focus-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+
+    .focus-progress-bar {
+      flex: 1;
+      max-width: 300px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--surface2);
+      overflow: hidden;
+
+      .focus-progress-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--success);
+        transition: width .4s cubic-bezier(.25,.46,.45,.94);
+      }
+    }
+
+    .focus-progress-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+  }
+
+  .focus-topbar-actions { display: flex; gap: 8px; }
+}
+
+.focus-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), border-color .15s;
+
+  &:hover { background: var(--surface2); }
+  &.active { border-color: var(--primary); color: var(--primary); }
+}
+
+// ── Bandeau tâche à heure fixe échue ──
+.focus-alert {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 22px;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  font-size: 13.5px;
+  color: var(--text);
+  flex-shrink: 0;
+
+  &.hidden { display: none; }
+}
+
+// ── Scène centrale ──
+.focus-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+  min-height: 0;
+}
+
+// LE chrono — temps écoulé depuis le début de la tâche, élément dominant
+.focus-timer {
+  font-size: clamp(80px, 17vw, 240px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  transition: opacity .3s;
+
+  &.paused { opacity: .35; }
+}
+
+.focus-estimate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(420px, 70vw);
+
+  .focus-estimate-bar {
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--surface2);
+    overflow: hidden;
+
+    .focus-estimate-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      background: var(--primary);
+      transition: width 1s linear;
+
+      &.over { background: #ef4444; }
+    }
+  }
+
+  .focus-estimate-label {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+}
+
+.focus-task-title {
+  font-size: clamp(26px, 4vw, 46px);
+  font-weight: 700;
+  line-height: 1.15;
+  max-width: min(820px, 90vw);
+  overflow-wrap: break-word;
+}
+
+.focus-task-desc {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: min(640px, 85vw);
+}
+
+.focus-task-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .focus-prio-badge,
+  .focus-time-badge {
+    padding: 3px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+  }
+}
+
+// ── Sous-tâches ──
+.focus-subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(440px, 85vw);
+  text-align: left;
+
+  .focus-subtasks-count {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .focus-subtask {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background .15s cubic-bezier(.25,.46,.45,.94);
+
+    &:hover { background: var(--surface2); }
+    &.done span { text-decoration: line-through; color: var(--text-muted); }
+
+    .focus-subtask-check {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, border-color .15s;
+
+      &.checked {
+        background: var(--success);
+        border-color: var(--success);
+
+        &::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 800; }
+      }
+    }
+  }
+}
+
+// ── Compteur de progression de la tâche ──
+.focus-counter {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  .focus-counter-btn {
+    width: 54px;
+    height: 54px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 26px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s cubic-bezier(.25,.46,.45,.94), transform .15s;
+
+    &:hover { background: var(--surface2); transform: scale(1.06); }
+  }
+
+  .focus-counter-value {
+    font-size: 40px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+
+    .focus-counter-target { font-size: 20px; font-weight: 600; color: var(--text-muted); }
+  }
+}
+
+// ── Actions ──
+.focus-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+
+  .focus-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s cubic-bezier(.25,.46,.45,.94), transform .15s, border-color .15s;
+
+    &:hover { background: var(--surface2); transform: translateY(-1px); }
+
+    &--primary {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+
+      &:hover { background: color-mix(in srgb, var(--success) 85%, #000); }
+    }
+
+    kbd {
+      padding: 1px 6px;
+      border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+      border-radius: 5px;
+      font-size: 10.5px;
+      font-family: inherit;
+      opacity: .7;
+    }
+  }
+}
+
+// ── File d'attente ──
+.focus-queue {
+  flex-shrink: 0;
+  padding: 18px 22px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+
+  .focus-queue-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .focus-queue-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 13.5px;
+    color: var(--text-muted);
+    opacity: .72;
+    max-width: min(520px, 88vw);
+    cursor: pointer;
+    transition: opacity .15s, background .15s cubic-bezier(.25,.46,.45,.94);
+
+    &:hover { opacity: 1; background: var(--surface2); }
+
+    .focus-queue-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .focus-queue-time {
+      font-size: 11.5px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+  }
+
+  .focus-queue-more { font-size: 11.5px; color: var(--text-muted); opacity: .6; }
+}
+
+// ── Journée bouclée ──
+.focus-stage--done {
+  .focus-done-emoji { font-size: 72px; }
+  .focus-done-title { font-size: clamp(30px, 5vw, 52px); font-weight: 800; }
+  .focus-done-sub   { font-size: 16px; color: var(--text-muted); }
+}
+
+// ── Pause pomodoro ──
+.focus-break-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 520;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(18px);
+
+  &.hidden { display: none; }
+
+  .focus-break-emoji { font-size: 60px; }
+  .focus-break-title { font-size: 26px; font-weight: 700; }
+
+  .focus-break-timer {
+    font-size: clamp(56px, 10vw, 120px);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+  }
+}

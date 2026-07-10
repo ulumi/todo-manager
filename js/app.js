@@ -59,6 +59,11 @@ import {
 import { snapshot, undo, canUndo } from './modules/undo.js';
 import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECTABLE } from './modules/multiselect.js';
 import {
+  renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
+  getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
+  getPomodoro, savePomodoro,
+} from './modules/focus.js';
+import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
   upgradeGuestToEmail, signOut, updateUserProfile,
@@ -157,7 +162,7 @@ class TodoApp {
     const _hash = new URLSearchParams(window.location.hash.slice(1));
     const _hashView = _hash.get('view');
     const _hashNav  = _hash.get('nav');
-    const _ALL_VIEWS = ['day','week','month','year','categories','inbox','backlog','plan','projects','superadmin','search','intentions','profile','analyse'];
+    const _ALL_VIEWS = ['day','week','month','year','categories','inbox','backlog','plan','projects','superadmin','search','intentions','profile','analyse','focus'];
     // If last refresh was more than 8h ago, snap back to today's day view
     const _lastSeen = parseInt(localStorage.getItem('_lastSeen') || '0');
     const _staleSession = _lastSeen > 0 && Date.now() - _lastSeen > 8 * 3600 * 1000;
@@ -1924,6 +1929,135 @@ class TodoApp {
     this.render(); // la sélection est conservée (action modifiante, pas de déplacement)
   }
 
+  // ═══════════════════════════════════════════════════
+  // MODE FOCUS
+  // ═══════════════════════════════════════════════════
+  enterFocus() {
+    if (state.view === 'focus') return;
+    this._preFocusView = state.view;
+    state.setView('focus');
+    localStorage.setItem('view', 'focus');
+    this._pushHistory();
+    this.render();
+    // Plein écran au mieux (refusé sans geste utilisateur, ex. restauration)
+    document.documentElement.requestFullscreen?.().then(() => {
+      this._focusWasFullscreen = true;
+    }).catch(() => {});
+  }
+
+  exitFocus() {
+    if (state.view !== 'focus') return;
+    this._stopFocusTick();
+    this._focusWasFullscreen = false;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    const back = this._preFocusView && this._preFocusView !== 'focus' ? this._preFocusView : 'day';
+    state.setView(back);
+    localStorage.setItem('view', back);
+    this._pushHistory();
+    this.render();
+  }
+
+  initFocusView() {
+    this._stopFocusTick();
+    this._focusInterval = setInterval(() => {
+      if (state.view !== 'focus') { this._stopFocusTick(); return; }
+      if (focusTick(this)) this.render();
+    }, 1000);
+    // Sortie du plein écran natif (Échap navigateur) → quitter le focus
+    if (!this._focusFsBound) {
+      this._focusFsBound = true;
+      document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement && state.view === 'focus' && this._focusWasFullscreen) {
+          this.exitFocus();
+        }
+      });
+    }
+  }
+
+  _stopFocusTick() {
+    if (this._focusInterval) {
+      clearInterval(this._focusInterval);
+      this._focusInterval = null;
+    }
+  }
+
+  focusComplete() {
+    const t = getFocusQueue(this)[0];
+    if (!t) return;
+    const sec = elapsedSeconds(getTimerState(t.id));
+    snapshot(state.todos);
+    // Durée réelle = temps passé sur la tâche en mode focus (minutes)
+    if (sec >= 30) t.durationReal = Math.max(1, Math.round(sec / 60));
+    toggleTodo(t.id, today(), state.todos);
+    saveTodos(state.todos);
+    clearTimerState();
+    focusUnpin();
+    celebrate(state.lang);
+    this.render();
+  }
+
+  focusSkip() {
+    const queue = getFocusQueue(this);
+    if (queue.length < 2) return;
+    focusMarkSkipped(queue[0].id);
+    focusUnpin();
+    clearTimerState();
+    this.render();
+  }
+
+  focusTomorrow() {
+    const t = getFocusQueue(this)[0];
+    if (!t || (t.recurrence && t.recurrence !== 'none')) return;
+    focusUnpin();
+    clearTimerState();
+    this._sendManyTo([t.id], { date: DS(addDays(today(), 1)), backlog: false });
+  }
+
+  focusPauseResume() {
+    const t = getFocusQueue(this)[0];
+    if (!t) return;
+    const ts = getTimerState(t.id);
+    ts.paused ? resumeTimer(ts) : pauseTimer(ts);
+    this.render();
+  }
+
+  focusJumpTo(id) {
+    focusPin(id);
+    clearTimerState();
+    this.render();
+  }
+
+  focusTogglePomodoro() {
+    const p = getPomodoro();
+    if (p.on) {
+      savePomodoro({ on: false });
+      const t = getFocusQueue(this)[0];
+      if (t) resumeTimer(getTimerState(t.id));
+    } else {
+      savePomodoro({ on: true, phase: 'work', phaseStart: Date.now() });
+    }
+    this.render();
+  }
+
+  focusSkipBreak() {
+    const p = getPomodoro();
+    if (!p.on) return;
+    p.phase = 'work';
+    p.phaseStart = Date.now();
+    savePomodoro(p);
+    const t = getFocusQueue(this)[0];
+    if (t) resumeTimer(getTimerState(t.id));
+    this.render();
+  }
+
+  focusToggleSubtask(todoId, stid) {
+    this.toggleSubtask(todoId, stid, DS(today()));
+  }
+
+  focusCounterStep(id, dir) {
+    dir > 0 ? this.incrementCount(id) : this.decrementCount(id);
+  }
+
   clickTodo(e, id, ds) {
     if (e.ctrlKey || e.metaKey || e.shiftKey) return; // clic de multi-sélection (multiselect.js)
     if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-dots, .subtask-list, .subtask-warning-popover')) return;
@@ -2692,6 +2826,7 @@ class TodoApp {
     document.body.classList.toggle('view-plan',       isPlan);
     document.body.classList.toggle('view-superadmin', isSuperadmin);
     document.body.classList.toggle('view-search',     state.view === 'search');
+    document.body.classList.toggle('view-focus',      state.view === 'focus');
     const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin || isIntentions || isAnalyse;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
     document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
@@ -2715,6 +2850,7 @@ class TodoApp {
     if (state.view==='intentions') html = renderIntentionsView(state.todos);
     if (state.view==='analyse')    html = renderAnalyseView(state.todos);
     if (state.view==='counters')   html = renderCountersView(state.todos);
+    if (state.view==='focus')      html = renderFocusView(this);
     const _planScrollMode = state.view === 'plan' && ['month', 'biweek'].includes(localStorage.getItem('planMode') || 'week');
     if (_planScrollMode) { const s = document.getElementById('planMonthScroll'); if (s) this._planMonthScrollSaved = s.scrollTop; }
     if (!_planScrollMode && this._planMonthIO) { this._planMonthIO.disconnect(); this._planMonthIO = null; }
@@ -2725,7 +2861,7 @@ class TodoApp {
     if (_planScrollMode) this._setupPlanMonth();
     const sidebar = document.getElementById('calSidebar');
     if (sidebar) {
-      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse', 'counters'];
+      const hiddenViews = ['plan', 'categories', 'projects', 'inbox', 'backlog', 'search', 'profile', 'superadmin', 'intentions', 'analyse', 'counters', 'focus'];
       if (hiddenViews.includes(state.view)) {
         sidebar.style.display = 'none';
         sidebar.innerHTML = '';
@@ -2745,6 +2881,8 @@ class TodoApp {
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
+    if (state.view === 'focus') this.initFocusView(); else this._stopFocusTick();
+    document.querySelector('.focus-tab')?.classList.toggle('active', state.view === 'focus');
     this.initHeaderDropZones();
     this.renderQACloud();
     this._animateQuickAddBtn();
