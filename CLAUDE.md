@@ -64,6 +64,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `admin.js` | Categories/tags, templates, suggested tasks — `_categoriesCache` |
 | `celebrate.js` | Victory animations, quotes EN/FR/custom, mascots, ban system |
 | `undo.js` | Undo stack (max 50 snapshots), `canUndo()` |
+| `multiselect.js` | Multi-sélection inter-vues : lasso rectangle à la souris sur zone vide, Ctrl/Cmd+clic, Maj+clic (plage), Échap. Classe `.multi-selected`, barre flottante de comptage, alimente `app._dragMultiIds` pour le drag-and-drop multi-items |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |
 | `utils.js` | Date helpers (`DS`, `parseDS`, `today`, `addDays`), `esc()` |
@@ -217,4 +218,5 @@ npx sass css/styles.scss css/styles.css --style=expanded
 - **Undo:** snapshot before each mutation, stack of 50, check `canUndo()`
 - **Modal draft:** autosave 300ms debounce in `modalDraft` localStorage key
 - **Recurrence:** single todo object, not instances — `completedDates[]` tracks done dates
+- **Multi-sélection:** listeners globaux en phase capture (`multiselect.js`) — les drop handlers doivent passer par `app._dropIds(id)` pour supporter le drop d'une sélection multiple; `msRefreshUI()` est appelé en fin de `render()` (sélection vidée au changement de vue). Le lasso ne démarre jamais sur un élément `[draggable="true"]` ou interactif (`MARQUEE_EXCLUDE`) — tout nouvel élément draggable est donc automatiquement compatible
 - **Style consistency:** New UI elements must match existing patterns — round checkboxes with `::after '✓'` (not SVG), `opacity: 0` → hover reveal for secondary actions (like `todo-menu-btn`), `cubic-bezier(.25,.46,.45,.94)` transitions on interactive elements, `var(--surface2)` hover backgrounds, `var(--success)` for completion states. No hardcoded `rgba()` — use CSS variables.

@@ -57,6 +57,7 @@ import {
   openProjectPanel, closeProjectPanel, renderProjectPanel, getCurrentProjectId,
 } from './modules/projectManager.js';
 import { snapshot, undo, canUndo } from './modules/undo.js';
+import { initMultiSelect, msClear, msRefreshUI } from './modules/multiselect.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
@@ -192,6 +193,7 @@ class TodoApp {
     const vl = document.getElementById('versionLabel');
     if (vl) vl.textContent = 'v' + VERSION;
     setupEventListeners(this);
+    initMultiSelect(this);
 
     // Register celebrate debug panel (independent of server sync)
     onCelebrateDebug((data) => { this._showCelebrateDebugPanel(data); });
@@ -1584,13 +1586,20 @@ class TodoApp {
   }
 
   assignInboxToDate(id, dateStr) {
-    const t = state.todos.find(x => x.id === id);
-    if (!t) return;
+    this._assignManyToDate(this._dropIds(id), dateStr);
+  }
+
+  _assignManyToDate(ids, dateStr) {
+    const targets = state.todos.filter(t => ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none'));
+    if (!targets.length) return;
     snapshot(state.todos);
-    t.date = dateStr;
-    t.backlog = false;
-    t.updatedAt = Date.now();
+    targets.forEach(t => {
+      t.date = dateStr;
+      t.backlog = false;
+      t.updatedAt = Date.now();
+    });
     saveTodos(state.todos);
+    if (ids.length > 1) msClear();
     this.render();
   }
 
@@ -1818,6 +1827,7 @@ class TodoApp {
   }
 
   clickTodo(e, id, ds) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return; // clic de multi-sélection (multiselect.js)
     if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-dots, .subtask-list, .subtask-warning-popover')) return;
     clearTimeout(this._clickTimer);
     this._clickTimer = setTimeout(() => {
@@ -1827,17 +1837,28 @@ class TodoApp {
   }
 
   dropReorder(draggedId, group, targetId, before) {
-    if (draggedId === targetId) return;
+    // draggedId peut être un id seul ou un tableau (drop d'une multi-sélection)
+    const draggedIds = (Array.isArray(draggedId) ? draggedId : [draggedId]).filter(id => id !== targetId);
+    if (!draggedIds.length) return;
+    // Réordonne order : retire les ids déplacés puis les réinsère (dans leur
+    // ordre relatif actuel) après/avant la cible. Ids absents de order ignorés.
+    const _reinsert = (order) => {
+      const moving = order.filter(id => draggedIds.includes(id));
+      if (!moving.length) return null;
+      const newOrder = order.filter(id => !draggedIds.includes(id));
+      const idx = newOrder.indexOf(targetId);
+      if (idx < 0) return null;
+      newOrder.splice(before ? idx : idx + 1, 0, ...moving);
+      return newOrder;
+    };
     const dateStr = DS(state.navDate);
     if (group === 'punctual') {
       const items = getTodosForDate(state.navDate, state.todos).filter(t => (!t.recurrence || t.recurrence === 'none') && !t.dayPeriod);
       let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => id.startsWith('spacer-') || items.some(t => t.id === id));
-      const newOrder = order.filter(id => id !== draggedId);
-      const idx = newOrder.indexOf(targetId);
-      if (idx < 0) return;
-      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      const newOrder = _reinsert(order);
+      if (!newOrder) return;
       this.dayOrder[dateStr] = newOrder;
       localStorage.setItem('dayOrder', JSON.stringify(this.dayOrder));
     } else if (group.startsWith('punctual-')) {
@@ -1848,10 +1869,8 @@ class TodoApp {
       let order = this.punctualPeriodOrder[dateStr][period] ? [...this.punctualPeriodOrder[dateStr][period]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => items.some(t => t.id === id));
-      const newOrder = order.filter(id => id !== draggedId);
-      const idx = newOrder.indexOf(targetId);
-      if (idx < 0) return;
-      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      const newOrder = _reinsert(order);
+      if (!newOrder) return;
       this.punctualPeriodOrder[dateStr][period] = newOrder;
       localStorage.setItem('punctualPeriodOrder', JSON.stringify(this.punctualPeriodOrder));
     } else {
@@ -1869,10 +1888,8 @@ class TodoApp {
       let order = this.recurringOrder[dateStr][group] ? [...this.recurringOrder[dateStr][group]] : items.map(t => t.id);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => items.some(t => t.id === id));
-      const newOrder = order.filter(id => id !== draggedId);
-      const idx = newOrder.indexOf(targetId);
-      if (idx < 0) return;
-      newOrder.splice(before ? idx : idx + 1, 0, draggedId);
+      const newOrder = _reinsert(order);
+      if (!newOrder) return;
       this.recurringOrder[dateStr][group] = newOrder;
       // Propagate new relative order to future dates that already have a stored order for this group.
       // For each future date, items that appear in newOrder are re-sorted to match its relative order;
@@ -1892,13 +1909,18 @@ class TodoApp {
   }
 
   moveTodoToDate(todoId, newDateStr) {
-    const todo = state.todos.find(t => t.id === todoId);
-    if (!todo || (todo.recurrence && todo.recurrence !== 'none')) return;
-    if (todo.date === newDateStr) return;
+    this.moveManyToDate(this._dropIds(todoId), newDateStr);
+  }
+
+  moveManyToDate(ids, newDateStr) {
+    const targets = state.todos.filter(t =>
+      ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none') && t.date !== newDateStr
+    );
+    if (!targets.length) return;
     snapshot(state.todos);
-    todo.date = newDateStr;
-    todo.updatedAt = Date.now();
+    targets.forEach(t => { t.date = newDateStr; t.updatedAt = Date.now(); });
     saveTodos(state.todos);
+    if (ids.length > 1) msClear();
     this.render();
   }
 
@@ -1969,12 +1991,13 @@ class TodoApp {
       e.preventDefault();
       removePlaceholder();
       if (!draggedId) return;
+      const multi = this._dropIds(draggedId).length > 1;
 
       if (dropTargetId) {
         // Reorder within same day or move + reorder to another day
         const targetItem = view.querySelector(`.week-todo-item[data-id="${dropTargetId}"]`);
         const newDate = targetItem?.dataset.date;
-        if (newDate && newDate !== draggedDate) {
+        if (newDate && (multi || newDate !== draggedDate)) {
           this.moveTodoToDate(draggedId, newDate);
         } else if (newDate) {
           this.weekReorder(draggedId, newDate, dropTargetId, dropBefore);
@@ -1984,7 +2007,7 @@ class TodoApp {
         const col = e.target.closest('.week-day-todos');
         if (!col || !col.dataset.date) return;
         const newDate = col.dataset.date;
-        if (newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+        if (multi || newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
       }
     });
   }
@@ -2043,7 +2066,7 @@ class TodoApp {
       if (!cell || !draggedId) return;
       const newDate = cell.dataset.date;
       cell.classList.remove('drag-over');
-      if (newDate && newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+      if (newDate && (newDate !== draggedDate || this._dropIds(draggedId).length > 1)) this.moveTodoToDate(draggedId, newDate);
     });
   }
 
@@ -2289,13 +2312,17 @@ class TodoApp {
       removePlaceholder();
       if (!draggedEl) return;
 
+      const dropIds = this._dropIds(draggedEl.dataset.id);
+
       // Change the item's dayPeriod to match the target section (chrono or period groups)
       const _dsMode = localStorage.getItem('daySort');
       const _pgMode = localStorage.getItem('dayPeriodGroups') !== 'false';
       if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
-        const t = state.todos.find(x => x.id === draggedEl.dataset.id);
-        if (t) {
-          if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
+        const targets = state.todos.filter(t => dropIds.includes(t.id));
+        if (targets.length) {
+          targets.forEach(t => {
+            if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
+          });
           saveTodos(state.todos);
         }
         this.render();
@@ -2306,14 +2333,14 @@ class TodoApp {
 
       // In priority sort mode, change the item's priority to match the target group
       if (localStorage.getItem('daySort') === 'priority' && dropPriority != null) {
-        const t = state.todos.find(x => x.id === draggedEl.dataset.id);
-        if (t) {
-          t.priority = dropPriority === 'none' ? '' : dropPriority;
+        const targets = state.todos.filter(t => dropIds.includes(t.id));
+        if (targets.length) {
+          targets.forEach(t => { t.priority = dropPriority === 'none' ? '' : dropPriority; });
           saveTodos(state.todos);
         }
       }
 
-      this.dropReorder(draggedEl.dataset.id, draggedGroup, dropTarget, false);
+      this.dropReorder(dropIds, draggedGroup, dropTarget, false);
     });
   }
 
@@ -2625,6 +2652,7 @@ class TodoApp {
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
     if (state.view === 'day') setupTodoItemHoverAnimations();
+    msRefreshUI();
   }
 
   _renderPlanView() {
@@ -3063,27 +3091,28 @@ class TodoApp {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     const taskId = event.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-    const t = state.todos.find(x => x.id === taskId);
-    if (!t) return;
-    snapshot(state.todos);
-    t.date = null;
-    t.backlog = false;
-    saveTodos(state.todos);
-    this.render();
+    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: false });
   }
 
   planDropToBacklog(event) {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     const taskId = event.dataTransfer.getData('text/plain');
-    if (!taskId) return;
-    const t = state.todos.find(x => x.id === taskId);
-    if (!t) return;
+    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: true });
+  }
+
+  // Applique { date, backlog } à un lot de tâches (drop multiple ou simple)
+  _sendManyTo(ids, { date, backlog }) {
+    const targets = state.todos.filter(t => ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none'));
+    if (!targets.length) return;
     snapshot(state.todos);
-    t.date = null;
-    t.backlog = true;
+    targets.forEach(t => {
+      t.date = date;
+      t.backlog = backlog;
+      t.updatedAt = Date.now();
+    });
     saveTodos(state.todos);
+    if (ids.length > 1) msClear();
     this.render();
   }
 
@@ -3230,36 +3259,18 @@ class TodoApp {
     };
 
     setup(inboxBtn, id => {
-      const t = state.todos.find(x => x.id === id);
-      if (!t) return;
-      snapshot(state.todos);
-      t.date = null;
-      t.backlog = false;
-      saveTodos(state.todos);
-      this.render();
+      this._sendManyTo(this._dropIds(id), { date: null, backlog: false });
       this._closeSearchView();
     });
 
     setup(backlogBtn, id => {
-      const t = state.todos.find(x => x.id === id);
-      if (!t) return;
-      snapshot(state.todos);
-      t.date = null;
-      t.backlog = true;
-      saveTodos(state.todos);
-      this.render();
+      this._sendManyTo(this._dropIds(id), { date: null, backlog: true });
       this._closeSearchView();
     });
 
     if (todayBtn) {
       setup(todayBtn, id => {
-        const t = state.todos.find(x => x.id === id);
-        if (!t) return;
-        snapshot(state.todos);
-        t.date = DS(new Date());
-        t.backlog = false;
-        saveTodos(state.todos);
-        this.render();
+        this._sendManyTo(this._dropIds(id), { date: DS(new Date()), backlog: false });
         this._closeSearchView();
       });
     }
@@ -3277,15 +3288,31 @@ class TodoApp {
     }
   }
 
-  // Custom drag ghost: small card with task title
+  // Custom drag ghost: small card with task title (+ count badge when
+  // dragging a multi-selection)
   _setDragGhost(event, taskId) {
     const t = state.todos.find(x => x.id === taskId);
     const ghost = document.createElement('div');
     ghost.className = 'drag-ghost';
     ghost.textContent = t ? t.title : '…';
+    const multi = this._dragMultiIds;
+    if (multi && multi.length > 1 && multi.includes(taskId)) {
+      ghost.classList.add('drag-ghost--multi');
+      const badge = document.createElement('span');
+      badge.className = 'drag-ghost-count';
+      badge.textContent = multi.length;
+      ghost.appendChild(badge);
+    }
     document.body.appendChild(ghost);
     event.dataTransfer.setDragImage(ghost, 12, 12);
     requestAnimationFrame(() => ghost.remove());
+  }
+
+  // Ids concernés par un drop : la sélection multiple entière si l'item
+  // déposé en fait partie, sinon juste lui.
+  _dropIds(primaryId) {
+    const m = this._dragMultiIds;
+    return (m && m.length > 1 && m.includes(primaryId)) ? [...m] : [primaryId];
   }
 
   goToDay(ds) {
