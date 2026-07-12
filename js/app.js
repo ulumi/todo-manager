@@ -2166,11 +2166,30 @@ class TodoApp {
   clickTodo(e, id, ds) {
     if (e.ctrlKey || e.metaKey || e.shiftKey) return; // clic de multi-sélection (multiselect.js)
     if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-dots, .subtask-list, .subtask-warning-popover')) return;
-    clearTimeout(this._clickTimer);
+    if (this._clickTimer) { // 2e clic pendant la fenêtre → double-clic
+      clearTimeout(this._clickTimer);
+      this._clickTimer = null;
+      this.focusStartOn(id, ds);
+      return;
+    }
     this._clickTimer = setTimeout(() => {
       this._clickTimer = null;
       this.openEditModal(id, ds);
     }, 220);
+  }
+
+  // Double-clic sur une tâche → session Focus démarrée sur cette tâche.
+  // La file Focus ne couvre que la journée : si la tâche n'a pas
+  // d'occurrence aujourd'hui, on retombe sur l'édition.
+  focusStartOn(id, ds) {
+    const d = today();
+    const focusable = getTodosForDate(d, state.todos)
+      .some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
+    if (!focusable) { this.openEditModal(id, ds); return; }
+    focusPin(id);
+    clearTimerState();
+    if (state.view === 'focus') this.render();
+    else this.enterFocus();
   }
 
   dropReorder(draggedId, group, targetId, before) {
