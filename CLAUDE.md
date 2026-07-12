@@ -67,7 +67,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `celebrate.js` | Victory animations, quotes EN/FR/custom, mascots, ban system |
 | `undo.js` | Undo stack (max 50 snapshots), `canUndo()` |
 | `multiselect.js` | Multi-sélection inter-vues : lasso rectangle à la souris sur zone vide, Ctrl/Cmd+clic, Maj+clic (plage), Échap. Classe `.multi-selected`, barre flottante de comptage, alimente `app._dragMultiIds` pour le drag-and-drop multi-items |
-| `focus.js` | Mode Focus plein écran : file intelligente du jour (heures échues → période courante → ordre manuel/priorité), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
+| `focus.js` | Mode Focus plein écran : file intelligente du jour (heures échues → période courante → ordre manuel/priorité), file « Ensuite » complète et réordonnable par drag-and-drop (`focusSaveManualOrder`, localStorage `focusManualOrder` valable pour la journée — prime sur l'ordre intelligent), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
 | `review.js` | Bilan des « laissés pour compte » : `getOverduePunctual()`, `getFrequentlyPostponed()`, `computeAdherence()` (taux des récurrentes sur N jours écoulés, aujourd'hui exclu), `renderReviewBody()` (corps du modal Bilan), `renderAdherenceRows()` (partagé avec la vue Analyse) |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |

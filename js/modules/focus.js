@@ -37,6 +37,20 @@ export function focusPin(id) {
 
 export function focusUnpin() { _pinned = null; }
 
+// ── Ordre manuel de la file (drag-and-drop) ──────────────
+// Persisté pour la journée (localStorage `focusManualOrder`) — prime sur
+// l'ordre intelligent pour les ids connus; les nouvelles tâches suivent.
+function _loadManualOrder() {
+  try {
+    const mo = JSON.parse(localStorage.getItem('focusManualOrder'));
+    return (mo && mo.ds === DS(today())) ? mo.ids : null;
+  } catch { return null; }
+}
+
+export function focusSaveManualOrder(ids) {
+  localStorage.setItem('focusManualOrder', JSON.stringify({ ds: DS(today()), ids }));
+}
+
 function _currentPeriodRank() {
   const h = new Date().getHours();
   return h < 12 ? 0 : h < 18 ? 1 : 2;
@@ -81,7 +95,18 @@ export function getFocusQueue(app) {
   const active  = sorted.filter(t => !_skipped.includes(t.id));
   const skipped = sorted.filter(t => _skipped.includes(t.id))
     .sort((a, b) => _skipped.indexOf(a.id) - _skipped.indexOf(b.id));
-  const queue = [...active, ...skipped];
+  let queue = [...active, ...skipped];
+
+  // Ordre manuel (drag-and-drop) : prime sur l'ordre intelligent.
+  // Tri stable → les ids inconnus du manuel gardent l'ordre intelligent, après.
+  const manual = _loadManualOrder();
+  if (manual?.length) {
+    const idx = id => { const i = manual.indexOf(id); return i === -1 ? Infinity : i; };
+    queue = [...queue].sort((a, b) => {
+      const ia = idx(a.id), ib = idx(b.id);
+      return ia === ib ? 0 : ia - ib;
+    });
+  }
 
   // La tâche épinglée reste en tête
   if (_pinned) {
@@ -206,7 +231,7 @@ export function renderFocusView(app) {
   // les désynchronisations, ex. complétion via un autre appareil)
   if (current) _pinned = current.id;
   app._focusRenderedId = current?.id || null;
-  const next = queue.slice(1, 4);
+  const next = queue.slice(1); // toute la journée restante
 
   const todayAll = getTodosForDate(d, state.todos);
   const doneCount = todayAll.filter(t => isCompleted(t, d)).length;
@@ -253,15 +278,18 @@ export function renderFocusView(app) {
       <span class="focus-estimate-label" id="focusEstimateLabel"></span>
     </div>` : '';
 
+  const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
   const queueHTML = next.length ? `
     <div class="focus-queue">
-      <div class="focus-queue-title">Ensuite</div>
+      <div class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></div>
+      <div class="focus-queue-list" id="focusQueueList">
       ${next.map(t => `
-        <div class="focus-queue-item" onclick="window.app.focusJumpTo('${t.id}')" title="Passer à cette tâche">
+        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" draggable="true" data-id="${t.id}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche · Glisser : réordonner">
+          ${_grip}
           <span class="focus-queue-text">${esc(t.title)}</span>
-          ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : ''}
+          ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
         </div>`).join('')}
-      ${queue.length - 1 > next.length ? `<div class="focus-queue-more">+${queue.length - 1 - next.length} autres</div>` : ''}
+      </div>
     </div>` : '';
 
   return `<div class="focus-view">

@@ -13756,10 +13756,10 @@ body.view-focus header {
 }
 
 .focus-task-title {
-  font-size: clamp(26px, 4vw, 46px);
-  font-weight: 700;
-  line-height: 1.15;
-  max-width: min(820px, 90vw);
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 800;
+  line-height: 1.12;
+  max-width: min(980px, 92vw);
   overflow-wrap: break-word;
 }
 
@@ -13923,49 +13923,87 @@ body.view-focus header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
+  width: 100%;
 }
 .focus-queue .focus-queue-title {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.focus-queue .focus-queue-count {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+.focus-queue .focus-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(680px, 92vw);
+  max-height: 38vh;
+  overflow-y: auto;
+  padding: 2px 4px;
 }
 .focus-queue .focus-queue-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 7px 16px;
-  border-radius: 999px;
+  padding: 12px 18px;
+  border-radius: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-size: 13.5px;
-  color: var(--text-muted);
-  opacity: 0.72;
-  max-width: min(520px, 88vw);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.82;
   cursor: pointer;
-  transition: opacity 0.15s, background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.15s, background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .focus-queue .focus-queue-item:hover {
   opacity: 1;
   background: var(--surface2);
 }
+.focus-queue .focus-queue-item.dragging {
+  opacity: 0.35;
+  background: var(--surface2);
+  border-style: dashed;
+}
+.focus-queue .focus-queue-item.prio-high {
+  border-left: 3px solid var(--danger);
+}
+.focus-queue .focus-queue-item.prio-medium {
+  border-left: 3px solid #f59e0b;
+}
+.focus-queue .focus-queue-item .focus-queue-grip {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.45;
+  cursor: grab;
+}
+.focus-queue .focus-queue-item:hover .focus-queue-grip {
+  opacity: 0.9;
+}
 .focus-queue .focus-queue-item .focus-queue-text {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .focus-queue .focus-queue-item .focus-queue-time {
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
-}
-.focus-queue .focus-queue-more {
-  font-size: 11.5px;
   color: var(--text-muted);
-  opacity: 0.6;
+  flex-shrink: 0;
 }
 
 .focus-stage--done .focus-done-emoji {

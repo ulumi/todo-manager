@@ -60,6 +60,7 @@ import { snapshot, undo, canUndo } from './modules/undo.js';
 import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECTABLE } from './modules/multiselect.js';
 import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
+  focusSaveManualOrder,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
   getPomodoro, savePomodoro,
 } from './modules/focus.js';
@@ -2026,6 +2027,7 @@ class TodoApp {
 
   initFocusView() {
     this._stopFocusTick();
+    this.initFocusQueueDnD();
     this._focusInterval = setInterval(() => {
       if (state.view !== 'focus') { this._stopFocusTick(); return; }
       if (focusTick(this)) this.render();
@@ -2046,6 +2048,42 @@ class TodoApp {
       clearInterval(this._focusInterval);
       this._focusInterval = null;
     }
+  }
+
+  // Drag-and-drop de la file « Ensuite » : réordonne le DOM pendant le
+  // survol, persiste l'ordre complet (courante en tête) au lâcher
+  initFocusQueueDnD() {
+    const list = document.getElementById('focusQueueList');
+    if (!list) return;
+    let dragEl = null;
+    list.querySelectorAll('.focus-queue-item').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        dragEl = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', item.dataset.id); } catch {}
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        if (!dragEl) return;
+        dragEl = null;
+        const ids = [...list.querySelectorAll('.focus-queue-item')].map(el => el.dataset.id);
+        const current = getFocusQueue(this)[0];
+        focusSaveManualOrder(current ? [current.id, ...ids] : ids);
+        this.render();
+      });
+    });
+    list.addEventListener('dragover', e => {
+      if (!dragEl) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const after = [...list.querySelectorAll('.focus-queue-item:not(.dragging)')].find(el => {
+        const r = el.getBoundingClientRect();
+        return e.clientY < r.top + r.height / 2;
+      });
+      if (after) list.insertBefore(dragEl, after);
+      else list.appendChild(dragEl);
+    });
   }
 
   focusComplete() {
