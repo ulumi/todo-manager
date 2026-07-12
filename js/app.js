@@ -16,7 +16,7 @@ import {
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
-  getTodosForDate, isCompleted, toggleTodo, deleteOneOccurrence,
+  getTodosForDate, isCompleted, isCancelled, toggleTodo, cancelTodo, deleteOneOccurrence,
   deleteFutureOccurrences, addTask, getSuggestions
 } from './modules/calendar.js';
 import {
@@ -1349,6 +1349,15 @@ class TodoApp {
     setTimeout(() => this.deleteTodo(id, dateStr), 250);
   }
 
+  cancelFromEditModal() {
+    const btn = document.getElementById('cancelTaskFromEditBtn');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const dateStr = btn.dataset.date || null;
+    closeModal();
+    setTimeout(() => this.cancelTodo(id, dateStr), 250);
+  }
+
   toggleCompleteMenu() {
     const menu = document.getElementById('completeMenu');
     if (!menu) return;
@@ -1586,7 +1595,7 @@ class TodoApp {
     const todayStr = DS(today());
     const overdueCount = state.todos.filter(t =>
       t.date && t.date < todayStr &&
-      !t.completed &&
+      !t.completed && !t.cancelled &&
       (!t.recurrence || t.recurrence === 'none')
     ).length;
     const overdueBadge = document.getElementById('overdueBadge');
@@ -1862,6 +1871,47 @@ class TodoApp {
     return !!t.completed;
   }
 
+  _isCancelledAt(t, ds) {
+    if (t.recurrence && t.recurrence !== 'none') return !!ds && (t.cancelledDates || []).includes(ds);
+    return !!t.cancelled;
+  }
+
+  // Toggle annulée/restaurée sur une occurrence (checkbox ✕, modal édition)
+  cancelTodo(id, ds) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    cancelTodo(id, ds ? parseDS(ds) : (t.date ? parseDS(t.date) : today()), state.todos);
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Toggle de lot : si tout le lot est déjà annulé → restaure, sinon annule tout
+  cancelMany(ids) {
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    const allCancelled = occ.every(({ t, ds }) => this._isCancelledAt(t, ds));
+    snapshot(state.todos);
+    occ.forEach(({ t, ds }) => {
+      if (t.recurrence && t.recurrence !== 'none') {
+        if (!ds) return;
+        t.cancelledDates = t.cancelledDates || [];
+        if (allCancelled) t.cancelledDates = t.cancelledDates.filter(x => x !== ds);
+        else if (!t.cancelledDates.includes(ds)) {
+          t.cancelledDates.push(ds);
+          t.completedDates = (t.completedDates || []).filter(x => x !== ds);
+        }
+      } else {
+        t.cancelled = !allCancelled;
+        if (t.cancelled) t.completed = false;
+      }
+      t.updatedAt = Date.now();
+    });
+    saveTodos(state.todos);
+    if (ids.length > 1) msClear();
+    this.render();
+  }
+
   // Toggle : si tout le lot est déjà complété → décomplète, sinon complète tout
   completeMany(ids) {
     const occ = this._resolveOccurrences(ids);
@@ -1873,9 +1923,13 @@ class TodoApp {
         if (!ds) return;
         t.completedDates = t.completedDates || [];
         if (allDone) t.completedDates = t.completedDates.filter(x => x !== ds);
-        else if (!t.completedDates.includes(ds)) t.completedDates.push(ds);
+        else if (!t.completedDates.includes(ds)) {
+          t.completedDates.push(ds);
+          t.cancelledDates = (t.cancelledDates || []).filter(x => x !== ds);
+        }
       } else {
         t.completed = !allDone;
+        if (t.completed) t.cancelled = false;
       }
       t.updatedAt = Date.now();
     });
@@ -3398,7 +3452,7 @@ class TodoApp {
   overdueAllToToday() {
     const todayStr = DS(today());
     const overdue = state.todos.filter(t =>
-      t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none')
+      t.date && t.date < todayStr && !t.completed && !t.cancelled && (!t.recurrence || t.recurrence === 'none')
     );
     if (!overdue.length) return;
     snapshot(state.todos);
@@ -3410,7 +3464,7 @@ class TodoApp {
   overdueAllToBacklog() {
     const todayStr = DS(today());
     const overdue = state.todos.filter(t =>
-      t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none')
+      t.date && t.date < todayStr && !t.completed && !t.cancelled && (!t.recurrence || t.recurrence === 'none')
     );
     if (!overdue.length) return;
     snapshot(state.todos);
@@ -3494,7 +3548,7 @@ class TodoApp {
   _autoPostponePass() {
     const todayStr = DS(today());
     const overdue = state.todos.filter(t =>
-      (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed
+      (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed && !t.cancelled
     );
     if (!overdue.length) return;
     overdue.forEach(t => this._postpone(t, todayStr));
@@ -3598,10 +3652,11 @@ class TodoApp {
     });
   }
 
-  reviewDelete(id) {
+  // « Abandonner » dans le Bilan = annuler (trace conservée), pas supprimer
+  reviewCancel(id) {
     this._reviewMutate(() => {
-      state.setTodos(state.todos.filter(x => x.id !== id));
-      this._trackDeletion(id);
+      const t = state.todos.find(x => x.id === id);
+      if (t) { t.cancelled = true; t.completed = false; t.updatedAt = Date.now(); }
     });
   }
 
@@ -3621,7 +3676,7 @@ class TodoApp {
   // Bandeau jour passé : reporter à aujourd'hui les ponctuelles non faites du jour affiché
   postponeDayToToday(ds) {
     const targets = state.todos.filter(t =>
-      (!t.recurrence || t.recurrence === 'none') && t.date === ds && !t.completed
+      (!t.recurrence || t.recurrence === 'none') && t.date === ds && !t.completed && !t.cancelled
     );
     if (!targets.length) return;
     snapshot(state.todos);
@@ -3750,8 +3805,8 @@ class TodoApp {
     const todayAll  = state.todos.filter(t => t.date === todayDS);
     const todayDone = todayAll.filter(t => t.completed).length;
     const todayTot  = todayAll.length;
-    const overdue   = state.todos.filter(t => t.date && t.date < todayDS && !t.completed && (!t.recurrence || t.recurrence === 'none')).length;
-    const highPrio  = state.todos.filter(t => t.priority === 'high' && !t.completed).length;
+    const overdue   = state.todos.filter(t => t.date && t.date < todayDS && !t.completed && !t.cancelled && (!t.recurrence || t.recurrence === 'none')).length;
+    const highPrio  = state.todos.filter(t => t.priority === 'high' && !t.completed && !t.cancelled).length;
     const pct       = total > 0 ? Math.round(done / total * 100) : 0;
 
     // SVG icon helpers (stroke-based, 16×16)
@@ -4608,7 +4663,7 @@ class TodoApp {
     let changed = false;
     for (const id of completedTodoIds) {
       const t = state.todos.find(x => x.id === id);
-      if (t && !t.completed) { t.completed = true; changed = true; }
+      if (t && !t.completed && !t.cancelled) { t.completed = true; changed = true; }
     }
     for (const { id, date } of movedTodos) {
       const t = state.todos.find(x => x.id === id);
@@ -6280,6 +6335,7 @@ function _renderCtxMenu() {
   const group = ids.length > 1;
   const occ = window.app._resolveOccurrences(ids);
   const allDone = occ.length > 0 && occ.every(({ t, ds }) => window.app._isDoneAt(t, ds));
+  const allCancelled = occ.length > 0 && occ.every(({ t, ds }) => window.app._isCancelledAt(t, ds));
   const anyMovable = occ.some(({ t }) => !t.recurrence || t.recurrence === 'none');
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
@@ -6309,6 +6365,7 @@ function _renderCtxMenu() {
       ${prios.map(([v, l, title]) => `<button class="ctx-prio-btn ctx-prio-btn--${v || 'none'}${curPrio === v ? ' active' : ''}" data-prio="${v}" title="${title}">${l}</button>`).join('')}
     </div>
     <div class="ctx-sep"></div>
+    <div class="ctx-item" data-action="cancel"><span>⊘</span> ${allCancelled ? 'Restaurer' : 'Annuler'}${nb}</div>
     <div class="ctx-item danger" data-action="delete"><span>×</span> Supprimer${nb}</div>
     ${group ? `<div class="ctx-item" data-action="deselect"><span>✕</span> Désélectionner</div>` : ''}
   `;
@@ -6360,6 +6417,7 @@ _todoCtxMenu.addEventListener('click', e => {
   if (action === 'tomorrow')   app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });
   if (action === 'inbox')      app._sendManyTo(ids, { date: null, backlog: false });
   if (action === 'backlog')    app._sendManyTo(ids, { date: null, backlog: true });
+  if (action === 'cancel')     app.cancelMany(ids);
   if (action === 'delete')     ids.length > 1 ? app.deleteMany(ids) : app.deleteTodo(single, ds);
   if (action === 'deselect')   msClear();
 });

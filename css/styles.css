@@ -14395,4 +14395,35 @@ body.view-focus header {
   color: var(--text);
 }
 
+/* ════════════════════════════════════════════════════════
+   TÂCHES ANNULÉES (cancel) — visibles, barrées/grisées
+   ════════════════════════════════════════════════════════ */
+.todo-item.cancelled {
+  opacity: 0.55;
+}
+.todo-item.cancelled .todo-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.todo-item.cancelled .todo-check {
+  border-color: var(--text-muted);
+  background: var(--surface2);
+  color: var(--text-muted);
+}
+.todo-item.cancelled .todo-check::after {
+  content: "✕";
+  font-size: 11px;
+  font-weight: 700;
+}
+.todo-item.cancelled .todo-check:hover {
+  border-color: var(--primary);
+  background: var(--surface2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.todo-item.cancelled .todo-meta,
+.todo-item.cancelled .todo-counter {
+  opacity: 0.6;
+}
+
 /*# sourceMappingURL=styles.css.map */

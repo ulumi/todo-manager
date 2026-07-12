@@ -36,6 +36,32 @@ export function isCompleted(todo, d) {
   return !!todo.completed;
 }
 
+export function isCancelled(todo, d) {
+  if (todo.recurrence && todo.recurrence !== 'none')
+    return !!d && (todo.cancelledDates||[]).includes(DS(d));
+  return !!todo.cancelled;
+}
+
+// Toggle annulée/restaurée — une occurrence annulée n'est jamais aussi « faite »
+export function cancelTodo(id, d, todos) {
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  if (t.recurrence && t.recurrence !== 'none') {
+    const ds = DS(d);
+    t.cancelledDates = t.cancelledDates || [];
+    if (t.cancelledDates.includes(ds)) {
+      t.cancelledDates = t.cancelledDates.filter(x => x !== ds);
+    } else {
+      t.cancelledDates.push(ds);
+      t.completedDates = (t.completedDates || []).filter(x => x !== ds);
+    }
+  } else {
+    t.cancelled = !t.cancelled;
+    if (t.cancelled) t.completed = false;
+  }
+  t.updatedAt = Date.now();
+}
+
 export function toggleTodo(id, d, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
@@ -43,9 +69,13 @@ export function toggleTodo(id, d, todos) {
     const ds = DS(d);
     t.completedDates = t.completedDates || [];
     if (t.completedDates.includes(ds)) t.completedDates = t.completedDates.filter(x=>x!==ds);
-    else t.completedDates.push(ds);
+    else {
+      t.completedDates.push(ds);
+      t.cancelledDates = (t.cancelledDates || []).filter(x => x !== ds); // faite ⇒ plus annulée
+    }
   } else {
     t.completed = !t.completed;
+    if (t.completed) t.cancelled = false;
   }
   t.updatedAt = Date.now();
 }

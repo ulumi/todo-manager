@@ -57,7 +57,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `sync.js` | Supabase realtime listener, SESSION_ID echo prevention, cross-tab sync |
 | `supabase.js` | Supabase client init |
 | `auth.js` | Guest (anonymous) / email / Google / OAuth auth via Supabase, upgrade guest→email |
-| `calendar.js` | Recurrence logic, `getTodosForDate()`, `toggleTodo()`, `addTask()` |
+| `calendar.js` | Recurrence logic, `getTodosForDate()`, `toggleTodo()`, `addTask()`, `isCancelled()`/`cancelTodo()` (toggle annulée/restaurée) |
 | `render.js` | HTML generation — all views |
 | `modal.js` | Add/edit task modal, draft autosave, recurrence UI |
 | `events.js` | Global event listeners setup |
@@ -121,6 +121,8 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   countUnit?: string,                // optional label ("km", "pages", etc.)
   postponedCount?: number,           // nb de reports de date (incrémenté par app._postpone())
   originalDate?: string,             // date d'origine avant le premier report
+  cancelled?: boolean,               // annulée (ponctuelle) — visible barrée, hors compteurs
+  cancelledDates?: [],               // occurrences annulées (récurrentes), parallèle à completedDates
 }
 ```
 
@@ -230,3 +232,4 @@ npx sass css/styles.scss css/styles.css --style=expanded
 - **Style consistency:** New UI elements must match existing patterns — round checkboxes with `::after '✓'` (not SVG), `opacity: 0` → hover reveal for secondary actions (like `todo-menu-btn`), `cubic-bezier(.25,.46,.45,.94)` transitions on interactive elements, `var(--surface2)` hover backgrounds, `var(--success)` for completion states. No hardcoded `rgba()` — use CSS variables.
 - **Bilan / laissés pour compte:** modal `#reviewModalOverlay` (`openReviewModal()`, hash `modal=review`, Échap ok) — triage des ponctuelles en retard (Fait / Auj. / Dem. / date / BL / abandonner + actions de lot) + tâches souvent reportées + adhérence des récurrentes. Invite quotidienne à l'ouverture (`_maybeShowReviewPrompt`, flag localStorage `lastReviewPromptDate`, 1×/jour). Tout report de date passe par `app._postpone(t, ds)` qui incrémente `postponedCount` et pose `originalDate`
 - **Report automatique:** réglage « Tâches → Report automatique » (menu settings, clé `autoPostpone` — synchronisée via `getAppConfig()`/`_applyBackup`) : à l'ouverture, `_autoPostponePass()` bascule les ponctuelles en retard à aujourd'hui (récurrentes exclues) + toast
+- **Annulation (cancel):** état distinct de complété/supprimé — la tâche reste visible sur son jour, barrée/grisée (`.todo-item.cancelled`, checkbox ✕ = restaurer). Exclue de TOUS les filtres « pending » (badges retard/inbox/backlog, Planifier, Focus, Bilan, report auto, stats jour/semaine/mois, adhérence — occurrence annulée = non attendue). Déclencheurs : menu contextuel « ⊘ Annuler/Restaurer » (`cancelMany`, toggle de lot), bouton ⊘ du Bilan (`reviewCancel`), bouton du modal d'édition (`cancelFromEditModal`). Invariant : jamais faite ET annulée (compléter restaure, annuler décomplète). Tout nouveau filtre « en attente » doit exclure `cancelled`/`cancelledDates`

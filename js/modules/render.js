@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
-import { getTodosForDate, isCompleted, getSuggestions, getRecentTasks } from './calendar.js';
+import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
@@ -70,6 +70,7 @@ function addItemPlaceholderHTML() {
 
 export function todoItemHTML(todo, date, group = null, dayView = false, hideCategoryBadge = false) {
   const done = isCompleted(todo, date);
+  const cancelled = isCancelled(todo, date);
   const rec = recLabel(todo, dayView);
   const isRec = todo.recurrence && todo.recurrence !== 'none';
   const ds = DS(date);
@@ -129,8 +130,8 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const dotsHTML = _subtaskDotsHTML(subtasks, todo.id, ds);
   const expandedHTML = isExpanded ? _subtaskListHTML(subtasks, todo.id, ds) : '';
   return `
-    <div class="todo-item${done?' done':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
-      <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)"></div>
+    <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
+      <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
@@ -281,11 +282,13 @@ export function renderDayView(todos) {
   const sortedPunctual = sortByOrder(punctualNoPeriod, dayOrd);
 
   const recAllItems = [...dailyItems, ...weeklyItems, ...monthlyItems, ...yearlyItems];
-  const recDone = recAllItems.filter(t => isCompleted(t, navDate)).length;
-  const punctDone = punctualItems.filter(t => isCompleted(t, navDate)).length;
+  const recActive   = recAllItems.filter(t => !isCancelled(t, navDate));
+  const punctActive = punctualItems.filter(t => !isCancelled(t, navDate));
+  const recDone = recActive.filter(t => isCompleted(t, navDate)).length;
+  const punctDone = punctActive.filter(t => isCompleted(t, navDate)).length;
 
-  // Combined stats bar (single, in left column only)
-  const totalAll = punctualItems.length + recAllItems.length;
+  // Combined stats bar (single, in left column only) — annulées hors compte
+  const totalAll = punctActive.length + recActive.length;
   const doneAll = punctDone + recDone;
   const statsPct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
   const combinedStats = totalAll > 0 ? `<div class="day-stats-summary">
@@ -654,7 +657,7 @@ export function renderDayView(todos) {
   // Bandeau « laissées pour compte » — jour passé avec ponctuelles non complétées
   let pastDueBanner = '';
   if (isPastDay) {
-    const missed = punctualItems.filter(t => !isCompleted(t, navDate));
+    const missed = punctualItems.filter(t => !isCompleted(t, navDate) && !isCancelled(t, navDate));
     if (missed.length > 0) {
       pastDueBanner = `<div class="past-due-banner">
         <span class="past-due-banner-icon">⚠</span>
@@ -733,7 +736,7 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const isT = ds === todayStr;
     const isPast = ds < todayStr;
     const allItems = getTodosForDate(d, todos);
-    const totalCount = allItems.length;
+    const totalCount = allItems.filter(t => !isCancelled(t, d)).length;
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
     const ratio = totalCount > 0 ? doneCount / totalCount : 0;
     const showStats = isPast && !isT && isStatsMode;
@@ -925,11 +928,12 @@ function monthCell(date, otherMonth, todayDS, todos) {
   const todayStats = isT && isStatsMode;
   const items = todayStats ? allItems.filter(t => !isCompleted(t, date)) : allItems;
   const doneCount = allItems.filter(t => isCompleted(t, date)).length;
+  const activeCount = allItems.filter(t => !isCancelled(t, date)).length;
   const visible = items.slice(0,3);
   const more = items.length - visible.length;
   let todayScoreHTML = '';
   if (todayStats && doneCount > 0) {
-    todayScoreHTML = `<div class="month-today-score">${doneCount}/${allItems.length} ✓</div>`;
+    todayScoreHTML = `<div class="month-today-score">${doneCount}/${activeCount} ✓</div>`;
   }
   let cellStyle = '';
   if (showStats && state.statsViz === 'stamp' && allItems.length > 0) {
@@ -1328,15 +1332,15 @@ export function renderCategoriesView(todos) {
 // ─── Inbox View ────────────────────────────────────────────────────────────
 
 export function getInboxCount(todos) {
-  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed).length;
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed && !t.cancelled).length;
 }
 
 export function getBacklogCount(todos) {
-  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed).length;
+  return todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed && !t.cancelled).length;
 }
 
 export function renderInboxView(todos) {
-  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed);
+  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed && !t.cancelled);
 
   const sort = localStorage.getItem('inboxSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
@@ -1411,7 +1415,7 @@ export function renderInboxView(todos) {
 }
 
 export function renderBacklogView(todos) {
-  const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed);
+  const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && !t.cancelled);
 
   const sort = localStorage.getItem('backlogSort') || 'date';
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
@@ -1561,10 +1565,10 @@ export function renderPlanInboxList(todos, overdueSelected = new Set()) {
   };
 
   const overdueItems = todos
-    .filter(t => t.date && t.date < todayStr && !t.completed && (!t.recurrence || t.recurrence === 'none'))
+    .filter(t => t.date && t.date < todayStr && !t.completed && !t.cancelled && (!t.recurrence || t.recurrence === 'none'))
     .sort(_mkOverdueSortFn());
 
-  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.completed);
+  const noDateItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.completed && !t.cancelled);
 
   const inboxItems   = [...noDateItems.filter(t => !t.backlog)].sort(_mkSortFn('inbox'));
   const backlogItems = [...noDateItems.filter(t =>  t.backlog)].sort(_mkSortFn('backlog'));
@@ -2027,7 +2031,7 @@ export function renderAnalyseView(todos) {
     const m = Math.floor(days / 30);
     return `${m} mois`;
   }
-  const pendingNonRec = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed);
+  const pendingNonRec = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed && !t.cancelled);
   const inboxTasks   = pendingNonRec.filter(t => !t.date && !t.backlog).sort((a,b) => parseInt(a.id) - parseInt(b.id));
   const backlogTasks = pendingNonRec.filter(t => t.backlog && !t.date).sort((a,b) => parseInt(a.id) - parseInt(b.id));
   const lingeringItems = [...inboxTasks, ...backlogTasks].sort((a,b) => parseInt(a.id) - parseInt(b.id)).slice(0, 10);

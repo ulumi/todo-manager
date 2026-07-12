@@ -8,7 +8,7 @@
 
 import * as state from './state.js';
 import { DS, today, esc } from './utils.js';
-import { getTodosForDate, isCompleted } from './calendar.js';
+import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
 import { getCategories } from './admin.js';
 
 const PERIOD_RANK = { morning: 0, afternoon: 1, evening: 2 };
@@ -58,7 +58,7 @@ export function getFocusQueue(app) {
   const dayOrder = app.dayOrder[DS(d)] || [];
   const prioRank = { high: 0, medium: 1, low: 2, '': 3 };
 
-  const items = getTodosForDate(d, state.todos).filter(t => !isCompleted(t, d));
+  const items = getTodosForDate(d, state.todos).filter(t => !isCompleted(t, d) && !isCancelled(t, d));
 
   const group = (t) => {
     if (t.startTime) return t.startTime <= nowHM ? 0 : 2;

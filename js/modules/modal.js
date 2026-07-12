@@ -640,6 +640,8 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   document.getElementById('saveTask').textContent = state.T.btnAdd;
   const _deleteBtn = document.getElementById('deleteFromEditBtn');
   if (_deleteBtn) _deleteBtn.style.display = 'none';
+  const _cancelTaskBtn = document.getElementById('cancelTaskFromEditBtn');
+  if (_cancelTaskBtn) _cancelTaskBtn.style.display = 'none';
   const _completeWrap = document.getElementById('completeFromEditWrap');
   if (_completeWrap) _completeWrap.style.display = 'none';
   const _completeMenu = document.getElementById('completeMenu');
@@ -758,6 +760,16 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('saveTask').textContent = state.T.btnModify;
   const _deleteBtn = document.getElementById('deleteFromEditBtn');
   if (_deleteBtn) { _deleteBtn.dataset.id = id; _deleteBtn.dataset.date = dateStr || ''; _deleteBtn.style.display = ''; }
+  const _cancelTaskBtn = document.getElementById('cancelTaskFromEditBtn');
+  if (_cancelTaskBtn) {
+    const _isCancelledHere = (t.recurrence && t.recurrence !== 'none')
+      ? !!dateStr && (t.cancelledDates || []).includes(dateStr)
+      : !!t.cancelled;
+    _cancelTaskBtn.dataset.id = id;
+    _cancelTaskBtn.dataset.date = dateStr || '';
+    _cancelTaskBtn.textContent = _isCancelledHere ? '↺ Restaurer la tâche' : '⊘ Annuler la tâche';
+    _cancelTaskBtn.style.display = '';
+  }
   const _completeWrap = document.getElementById('completeFromEditWrap');
   if (_completeWrap) {
     _completeWrap.style.display = t.completed ? 'none' : '';

@@ -5,13 +5,13 @@
 
 import * as state from './state.js';
 import { DS, parseDS, today, addDays, esc } from './utils.js';
-import { getTodosForDate, isCompleted } from './calendar.js';
+import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
 
 // Ponctuelles datées dans le passé, non complétées — plus anciennes d'abord
 export function getOverduePunctual(todos) {
   const todayStr = DS(today());
   return todos
-    .filter(t => (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed)
+    .filter(t => (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed && !t.cancelled)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -19,7 +19,7 @@ export function getOverduePunctual(todos) {
 export function getFrequentlyPostponed(todos) {
   const todayStr = DS(today());
   return todos
-    .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed
+    .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed && !t.cancelled
       && (t.postponedCount || 0) >= 2 && (!t.date || t.date >= todayStr))
     .sort((a, b) => (b.postponedCount || 0) - (a.postponedCount || 0))
     .slice(0, 8);
@@ -34,7 +34,8 @@ export function computeAdherence(todos, nDays = 7) {
   return recurring.map(t => {
     let expected = 0, done = 0;
     const cells = days.map(d => {
-      const exp = getTodosForDate(d, [t]).length > 0;
+      // Une occurrence annulée n'est pas attendue — elle ne pénalise pas l'adhérence
+      const exp = getTodosForDate(d, [t]).length > 0 && !isCancelled(t, d);
       const ok  = exp && isCompleted(t, d);
       if (exp) expected++;
       if (ok)  done++;
@@ -65,7 +66,7 @@ function _itemActions(t, { withToday = true } = {}) {
     <button class="review-act" onclick="window.app.reviewToTomorrow('${t.id}')" title="Reporter à demain">Dem.</button>
     <label class="review-act review-act--date" title="Choisir une date">📅<input type="date" onchange="window.app.reviewSetDate('${t.id}', this.value)"></label>
     <button class="review-act" onclick="window.app.reviewToBacklog('${t.id}')" title="Envoyer au backlog">BL</button>
-    <button class="review-act review-act--del" onclick="window.app.reviewDelete('${t.id}')" title="Abandonner (supprimer)">🗑</button>
+    <button class="review-act review-act--del" onclick="window.app.reviewCancel('${t.id}')" title="Abandonner (annuler la tâche — reste visible, barrée)">⊘</button>
   </div>`;
 }
 
