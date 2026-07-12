@@ -99,6 +99,7 @@ export function getAppConfig() {
     icalFilters: icalFilters ? JSON.parse(icalFilters) : null,
     bgPalette: localStorage.getItem('bgPalette'),
     bgColor:   localStorage.getItem('bgColor'),
+    autoPostpone: localStorage.getItem('autoPostpone'),
   };
 }
 

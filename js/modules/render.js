@@ -7,6 +7,7 @@ import { getTodosForDate, isCompleted, getSuggestions, getRecentTasks } from './
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
+import { renderAdherenceRows } from './review.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
 function _getCatIds(t) { return t.categoryIds || (t.categoryId ? [t.categoryId] : []); }
@@ -233,6 +234,7 @@ export function renderDayView(todos) {
     </div>`;
 
   const isStatsMode = state.pastDisplayMode === 'stats';
+  const isPastDay = dateStr < DS(new Date());
 
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
@@ -649,7 +651,23 @@ export function renderDayView(todos) {
 
   const actionBar = '';
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div><div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
+  // Bandeau « laissées pour compte » — jour passé avec ponctuelles non complétées
+  let pastDueBanner = '';
+  if (isPastDay) {
+    const missed = punctualItems.filter(t => !isCompleted(t, navDate));
+    if (missed.length > 0) {
+      pastDueBanner = `<div class="past-due-banner">
+        <span class="past-due-banner-icon">⚠</span>
+        <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ce jour-là</span>
+        <div class="past-due-banner-actions">
+          <button class="past-due-banner-btn past-due-banner-btn--primary" onclick="window.app.openReviewModal()">Faire le bilan</button>
+          <button class="past-due-banner-btn" onclick="window.app.postponeDayToToday('${dateStr}')">Reporter à aujourd'hui</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
@@ -2066,6 +2084,7 @@ export function renderAnalyseView(todos) {
   const totalNonRec    = nonRecTodos.length;
   const completedTotal = nonRecTodos.filter(t => t.completed).length;
   const monthName      = new Date().toLocaleString('fr', { month: 'long' });
+  const adherenceRows  = renderAdherenceRows(todos, { limit: 10 });
 
   return `<div class="analyse-view">
     <div class="analyse-view-header">
@@ -2117,6 +2136,15 @@ export function renderAnalyseView(todos) {
         <div class="analyse-lingering">${lingeringList}</div>
       </div>` : ''}
     </div>
+
+    ${adherenceRows ? `
+    <p class="analyse-section-title">Récurrentes — adhérence</p>
+    <div class="analyse-grid">
+      <div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">7 derniers jours (les moins suivies d'abord)</div>
+        <div class="adherence-list">${adherenceRows}</div>
+      </div>
+    </div>` : ''}
 
     ${intentions.length > 0 ? `
     <p class="analyse-section-title">Par intention</p>

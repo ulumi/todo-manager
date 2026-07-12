@@ -77,6 +77,7 @@ import {
   avatarSwitchTab, saveAvatar, FILTERS,
   cropDragStart, setCropZoom, setEmojiZoom,
 } from './modules/avatarEditor.js';
+import { getOverduePunctual, renderReviewBody } from './modules/review.js';
 
 // Initialize state
 state.initializeState();
@@ -153,6 +154,8 @@ class TodoApp {
     todos.forEach(t => { if (!t.updatedAt) { t.updatedAt = parseInt(t.id) || Date.now(); migratedTs = true; } });
     if (migratedTs) saveTodos(todos);
     state.setTodos(todos);
+    // Report automatique : ponctuelles en retard → aujourd'hui (récurrentes exclues)
+    if (localStorage.getItem('autoPostpone') === 'true') this._autoPostponePass();
     this.applyZoom();
     this.initTheme();
     this.applyLang();
@@ -191,7 +194,12 @@ class TodoApp {
     } else if (_hashModal === 'add') {
       const _mDate = _hash.get('date');
       setTimeout(() => openModal(_mDate ? parseDS(_mDate) : state.navDate, state.todos, 'date', { restoreDraft: true }), 50);
+    } else if (_hashModal === 'review') {
+      setTimeout(() => this.openReviewModal(), 50);
     }
+    // Toast du report auto + invite quotidienne au bilan (pas si un modal est restauré)
+    if (this._autoPostponedCount) this._showToast(`↪ ${this._autoPostponedCount} tâche${this._autoPostponedCount > 1 ? 's' : ''} reportée${this._autoPostponedCount > 1 ? 's' : ''} à aujourd'hui`);
+    if (!_hashModal) this._maybeShowReviewPrompt();
     // Seed the history stack with the initial state
     history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
     window.addEventListener('popstate', (e) => this._popHistory(e));
@@ -676,6 +684,10 @@ class TodoApp {
 
     // Update glass mode checkbox
     document.getElementById('settingsGlassInput').checked = glassMode;
+
+    // Update auto-postpone checkbox
+    const autoPostponeInput = document.getElementById('settingsAutoPostponeInput');
+    if (autoPostponeInput) autoPostponeInput.checked = localStorage.getItem('autoPostpone') === 'true';
 
     // Update accent color picker (presets + custom input)
     const accentColors = isDark
@@ -2785,6 +2797,7 @@ class TodoApp {
         if (data.config.timezone)   localStorage.setItem('timezone',   data.config.timezone);
         if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
+        if (data.config.autoPostpone) localStorage.setItem('autoPostpone', data.config.autoPostpone);
         const _bPal1 = data.config.bgPalette;
         if (_bPal1)  this.setPalette(_bPal1);
         if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
@@ -3366,8 +3379,7 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     snapshot(state.todos);
-    t.date = DS(today());
-    t.updatedAt = Date.now();
+    this._postpone(t, DS(today()));
     saveTodos(state.todos);
     this.render();
   }
@@ -3390,7 +3402,7 @@ class TodoApp {
     );
     if (!overdue.length) return;
     snapshot(state.todos);
-    overdue.forEach(t => { t.date = todayStr; t.updatedAt = Date.now(); });
+    overdue.forEach(t => this._postpone(t, todayStr));
     saveTodos(state.todos);
     this.render();
   }
@@ -3442,7 +3454,7 @@ class TodoApp {
       const targets = state.todos.filter(t => sel.has(t.id));
       if (!targets.length) return;
       snapshot(state.todos);
-      targets.forEach(t => { t.date = todayStr; t.updatedAt = Date.now(); });
+      targets.forEach(t => this._postpone(t, todayStr));
       saveTodos(state.todos);
       this._overdueSelected = new Set();
       this.render();
@@ -3464,6 +3476,160 @@ class TodoApp {
     } else {
       this.overdueAllToBacklog();
     }
+  }
+
+  // ── Bilan / Review — tâches laissées pour compte ─────────────────────────
+  // Report d'une ponctuelle vers une nouvelle date en gardant la trace
+  // (postponedCount / originalDate) — signal de procrastination pour le bilan
+  _postpone(t, newDateStr) {
+    if (t.date && t.date !== newDateStr) {
+      if (!t.originalDate) t.originalDate = t.date;
+      t.postponedCount = (t.postponedCount || 0) + 1;
+    }
+    t.date = newDateStr;
+    t.backlog = false;
+    t.updatedAt = Date.now();
+  }
+
+  _autoPostponePass() {
+    const todayStr = DS(today());
+    const overdue = state.todos.filter(t =>
+      (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed
+    );
+    if (!overdue.length) return;
+    overdue.forEach(t => this._postpone(t, todayStr));
+    saveTodos(state.todos);
+    this._autoPostponedCount = overdue.length;
+  }
+
+  _maybeShowReviewPrompt() {
+    const todayStr = DS(today());
+    if (localStorage.getItem('lastReviewPromptDate') === todayStr) return;
+    const overdue = getOverduePunctual(state.todos);
+    if (!overdue.length) return;
+    localStorage.setItem('lastReviewPromptDate', todayStr);
+    const days = new Set(overdue.map(t => t.date)).size;
+    const prompt = document.createElement('div');
+    prompt.className = 'review-prompt';
+    prompt.innerHTML = `
+      <span class="review-prompt-icon">⚠</span>
+      <span class="review-prompt-text"><strong>${overdue.length} tâche${overdue.length > 1 ? 's' : ''}</strong> laissée${overdue.length > 1 ? 's' : ''} pour compte sur ${days} jour${days > 1 ? 's' : ''}</span>
+      <button class="review-prompt-btn" onclick="window.app.openReviewModal();this.closest('.review-prompt').remove()">Faire le bilan</button>
+      <button class="review-prompt-close" onclick="this.closest('.review-prompt').remove()" title="Ignorer">×</button>`;
+    document.body.appendChild(prompt);
+    requestAnimationFrame(() => prompt.classList.add('review-prompt--visible'));
+    setTimeout(() => { if (prompt.isConnected) { prompt.classList.remove('review-prompt--visible'); setTimeout(() => prompt.remove(), 400); } }, 15000);
+  }
+
+  toggleAutoPostpone() {
+    const enabled = document.getElementById('settingsAutoPostponeInput')?.checked;
+    localStorage.setItem('autoPostpone', enabled ? 'true' : 'false');
+    this._saveConfigChange();
+    if (enabled) {
+      snapshot(state.todos);
+      this._autoPostponedCount = 0;
+      this._autoPostponePass();
+      if (this._autoPostponedCount) {
+        this._showToast(`↪ ${this._autoPostponedCount} tâche${this._autoPostponedCount > 1 ? 's' : ''} reportée${this._autoPostponedCount > 1 ? 's' : ''} à aujourd'hui`);
+        this.render();
+      }
+    }
+  }
+
+  openReviewModal() {
+    const overlay = document.getElementById('reviewModalOverlay');
+    if (!overlay) return;
+    this._renderReviewBody();
+    overlay.classList.remove('hidden');
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'review' }));
+  }
+
+  closeReviewModal() {
+    document.getElementById('reviewModalOverlay')?.classList.add('hidden');
+    history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
+  }
+
+  _renderReviewBody() {
+    const body = document.getElementById('reviewModalBody');
+    if (body) body.innerHTML = renderReviewBody(state.todos);
+  }
+
+  _reviewMutate(fn) {
+    snapshot(state.todos);
+    fn();
+    saveTodos(state.todos);
+    this._renderReviewBody();
+    this.render();
+  }
+
+  reviewDone(id) {
+    this._reviewMutate(() => {
+      const t = state.todos.find(x => x.id === id);
+      if (t) { t.completed = true; t.updatedAt = Date.now(); }
+    });
+  }
+
+  reviewToToday(id) {
+    this._reviewMutate(() => {
+      const t = state.todos.find(x => x.id === id);
+      if (t) this._postpone(t, DS(today()));
+    });
+  }
+
+  reviewToTomorrow(id) {
+    this._reviewMutate(() => {
+      const t = state.todos.find(x => x.id === id);
+      if (t) this._postpone(t, DS(addDays(today(), 1)));
+    });
+  }
+
+  reviewSetDate(id, ds) {
+    if (!ds) return;
+    this._reviewMutate(() => {
+      const t = state.todos.find(x => x.id === id);
+      if (t) this._postpone(t, ds);
+    });
+  }
+
+  reviewToBacklog(id) {
+    this._reviewMutate(() => {
+      const t = state.todos.find(x => x.id === id);
+      if (t) { t.date = null; t.backlog = true; t.updatedAt = Date.now(); }
+    });
+  }
+
+  reviewDelete(id) {
+    this._reviewMutate(() => {
+      state.setTodos(state.todos.filter(x => x.id !== id));
+      this._trackDeletion(id);
+    });
+  }
+
+  reviewAllToday() {
+    this._reviewMutate(() => {
+      const todayStr = DS(today());
+      getOverduePunctual(state.todos).forEach(t => this._postpone(t, todayStr));
+    });
+  }
+
+  reviewAllBacklog() {
+    this._reviewMutate(() => {
+      getOverduePunctual(state.todos).forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+    });
+  }
+
+  // Bandeau jour passé : reporter à aujourd'hui les ponctuelles non faites du jour affiché
+  postponeDayToToday(ds) {
+    const targets = state.todos.filter(t =>
+      (!t.recurrence || t.recurrence === 'none') && t.date === ds && !t.completed
+    );
+    if (!targets.length) return;
+    snapshot(state.todos);
+    const todayStr = DS(today());
+    targets.forEach(t => this._postpone(t, todayStr));
+    saveTodos(state.todos);
+    this._showToast(`↪ ${targets.length} tâche${targets.length > 1 ? 's' : ''} reportée${targets.length > 1 ? 's' : ''} à aujourd'hui`);
+    this.render();
   }
 
   // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
@@ -5535,6 +5701,7 @@ class TodoApp {
       if (backup.config.timezone)   localStorage.setItem('timezone',   backup.config.timezone);
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
+      if (backup.config.autoPostpone) localStorage.setItem('autoPostpone', backup.config.autoPostpone);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);

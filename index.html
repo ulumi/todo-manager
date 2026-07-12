@@ -133,6 +133,21 @@
           </div>
         </div>
 
+        <!-- Tasks Behavior -->
+        <div class="settings-menu-section">
+          <div class="settings-section-header">
+            <div class="settings-menu-title">Tâches</div>
+            <span class="settings-help-icon" title="Comportement des tâches en retard">?</span>
+          </div>
+          <div class="settings-glass-toggle">
+            <label class="settings-glass-label">
+              <input type="checkbox" id="settingsAutoPostponeInput" onchange="window.app.toggleAutoPostpone()">
+              <span>Report automatique</span>
+              <span class="settings-help-icon" title="À l'ouverture, reporte automatiquement à aujourd'hui les tâches ponctuelles non complétées des jours passés (les récurrentes/quotidiennes ne sont pas touchées)">?</span>
+            </label>
+          </div>
+        </div>
+
         <!-- Text Size -->
         <div class="settings-menu-section">
           <div class="settings-section-header">
@@ -231,6 +246,17 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" id="cancelDeleteModal">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- Bilan / Review Modal — tâches laissées pour compte -->
+<div class="modal-overlay hidden" id="reviewModalOverlay" onclick="if(event.target===this)window.app.closeReviewModal()">
+  <div class="modal review-modal">
+    <div class="modal-header">
+      <div class="modal-title">Bilan — laissés pour compte</div>
+      <button class="modal-close-btn" onclick="window.app.closeReviewModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
+    </div>
+    <div class="review-modal-body" id="reviewModalBody"></div>
   </div>
 </div>
 

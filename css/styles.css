@@ -14009,4 +14009,390 @@ body.view-focus header {
   color: var(--text-muted);
 }
 
+/* ════════════════════════════════════════════════════════
+   BILAN / REVIEW — tâches laissées pour compte
+   ════════════════════════════════════════════════════════ */
+/* Bandeau jour passé (vue jour) */
+.past-due-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 16px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1.5px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  animation: modal-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.past-due-banner-icon {
+  font-size: 16px;
+  color: var(--danger);
+}
+
+.past-due-banner-text {
+  flex: 1;
+  min-width: 160px;
+  font-size: 13px;
+  color: var(--text);
+}
+.past-due-banner-text strong {
+  color: var(--danger);
+}
+
+.past-due-banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.past-due-banner-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.past-due-banner-btn:hover {
+  background: var(--surface2);
+}
+.past-due-banner-btn--primary {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.past-due-banner-btn--primary:hover {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+/* Mise en avant des ponctuelles non faites sur un jour passé */
+.day-view.day-past .day-col--punctual .todo-item:not(.done) {
+  border-left: 3px solid color-mix(in srgb, var(--danger) 65%, transparent);
+}
+
+/* ── Modal Bilan ── */
+.review-modal {
+  max-width: 620px;
+  padding: 24px 26px;
+}
+
+.review-modal-body {
+  margin-top: 14px;
+}
+
+.review-empty {
+  padding: 18px 4px;
+  font-size: 14px;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.review-section {
+  margin-bottom: 26px;
+}
+.review-section:last-child {
+  margin-bottom: 0;
+}
+
+.review-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.review-section-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.review-group {
+  margin-bottom: 14px;
+}
+
+.review-group-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+  margin-bottom: 6px;
+}
+
+.review-group-count {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  margin-bottom: 6px;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.review-item:hover {
+  background: var(--surface2);
+}
+
+.review-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-item-title {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-prio-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.review-prio-dot.prio-high {
+  background: var(--danger);
+}
+.review-prio-dot.prio-medium {
+  background: #f59e0b;
+}
+.review-prio-dot.prio-low {
+  background: var(--text-muted);
+}
+
+.review-postponed-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.55;
+  transition: opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.review-item:hover .review-item-actions {
+  opacity: 1;
+}
+
+.review-act {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.review-act:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.review-act--done:hover {
+  background: var(--success);
+  border-color: var(--success);
+}
+.review-act--del:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.review-act--date {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.review-act--date input[type=date] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.review-bulk {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ── Adhérence des récurrentes (modal Bilan + vue Analyse) ── */
+.adherence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adherence-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adherence-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adherence-strip {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.adherence-cell {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.adherence-cell--ok {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+}
+.adherence-cell--miss {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+.adherence-cell--na {
+  background: var(--surface2);
+  color: var(--text-muted);
+}
+
+.adherence-rate {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+.adherence-rate--low {
+  color: var(--danger);
+}
+
+.adherence-rate-30 {
+  flex-shrink: 0;
+  width: 64px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.adherence-rate-30 small {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+/* ── Invite quotidienne au bilan ── */
+.review-prompt {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translate(-50%, 12px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.review-prompt--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.review-prompt-icon {
+  color: var(--danger);
+  font-size: 15px;
+}
+
+.review-prompt-text {
+  font-size: 13px;
+  color: var(--text);
+}
+.review-prompt-text strong {
+  color: var(--danger);
+}
+
+.review-prompt-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.review-prompt-btn:hover {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.review-prompt-close {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.review-prompt-close:hover {
+  color: var(--text);
+}
+
 /*# sourceMappingURL=styles.css.map */

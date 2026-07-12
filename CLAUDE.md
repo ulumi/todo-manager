@@ -68,6 +68,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `undo.js` | Undo stack (max 50 snapshots), `canUndo()` |
 | `multiselect.js` | Multi-sélection inter-vues : lasso rectangle à la souris sur zone vide, Ctrl/Cmd+clic, Maj+clic (plage), Échap. Classe `.multi-selected`, barre flottante de comptage, alimente `app._dragMultiIds` pour le drag-and-drop multi-items |
 | `focus.js` | Mode Focus plein écran : file intelligente du jour (heures échues → période courante → ordre manuel/priorité), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
+| `review.js` | Bilan des « laissés pour compte » : `getOverduePunctual()`, `getFrequentlyPostponed()`, `computeAdherence()` (taux des récurrentes sur N jours écoulés, aujourd'hui exclu), `renderReviewBody()` (corps du modal Bilan), `renderAdherenceRows()` (partagé avec la vue Analyse) |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |
 | `utils.js` | Date helpers (`DS`, `parseDS`, `today`, `addDays`), `esc()` |
@@ -81,7 +82,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 
 | View | Description |
 |------|-------------|
-| `day` | Tasks for navDate, grouped: punctual + recurring |
+| `day` | Tasks for navDate, grouped: punctual + recurring. Jour passé avec ponctuelles non faites → bandeau `.past-due-banner` (Faire le bilan / Reporter à aujourd'hui) + bordure rouge sur les items non faits (`.day-view.day-past`) |
 | `week` | 7-column grid, slide navigation |
 | `month` | Monthly calendar with task counts |
 | `year` | 12 mini-calendars, annual overview |
@@ -91,7 +92,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `categories` | Tag cards grid. Each card = tag with associated tasks |
 | `projects` | Project cards grid. Statuses, lifecycle |
 | `intentions` | Long-term goals. Cards with linked tasks as chips |
-| `analyse` | Stats: completed this week vs last, this month vs last, 7-day bar chart, oldest overdue |
+| `analyse` | Stats: completed this week vs last, this month vs last, 7-day bar chart, oldest overdue, adhérence des récurrentes (bande 7 j + taux 30 j, via `review.js`) |
 | `counters` | Progress counters: cards for all tasks with a counter enabled, +/− controls |
 | `focus` | Mode Focus plein écran : une tâche à la fois + chrono géant. Entrée: touche `F` ou bouton header (`.focus-tab`, sans `data-view`, via `enterFocus()`). Raccourcis: Espace compléter, S passer, D demain, P pause, Échap quitter |
 
@@ -118,6 +119,8 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   countTo?: number,                  // target value
   countCurrent?: number,             // current value (initialized to countFrom on create)
   countUnit?: string,                // optional label ("km", "pages", etc.)
+  postponedCount?: number,           // nb de reports de date (incrémenté par app._postpone())
+  originalDate?: string,             // date d'origine avant le premier report
 }
 ```
 
@@ -225,3 +228,5 @@ npx sass css/styles.scss css/styles.css --style=expanded
 - **Multi-sélection:** listeners globaux en phase capture (`multiselect.js`) — les drop handlers doivent passer par `app._dropIds(id)` pour supporter le drop d'une sélection multiple; `msRefreshUI()` est appelé en fin de `render()` (sélection vidée au changement de vue). Le lasso ne démarre jamais sur un élément `[draggable="true"]` ou interactif (`MARQUEE_EXCLUDE`) — tout nouvel élément draggable est donc automatiquement compatible
 - **Menu contextuel (clic droit / bouton ⋯):** contenu dynamique (`_renderCtxMenu` en bas d'app.js) — item seul ou groupe si l'item visé est dans la sélection multiple. Actions de lot: `completeMany`, `duplicateMany`, `deleteMany`, `setPriorityMany`, `_sendManyTo`. La complétion passe par `_resolveOccurrences()`: date de l'occurrence affichée (data-date) sinon date propre de la tâche — jamais navDate. Suppression de groupe: ponctuelles retirées, récurrentes → occurrence exclue seulement
 - **Style consistency:** New UI elements must match existing patterns — round checkboxes with `::after '✓'` (not SVG), `opacity: 0` → hover reveal for secondary actions (like `todo-menu-btn`), `cubic-bezier(.25,.46,.45,.94)` transitions on interactive elements, `var(--surface2)` hover backgrounds, `var(--success)` for completion states. No hardcoded `rgba()` — use CSS variables.
+- **Bilan / laissés pour compte:** modal `#reviewModalOverlay` (`openReviewModal()`, hash `modal=review`, Échap ok) — triage des ponctuelles en retard (Fait / Auj. / Dem. / date / BL / abandonner + actions de lot) + tâches souvent reportées + adhérence des récurrentes. Invite quotidienne à l'ouverture (`_maybeShowReviewPrompt`, flag localStorage `lastReviewPromptDate`, 1×/jour). Tout report de date passe par `app._postpone(t, ds)` qui incrémente `postponedCount` et pose `originalDate`
+- **Report automatique:** réglage « Tâches → Report automatique » (menu settings, clé `autoPostpone` — synchronisée via `getAppConfig()`/`_applyBackup`) : à l'ouverture, `_autoPostponePass()` bascule les ponctuelles en retard à aujourd'hui (récurrentes exclues) + toast

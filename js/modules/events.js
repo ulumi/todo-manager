@@ -73,6 +73,7 @@ export function setupEventListeners(app) {
     const visible = id => !document.getElementById(id)?.classList.contains('hidden');
     if (visible('modalOverlay'))         { app.closeModal();         return; }
     if (visible('deleteModalOverlay'))   { app.closeDeleteModal();   return; }
+    if (visible('reviewModalOverlay'))   { app.closeReviewModal();   return; }
     if (visible('adminModalOverlay'))    { app.closeAdminModal();    return; }
     if (visible('templateModalOverlay')) { app.closeTemplateModal(); return; }
     if (visible('authModalOverlay'))     { app.closeAuthModal();     return; }
