@@ -2132,32 +2132,30 @@ class TodoApp {
     this.render();
   }
 
-  // Journée bouclée : piocher une tâche du backlog → datée aujourd'hui,
-  // sortie du backlog, et elle devient la tâche courante du focus
-  focusPickFromBacklog(id) {
+  // Panneau « Journée bouclée » (focus + vue jour) : piocher une tâche du
+  // backlog → datée `ds`, sortie du backlog ; en mode focus elle devient la courante
+  refillPick(id, ds, mode) {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     snapshot(state.todos);
-    t.date = DS(today());
+    t.date = ds;
     t.backlog = false;
     t.updatedAt = Date.now();
     saveTodos(state.todos);
-    focusPin(id);
-    clearTimerState();
+    if (mode === 'focus') { focusPin(id); clearTimerState(); }
     this.render();
   }
 
-  // Journée bouclée : créer une tâche pour aujourd'hui et enchaîner dessus
-  focusAddNewTask() {
-    const input = document.getElementById('focusNewTaskInput');
+  // Panneau « Journée bouclée » : créer une tâche pour `ds` (et enchaîner en focus)
+  refillAdd(ds, mode) {
+    const input = document.getElementById('refillNewTaskInput');
     const title = input?.value.trim();
     if (!title) return;
     snapshot(state.todos);
-    addTask({ title, date: DS(today()), recurrence: 'none' }, state.todos);
+    addTask({ title, date: ds, recurrence: 'none' }, state.todos);
     const created = state.todos[state.todos.length - 1];
     saveTodos(state.todos);
-    focusPin(created.id);
-    clearTimerState();
+    if (mode === 'focus') { focusPin(created.id); clearTimerState(); }
     this.render();
   }
 

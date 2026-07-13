@@ -8,6 +8,7 @@ import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 import { renderAdherenceRows } from './review.js';
+import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
 function _getCatIds(t) { return t.categoryIds || (t.categoryId ? [t.categoryId] : []); }
@@ -654,6 +655,13 @@ export function renderDayView(todos) {
 
   const actionBar = '';
 
+  // Journée bouclée (aujourd'hui/futur, tout complété) → panneau de relance :
+  // piocher dans le backlog ou créer une tâche pour ce jour
+  let refillPanel = '';
+  if (!isPastDay && totalAll > 0 && doneAll === totalAll) {
+    refillPanel = `<div class="day-refill-wrap">${renderRefillPanel({ ds: dateStr, mode: 'day', doneCount: doneAll })}</div>`;
+  }
+
   // Bandeau « laissées pour compte » — jour passé avec ponctuelles non complétées
   let pastDueBanner = '';
   if (isPastDay) {
@@ -670,7 +678,7 @@ export function renderDayView(todos) {
     }
   }
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}${refillPanel}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

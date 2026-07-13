@@ -180,6 +180,51 @@ export function pomodoroRemaining(p) {
   return dur - Math.floor((Date.now() - p.phaseStart) / 1000);
 }
 
+// ── Panneau de relance « Journée bouclée » ───────────────
+// Partagé entre le mode Focus et la vue jour : piocher dans le backlog
+// (la tâche est datée `ds` et sortie du backlog) ou créer une tâche pour `ds`.
+// mode 'focus' : la tâche choisie/créée devient la courante du focus.
+export function renderRefillPanel({ ds, mode, header = true, doneCount = 0 }) {
+  const prioRank = { high: 0, medium: 1, low: 2, '': 3 };
+  const backlogItems = state.todos
+    .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed && !t.cancelled)
+    .sort((a, b) => {
+      const pa = prioRank[a.priority || ''] ?? 3, pb = prioRank[b.priority || ''] ?? 3;
+      return pa !== pb ? pa - pb : a.id.localeCompare(b.id);
+    });
+
+  const headerHTML = header ? `
+    <div class="refill-header">
+      <span class="refill-emoji">🎉</span>
+      <div class="refill-header-txt">
+        <div class="refill-title">Journée bouclée</div>
+        <div class="refill-sub">${doneCount} tâche${doneCount > 1 ? 's' : ''} complétée${doneCount > 1 ? 's' : ''} — envie de continuer ?</div>
+      </div>
+    </div>` : '';
+
+  const listHTML = backlogItems.length ? `
+    <div class="refill-section-label">Piocher dans le backlog</div>
+    <div class="refill-list">
+      ${backlogItems.map(t => `
+        <div class="refill-item${t.priority ? ` prio-${t.priority}` : ''}" onclick="window.app.refillPick('${t.id}','${ds}','${mode}')" title="Planifier cette tâche et continuer">
+          <span class="refill-item-plus">＋</span>
+          <span class="refill-item-title">${esc(t.title)}</span>
+          <span class="refill-item-hint">${mode === 'focus' ? 'En focus' : 'Ajouter au jour'}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `<div class="refill-panel">
+    ${headerHTML}
+    ${listHTML}
+    <div class="refill-section-label">${backlogItems.length ? 'Ou créer une nouvelle tâche' : 'Créer une nouvelle tâche'}</div>
+    <div class="refill-new">
+      <input type="text" id="refillNewTaskInput" class="refill-input" placeholder="Nouvelle tâche…" autocomplete="off"
+        onkeydown="if(event.key==='Enter')window.app.refillAdd('${ds}','${mode}')">
+      <button class="refill-add-btn" onclick="window.app.refillAdd('${ds}','${mode}')">Ajouter</button>
+    </div>
+  </div>`;
+}
+
 // ── Rendu ────────────────────────────────────────────────
 function _metaBadges(t) {
   const cats = getCategories();
@@ -259,37 +304,13 @@ export function renderFocusView(app) {
   if (!current) {
     // Journée bouclée → interface de relance : piocher dans le backlog
     // (la tâche passe à aujourd'hui et devient la courante) ou créer une tâche
-    const prioRank2 = { high: 0, medium: 1, low: 2, '': 3 };
-    const backlogItems = state.todos
-      .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed && !t.cancelled)
-      .sort((a, b) => {
-        const pa = prioRank2[a.priority || ''] ?? 3, pb = prioRank2[b.priority || ''] ?? 3;
-        return pa !== pb ? pa - pb : a.id.localeCompare(b.id);
-      });
-    const backlogHTML = backlogItems.length ? `
-      <div class="focus-refill-title">Envie de continuer ? Pioche dans le backlog</div>
-      <div class="focus-refill-list">
-        ${backlogItems.map(t => `
-          <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" onclick="window.app.focusPickFromBacklog('${t.id}')" title="Ajouter à aujourd'hui et continuer en focus">
-            <span class="focus-queue-text">${esc(t.title)}</span>
-            <span class="focus-refill-add">＋ Aujourd'hui</span>
-          </div>`).join('')}
-      </div>` : '';
     return `<div class="focus-view">
       ${topbar}
       <div class="focus-stage focus-stage--done">
         <div class="focus-done-emoji">🎉</div>
         <div class="focus-done-title">Journée bouclée</div>
         <div class="focus-done-sub">${doneCount} tâche${doneCount > 1 ? 's' : ''} complétée${doneCount > 1 ? 's' : ''} aujourd'hui</div>
-        <div class="focus-refill">
-          ${backlogHTML}
-          <div class="focus-refill-title">${backlogItems.length ? 'Ou ajoute' : 'Envie de continuer ? Ajoute'} une nouvelle tâche</div>
-          <div class="focus-refill-new">
-            <input type="text" id="focusNewTaskInput" class="focus-refill-input" placeholder="Nouvelle tâche pour aujourd'hui…" autocomplete="off"
-              onkeydown="if(event.key==='Enter')window.app.focusAddNewTask()">
-            <button class="focus-action focus-action--primary" onclick="window.app.focusAddNewTask()">Ajouter</button>
-          </div>
-        </div>
+        ${renderRefillPanel({ ds: DS(d), mode: 'focus', header: false })}
         <button class="focus-action" onclick="window.app.exitFocus()">Quitter le focus</button>
       </div>
     </div>`;
