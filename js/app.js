@@ -2708,6 +2708,13 @@ class TodoApp {
           });
           saveTodos(state.todos);
         }
+        // Lâché sur un item → réordonner aussi dans ce moment
+        // (l'ordre manuel prime sur l'heure dans le rendu chrono)
+        if (dropTarget && dropTarget !== '__heure_empty__' && !dropTarget.startsWith('spacer-')) {
+          const targetGroup = dropPeriod === '' ? 'punctual' : `punctual-${dropPeriod}`;
+          this.dropReorder(dropIds, targetGroup, dropTarget, false);
+          return; // dropReorder re-render
+        }
         this.render();
         return;
       }

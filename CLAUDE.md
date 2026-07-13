@@ -67,7 +67,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `celebrate.js` | Victory animations, quotes EN/FR/custom, mascots, ban system |
 | `undo.js` | Undo stack (max 50 snapshots), `canUndo()` |
 | `multiselect.js` | Multi-sélection inter-vues : lasso rectangle à la souris sur zone vide, Ctrl/Cmd+clic, Maj+clic (plage), Échap. Classe `.multi-selected`, barre flottante de comptage, alimente `app._dragMultiIds` pour le drag-and-drop multi-items |
-| `focus.js` | Mode Focus plein écran : file intelligente du jour (heures échues → période courante → ordre manuel/priorité), file « Ensuite » complète et réordonnable par drag-and-drop (`focusSaveManualOrder`, localStorage `focusManualOrder` valable pour la journée — prime sur l'ordre intelligent), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
+| `focus.js` | Mode Focus plein écran : file du jour ordonnée par moments (sans moment → matin → après-midi → soir) avec, au sein d'un moment, l'ordre manuel de la vue jour (dayOrder/punctualPeriodOrder/recurringOrder) puis repli heure → priorité ; file « Ensuite » complète et réordonnable par drag-and-drop (`focusSaveManualOrder`, localStorage `focusManualOrder` valable pour la journée — prime sur tout), chrono géant persistant (localStorage `focusTimer`), compte à rebours sur `durationEstimated` → écrit `durationReal`, Pomodoro 25/5 (`focusPomodoro`), tick 1 s sans re-render |
 | `review.js` | Bilan des « laissés pour compte » : `getOverduePunctual()`, `getFrequentlyPostponed()`, `computeAdherence()` (taux des récurrentes sur N jours écoulés, aujourd'hui exclu), `renderReviewBody()` (corps du modal Bilan), `renderAdherenceRows()` (partagé avec la vue Analyse) |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |
@@ -82,7 +82,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 
 | View | Description |
 |------|-------------|
-| `day` | Tasks for navDate, grouped: punctual + recurring. Jour passé avec ponctuelles non faites → bandeau `.past-due-banner` (Faire le bilan / Reporter à aujourd'hui) + bordure rouge sur les items non faits (`.day-view.day-past`) |
+| `day` | Tasks for navDate, grouped: punctual + recurring. Tri Chrono : réordonnancement par drag au sein d'un moment — **l'ordre manuel prime sur l'heure** (`dayOrder` pour sans-moment, `punctualPeriodOrder` par moment ; items non réordonnés restent triés par heure, après). Jour passé avec ponctuelles non faites → bandeau `.past-due-banner` (Faire le bilan / Reporter à aujourd'hui) + bordure rouge sur les items non faits (`.day-view.day-past`) |
 | `week` | 7-column grid, slide navigation |
 | `month` | Monthly calendar with task counts |
 | `year` | 12 mini-calendars, annual overview |

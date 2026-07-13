@@ -51,42 +51,50 @@ export function focusSaveManualOrder(ids) {
   localStorage.setItem('focusManualOrder', JSON.stringify({ ds: DS(today()), ids }));
 }
 
-function _currentPeriodRank() {
-  const h = new Date().getHours();
-  return h < 12 ? 0 : h < 18 ? 1 : 2;
-}
-
 function _nowHM() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 // ── File du jour ─────────────────────────────────────────
-// Ordre : tâches à heure fixe échues → période courante/passée et sans
-// période (ordre manuel du jour puis priorité) → heures futures →
-// périodes futures. Les « passées » vont en fin de file.
+// Ordre : moments d'abord (sans moment → matin → après-midi → soir),
+// et au sein d'un moment l'ordre manuel de la vue jour (dayOrder /
+// punctualPeriodOrder / recurringOrder) ; sans ordre manuel, repli
+// sur heure puis priorité. Les « passées » vont en fin de file.
 export function getFocusQueue(app) {
   const d = today();
-  const nowHM = _nowHM();
-  const curPer = _currentPeriodRank();
-  const dayOrder = app.dayOrder[DS(d)] || [];
+  const ds = DS(d);
   const prioRank = { high: 0, medium: 1, low: 2, '': 3 };
+
+  // Ordres manuels de la vue jour, fusionnés par moment (ponctuelles puis récurrentes)
+  const ppo = app.punctualPeriodOrder?.[ds] || {};
+  const rec = app.recurringOrder?.[ds] || {};
+  const momentOrder = {
+    0: [...(app.dayOrder[ds] || []), ...(rec['daily'] || []), ...(rec['weekly'] || []), ...(rec['monthly'] || []), ...(rec['yearly'] || [])],
+    1: [...(ppo['morning']   || []), ...(rec['daily-morning']   || [])],
+    2: [...(ppo['afternoon'] || []), ...(rec['daily-afternoon'] || [])],
+    3: [...(ppo['evening']   || []), ...(rec['daily-evening']   || [])],
+  };
+  const moment = t => t.dayPeriod ? (PERIOD_RANK[t.dayPeriod] ?? -1) + 1 : 0;
 
   const items = getTodosForDate(d, state.todos).filter(t => !isCompleted(t, d) && !isCancelled(t, d));
 
-  const group = (t) => {
-    if (t.startTime) return t.startTime <= nowHM ? 0 : 2;
-    const p = t.dayPeriod ? PERIOD_RANK[t.dayPeriod] : null;
-    if (p === null || p <= curPer) return 1;
-    return 3 + p;
-  };
-
   const sorted = [...items].sort((a, b) => {
-    const ga = group(a), gb = group(b);
-    if (ga !== gb) return ga - gb;
-    if (ga === 0 || ga === 2) return (a.startTime || '').localeCompare(b.startTime || '');
-    const ia = dayOrder.indexOf(a.id), ib = dayOrder.indexOf(b.id);
-    if (ia !== -1 && ib !== -1 && ia !== ib) return ia - ib;
+    const ma = moment(a), mb = moment(b);
+    if (ma !== mb) return ma - mb;
+    const ord = momentOrder[ma] || [];
+    const ia = ord.indexOf(a.id), ib = ord.indexOf(b.id);
+    if (ia !== -1 || ib !== -1) {
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    }
+    if (a.startTime || b.startTime) {
+      if (!a.startTime) return 1;
+      if (!b.startTime) return -1;
+      const c = a.startTime.localeCompare(b.startTime);
+      if (c) return c;
+    }
     const pa = prioRank[a.priority || ''] ?? 3, pb = prioRank[b.priority || ''] ?? 3;
     if (pa !== pb) return pa - pb;
     return a.id.localeCompare(b.id);
