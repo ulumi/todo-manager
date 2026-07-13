@@ -14482,10 +14482,10 @@ body.view-focus header {
   animation: modal-in 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.day-refill-wrap {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 20px;
+.day-col--refill .refill-panel {
+  width: 100%;
+  position: sticky;
+  top: 0;
 }
 
 .refill-header {

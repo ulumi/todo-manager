@@ -13376,10 +13376,11 @@ body.view-focus header { display: none; }
   animation: modal-in .35s cubic-bezier(.25,.46,.45,.94);
 }
 
-.day-refill-wrap {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 20px;
+// 3e colonne de la vue jour (grille .day-columns--three)
+.day-col--refill .refill-panel {
+  width: 100%;
+  position: sticky;
+  top: 0;
 }
 
 .refill-header {

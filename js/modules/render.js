@@ -290,6 +290,9 @@ export function renderDayView(todos) {
 
   // Combined stats bar (single, in left column only) — annulées hors compte
   const totalAll = punctActive.length + recActive.length;
+  // Journée bouclée (aujourd'hui/futur, tout complété) → 3e colonne de relance,
+  // et la colonne Aujourd'hui repasse sur une seule colonne
+  const hasRefill = !isPastDay && totalAll > 0 && (punctDone + recDone) === totalAll;
   const doneAll = punctDone + recDone;
   const statsPct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
   const combinedStats = totalAll > 0 ? `<div class="day-stats-summary">
@@ -363,8 +366,9 @@ export function renderDayView(todos) {
   if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
-  // Column count — icon buttons
-  const colCount = parseInt(localStorage.getItem('dayColCount') || '2');
+  // Column count — icon buttons (forcé à 1 quand le panneau de relance occupe la 3e colonne)
+  const colCountSetting = parseInt(localStorage.getItem('dayColCount') || '2');
+  const colCount = hasRefill ? 1 : colCountSetting;
   const colIcon = n => {
     const bars = Array.from({length: n}, () => `<rect/>`).map((_, i) => {
       const w = Math.floor(12 / n);
@@ -375,7 +379,7 @@ export function renderDayView(todos) {
     return `<svg viewBox="0 0 14 16" width="13" height="15">${bars}</svg>`;
   };
   const colBtns = [2,3,4,6].map(n =>
-    `<button class="day-ctrl-btn${n===colCount?' active':''}" onclick="window.app.setDayColCount(${n}); window.app.closeDayCol();" onmouseenter="window.app.resetAutoCloseDayCol()" title="${n} colonnes">${n} cols</button>`
+    `<button class="day-ctrl-btn${n===colCountSetting?' active':''}" onclick="window.app.setDayColCount(${n}); window.app.closeDayCol();" onmouseenter="window.app.resetAutoCloseDayCol()" title="${n} colonnes">${n} cols</button>`
   ).join('');
   const spacerBtn = `<button class="day-ctrl-btn day-spacer-btn" onclick="window.app.addDaySpacer()" title="Ajouter un séparateur"><svg viewBox="0 0 16 10" width="14" height="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="0" y1="2" x2="16" y2="2"/><line x1="0" y1="8" x2="16" y2="8"/></svg> Spacer</button>`;
 
@@ -655,12 +659,10 @@ export function renderDayView(todos) {
 
   const actionBar = '';
 
-  // Journée bouclée (aujourd'hui/futur, tout complété) → panneau de relance :
-  // piocher dans le backlog ou créer une tâche pour ce jour
-  let refillPanel = '';
-  if (!isPastDay && totalAll > 0 && doneAll === totalAll) {
-    refillPanel = `<div class="day-refill-wrap">${renderRefillPanel({ ds: dateStr, mode: 'day', doneCount: doneAll })}</div>`;
-  }
+  // Journée bouclée → 3e colonne : piocher dans le backlog ou créer une tâche
+  const refillCol = hasRefill
+    ? `<div class="day-col day-col--refill">${renderRefillPanel({ ds: dateStr, mode: 'day', doneCount: doneAll })}</div>`
+    : '';
 
   // Bandeau « laissées pour compte » — jour passé avec ponctuelles non complétées
   let pastDueBanner = '';
@@ -678,7 +680,7 @@ export function renderDayView(todos) {
     }
   }
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}${refillPanel}<div class="day-columns"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div></div>${combinedStats}${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${combinedStats}${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {
