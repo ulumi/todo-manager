@@ -257,13 +257,40 @@ export function renderFocusView(app) {
     </div>`;
 
   if (!current) {
+    // Journée bouclée → interface de relance : piocher dans le backlog
+    // (la tâche passe à aujourd'hui et devient la courante) ou créer une tâche
+    const prioRank2 = { high: 0, medium: 1, low: 2, '': 3 };
+    const backlogItems = state.todos
+      .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog && !t.completed && !t.cancelled)
+      .sort((a, b) => {
+        const pa = prioRank2[a.priority || ''] ?? 3, pb = prioRank2[b.priority || ''] ?? 3;
+        return pa !== pb ? pa - pb : a.id.localeCompare(b.id);
+      });
+    const backlogHTML = backlogItems.length ? `
+      <div class="focus-refill-title">Envie de continuer ? Pioche dans le backlog</div>
+      <div class="focus-refill-list">
+        ${backlogItems.map(t => `
+          <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" onclick="window.app.focusPickFromBacklog('${t.id}')" title="Ajouter à aujourd'hui et continuer en focus">
+            <span class="focus-queue-text">${esc(t.title)}</span>
+            <span class="focus-refill-add">＋ Aujourd'hui</span>
+          </div>`).join('')}
+      </div>` : '';
     return `<div class="focus-view">
       ${topbar}
       <div class="focus-stage focus-stage--done">
         <div class="focus-done-emoji">🎉</div>
         <div class="focus-done-title">Journée bouclée</div>
         <div class="focus-done-sub">${doneCount} tâche${doneCount > 1 ? 's' : ''} complétée${doneCount > 1 ? 's' : ''} aujourd'hui</div>
-        <button class="focus-action focus-action--primary" onclick="window.app.exitFocus()">Quitter le focus</button>
+        <div class="focus-refill">
+          ${backlogHTML}
+          <div class="focus-refill-title">${backlogItems.length ? 'Ou ajoute' : 'Envie de continuer ? Ajoute'} une nouvelle tâche</div>
+          <div class="focus-refill-new">
+            <input type="text" id="focusNewTaskInput" class="focus-refill-input" placeholder="Nouvelle tâche pour aujourd'hui…" autocomplete="off"
+              onkeydown="if(event.key==='Enter')window.app.focusAddNewTask()">
+            <button class="focus-action focus-action--primary" onclick="window.app.focusAddNewTask()">Ajouter</button>
+          </div>
+        </div>
+        <button class="focus-action" onclick="window.app.exitFocus()">Quitter le focus</button>
       </div>
     </div>`;
   }

@@ -94,7 +94,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `intentions` | Long-term goals. Cards with linked tasks as chips |
 | `analyse` | Stats: completed this week vs last, this month vs last, 7-day bar chart, oldest overdue, adhérence des récurrentes (bande 7 j + taux 30 j, via `review.js`) |
 | `counters` | Progress counters: cards for all tasks with a counter enabled, +/− controls |
-| `focus` | Mode Focus plein écran : une tâche à la fois + chrono géant. Entrée: touche `F`, bouton header (`.focus-tab`, sans `data-view`, via `enterFocus()`), ou **double-clic sur une tâche** (`focusStartOn` — démarre le focus sur cette tâche si elle a une occurrence aujourd'hui non faite/annulée, sinon ouvre l'édition). Raccourcis: Espace compléter, S passer, D demain, P pause, Échap quitter |
+| `focus` | Mode Focus plein écran : une tâche à la fois + chrono géant. Entrée: touche `F`, bouton header (`.focus-tab`, sans `data-view`, via `enterFocus()`), ou **double-clic sur une tâche** (`focusStartOn` — démarre le focus sur cette tâche si elle a une occurrence aujourd'hui non faite/annulée, sinon ouvre l'édition). Journée bouclée → interface de relance (`.focus-refill`) : piocher dans le backlog (`focusPickFromBacklog` — datée aujourd'hui + courante) ou créer une tâche (`focusAddNewTask`). Raccourcis: Espace compléter, S passer, D demain, P pause, Échap quitter |
 
 ---
 

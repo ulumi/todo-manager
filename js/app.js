@@ -2132,6 +2132,35 @@ class TodoApp {
     this.render();
   }
 
+  // Journée bouclée : piocher une tâche du backlog → datée aujourd'hui,
+  // sortie du backlog, et elle devient la tâche courante du focus
+  focusPickFromBacklog(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.date = DS(today());
+    t.backlog = false;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    focusPin(id);
+    clearTimerState();
+    this.render();
+  }
+
+  // Journée bouclée : créer une tâche pour aujourd'hui et enchaîner dessus
+  focusAddNewTask() {
+    const input = document.getElementById('focusNewTaskInput');
+    const title = input?.value.trim();
+    if (!title) return;
+    snapshot(state.todos);
+    addTask({ title, date: DS(today()), recurrence: 'none' }, state.todos);
+    const created = state.todos[state.todos.length - 1];
+    saveTodos(state.todos);
+    focusPin(created.id);
+    clearTimerState();
+    this.render();
+  }
+
   focusTogglePomodoro() {
     const p = getPomodoro();
     if (p.on) {
