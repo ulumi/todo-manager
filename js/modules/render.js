@@ -258,15 +258,17 @@ export function renderDayView(todos) {
   const dailyEvening   = dailyItems.filter(t => t.dayPeriod === 'evening');
   const dailyNoPeriod  = dailyItems.filter(t => !t.dayPeriod);
 
+  // Heure d'abord, puis l'ordre manuel PRIME (les items réordonnés suivent
+  // l'ordre stocké, les autres restent triés par heure après)
   const _recSortApply = items => {
     const timed   = [...items].filter(t => t.startTime).sort((a, b) => a.startTime.localeCompare(b.startTime));
     const untimed = items.filter(t => !t.startTime);
     return [...timed, ...untimed];
   };
-  const sortedDailyMorning   = _recSortApply(sortByOrder(dailyMorning,   recOrd['daily-morning']   || []));
-  const sortedDailyAfternoon = _recSortApply(sortByOrder(dailyAfternoon, recOrd['daily-afternoon'] || []));
-  const sortedDailyEvening   = _recSortApply(sortByOrder(dailyEvening,   recOrd['daily-evening']   || []));
-  const sortedDailyNoPeriod  = _recSortApply(sortByOrder(dailyNoPeriod,  recOrd['daily']           || []));
+  const sortedDailyMorning   = sortByOrder(_recSortApply(dailyMorning),   recOrd['daily-morning']   || []);
+  const sortedDailyAfternoon = sortByOrder(_recSortApply(dailyAfternoon), recOrd['daily-afternoon'] || []);
+  const sortedDailyEvening   = sortByOrder(_recSortApply(dailyEvening),   recOrd['daily-evening']   || []);
+  const sortedDailyNoPeriod  = sortByOrder(_recSortApply(dailyNoPeriod),  recOrd['daily']           || []);
   const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
   const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
   const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);

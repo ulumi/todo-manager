@@ -2235,9 +2235,15 @@ class TodoApp {
       return newOrder;
     };
     const dateStr = DS(state.navDate);
+    // Sans ordre stocké, l'ordre initial doit refléter l'AFFICHAGE (heure d'abord),
+    // pas l'ordre interne du tableau — sinon le premier drag fait sauter la liste
+    const _displayOrder = arr => {
+      const timed = arr.filter(t => t.startTime).sort((a, b) => a.startTime.localeCompare(b.startTime));
+      return [...timed, ...arr.filter(t => !t.startTime)].map(t => t.id);
+    };
     if (group === 'punctual') {
       const items = getTodosForDate(state.navDate, state.todos).filter(t => (!t.recurrence || t.recurrence === 'none') && !t.dayPeriod);
-      let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : items.map(t => t.id);
+      let order = this.dayOrder[dateStr] ? [...this.dayOrder[dateStr]] : _displayOrder(items);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => id.startsWith('spacer-') || items.some(t => t.id === id));
       const newOrder = _reinsert(order);
@@ -2249,7 +2255,7 @@ class TodoApp {
       const period = periodMap[group];
       const items = getTodosForDate(state.navDate, state.todos).filter(t => (!t.recurrence || t.recurrence === 'none') && t.dayPeriod === period);
       if (!this.punctualPeriodOrder[dateStr]) this.punctualPeriodOrder[dateStr] = {};
-      let order = this.punctualPeriodOrder[dateStr][period] ? [...this.punctualPeriodOrder[dateStr][period]] : items.map(t => t.id);
+      let order = this.punctualPeriodOrder[dateStr][period] ? [...this.punctualPeriodOrder[dateStr][period]] : _displayOrder(items);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => items.some(t => t.id === id));
       const newOrder = _reinsert(order);
@@ -2268,7 +2274,7 @@ class TodoApp {
         return true;
       });
       if (!this.recurringOrder[dateStr]) this.recurringOrder[dateStr] = {};
-      let order = this.recurringOrder[dateStr][group] ? [...this.recurringOrder[dateStr][group]] : items.map(t => t.id);
+      let order = this.recurringOrder[dateStr][group] ? [...this.recurringOrder[dateStr][group]] : _displayOrder(items);
       items.forEach(t => { if (!order.includes(t.id)) order.push(t.id); });
       order = order.filter(id => items.some(t => t.id === id));
       const newOrder = _reinsert(order);
@@ -2479,6 +2485,7 @@ class TodoApp {
     const container = document.querySelector('.day-columns');
     if (!container) return;
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null, dropPeriod = null;
+    let dropBefore = false; // drop sur la moitié haute d'un item → insérer avant
     let draggedHeight = 0;
 
     // Gap placeholder
@@ -2519,7 +2526,7 @@ class TodoApp {
       showDragged();
       removePlaceholder();
       container.classList.remove('dragging-active');
-      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null;
+      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false;
     });
 
     container.addEventListener('dragover', e => {
@@ -2544,7 +2551,10 @@ class TodoApp {
             const grp = todoTarget.dataset.group;
             dropPeriod = grp === 'punctual' ? '' : grp.replace('punctual-', '');
           }
-          todoTarget.parentNode.insertBefore(placeholder, todoTarget.nextSibling);
+          // Moitié haute → insérer avant, moitié basse → après
+          const _rect = todoTarget.getBoundingClientRect();
+          dropBefore = e.clientY < _rect.top + _rect.height / 2;
+          todoTarget.parentNode.insertBefore(placeholder, dropBefore ? todoTarget : todoTarget.nextSibling);
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
             placeholder.classList.add('visible');
@@ -2561,6 +2571,7 @@ class TodoApp {
         spacerTarget.classList.add('drop-target');
         dropTarget = spacerTarget.dataset.id;
         dropPriority = null;
+        dropBefore = false;
         const group = spacerTarget.closest('.day-spacer-group');
         const todoList = group?.querySelector('.todo-list[data-group="punctual"]');
         if (todoList) {
@@ -2590,6 +2601,7 @@ class TodoApp {
         const todoList = section?.querySelector('.todo-list[data-group]');
         if (todoList && (todoList.dataset.group === draggedGroup || draggedGroup === 'punctual')) {
           dropPriority = todoList.dataset.priority || null;
+          dropBefore = false;
           const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
           if (lastItem) {
             dropTarget = lastItem.dataset.id;
@@ -2623,6 +2635,7 @@ class TodoApp {
           activeHeureLabel = heureLabel || heureTarget.querySelector('.day-heure-label');
           if (activeHeureLabel) activeHeureLabel.classList.add('drop-target');
           dropPeriod = heureTarget.dataset.period;
+          dropBefore = false;
           const section  = heureTarget.closest('.day-heure-section') || heureTarget;
           const todoList = section?.querySelector('.todo-list[data-group]');
           if (todoList) {
@@ -2651,6 +2664,7 @@ class TodoApp {
           clearDropSpacer();
           activeDropSpacer = spacer;
           spacer.classList.add('drop-target');
+          dropBefore = false;
           const todoList = spacerGroup.querySelector('.todo-list[data-group="punctual"]');
           const lastItem = todoList ? [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop() : null;
           if (lastItem) {
@@ -2677,6 +2691,7 @@ class TodoApp {
         if (lastItem) {
           dropTarget = lastItem.dataset.id;
           dropPriority = lastItem.closest('.todo-list[data-priority]')?.dataset.priority || null;
+          dropBefore = false;
           lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
@@ -2712,7 +2727,7 @@ class TodoApp {
         // (l'ordre manuel prime sur l'heure dans le rendu chrono)
         if (dropTarget && dropTarget !== '__heure_empty__' && !dropTarget.startsWith('spacer-')) {
           const targetGroup = dropPeriod === '' ? 'punctual' : `punctual-${dropPeriod}`;
-          this.dropReorder(dropIds, targetGroup, dropTarget, false);
+          this.dropReorder(dropIds, targetGroup, dropTarget, dropBefore);
           return; // dropReorder re-render
         }
         this.render();
@@ -2730,7 +2745,7 @@ class TodoApp {
         }
       }
 
-      this.dropReorder(dropIds, draggedGroup, dropTarget, false);
+      this.dropReorder(dropIds, draggedGroup, dropTarget, dropBefore);
     });
   }
 
