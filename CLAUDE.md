@@ -82,7 +82,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 
 | View | Description |
 |------|-------------|
-| `day` | Tasks for navDate, grouped: punctual + recurring. Tri Chrono : réordonnancement par drag au sein d'un moment — **l'ordre manuel prime sur l'heure** (`dayOrder` pour sans-moment, `punctualPeriodOrder` par moment ; items non réordonnés restent triés par heure, après). Jour passé avec ponctuelles non faites → bandeau `.past-due-banner` (Faire le bilan / Reporter à aujourd'hui) + bordure rouge sur les items non faits (`.day-view.day-past`) |
+| `day` | Tasks for navDate, grouped: punctual + recurring. Tri Chrono : réordonnancement par drag au sein d'un moment — **l'ordre manuel prime sur l'heure** (`dayOrder` pour sans-moment, `punctualPeriodOrder` par moment ; items non réordonnés restent triés par heure, après). Déposer un item sur un autre = **prend sa place** (pas de détection avant/après par moitié — toujours `dropBefore=true`, la cible et les suivants décalent) ; highlight persistant `.drop-target-swap` sur toute la durée du survol. Jour passé avec ponctuelles non faites → bandeau `.past-due-banner` (Faire le bilan / Reporter à aujourd'hui) + bordure rouge sur les items non faits (`.day-view.day-past`) |
 | `week` | 7-column grid, slide navigation |
 | `month` | Monthly calendar with task counts |
 | `year` | 12 mini-calendars, annual overview |

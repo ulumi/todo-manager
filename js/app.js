@@ -2488,10 +2488,14 @@ class TodoApp {
     let dropBefore = false; // drop sur la moitié haute d'un item → insérer avant
     let draggedHeight = 0;
 
-    // Gap placeholder
+    // Gap placeholder (utilisé pour les zones section-level : séparateurs,
+    // libellés de moment/groupe, fin de colonne — pas pour l'échange item↔item)
     const placeholder = document.createElement('div');
     placeholder.className = 'drop-gap';
-    let activeDropSpacer = null, activeHeureLabel = null;
+    let activeDropSpacer = null, activeHeureLabel = null, activeItemTarget = null;
+    const clearItemTarget = () => {
+      if (activeItemTarget) { activeItemTarget.classList.remove('drop-target-swap'); activeItemTarget = null; }
+    };
     const clearDropSpacer = () => {
       if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
       if (activeHeureLabel) { activeHeureLabel.classList.remove('drop-target'); activeHeureLabel = null; }
@@ -2525,6 +2529,7 @@ class TodoApp {
     container.addEventListener('dragend', () => {
       showDragged();
       removePlaceholder();
+      clearItemTarget();
       container.classList.remove('dragging-active');
       draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false;
     });
@@ -2542,37 +2547,30 @@ class TodoApp {
       const isHeureDrop = _ds === 'chrono' || _ds === 'heure' || _periodGroups;
       const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
 
-      // Hover on a todo-item → drop after it
+      // Survol d'un item → il PREND SA PLACE (l'item survolé et les
+      // suivants décalent) ; highlight persistant sur toute la durée du
+      // survol, en confirmation visuelle claire — plus de gap ambigu.
       const todoTarget = e.target.closest('.todo-item[draggable]');
       if (todoTarget && todoTarget !== draggedEl) {
         const sameGroup  = todoTarget.dataset.group === draggedGroup;
         const heureGroup = isHeureDrop && isPunctGroup(todoTarget.dataset.group) && isPunctGroup(draggedGroup);
         if (sameGroup || heureGroup) {
           clearDropSpacer();
+          if (activeItemTarget && activeItemTarget !== todoTarget) activeItemTarget.classList.remove('drop-target-swap');
+          activeItemTarget = todoTarget;
+          todoTarget.classList.add('drop-target-swap');
           dropTarget = todoTarget.dataset.id;
+          dropBefore = true;
           dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
           if (isHeureDrop) {
             const grp = todoTarget.dataset.group;
             dropPeriod = grp === 'punctual' ? '' : grp.replace('punctual-', '');
           }
-          // Grille à plusieurs colonnes : deux items d'une même rangée ont
-          // presque le même « top » → le seul repère utile est GAUCHE/DROITE.
-          // Sinon (liste à 1 colonne, ou rangées différentes) → HAUT/BAS.
-          const _rect = todoTarget.getBoundingClientRect();
-          const _rowSiblings = [...(todoTarget.parentNode?.children || [])]
-            .filter(el => el !== todoTarget && el.matches?.('.todo-item[draggable]'))
-            .some(el => Math.abs(el.getBoundingClientRect().top - _rect.top) < 4);
-          dropBefore = _rowSiblings
-            ? e.clientX < _rect.left + _rect.width / 2
-            : e.clientY < _rect.top + _rect.height / 2;
-          todoTarget.parentNode.insertBefore(placeholder, dropBefore ? todoTarget : todoTarget.nextSibling);
-          requestAnimationFrame(() => {
-            placeholder.style.height = draggedHeight + 'px';
-            placeholder.classList.add('visible');
-          });
+          if (placeholder.parentNode) removePlaceholder();
           return;
         }
       }
+      clearItemTarget();
 
       // Hover on a spacer → drop right after it (= bottom of its section)
       const spacerTarget = e.target.closest('.day-spacer[draggable]');
@@ -2713,12 +2711,13 @@ class TodoApp {
     });
 
     container.addEventListener('dragleave', e => {
-      if (!container.contains(e.relatedTarget)) removePlaceholder();
+      if (!container.contains(e.relatedTarget)) { removePlaceholder(); clearItemTarget(); }
     });
 
     container.addEventListener('drop', e => {
       e.preventDefault();
       removePlaceholder();
+      clearItemTarget();
       if (!draggedEl) return;
 
       const dropIds = this._dropIds(draggedEl.dataset.id);

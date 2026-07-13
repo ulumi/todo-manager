@@ -14641,4 +14641,17 @@ body.view-focus header {
   margin: 10px 0 4px;
 }
 
+/* ════════════════════════════════════════════════════════
+   DRAG — l'item déposé prend la place de la cible survolée
+   Confirmation visuelle persistante pendant tout le survol
+   ════════════════════════════════════════════════════════ */
+.todo-item.drop-target-swap {
+  border-color: var(--primary) !important;
+  border-style: solid !important;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+  transform: scale(1.015);
+  transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
 /*# sourceMappingURL=styles.css.map */
