@@ -2532,6 +2532,10 @@ class TodoApp {
     container.addEventListener('dragover', e => {
       e.preventDefault();
       if (!draggedEl) return;
+      // Survol du placeholder lui-même (la liste vient de glisser sous le
+      // curseur, ex. insertion avant le 1er item) → garder la cible actuelle,
+      // sinon la branche « bas de colonne » renvoie le drop en fin de liste
+      if (placeholder.contains(e.target)) return;
 
       const _ds = localStorage.getItem('daySort');
       const _periodGroups = localStorage.getItem('dayPeriodGroups') !== 'false';
