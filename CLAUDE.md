@@ -123,6 +123,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   originalDate?: string,             // date d'origine avant le premier report
   cancelled?: boolean,               // annulée (ponctuelle) — visible barrée, hors compteurs
   cancelledDates?: [],               // occurrences annulées (récurrentes), parallèle à completedDates
+  subtasks?: [{ id, title, completed }],  // checklist dans le modal d'édition
 }
 ```
 
@@ -226,6 +227,7 @@ npx sass css/styles.scss css/styles.css --style=expanded
 - **Inline inputs:** `addCategoryFromView` / `addProjectFromView` inject `<input>` in `.category-card--add` (no `prompt()`)
 - **Undo:** snapshot before each mutation, stack of 50, check `canUndo()`
 - **Modal draft:** autosave 300ms debounce in `modalDraft` localStorage key
+- **Subtasks (édition tâche existante):** contrairement au reste du formulaire (appliqué seulement au Save), chaque mutation de sous-tâche (`toggleModalSubtask`, `removeModalSubtask`, `addModalSubtask`/`addModalSubtaskInline`, `moveModalSubtask`, `editModalSubtask`) persiste immédiatement dans `state.todos` + `saveTodos()` via `_persistSubtasksIfEditing()` (modal.js) — une fermeture Échap ne perd donc jamais de sous-tâches. `app.closeModal()` déclenche un `render()` si `consumeModalSubtasksDirty()` renvoie true, pour que la vue en arrière-plan reflète le changement
 - **Recurrence:** single todo object, not instances — `completedDates[]` tracks done dates
 - **Multi-sélection:** listeners globaux en phase capture (`multiselect.js`) — les drop handlers doivent passer par `app._dropIds(id)` pour supporter le drop d'une sélection multiple; `msRefreshUI()` est appelé en fin de `render()` (sélection vidée au changement de vue). Le lasso ne démarre jamais sur un élément `[draggable="true"]` ou interactif (`MARQUEE_EXCLUDE`) — tout nouvel élément draggable est donc automatiquement compatible
 - **Menu contextuel (clic droit / bouton ⋯):** contenu dynamique (`_renderCtxMenu` en bas d'app.js) — item seul ou groupe si l'item visé est dans la sélection multiple. Actions de lot: `completeMany`, `duplicateMany`, `deleteMany`, `setPriorityMany`, `_sendManyTo`. La complétion passe par `_resolveOccurrences()`: date de l'occurrence affichée (data-date) sinon date propre de la tâche — jamais navDate. Suppression de groupe: ponctuelles retirées, récurrentes → occurrence exclue seulement

@@ -33,7 +33,8 @@ import {
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
-  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask
+  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask,
+  consumeModalSubtasksDirty
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -1339,6 +1340,9 @@ class TodoApp {
 
   closeModal() {
     closeModal();
+    // Subtasks added/edited before an Escape/backdrop close were already
+    // persisted live — refresh the background view so it reflects them.
+    if (consumeModalSubtasksDirty()) this.render();
   }
 
   deleteFromEditModal() {

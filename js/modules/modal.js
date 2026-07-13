@@ -7,7 +7,7 @@ import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './cale
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 import { getProjects, saveProjects } from './projectManager.js';
-import { pushNow } from './storage.js';
+import { pushNow, saveTodos } from './storage.js';
 
 // ─── Smooth reveal / hide helpers ──────────────────────────────────────────
 
@@ -115,8 +115,28 @@ function _dayPeriodHTML(currentPeriod) {
 // ─── Modal subtasks ───────────────────────────────────────────────────────
 
 let _modalSubtasks = [];
+let _subtasksDirty = false;
 
 export function getModalSubtasks() { return _modalSubtasks; }
+
+export function consumeModalSubtasksDirty() {
+  const dirty = _subtasksDirty;
+  _subtasksDirty = false;
+  return dirty;
+}
+
+// Persist subtasks to the actual todo right away (existing task being edited),
+// so an Escape close never loses subtasks added mid-edit — only Save applies
+// the rest of the form, but subtasks are safe as soon as they're touched.
+function _persistSubtasksIfEditing() {
+  if (!state.editingId) return;
+  const t = state.todos.find(x => x.id === state.editingId);
+  if (!t) return;
+  t.subtasks = _modalSubtasks.length ? JSON.parse(JSON.stringify(_modalSubtasks)) : undefined;
+  t.updatedAt = Date.now();
+  saveTodos(state.todos);
+  _subtasksDirty = true;
+}
 
 function _renderModalSubtasks() {
   const el = document.getElementById('modalSubtaskList');
@@ -137,24 +157,27 @@ function _renderModalSubtasks() {
 
 export function populateModalSubtasks(subtasks) {
   _modalSubtasks = subtasks ? JSON.parse(JSON.stringify(subtasks)) : [];
+  _subtasksDirty = false;
   _renderModalSubtasks();
 }
 
 export function toggleModalSubtask(stid) {
   const s = _modalSubtasks.find(x => x.id === stid);
-  if (s) { s.completed = !s.completed; _renderModalSubtasks(); _scheduleDraftSave(); }
+  if (s) { s.completed = !s.completed; _renderModalSubtasks(); _scheduleDraftSave(); _persistSubtasksIfEditing(); }
 }
 
 export function removeModalSubtask(stid) {
   _modalSubtasks = _modalSubtasks.filter(x => x.id !== stid);
   _renderModalSubtasks();
   _scheduleDraftSave();
+  _persistSubtasksIfEditing();
 }
 
 export function addModalSubtask(title) {
   _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
   _renderModalSubtasks();
   _scheduleDraftSave();
+  _persistSubtasksIfEditing();
 }
 
 export function moveModalSubtask(stid, dir) {
@@ -165,6 +188,7 @@ export function moveModalSubtask(stid, dir) {
   [_modalSubtasks[idx], _modalSubtasks[newIdx]] = [_modalSubtasks[newIdx], _modalSubtasks[idx]];
   _renderModalSubtasks();
   _scheduleDraftSave();
+  _persistSubtasksIfEditing();
 }
 
 export function editModalSubtask(el, stid) {
@@ -179,7 +203,7 @@ export function editModalSubtask(el, stid) {
   const save = () => {
     el.contentEditable = 'false';
     const newTitle = el.textContent.trim();
-    if (newTitle) { s.title = newTitle; _scheduleDraftSave(); }
+    if (newTitle) { s.title = newTitle; _scheduleDraftSave(); _persistSubtasksIfEditing(); }
     else el.textContent = esc(s.title);
   };
   el.addEventListener('blur', save, { once: true });
@@ -216,6 +240,7 @@ export function addModalSubtaskInline() {
       _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
       _renderModalSubtasks();
       _scheduleDraftSave();
+      _persistSubtasksIfEditing();
       // Re-open inline input immediately for the next subtask
       addModalSubtaskInline();
     }
