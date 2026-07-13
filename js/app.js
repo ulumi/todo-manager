@@ -2555,9 +2555,16 @@ class TodoApp {
             const grp = todoTarget.dataset.group;
             dropPeriod = grp === 'punctual' ? '' : grp.replace('punctual-', '');
           }
-          // Moitié haute → insérer avant, moitié basse → après
+          // Grille à plusieurs colonnes : deux items d'une même rangée ont
+          // presque le même « top » → le seul repère utile est GAUCHE/DROITE.
+          // Sinon (liste à 1 colonne, ou rangées différentes) → HAUT/BAS.
           const _rect = todoTarget.getBoundingClientRect();
-          dropBefore = e.clientY < _rect.top + _rect.height / 2;
+          const _rowSiblings = [...(todoTarget.parentNode?.children || [])]
+            .filter(el => el !== todoTarget && el.matches?.('.todo-item[draggable]'))
+            .some(el => Math.abs(el.getBoundingClientRect().top - _rect.top) < 4);
+          dropBefore = _rowSiblings
+            ? e.clientX < _rect.left + _rect.width / 2
+            : e.clientY < _rect.top + _rect.height / 2;
           todoTarget.parentNode.insertBefore(placeholder, dropBefore ? todoTarget : todoTarget.nextSibling);
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
