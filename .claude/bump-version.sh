@@ -7,9 +7,9 @@ INPUT=$(cat)
 echo "$INPUT" | grep -q "version.js" && exit 0
 
 # Skip if not a todo-manager project file
-echo "$INPUT" | grep -q "/Users/hugues/Projects/todo/todo-manager/" || exit 0
+echo "$INPUT" | grep -q "/Users/hugues/Desktop/Projects/todo/todo-manager/" || exit 0
 
-VERSION_FILE="/Users/hugues/Projects/todo/todo-manager/js/modules/version.js"
+VERSION_FILE="/Users/hugues/Desktop/Projects/todo/todo-manager/js/modules/version.js"
 
 CURRENT=$(grep -oE "[0-9]+\.[0-9]+\.[0-9]+" "$VERSION_FILE" | head -1)
 [ -z "$CURRENT" ] && exit 0
