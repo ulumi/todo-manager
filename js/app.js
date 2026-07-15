@@ -2136,10 +2136,18 @@ class TodoApp {
     this.render();
   }
 
-  // Options de vue/tri de la file « Ensuite » (segmented controls)
+  // Options de vue/tri/colonnes de la file « Ensuite » (segmented controls)
   focusSetQueueView(key, val) {
     const p = getQueuePrefs();
     p[key] = val;
+    saveQueuePrefs(p);
+    this._saveConfigChange();
+    this.render();
+  }
+
+  focusToggleQueueCollapse() {
+    const p = getQueuePrefs();
+    p.collapsed = !p.collapsed;
     saveQueuePrefs(p);
     this._saveConfigChange();
     this.render();

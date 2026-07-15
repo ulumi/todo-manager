@@ -52,14 +52,15 @@ export function focusSaveManualOrder(ids) {
 }
 
 // ── Préférences d'affichage de la file « Ensuite » ────────
-// { group: 'type'|'moment'|'none', sort: 'auto'|'time'|'prio' }
-// Défaut : groupée Ponctuelles / Récurrentes, ordre intelligent.
+// { group: 'type'|'moment'|'none', sort: 'auto'|'time'|'prio',
+//   cols: '1'|'2'|'3', collapsed: boolean }
+// Défaut : groupée Ponctuelles / Récurrentes, ordre intelligent, 1 colonne, dépliée.
 // Synchronisée via getAppConfig() / _applyBackup (clé `focusQueueView`).
 export function getQueuePrefs() {
   try {
     const p = JSON.parse(localStorage.getItem('focusQueueView')) || {};
-    return { group: p.group || 'type', sort: p.sort || 'auto' };
-  } catch { return { group: 'type', sort: 'auto' }; }
+    return { group: p.group || 'type', sort: p.sort || 'auto', cols: p.cols || '1', collapsed: !!p.collapsed };
+  } catch { return { group: 'type', sort: 'auto', cols: '1', collapsed: false }; }
 }
 
 export function saveQueuePrefs(p) {
@@ -387,11 +388,12 @@ export function renderFocusView(app) {
   const actBtn = (cls, onclick, id, icon, label, kbd) =>
     `<button class="focus-action ${cls}" onclick="${onclick}"${id ? ` id="${id}"` : ''} title="${label} (${kbd})">${icon}</button>`;
 
-  // File « Ensuite » : groupée selon la préférence (Type par défaut) ;
-  // le drag-and-drop n'est actif qu'en tri Auto (un tri heure/priorité
-  // recalculerait l'ordre au prochain rendu)
+  // File « Ensuite » : groupée selon la préférence (Type par défaut),
+  // sur 1 à 3 colonnes, repliable. Le drag-and-drop n'est actif qu'en
+  // tri Auto + 1 colonne (un tri explicite ou une grille multi-colonnes
+  // recalculerait/désaligne l'ordre au prochain rendu)
   const prefs = getQueuePrefs();
-  const canDrag = prefs.sort === 'auto';
+  const canDrag = prefs.sort === 'auto' && prefs.cols === '1';
   const groupOf = t => {
     if (prefs.group === 'type') return (t.recurrence && t.recurrence !== 'none')
       ? { key: 'rec', label: '↻ Récurrentes' } : { key: 'punct', label: 'Ponctuelles' };
@@ -399,8 +401,8 @@ export function renderFocusView(app) {
       ? { key: t.dayPeriod, label: PERIOD_LABEL[t.dayPeriod] || '' } : { key: 'none', label: 'Sans moment' };
     return null;
   };
-  const seg = (kind, val, label, title) =>
-    `<button class="focus-seg-btn${(kind === 'group' ? prefs.group : prefs.sort) === val ? ' active' : ''}" onclick="window.app.focusSetQueueView('${kind}','${val}')" title="${title}">${label}</button>`;
+  const seg = (key, val, label, title) =>
+    `<button class="focus-seg-btn${String(prefs[key]) === val ? ' active' : ''}" onclick="window.app.focusSetQueueView('${key}','${val}')" title="${title}">${label}</button>`;
 
   let queueRows = '', lastGroup = null;
   next.forEach(t => {
@@ -418,10 +420,11 @@ export function renderFocusView(app) {
         </div>`;
   });
 
-  const queueHTML = next.length ? `
-    <div class="focus-queue">
-      <div class="focus-queue-head">
-        <div class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></div>
+  const collapsed = prefs.collapsed;
+  const chevron = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="focus-queue-chevron${collapsed ? ' collapsed' : ''}"><polyline points="6,9 12,15 18,9"/></svg>`;
+  const qWidth = { '1': 680, '2': 960, '3': 1220 }[prefs.cols] || 680;
+
+  const optsHTML = !collapsed ? `
         <div class="focus-queue-opts">
           <div class="focus-seg" role="group" aria-label="Regroupement">
             ${seg('group', 'type', 'Type', 'Grouper : ponctuelles / récurrentes')}
@@ -433,9 +436,25 @@ export function renderFocusView(app) {
             ${seg('sort', 'time', 'Heure', 'Trier par heure')}
             ${seg('sort', 'prio', 'Priorité', 'Trier par priorité')}
           </div>
+          <div class="focus-seg" role="group" aria-label="Colonnes">
+            ${seg('cols', '1', '1', '1 colonne')}
+            ${seg('cols', '2', '2', '2 colonnes')}
+            ${seg('cols', '3', '3', '3 colonnes')}
+          </div>
+        </div>` : '';
+
+  const queueHTML = next.length ? `
+    <div class="focus-queue">
+      <div class="focus-queue-inner" style="width:min(${qWidth}px, 94vw)">
+        <div class="focus-queue-head">
+          <button class="focus-queue-toggle" onclick="window.app.focusToggleQueueCollapse()" title="${collapsed ? 'Déplier' : 'Replier'}">
+            ${chevron}
+            <span class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></span>
+          </button>
+          ${optsHTML}
         </div>
-      </div>
-      <div class="focus-queue-list" id="focusQueueList">${queueRows}
+        ${!collapsed ? `<div class="focus-queue-list" id="focusQueueList" style="--cols:${prefs.cols}">${queueRows}
+        </div>` : ''}
       </div>
     </div>` : '';
 
