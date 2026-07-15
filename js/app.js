@@ -2567,8 +2567,12 @@ class TodoApp {
           dropBefore = true;
           dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
           if (isHeureDrop) {
+            // Normaliser groupe → moment : 'punctual-morning'/'daily-morning' → 'morning',
+            // 'punctual'/'daily'/etc. (sans moment) → '' — sinon on écrit un
+            // dayPeriod invalide qui rend la tâche invisible en vue jour
             const grp = todoTarget.dataset.group;
-            dropPeriod = grp === 'punctual' ? '' : grp.replace('punctual-', '');
+            const m = grp.match(/-(morning|afternoon|evening)$/);
+            dropPeriod = m ? m[1] : '';
           }
           if (placeholder.parentNode) removePlaceholder();
           return;

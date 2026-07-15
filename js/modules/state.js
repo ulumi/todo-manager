@@ -44,6 +44,15 @@ export function setTodos(newTodos) {
   // un double-submit rapide où Date.now() collisionnait) — garde la 1re occurrence.
   const seen = new Set();
   todos = newTodos.filter(t => (seen.has(t.id) ? false : (seen.add(t.id), true)));
+  // Répare les dayPeriod invalides (ex. 'daily-morning' écrit par un ancien
+  // bug de drag) — une valeur hors morning/afternoon/evening rend la tâche
+  // invisible en vue jour alors qu'elle reste comptée ailleurs.
+  for (const t of todos) {
+    if (t.dayPeriod && !['morning', 'afternoon', 'evening'].includes(t.dayPeriod)) {
+      const m = t.dayPeriod.match(/(morning|afternoon|evening)/);
+      if (m) t.dayPeriod = m[1]; else delete t.dayPeriod;
+    }
+  }
 }
 
 export function setView(newView) {
