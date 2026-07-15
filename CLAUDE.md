@@ -113,6 +113,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   priority: ''|'low'|'medium'|'high',
   categoryId?, projectId?, intentionId?,
   startTime?, endTime?,
+  dayPeriod?: 'morning'|'afternoon'|'evening',  // moment de la journée — toute autre valeur = tâche invisible en vue jour (setTodos répare au chargement)
   durationEstimated?, durationReal?,
   counterEnabled?: boolean,          // progress counter active
   countFrom?: number,                // start value (default 0)
