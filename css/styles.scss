@@ -12779,40 +12779,79 @@ body.view-focus header { display: none; }
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 12px;
+  margin-top: 12px;
 
   .focus-action {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
+    gap: 9px;
+    padding: 13px 24px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 999px;
     background: var(--surface);
     color: var(--text);
     font-size: 14.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: background .15s cubic-bezier(.25,.46,.45,.94), transform .15s, border-color .15s;
+    box-shadow: var(--shadow);
+    transition: background .18s cubic-bezier(.25,.46,.45,.94), transform .18s cubic-bezier(.25,.46,.45,.94), border-color .18s, box-shadow .18s;
 
-    &:hover { background: var(--surface2); transform: translateY(-1px); }
+    &:hover {
+      background: var(--surface2);
+      border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
+      transform: translateY(-2px);
+    }
+    &:active { transform: translateY(0) scale(.97); }
 
-    &--primary {
-      background: var(--success);
-      border-color: var(--success);
-      color: #fff;
+    .focus-action-ico {
+      font-size: 15px;
+      line-height: 1;
+      opacity: .65;
+    }
 
-      &:hover { background: color-mix(in srgb, var(--success) 85%, #000); }
+    // Pastille ronde ✓ — même langage que les checkboxes de l'app
+    .focus-action-check {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      border: 2px solid color-mix(in srgb, currentColor 75%, transparent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &::after { content: '✓'; font-size: 11px; font-weight: 800; }
     }
 
     kbd {
-      padding: 1px 6px;
-      border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
-      border-radius: 5px;
-      font-size: 10.5px;
+      margin-left: 3px;
+      padding: 2px 7px;
+      border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      background: color-mix(in srgb, currentColor 8%, transparent);
+      font-size: 10px;
+      font-weight: 700;
       font-family: inherit;
-      opacity: .7;
+      letter-spacing: .02em;
+      opacity: .75;
+    }
+
+    &--primary {
+      padding: 13px 28px;
+      font-weight: 700;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--success) 88%, #fff), var(--success));
+      border-color: color-mix(in srgb, var(--success) 82%, #000);
+      color: #fff;
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--success) 35%, transparent);
+
+      &:hover {
+        background: linear-gradient(180deg, color-mix(in srgb, var(--success) 80%, #fff), color-mix(in srgb, var(--success) 94%, #000));
+        border-color: color-mix(in srgb, var(--success) 72%, #000);
+        box-shadow: 0 9px 26px color-mix(in srgb, var(--success) 45%, transparent);
+        transform: translateY(-2px);
+      }
     }
   }
 }
@@ -12826,6 +12865,16 @@ body.view-focus header { display: none; }
   align-items: center;
   gap: 10px;
   width: 100%;
+
+  // En-tête : titre à gauche, contrôles vue/tri à droite
+  .focus-queue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: min(680px, 92vw);
+  }
 
   .focus-queue-title {
     font-size: 12.5px;
@@ -12844,6 +12893,71 @@ body.view-focus header { display: none; }
     border-radius: 10px;
     padding: 0 8px;
     font-variant-numeric: tabular-nums;
+  }
+
+  .focus-queue-opts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  // Contrôle segmenté (Vue : Type/Moment/Liste · Tri : Auto/Heure/Priorité)
+  .focus-seg {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+
+    .focus-seg-btn {
+      border: none;
+      padding: 4px 11px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s;
+
+      &:hover { color: var(--text); background: var(--surface2); }
+
+      &.active {
+        background: var(--surface2);
+        color: var(--text);
+        box-shadow: var(--shadow);
+      }
+    }
+  }
+
+  // Étiquette de groupe (Ponctuelles / Récurrentes, moments)
+  .focus-queue-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+
+    &:first-child { margin-top: 0; }
+
+    &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .focus-queue-group-n {
+      font-variant-numeric: tabular-nums;
+      opacity: .7;
+    }
   }
 
   // Toute la journée, scrollable — le drag-and-drop réordonne les items

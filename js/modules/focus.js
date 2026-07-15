@@ -51,6 +51,21 @@ export function focusSaveManualOrder(ids) {
   localStorage.setItem('focusManualOrder', JSON.stringify({ ds: DS(today()), ids }));
 }
 
+// ── Préférences d'affichage de la file « Ensuite » ────────
+// { group: 'type'|'moment'|'none', sort: 'auto'|'time'|'prio' }
+// Défaut : groupée Ponctuelles / Récurrentes, ordre intelligent.
+// Synchronisée via getAppConfig() / _applyBackup (clé `focusQueueView`).
+export function getQueuePrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem('focusQueueView')) || {};
+    return { group: p.group || 'type', sort: p.sort || 'auto' };
+  } catch { return { group: 'type', sort: 'auto' }; }
+}
+
+export function saveQueuePrefs(p) {
+  localStorage.setItem('focusQueueView', JSON.stringify(p));
+}
+
 function _nowHM() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -114,6 +129,29 @@ export function getFocusQueue(app) {
       const ia = idx(a.id), ib = idx(b.id);
       return ia === ib ? 0 : ia - ib;
     });
+  }
+
+  // Vue + tri choisis (contrôles de la file) : un tri explicite
+  // (heure / priorité) remplace l'ordre intelligent + manuel, puis le
+  // regroupement s'applique en tri stable — l'ordre est conservé au
+  // sein de chaque groupe. La file réelle suit ce qui est affiché.
+  const prefs = getQueuePrefs();
+  if (prefs.sort === 'time') {
+    queue = [...queue].sort((a, b) => {
+      if (!a.startTime && !b.startTime) return 0;
+      if (!a.startTime) return 1;
+      if (!b.startTime) return -1;
+      return a.startTime.localeCompare(b.startTime);
+    });
+  } else if (prefs.sort === 'prio') {
+    queue = [...queue].sort((a, b) =>
+      (prioRank[a.priority || ''] ?? 3) - (prioRank[b.priority || ''] ?? 3));
+  }
+  if (prefs.group === 'type') {
+    const rec = t => (t.recurrence && t.recurrence !== 'none') ? 1 : 0;
+    queue = [...queue].sort((a, b) => rec(a) - rec(b));
+  } else if (prefs.group === 'moment') {
+    queue = [...queue].sort((a, b) => moment(a) - moment(b));
   }
 
   // La tâche épinglée reste en tête
@@ -336,16 +374,56 @@ export function renderFocusView(app) {
     </div>` : '';
 
   const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
-  const queueHTML = next.length ? `
-    <div class="focus-queue">
-      <div class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></div>
-      <div class="focus-queue-list" id="focusQueueList">
-      ${next.map(t => `
-        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" draggable="true" data-id="${t.id}" data-date="${DS(d)}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche · Glisser : réordonner · Clic droit : actions">
-          ${_grip}
+
+  // File « Ensuite » : groupée selon la préférence (Type par défaut) ;
+  // le drag-and-drop n'est actif qu'en tri Auto (un tri heure/priorité
+  // recalculerait l'ordre au prochain rendu)
+  const prefs = getQueuePrefs();
+  const canDrag = prefs.sort === 'auto';
+  const groupOf = t => {
+    if (prefs.group === 'type') return (t.recurrence && t.recurrence !== 'none')
+      ? { key: 'rec', label: '↻ Récurrentes' } : { key: 'punct', label: 'Ponctuelles' };
+    if (prefs.group === 'moment') return t.dayPeriod
+      ? { key: t.dayPeriod, label: PERIOD_LABEL[t.dayPeriod] || '' } : { key: 'none', label: 'Sans moment' };
+    return null;
+  };
+  const seg = (kind, val, label, title) =>
+    `<button class="focus-seg-btn${(kind === 'group' ? prefs.group : prefs.sort) === val ? ' active' : ''}" onclick="window.app.focusSetQueueView('${kind}','${val}')" title="${title}">${label}</button>`;
+
+  let queueRows = '', lastGroup = null;
+  next.forEach(t => {
+    const g = groupOf(t);
+    if (g && g.key !== lastGroup) {
+      const n = next.filter(x => groupOf(x).key === g.key).length;
+      queueRows += `<div class="focus-queue-group">${g.label}<span class="focus-queue-group-n">${n}</span></div>`;
+      lastGroup = g.key;
+    }
+    queueRows += `
+        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}"${canDrag ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag ? ' · Glisser : réordonner' : ''} · Clic droit : actions">
+          ${canDrag ? _grip : ''}
           <span class="focus-queue-text">${esc(t.title)}</span>
           ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
-        </div>`).join('')}
+        </div>`;
+  });
+
+  const queueHTML = next.length ? `
+    <div class="focus-queue">
+      <div class="focus-queue-head">
+        <div class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></div>
+        <div class="focus-queue-opts">
+          <div class="focus-seg" role="group" aria-label="Regroupement">
+            ${seg('group', 'type', 'Type', 'Grouper : ponctuelles / récurrentes')}
+            ${seg('group', 'moment', 'Moment', 'Grouper par moment de la journée')}
+            ${seg('group', 'none', 'Liste', 'Liste simple, sans groupes')}
+          </div>
+          <div class="focus-seg" role="group" aria-label="Tri">
+            ${seg('sort', 'auto', 'Auto', 'Ordre intelligent (moments, ordre manuel, heure, priorité)')}
+            ${seg('sort', 'time', 'Heure', 'Trier par heure')}
+            ${seg('sort', 'prio', 'Priorité', 'Trier par priorité')}
+          </div>
+        </div>
+      </div>
+      <div class="focus-queue-list" id="focusQueueList">${queueRows}
       </div>
     </div>` : '';
 
@@ -361,10 +439,10 @@ export function renderFocusView(app) {
       ${_subtasksHTML(current)}
       ${_counterHTML(current)}
       <div class="focus-actions">
-        <button class="focus-action focus-action--primary" onclick="window.app.focusComplete()">✓ Terminer <kbd>Espace</kbd></button>
-        <button class="focus-action" onclick="window.app.focusPauseResume()" id="focusPauseBtn">${ts.paused ? '▶ Reprendre' : '⏸ Pause'} <kbd>P</kbd></button>
-        ${queue.length > 1 ? `<button class="focus-action" onclick="window.app.focusSkip()">Passer <kbd>S</kbd></button>` : ''}
-        ${!isRec ? `<button class="focus-action" onclick="window.app.focusTomorrow()">→ Demain <kbd>D</kbd></button>` : ''}
+        <button class="focus-action focus-action--primary" onclick="window.app.focusComplete()"><span class="focus-action-check"></span>Terminer<kbd>Espace</kbd></button>
+        <button class="focus-action" onclick="window.app.focusPauseResume()" id="focusPauseBtn"><span class="focus-action-ico">${ts.paused ? '▶' : '⏸'}</span>${ts.paused ? 'Reprendre' : 'Pause'}<kbd>P</kbd></button>
+        ${queue.length > 1 ? `<button class="focus-action" onclick="window.app.focusSkip()"><span class="focus-action-ico">↷</span>Passer<kbd>S</kbd></button>` : ''}
+        ${!isRec ? `<button class="focus-action" onclick="window.app.focusTomorrow()"><span class="focus-action-ico">→</span>Demain<kbd>D</kbd></button>` : ''}
       </div>
     </div>
     ${queueHTML}

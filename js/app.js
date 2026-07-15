@@ -61,7 +61,7 @@ import { snapshot, undo, canUndo } from './modules/undo.js';
 import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECTABLE } from './modules/multiselect.js';
 import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
-  focusSaveManualOrder,
+  focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
   getPomodoro, savePomodoro,
 } from './modules/focus.js';
@@ -2136,6 +2136,15 @@ class TodoApp {
     this.render();
   }
 
+  // Options de vue/tri de la file « Ensuite » (segmented controls)
+  focusSetQueueView(key, val) {
+    const p = getQueuePrefs();
+    p[key] = val;
+    saveQueuePrefs(p);
+    this._saveConfigChange();
+    this.render();
+  }
+
   // Panneau « Journée bouclée » (focus + vue jour) : piocher une tâche du
   // backlog → datée `ds`, sortie du backlog ; en mode focus elle devient la courante
   refillPick(id, ds, mode) {
@@ -2976,6 +2985,7 @@ class TodoApp {
         if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
         if (data.config.autoPostpone) localStorage.setItem('autoPostpone', data.config.autoPostpone);
+        if (data.config.focusQueueView) localStorage.setItem('focusQueueView', data.config.focusQueueView);
         const _bPal1 = data.config.bgPalette;
         if (_bPal1)  this.setPalette(_bPal1);
         if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
@@ -5881,6 +5891,7 @@ class TodoApp {
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
       if (backup.config.autoPostpone) localStorage.setItem('autoPostpone', backup.config.autoPostpone);
+      if (backup.config.focusQueueView) localStorage.setItem('focusQueueView', backup.config.focusQueueView);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);
