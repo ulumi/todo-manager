@@ -12612,6 +12612,29 @@ body.view-focus header { display: none; }
   min-height: 0;
 }
 
+// Tâche courante : deux colonnes côte à côte, comme un panneau de visio
+// — contenu (chrono + tâche) à gauche, actions (icônes seules) à droite.
+// Repli en colonne empilée sous ~900px.
+.focus-stage.focus-current-item {
+  flex-direction: row;
+  gap: 56px;
+
+  .focus-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  @media (max-width: 900px) {
+    flex-direction: column;
+    gap: 22px;
+  }
+}
+
 // LE chrono — temps écoulé depuis le début de la tâche, élément dominant
 .focus-timer {
   font-size: clamp(80px, 17vw, 240px);
@@ -12774,85 +12797,61 @@ body.view-focus header { display: none; }
 }
 
 // ── Actions ──
+// Colonne verticale d'actions, à droite du chrono — icône seule, discrète.
+// Le libellé + raccourci n'apparaissent qu'au survol (title natif).
 .focus-actions {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 14px;
+  flex-shrink: 0;
 
   .focus-action {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 13px 24px;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    padding: 0;
     border: 1px solid var(--border);
-    border-radius: 999px;
+    border-radius: 50%;
     background: var(--surface);
-    color: var(--text);
-    font-size: 14.5px;
-    font-weight: 600;
+    color: var(--text-muted);
     cursor: pointer;
-    box-shadow: var(--shadow);
-    transition: background .18s cubic-bezier(.25,.46,.45,.94), transform .18s cubic-bezier(.25,.46,.45,.94), border-color .18s, box-shadow .18s;
+    transition: background .18s cubic-bezier(.25,.46,.45,.94), transform .18s cubic-bezier(.25,.46,.45,.94), border-color .18s, color .18s;
+
+    svg { width: 20px; height: 20px; }
 
     &:hover {
       background: var(--surface2);
       border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
-      transform: translateY(-2px);
+      color: var(--text);
+      transform: scale(1.06);
     }
-    &:active { transform: translateY(0) scale(.97); }
-
-    .focus-action-ico {
-      font-size: 15px;
-      line-height: 1;
-      opacity: .65;
-    }
-
-    // Pastille ronde ✓ — même langage que les checkboxes de l'app
-    .focus-action-check {
-      width: 20px;
-      height: 20px;
-      flex-shrink: 0;
-      border: 2px solid color-mix(in srgb, currentColor 75%, transparent);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &::after { content: '✓'; font-size: 11px; font-weight: 800; }
-    }
-
-    kbd {
-      margin-left: 3px;
-      padding: 2px 7px;
-      border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
-      border-bottom-width: 2px;
-      border-radius: 6px;
-      background: color-mix(in srgb, currentColor 8%, transparent);
-      font-size: 10px;
-      font-weight: 700;
-      font-family: inherit;
-      letter-spacing: .02em;
-      opacity: .75;
-    }
+    &:active { transform: scale(.96); }
 
     &--primary {
-      padding: 13px 28px;
-      font-weight: 700;
+      width: 72px;
+      height: 72px;
       background: linear-gradient(180deg, color-mix(in srgb, var(--success) 88%, #fff), var(--success));
       border-color: color-mix(in srgb, var(--success) 82%, #000);
       color: #fff;
       box-shadow: 0 6px 20px color-mix(in srgb, var(--success) 35%, transparent);
 
+      svg { width: 28px; height: 28px; }
+
       &:hover {
         background: linear-gradient(180deg, color-mix(in srgb, var(--success) 80%, #fff), color-mix(in srgb, var(--success) 94%, #000));
         border-color: color-mix(in srgb, var(--success) 72%, #000);
         box-shadow: 0 9px 26px color-mix(in srgb, var(--success) 45%, transparent);
-        transform: translateY(-2px);
+        transform: scale(1.06);
       }
     }
+  }
+
+  @media (max-width: 900px) {
+    flex-direction: row;
   }
 }
 

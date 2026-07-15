@@ -375,6 +375,18 @@ export function renderFocusView(app) {
 
   const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
 
+  // Icônes des actions : traits fins, cohérentes entre elles (remplacent
+  // les glyphes unicode ✓ ▶ ⏸ ↷ →, boutons désormais icône seule)
+  const ICON = {
+    check:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4,13 9,18 20,6"/></svg>`,
+    pause:  `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>`,
+    play:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>`,
+    skip:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v12l8-6-8-6Z"/><path d="M13 6v12l8-6-8-6Z"/></svg>`,
+    tomorrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10h16"/><path d="M9 15h4M9 15l1.6-1.6M9 15l1.6 1.6"/></svg>`,
+  };
+  const actBtn = (cls, onclick, id, icon, label, kbd) =>
+    `<button class="focus-action ${cls}" onclick="${onclick}"${id ? ` id="${id}"` : ''} title="${label} (${kbd})">${icon}</button>`;
+
   // File « Ensuite » : groupée selon la préférence (Type par défaut) ;
   // le drag-and-drop n'est actif qu'en tri Auto (un tri heure/priorité
   // recalculerait l'ordre au prochain rendu)
@@ -431,18 +443,20 @@ export function renderFocusView(app) {
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
     <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
-      <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(elapsedSeconds(ts))}</div>
-      ${estimateHTML}
-      <div class="focus-task-title">${esc(current.title)}</div>
-      ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
-      <div class="focus-task-meta">${_metaBadges(current)}</div>
-      ${_subtasksHTML(current)}
-      ${_counterHTML(current)}
+      <div class="focus-main">
+        <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(elapsedSeconds(ts))}</div>
+        ${estimateHTML}
+        <div class="focus-task-title">${esc(current.title)}</div>
+        ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
+        <div class="focus-task-meta">${_metaBadges(current)}</div>
+        ${_subtasksHTML(current)}
+        ${_counterHTML(current)}
+      </div>
       <div class="focus-actions">
-        <button class="focus-action focus-action--primary" onclick="window.app.focusComplete()"><span class="focus-action-check"></span>Terminer<kbd>Espace</kbd></button>
-        <button class="focus-action" onclick="window.app.focusPauseResume()" id="focusPauseBtn"><span class="focus-action-ico">${ts.paused ? '▶' : '⏸'}</span>${ts.paused ? 'Reprendre' : 'Pause'}<kbd>P</kbd></button>
-        ${queue.length > 1 ? `<button class="focus-action" onclick="window.app.focusSkip()"><span class="focus-action-ico">↷</span>Passer<kbd>S</kbd></button>` : ''}
-        ${!isRec ? `<button class="focus-action" onclick="window.app.focusTomorrow()"><span class="focus-action-ico">→</span>Demain<kbd>D</kbd></button>` : ''}
+        ${actBtn('focus-action--primary', 'window.app.focusComplete()', null, ICON.check, 'Terminer', 'Espace')}
+        ${actBtn('', 'window.app.focusPauseResume()', 'focusPauseBtn', ts.paused ? ICON.play : ICON.pause, ts.paused ? 'Reprendre' : 'Pause', 'P')}
+        ${queue.length > 1 ? actBtn('', 'window.app.focusSkip()', null, ICON.skip, 'Passer', 'S') : ''}
+        ${!isRec ? actBtn('', 'window.app.focusTomorrow()', null, ICON.tomorrow, 'Demain', 'D') : ''}
       </div>
     </div>
     ${queueHTML}
