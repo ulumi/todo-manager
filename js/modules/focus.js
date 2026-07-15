@@ -284,6 +284,7 @@ export function renderFocusView(app) {
   // les désynchronisations, ex. complétion via un autre appareil)
   if (current) _pinned = current.id;
   app._focusRenderedId = current?.id || null;
+  app._focusRenderedQueueSig = queue.map(t => t.id).join(',');
   const next = queue.slice(1); // toute la journée restante
 
   const todayAll = getTodosForDate(d, state.todos);
@@ -383,8 +384,10 @@ export function focusTick(app) {
   const current = queue[0];
   const clock = document.getElementById('focusClock');
   if (clock) clock.textContent = _nowHM();
-  // Désynchronisation (complétée ailleurs, sync, …) → re-render complet
-  if ((current?.id || null) !== app._focusRenderedId) return true;
+  // Désynchronisation (complétée ailleurs, sync, …) → re-render complet.
+  // Comparer toute la file, pas juste la courante : une tâche complétée
+  // depuis un autre appareil doit disparaître de « Ensuite » aussi.
+  if (queue.map(t => t.id).join(',') !== app._focusRenderedQueueSig) return true;
   if (!current) return false;
 
   const ts = getTimerState(current.id);
