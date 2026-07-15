@@ -105,7 +105,8 @@ export function deleteFutureOccurrences(id, date, todos) {
 
 export function addTask(data, todos) {
   const startDate = (data.recurrence && data.recurrence !== 'none') ? (data.date || DS(today())) : undefined;
-  const id = Date.now().toString();
+  let id = Date.now().toString();
+  while (todos.some(t => t.id === id)) id = String(Number(id) + 1); // Date.now() peut collisionner (double-submit rapide)
   todos.push({
     id,
     ...data,

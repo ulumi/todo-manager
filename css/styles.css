@@ -13963,12 +13963,10 @@ body.view-focus header {
   font-size: 17px;
   font-weight: 500;
   color: var(--text);
-  opacity: 0.82;
   cursor: pointer;
-  transition: opacity 0.15s, background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .focus-queue .focus-queue-item:hover {
-  opacity: 1;
   background: var(--surface2);
 }
 .focus-queue .focus-queue-item.dragging {

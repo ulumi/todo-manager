@@ -12868,11 +12868,10 @@ body.view-focus header { display: none; }
     font-size: 17px;
     font-weight: 500;
     color: var(--text);
-    opacity: .82;
     cursor: pointer;
-    transition: opacity .15s, background .15s cubic-bezier(.25,.46,.45,.94), transform .15s cubic-bezier(.25,.46,.45,.94);
+    transition: background .15s cubic-bezier(.25,.46,.45,.94), transform .15s cubic-bezier(.25,.46,.45,.94);
 
-    &:hover { opacity: 1; background: var(--surface2); }
+    &:hover { background: var(--surface2); }
 
     &.dragging {
       opacity: .35;

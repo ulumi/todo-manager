@@ -40,7 +40,10 @@ export let MONTHS, DAYS, DAY_FULL;
 
 // State setters
 export function setTodos(newTodos) {
-  todos = newTodos;
+  // Garde-fou : élimine les doublons d'id (ex. anciennes données créées par
+  // un double-submit rapide où Date.now() collisionnait) — garde la 1re occurrence.
+  const seen = new Set();
+  todos = newTodos.filter(t => (seen.has(t.id) ? false : (seen.add(t.id), true)));
 }
 
 export function setView(newView) {

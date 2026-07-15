@@ -14,6 +14,8 @@ export const MS_SELECTABLE = [
   '.week-todo-item[data-id]',
   '.plan-week-task[data-id]',
   '.month-todo-dot[data-id]',
+  '.focus-queue-item[data-id]',
+  '.focus-current-item[data-id]',
 ].join(', ');
 
 const selected = new Set();

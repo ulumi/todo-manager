@@ -340,7 +340,7 @@ export function renderFocusView(app) {
       <div class="focus-queue-title">Ensuite <span class="focus-queue-count">${next.length}</span></div>
       <div class="focus-queue-list" id="focusQueueList">
       ${next.map(t => `
-        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" draggable="true" data-id="${t.id}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche · Glisser : réordonner">
+        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}" draggable="true" data-id="${t.id}" data-date="${DS(d)}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche · Glisser : réordonner · Clic droit : actions">
           ${_grip}
           <span class="focus-queue-text">${esc(t.title)}</span>
           ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
@@ -351,7 +351,7 @@ export function renderFocusView(app) {
   return `<div class="focus-view">
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
-    <div class="focus-stage">
+    <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
       <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(elapsedSeconds(ts))}</div>
       ${estimateHTML}
       <div class="focus-task-title">${esc(current.title)}</div>
