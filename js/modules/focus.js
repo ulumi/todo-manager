@@ -402,13 +402,13 @@ export function renderFocusView(app) {
   // Progression vers l'estimation : toute l'interface Focus se remplit
   // depuis le bas (#focusFill, en dehors de .focus-main — jamais recréé
   // par applyFocusEstimate() pour ne jamais interrompre le chrono en cours).
+  // Vert < 50% du temps estimé, jaune ≥ 50%, rouge pulsant au-delà.
   const estSec = est * 60;
   const sec0 = elapsedSeconds(ts);
-  const fillRatio0 = estSec > 0 ? Math.min(1, sec0 / estSec) : 0;
-  const fillOver0 = estSec > 0 && sec0 > estSec;
+  const fillRatio0 = estSec > 0 ? sec0 / estSec : 0;
+  const fillStateClass0 = estSec > 0 ? _fillStateClass(fillRatio0) : '';
 
-  const estimateSideHTML = est > 0 ? `
-    <span class="focus-estimate-label" id="focusEstimateLabel"></span>` : `
+  const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : `
     <div class="focus-estimate-prompt" id="focusEstimateBlock">
       <span class="focus-estimate-prompt-label">Combien de temps pour cette tâche ?</span>
       <input type="number" min="1" step="1" inputmode="numeric" class="focus-estimate-input" id="focusEstimateInput" placeholder="min" onkeydown="if(event.key==='Enter')window.app.focusSetEstimate('${current.id}', this.value)">
@@ -500,12 +500,12 @@ export function renderFocusView(app) {
     </div>` : '';
 
   return `<div class="focus-view">
-    <div class="focus-fill${fillOver0 ? ' over' : ''}" id="focusFill" style="height:${fillRatio0 * 100}%"></div>
+    <div class="focus-fill${fillStateClass0 ? ' ' + fillStateClass0 : ''}" id="focusFill" style="height:${Math.min(1, fillRatio0) * 100}%"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
     <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
       <div class="focus-main">
-        <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(sec0)}</div>
+        <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="${_timerTitle(current)}">${_timerDisplayText(current, sec0)}</div>
         ${estimateSideHTML}
         <div class="focus-task-title">${esc(current.title)}</div>
         ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
@@ -530,6 +530,45 @@ export function renderFocusView(app) {
   </div>`;
 }
 
+// Vert < 50% du temps estimé, jaune ≥ 50%, rouge (pulsant, en CSS) au-delà.
+function _fillStateClass(ratio) {
+  if (ratio >= 1) return 'over';
+  if (ratio >= 0.5) return 'half';
+  return '';
+}
+
+// ── Mode d'affichage du chrono : temps écoulé (défaut) ou compte à
+// rebours (uniquement affiché si une estimation existe). Préférence
+// globale locale (non synchronisée, comme focusPomodoro). ──
+export function getTimerMode() {
+  return localStorage.getItem('focusTimerMode') === 'countdown' ? 'countdown' : 'elapsed';
+}
+
+export function toggleTimerMode() {
+  localStorage.setItem('focusTimerMode', getTimerMode() === 'elapsed' ? 'countdown' : 'elapsed');
+}
+
+function _timerDisplayText(current, sec) {
+  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  if (est > 0 && getTimerMode() === 'countdown') {
+    return sec <= est ? fmtElapsed(est - sec) : `+${fmtElapsed(sec - est)}`;
+  }
+  return fmtElapsed(sec);
+}
+
+function _timerTitle(current) {
+  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  return (est > 0 && getTimerMode() === 'countdown') ? 'Temps restant avant l\'estimation' : 'Temps écoulé sur cette tâche';
+}
+
+function _estimateLabelRowHTML() {
+  const mode = getTimerMode();
+  return `<div class="focus-estimate-row">
+      <span class="focus-estimate-label" id="focusEstimateLabel"></span>
+      <button class="focus-timermode-btn${mode === 'countdown' ? ' active' : ''}" id="focusTimerModeBtn" onclick="window.app.focusToggleTimerMode()" title="${mode === 'countdown' ? 'Revenir au chrono (temps écoulé)' : 'Passer en compte à rebours (temps restant)'}">⏳</button>
+    </div>`;
+}
+
 // Met à jour le remplissage de l'écran + son libellé pour la tâche
 // courante, sans toucher au chrono lui-même. Partagé entre le tick 1 s et
 // applyFocusEstimate() (saisie inline d'une estimation en cours de tâche).
@@ -539,9 +578,11 @@ function _applyEstimateVisuals(current) {
   if (est <= 0 || !fill) return;
   const ts = getTimerState(current.id);
   const sec = elapsedSeconds(ts);
-  const ratio = Math.min(1, sec / est);
-  fill.style.height = (ratio * 100) + '%';
-  fill.classList.toggle('over', sec > est);
+  const ratio = sec / est;
+  fill.style.height = (Math.min(1, ratio) * 100) + '%';
+  fill.classList.remove('half', 'over');
+  const cls = _fillStateClass(ratio);
+  if (cls) fill.classList.add(cls);
   const label = document.getElementById('focusEstimateLabel');
   if (label) {
     label.textContent = sec <= est
@@ -552,14 +593,15 @@ function _applyEstimateVisuals(current) {
 
 // Applique une estimation saisie via le prompt inline SANS re-render complet
 // — sinon #focusTimer serait recréé et l'intervalle redémarré, interrompant
-// visuellement le chrono en cours. Seul le prompt (remplacé par le libellé)
-// et le remplissage (déjà présent, à 0%) sont mis à jour en place.
+// visuellement le chrono en cours. Seul le prompt (remplacé par le libellé +
+// la bascule chrono/compte à rebours) et le remplissage (déjà présent, à 0%)
+// sont mis à jour en place.
 export function applyFocusEstimate(app) {
   const queue = getFocusQueue(app);
   const current = queue[0];
   if (!current) return;
   const promptEl = document.getElementById('focusEstimateBlock');
-  if (promptEl) promptEl.outerHTML = '<span class="focus-estimate-label" id="focusEstimateLabel"></span>';
+  if (promptEl) promptEl.outerHTML = _estimateLabelRowHTML();
   const progLabel = document.querySelector('.focus-progress-label');
   if (progLabel) {
     const todayAll = getTodosForDate(today(), state.todos);
@@ -571,6 +613,27 @@ export function applyFocusEstimate(app) {
     progLabel.textContent = `${doneCount}/${todayAll.length}${remainLabel}`;
   }
   _applyEstimateVisuals(current);
+  const timerEl = document.getElementById('focusTimer');
+  if (timerEl) timerEl.textContent = _timerDisplayText(current, elapsedSeconds(getTimerState(current.id)));
+}
+
+// Bascule chrono ↔ compte à rebours pour la tâche courante (clic sur
+// #focusTimerModeBtn) — met à jour #focusTimer immédiatement plutôt que
+// d'attendre le prochain tick (≤ 1 s).
+export function applyTimerMode(app) {
+  const current = getFocusQueue(app)[0];
+  if (!current) return;
+  const timerEl = document.getElementById('focusTimer');
+  if (timerEl) {
+    timerEl.textContent = _timerDisplayText(current, elapsedSeconds(getTimerState(current.id)));
+    timerEl.title = _timerTitle(current);
+  }
+  const btn = document.getElementById('focusTimerModeBtn');
+  if (btn) {
+    const mode = getTimerMode();
+    btn.classList.toggle('active', mode === 'countdown');
+    btn.title = mode === 'countdown' ? 'Revenir au chrono (temps écoulé)' : 'Passer en compte à rebours (temps restant)';
+  }
 }
 
 // ── Tick (1 s) — met à jour chrono, estimation, pomodoro, bandeau ──
@@ -589,7 +652,7 @@ export function focusTick(app) {
   const ts = getTimerState(current.id);
   const sec = elapsedSeconds(ts);
   const timerEl = document.getElementById('focusTimer');
-  if (timerEl) timerEl.textContent = fmtElapsed(sec);
+  if (timerEl) timerEl.textContent = _timerDisplayText(current, sec);
 
   _applyEstimateVisuals(current);
 

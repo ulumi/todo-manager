@@ -48,6 +48,7 @@
   --primary-dark:  #1d4ed8;
   --primary-light: #eff6ff;
   --success:       #10b981;
+  --warning:       #f59e0b;
   --danger:        #ef4444;
   --text:          #0f172a;
   --text-muted:    #64748b;
@@ -69,6 +70,7 @@
   --primary-dark:  #93c5fd;
   --primary-light: #1e3a5f;
   --success:       #4ade80;
+  --warning:       #fbbf24;
   --danger:        #f87171;
   --text:          #f1f5f9;
   --text-muted:    #8b96a8;
@@ -12530,9 +12532,10 @@ body.view-focus header { display: none; }
 // Progression vers l'estimation : toute l'interface Focus se remplit d'une
 // teinte montant depuis le bas, comme un niveau qui monte — bien plus
 // visible qu'une simple jauge. Vert (couleur des états complétés dans le
-// reste de l'appli) tant que dans le temps estimé, rouge pulsant au-delà.
-// z-index négatif : reste sous le contenu normal de .focus-view sans avoir
-// à toucher celui-ci (ni #focusTimer, jamais recréé — voir focus.js).
+// reste de l'appli) jusqu'à mi-parcours, jaune passé la moitié du temps
+// estimé, rouge pulsant au-delà. z-index négatif : reste sous le contenu
+// normal de .focus-view sans avoir à toucher celui-ci (ni #focusTimer,
+// jamais recréé — voir focus.js).
 .focus-fill {
   position: absolute;
   left: 0;
@@ -12548,6 +12551,14 @@ body.view-focus header { display: none; }
   box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--success) 55%, transparent);
   transition: height 1s linear, background .6s ease, box-shadow .6s ease;
 
+  &.half {
+    background: linear-gradient(to top,
+      color-mix(in srgb, var(--warning) 42%, transparent) 0%,
+      color-mix(in srgb, var(--warning) 15%, transparent) 55%,
+      transparent 100%);
+    box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
+  }
+
   &.over {
     background: linear-gradient(to top,
       color-mix(in srgb, var(--danger) 46%, transparent) 0%,
@@ -12561,6 +12572,32 @@ body.view-focus header { display: none; }
 @keyframes focus-fill-pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: .68; }
+}
+
+// Bascule chrono (temps écoulé) ↔ compte à rebours (temps restant) — à
+// côté du libellé d'estimation, visible seulement quand une estimation existe
+.focus-estimate-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.focus-timermode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), border-color .15s, color .15s;
+
+  &:hover { background: var(--surface2); }
+  &.active { border-color: var(--primary); color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, var(--surface)); }
 }
 
 // ── Barre du haut ──
