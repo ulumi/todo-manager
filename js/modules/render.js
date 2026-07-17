@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTas
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -2104,6 +2104,9 @@ export function renderAnalyseView(todos) {
   const completedTotal = nonRecTodos.filter(t => t.completed).length;
   const monthName      = new Date().toLocaleString('fr', { month: 'long' });
   const adherenceRows  = renderAdherenceRows(todos, { limit: 10 });
+  const timeStats      = computeTimeStats(todos);
+  const timeStatsRows  = renderTimeStatsRows(todos, { limit: 10 });
+  const bestImprovement = timeStats.find(r => (r.improvementPct || 0) >= 15) || null;
 
   return `<div class="analyse-view">
     <div class="analyse-view-header">
@@ -2162,6 +2165,23 @@ export function renderAnalyseView(todos) {
       <div class="analyse-card analyse-card--wide">
         <div class="analyse-card-title">7 derniers jours (les moins suivies d'abord)</div>
         <div class="adherence-list">${adherenceRows}</div>
+      </div>
+    </div>` : ''}
+
+    ${timeStatsRows ? `
+    <p class="analyse-section-title">Temps passé — récurrentes</p>
+    <div class="analyse-grid">
+      ${bestImprovement ? `
+      <div class="analyse-card analyse-card--wide timestat-highlight">
+        <div class="timestat-highlight-emoji">🏆</div>
+        <div>
+          <div class="timestat-highlight-title">Meilleure progression</div>
+          <div class="timestat-highlight-text">${esc(bestImprovement.todo.title)} — ${bestImprovement.improvementPct}% plus rapide qu'avant (${Math.round(bestImprovement.recentAvg)} min en moyenne dernièrement, contre ${Math.round(bestImprovement.priorAvg)} min avant)</div>
+        </div>
+      </div>` : ''}
+      <div class="analyse-card analyse-card--wide">
+        <div class="analyse-card-title">Durée réelle par tâche (mieux classées d'abord)</div>
+        <div class="timestat-list">${timeStatsRows}</div>
       </div>
     </div>` : ''}
 

@@ -372,7 +372,12 @@ export function renderFocusView(app) {
     <div class="focus-estimate">
       <div class="focus-estimate-bar"><div class="focus-estimate-fill" id="focusEstimateFill"></div></div>
       <span class="focus-estimate-label" id="focusEstimateLabel"></span>
-    </div>` : '';
+    </div>` : `
+    <div class="focus-estimate-prompt">
+      <span class="focus-estimate-prompt-label">Combien de temps pour cette tâche ?</span>
+      <input type="number" min="1" step="1" inputmode="numeric" class="focus-estimate-input" id="focusEstimateInput" placeholder="min" onkeydown="if(event.key==='Enter')window.app.focusSetEstimate('${current.id}', this.value)">
+      <button class="focus-estimate-save" onclick="window.app.focusSetEstimate('${current.id}', document.getElementById('focusEstimateInput').value)">OK</button>
+    </div>`;
 
   const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
 

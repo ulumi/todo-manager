@@ -105,6 +105,53 @@ export function renderAdherenceRows(todos, { limit = 10 } = {}) {
   }).join('');
 }
 
+// Temps passé sur les récurrentes (via durationHistory, alimenté par le focus
+// mode à chaque focusComplete()) — moyenne + progression sur les dernières
+// occurrences vs les précédentes. Triées meilleure progression d'abord.
+export function computeTimeStats(todos, { minOccurrences = 2, recentN = 3 } = {}) {
+  return todos
+    .filter(t => Array.isArray(t.durationHistory) && t.durationHistory.length >= minOccurrences)
+    .map(t => {
+      const hist = [...t.durationHistory].sort((a, b) => a.date < b.date ? -1 : 1);
+      const minutes = hist.map(h => h.minutes);
+      const avg = minutes.reduce((a, b) => a + b, 0) / minutes.length;
+      const n = Math.min(recentN, Math.floor(minutes.length / 2)) || 1;
+      const recent = minutes.slice(-n);
+      const prior = minutes.slice(0, -n);
+      const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
+      const priorAvg = prior.length ? prior.reduce((a, b) => a + b, 0) / prior.length : null;
+      const improvementPct = priorAvg ? Math.round(((priorAvg - recentAvg) / priorAvg) * 100) : null;
+      return { todo: t, count: minutes.length, avg, recentAvg, priorAvg, improvementPct, minutes };
+    })
+    .sort((a, b) => (b.improvementPct ?? -Infinity) - (a.improvementPct ?? -Infinity));
+}
+
+function _timeSparkline(minutes) {
+  const shown = minutes.slice(-8);
+  const max = Math.max(...shown, 1);
+  return `<div class="timestat-spark">${shown.map(m => {
+    const pct = Math.max(Math.round(m / max * 100), 6);
+    return `<div class="timestat-spark-bar" style="height:${pct}%" title="${m} min"></div>`;
+  }).join('')}</div>`;
+}
+
+function _timeDeltaHTML(pct) {
+  if (pct === null) return `<span class="timestat-delta neutral">— pas assez d'historique</span>`;
+  if (pct > 4) return `<span class="timestat-delta improved">▼ ${pct}% plus rapide</span>`;
+  if (pct < -4) return `<span class="timestat-delta worse">▲ ${Math.abs(pct)}% plus lent</span>`;
+  return `<span class="timestat-delta neutral">— stable</span>`;
+}
+
+export function renderTimeStatsRows(todos, { limit = 10 } = {}) {
+  return computeTimeStats(todos).slice(0, limit).map(r => `
+    <div class="timestat-row">
+      <span class="timestat-name">${esc(r.todo.title)}</span>
+      ${_timeSparkline(r.minutes)}
+      <span class="timestat-avg">${Math.round(r.avg)}<small> min moy.</small></span>
+      ${_timeDeltaHTML(r.improvementPct)}
+    </div>`).join('');
+}
+
 // Corps du modal Bilan
 export function renderReviewBody(todos) {
   const overdue   = getOverduePunctual(todos);

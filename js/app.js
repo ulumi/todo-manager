@@ -2095,13 +2095,34 @@ class TodoApp {
     if (!t) return;
     const sec = elapsedSeconds(getTimerState(t.id));
     snapshot(state.todos);
-    // Durée réelle = temps passé sur la tâche en mode focus (minutes)
-    if (sec >= 30) t.durationReal = Math.max(1, Math.round(sec / 60));
+    // Durée réelle = temps passé sur la tâche en mode focus (minutes).
+    // Historisée dans durationHistory (borné à 30 entrées) pour pouvoir
+    // comparer une occurrence aux précédentes dans la vue Analyse.
+    if (sec >= 30) {
+      const minutes = Math.max(1, Math.round(sec / 60));
+      t.durationReal = minutes;
+      if (!Array.isArray(t.durationHistory)) t.durationHistory = [];
+      t.durationHistory.push({ date: DS(today()), minutes });
+      if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
+    }
     toggleTodo(t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
     focusUnpin();
     celebrate(state.lang);
+    this.render();
+  }
+
+  // Invitation en mode Focus quand la tâche courante n'a pas de temps estimé
+  focusSetEstimate(id, val) {
+    const minutes = parseInt(val, 10);
+    if (!minutes || minutes <= 0) return;
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    snapshot(state.todos);
+    t.durationEstimated = minutes;
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
     this.render();
   }
 
