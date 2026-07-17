@@ -63,7 +63,7 @@ import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
   focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
-  getPomodoro, savePomodoro,
+  getPomodoro, savePomodoro, applyFocusEstimate,
 } from './modules/focus.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
@@ -2113,7 +2113,10 @@ class TodoApp {
     this.render();
   }
 
-  // Invitation en mode Focus quand la tâche courante n'a pas de temps estimé
+  // Invitation en mode Focus quand la tâche courante n'a pas de temps estimé.
+  // Pas de render() complet ici : ça recréerait #focusTimer et redémarrerait
+  // l'intervalle, interrompant visuellement le chrono en cours. On applique
+  // la mutation puis on patche juste l'anneau/le prompt (applyFocusEstimate).
   focusSetEstimate(id, val) {
     const minutes = parseInt(val, 10);
     if (!minutes || minutes <= 0) return;
@@ -2123,7 +2126,7 @@ class TodoApp {
     t.durationEstimated = minutes;
     t.updatedAt = Date.now();
     saveTodos(state.todos);
-    this.render();
+    applyFocusEstimate(this);
   }
 
   focusSkip() {

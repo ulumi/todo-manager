@@ -12635,8 +12635,21 @@ body.view-focus header { display: none; }
   }
 }
 
-// LE chrono — temps écoulé depuis le début de la tâche, élément dominant
+// LE chrono — temps écoulé depuis le début de la tâche, élément dominant.
+// Entouré par .focus-ring (anneau de décompte) quand une estimation existe —
+// les deux vivent dans .focus-timer-wrap, jamais recréé par
+// applyFocusEstimate() (saisie inline en cours de tâche) pour ne jamais
+// interrompre visuellement le chrono en cours.
+.focus-timer-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .focus-timer {
+  position: relative;
+  z-index: 1;
   font-size: clamp(80px, 17vw, 240px);
   font-weight: 800;
   line-height: 1;
@@ -12648,37 +12661,52 @@ body.view-focus header { display: none; }
   &.paused { opacity: .35; }
 }
 
-.focus-estimate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: min(420px, 70vw);
+// Anneau de décompte : draine dans le sens horaire à mesure que le temps
+// estimé s'écoule (façon minuteur de cuisine) — plein au départ, vide
+// quand l'estimation est atteinte ; rouge et pulsant au-delà.
+.focus-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(200px, 30vw, 380px);
+  height: clamp(200px, 30vw, 380px);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .3s;
+}
 
-  .focus-estimate-bar {
-    width: 100%;
-    height: 8px;
-    border-radius: 999px;
-    background: var(--surface2);
-    overflow: hidden;
+.focus-timer-wrap.no-estimate .focus-ring { opacity: 0; }
 
-    .focus-estimate-fill {
-      height: 100%;
-      width: 0;
-      border-radius: 999px;
-      background: var(--primary);
-      transition: width 1s linear;
+.focus-ring-track {
+  fill: none;
+  stroke: var(--surface2);
+  stroke-width: 5;
+}
 
-      &.over { background: #ef4444; }
-    }
+.focus-ring-progress {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke .3s;
+
+  &.over {
+    stroke: var(--danger);
+    animation: focus-ring-pulse 1.6s ease-in-out infinite;
   }
+}
 
-  .focus-estimate-label {
-    font-size: 13px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
-  }
+@keyframes focus-ring-pulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 transparent); }
+  50%      { opacity: .55; filter: drop-shadow(0 0 10px var(--danger)); }
+}
+
+.focus-estimate-label {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 // Invitation à estimer le temps quand la tâche n'a pas de durationEstimated

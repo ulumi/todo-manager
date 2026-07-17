@@ -13731,7 +13731,16 @@ body.view-focus header {
   }
 }
 
+.focus-timer-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .focus-timer {
+  position: relative;
+  z-index: 1;
   font-size: clamp(80px, 17vw, 240px);
   font-weight: 800;
   line-height: 1;
@@ -13744,31 +13753,51 @@ body.view-focus header {
   opacity: 0.35;
 }
 
-.focus-estimate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: min(420px, 70vw);
+.focus-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(200px, 30vw, 380px);
+  height: clamp(200px, 30vw, 380px);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s;
 }
-.focus-estimate .focus-estimate-bar {
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--surface2);
-  overflow: hidden;
+
+.focus-timer-wrap.no-estimate .focus-ring {
+  opacity: 0;
 }
-.focus-estimate .focus-estimate-bar .focus-estimate-fill {
-  height: 100%;
-  width: 0;
-  border-radius: 999px;
-  background: var(--primary);
-  transition: width 1s linear;
+
+.focus-ring-track {
+  fill: none;
+  stroke: var(--surface2);
+  stroke-width: 5;
 }
-.focus-estimate .focus-estimate-bar .focus-estimate-fill.over {
-  background: #ef4444;
+
+.focus-ring-progress {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s;
 }
-.focus-estimate .focus-estimate-label {
+.focus-ring-progress.over {
+  stroke: var(--danger);
+  animation: focus-ring-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes focus-ring-pulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    opacity: 0.55;
+    filter: drop-shadow(0 0 10px var(--danger));
+  }
+}
+.focus-estimate-label {
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
