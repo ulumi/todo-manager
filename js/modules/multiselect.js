@@ -164,9 +164,15 @@ export function initMultiSelect(app) {
 const MARQUEE_THRESHOLD = 5; // px avant d'activer le lasso (préserve les clics)
 
 // Zones où le lasso ne doit jamais démarrer : tout élément interactif ou
-// draggable (le drag natif des items a priorité)
+// draggable (le drag natif des items a priorité). .focus-queue-item est
+// exclu explicitement (pas seulement via [draggable="true"]) car il n'est
+// draggable qu'en tri Auto + 1 colonne — hors de ce mode, un clic-glisser
+// pour tenter de le réordonner ne doit pas non plus déclencher le lasso ;
+// celui-ci reste utilisable en démarrant depuis le vide autour des items
+// (.focus-queue-item[data-id] fait partie de MS_SELECTABLE).
 const MARQUEE_EXCLUDE = [
   '[draggable="true"]',
+  '.focus-queue-item',
   'button, input, textarea, select, a, [contenteditable="true"]',
   '.modal-overlay', '.plan-resize-handle', '.multi-select-bar',
   '.day-mini-week',
