@@ -106,24 +106,39 @@ export function renderAdherenceRows(todos, { limit = 10 } = {}) {
 }
 
 // Temps passé sur les récurrentes (via durationHistory, alimenté par le focus
-// mode à chaque focusComplete()) — moyenne + progression sur les dernières
-// occurrences vs les précédentes. Triées meilleure progression d'abord.
+// mode à chaque focusComplete()) — total brut + moyenne + progression sur
+// les dernières occurrences vs les précédentes. Triées meilleure progression d'abord.
 export function computeTimeStats(todos, { minOccurrences = 2, recentN = 3 } = {}) {
   return todos
     .filter(t => Array.isArray(t.durationHistory) && t.durationHistory.length >= minOccurrences)
     .map(t => {
       const hist = [...t.durationHistory].sort((a, b) => a.date < b.date ? -1 : 1);
       const minutes = hist.map(h => h.minutes);
-      const avg = minutes.reduce((a, b) => a + b, 0) / minutes.length;
+      const total = minutes.reduce((a, b) => a + b, 0);
+      const avg = total / minutes.length;
       const n = Math.min(recentN, Math.floor(minutes.length / 2)) || 1;
       const recent = minutes.slice(-n);
       const prior = minutes.slice(0, -n);
       const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
       const priorAvg = prior.length ? prior.reduce((a, b) => a + b, 0) / prior.length : null;
       const improvementPct = priorAvg ? Math.round(((priorAvg - recentAvg) / priorAvg) * 100) : null;
-      return { todo: t, count: minutes.length, avg, recentAvg, priorAvg, improvementPct, minutes };
+      return { todo: t, count: minutes.length, total, avg, recentAvg, priorAvg, improvementPct, minutes };
     })
     .sort((a, b) => (b.improvementPct ?? -Infinity) - (a.improvementPct ?? -Infinity));
+}
+
+// Temps total passé en focus, toutes tâches confondues (somme brute de
+// durationHistory — pas de filtre sur le nombre d'occurrences, contrairement
+// à computeTimeStats). C'est le chiffre "gardé" tel quel, pas une moyenne.
+export function computeTotalFocusMinutes(todos) {
+  return todos.reduce((sum, t) => {
+    if (!Array.isArray(t.durationHistory)) return sum;
+    return sum + t.durationHistory.reduce((s, h) => s + (h.minutes || 0), 0);
+  }, 0);
+}
+
+export function fmtMinutes(min) {
+  return min >= 60 ? `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}` : `${min} min`;
 }
 
 function _timeSparkline(minutes) {
@@ -147,6 +162,7 @@ export function renderTimeStatsRows(todos, { limit = 10 } = {}) {
     <div class="timestat-row">
       <span class="timestat-name">${esc(r.todo.title)}</span>
       ${_timeSparkline(r.minutes)}
+      <span class="timestat-total">${fmtMinutes(r.total)}<small> total</small></span>
       <span class="timestat-avg">${Math.round(r.avg)}<small> min moy.</small></span>
       ${_timeDeltaHTML(r.improvementPct)}
     </div>`).join('');

@@ -399,14 +399,16 @@ export function renderFocusView(app) {
   const isRec = current.recurrence && current.recurrence !== 'none';
   const ts = getTimerState(current.id);
 
-  // Progression vers l'estimation : toute l'interface Focus se remplit
-  // depuis le bas (#focusFill, en dehors de .focus-main — jamais recréé
+  // Progression vers l'estimation : tout l'écran Focus se teinte d'une
+  // couleur nette (#focusFill, en dehors de .focus-main — jamais recréé
   // par applyFocusEstimate() pour ne jamais interrompre le chrono en cours).
-  // Vert < 50% du temps estimé, jaune ≥ 50%, rouge pulsant au-delà.
+  // Vert < 50% du temps estimé, jaune ≥ 50%, rouge pulsant au-delà ;
+  // opacité croissante avec le temps écoulé (voir _fillOpacity()).
   const estSec = est * 60;
   const sec0 = elapsedSeconds(ts);
   const fillRatio0 = estSec > 0 ? sec0 / estSec : 0;
   const fillStateClass0 = estSec > 0 ? _fillStateClass(fillRatio0) : '';
+  const fillOpacity0 = estSec > 0 ? _fillOpacity(fillRatio0) : 0;
 
   const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : `
     <div class="focus-estimate-prompt" id="focusEstimateBlock">
@@ -500,7 +502,7 @@ export function renderFocusView(app) {
     </div>` : '';
 
   return `<div class="focus-view">
-    <div class="focus-fill${fillStateClass0 ? ' ' + fillStateClass0 : ''}" id="focusFill" style="height:${Math.min(1, fillRatio0) * 100}%"></div>
+    <div class="focus-fill${fillStateClass0 ? ' ' + fillStateClass0 : ''}" id="focusFill" style="opacity:${fillOpacity0}"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
     <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
@@ -535,6 +537,13 @@ function _fillStateClass(ratio) {
   if (ratio >= 1) return 'over';
   if (ratio >= 0.5) return 'half';
   return '';
+}
+
+// Opacité de la teinte plein écran : discrète au départ, plus marquée à
+// mesure que le temps estimé s'écoule (plafonnée — le dépassement se
+// signale par la couleur + le pulse CSS, pas par plus d'opacité).
+function _fillOpacity(ratio) {
+  return Math.min(0.42, 0.06 + Math.max(0, ratio) * 0.36);
 }
 
 // ── Mode d'affichage du chrono : temps écoulé (défaut) ou compte à
@@ -579,7 +588,7 @@ function _applyEstimateVisuals(current) {
   const ts = getTimerState(current.id);
   const sec = elapsedSeconds(ts);
   const ratio = sec / est;
-  fill.style.height = (Math.min(1, ratio) * 100) + '%';
+  fill.style.opacity = String(_fillOpacity(ratio));
   fill.classList.remove('half', 'over');
   const cls = _fillStateClass(ratio);
   if (cls) fill.classList.add(cls);

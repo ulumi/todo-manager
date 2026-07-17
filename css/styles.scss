@@ -12529,49 +12529,32 @@ body.view-focus header { display: none; }
   backdrop-filter: blur(14px) saturate(.8);
 }
 
-// Progression vers l'estimation : toute l'interface Focus se remplit d'une
-// teinte montant depuis le bas, comme un niveau qui monte — bien plus
-// visible qu'une simple jauge. Vert (couleur des états complétés dans le
-// reste de l'appli) jusqu'à mi-parcours, jaune passé la moitié du temps
+// Progression vers l'estimation : tout l'écran Focus se teinte d'une
+// couleur nette (pas de dégradé) dont l'opacité monte avec le temps
+// écoulé — vert jusqu'à mi-parcours, jaune passé la moitié du temps
 // estimé, rouge pulsant au-delà. z-index négatif : reste sous le contenu
 // normal de .focus-view sans avoir à toucher celui-ci (ni #focusTimer,
 // jamais recréé — voir focus.js).
 .focus-fill {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 0%;
+  inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: linear-gradient(to top,
-    color-mix(in srgb, var(--success) 40%, transparent) 0%,
-    color-mix(in srgb, var(--success) 14%, transparent) 55%,
-    transparent 100%);
-  box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--success) 55%, transparent);
-  transition: height 1s linear, background .6s ease, box-shadow .6s ease;
+  background: var(--success);
+  opacity: 0;
+  transition: opacity 1s linear, background .6s ease;
 
-  &.half {
-    background: linear-gradient(to top,
-      color-mix(in srgb, var(--warning) 42%, transparent) 0%,
-      color-mix(in srgb, var(--warning) 15%, transparent) 55%,
-      transparent 100%);
-    box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--warning) 60%, transparent);
-  }
+  &.half { background: var(--warning); }
 
   &.over {
-    background: linear-gradient(to top,
-      color-mix(in srgb, var(--danger) 46%, transparent) 0%,
-      color-mix(in srgb, var(--danger) 16%, transparent) 55%,
-      transparent 100%);
-    box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--danger) 65%, transparent);
+    background: var(--danger);
     animation: focus-fill-pulse 1.8s ease-in-out infinite;
   }
 }
 
 @keyframes focus-fill-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: .68; }
+  0%, 100% { opacity: .40; }
+  50%      { opacity: .16; }
 }
 
 // Bascule chrono (temps écoulé) ↔ compte à rebours (temps restant) — à
@@ -13579,13 +13562,25 @@ body.view-focus header { display: none; }
   border-radius: 2px 2px 0 0;
 }
 
+.timestat-total {
+  flex-shrink: 0;
+  width: 62px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+
+  small { font-size: 10px; font-weight: 500; color: var(--text-muted); }
+}
+
 .timestat-avg {
   flex-shrink: 0;
   width: 70px;
   text-align: right;
   font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
+  font-weight: 600;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 
   small { font-size: 10px; font-weight: 500; color: var(--text-muted); }

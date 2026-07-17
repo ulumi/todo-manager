@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTas
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -2119,6 +2119,7 @@ export function renderAnalyseView(todos) {
   const timeStats      = computeTimeStats(todos);
   const timeStatsRows  = renderTimeStatsRows(todos, { limit: 10 });
   const bestImprovement = timeStats.find(r => (r.improvementPct || 0) >= 15) || null;
+  const totalFocusMinutes = computeTotalFocusMinutes(todos);
 
   return `<div class="analyse-view">
     <div class="analyse-view-header">
@@ -2180,9 +2181,14 @@ export function renderAnalyseView(todos) {
       </div>
     </div>` : ''}
 
-    ${timeStatsRows ? `
-    <p class="analyse-section-title">Temps passé — récurrentes</p>
+    ${totalFocusMinutes > 0 ? `
+    <p class="analyse-section-title">Temps passé en focus</p>
     <div class="analyse-grid">
+      <div class="analyse-card">
+        <div class="analyse-card-title">Temps total en focus</div>
+        <div class="analyse-big-num">${fmtMinutes(totalFocusMinutes)}</div>
+        <div class="analyse-sub">toutes tâches confondues</div>
+      </div>
       ${bestImprovement ? `
       <div class="analyse-card analyse-card--wide timestat-highlight">
         <div class="timestat-highlight-emoji">🏆</div>
@@ -2191,10 +2197,11 @@ export function renderAnalyseView(todos) {
           <div class="timestat-highlight-text">${esc(bestImprovement.todo.title)} — ${bestImprovement.improvementPct}% plus rapide qu'avant (${Math.round(bestImprovement.recentAvg)} min en moyenne dernièrement, contre ${Math.round(bestImprovement.priorAvg)} min avant)</div>
         </div>
       </div>` : ''}
+      ${timeStatsRows ? `
       <div class="analyse-card analyse-card--wide">
         <div class="analyse-card-title">Durée réelle par tâche (mieux classées d'abord)</div>
         <div class="timestat-list">${timeStatsRows}</div>
-      </div>
+      </div>` : ''}
     </div>` : ''}
 
     ${intentions.length > 0 ? `
