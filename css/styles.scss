@@ -2892,6 +2892,20 @@ main {
   flex-shrink: 0;
 }
 
+// Temps passé en focus / estimé — vue jour uniquement (voir todoItemHTML)
+.todo-focustime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .todo-reorder {
   display: flex;
   flex-direction: column;
@@ -12513,6 +12527,42 @@ body.view-focus header { display: none; }
   backdrop-filter: blur(14px) saturate(.8);
 }
 
+// Progression vers l'estimation : toute l'interface Focus se remplit d'une
+// teinte montant depuis le bas, comme un niveau qui monte — bien plus
+// visible qu'une simple jauge. Vert (couleur des états complétés dans le
+// reste de l'appli) tant que dans le temps estimé, rouge pulsant au-delà.
+// z-index négatif : reste sous le contenu normal de .focus-view sans avoir
+// à toucher celui-ci (ni #focusTimer, jamais recréé — voir focus.js).
+.focus-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--success) 40%, transparent) 0%,
+    color-mix(in srgb, var(--success) 14%, transparent) 55%,
+    transparent 100%);
+  box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--success) 55%, transparent);
+  transition: height 1s linear, background .6s ease, box-shadow .6s ease;
+
+  &.over {
+    background: linear-gradient(to top,
+      color-mix(in srgb, var(--danger) 46%, transparent) 0%,
+      color-mix(in srgb, var(--danger) 16%, transparent) 55%,
+      transparent 100%);
+    box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--danger) 65%, transparent);
+    animation: focus-fill-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes focus-fill-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .68; }
+}
+
 // ── Barre du haut ──
 .focus-topbar {
   display: flex;
@@ -12635,21 +12685,8 @@ body.view-focus header { display: none; }
   }
 }
 
-// LE chrono — temps écoulé depuis le début de la tâche, élément dominant.
-// Entouré par .focus-ring (anneau de décompte) quand une estimation existe —
-// les deux vivent dans .focus-timer-wrap, jamais recréé par
-// applyFocusEstimate() (saisie inline en cours de tâche) pour ne jamais
-// interrompre visuellement le chrono en cours.
-.focus-timer-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+// LE chrono — temps écoulé depuis le début de la tâche, élément dominant
 .focus-timer {
-  position: relative;
-  z-index: 1;
   font-size: clamp(80px, 17vw, 240px);
   font-weight: 800;
   line-height: 1;
@@ -12659,47 +12696,6 @@ body.view-focus header { display: none; }
   transition: opacity .3s;
 
   &.paused { opacity: .35; }
-}
-
-// Anneau de décompte : draine dans le sens horaire à mesure que le temps
-// estimé s'écoule (façon minuteur de cuisine) — plein au départ, vide
-// quand l'estimation est atteinte ; rouge et pulsant au-delà.
-.focus-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(200px, 30vw, 380px);
-  height: clamp(200px, 30vw, 380px);
-  transform: translate(-50%, -50%) rotate(-90deg);
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity .3s;
-}
-
-.focus-timer-wrap.no-estimate .focus-ring { opacity: 0; }
-
-.focus-ring-track {
-  fill: none;
-  stroke: var(--surface2);
-  stroke-width: 5;
-}
-
-.focus-ring-progress {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 5;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear, stroke .3s;
-
-  &.over {
-    stroke: var(--danger);
-    animation: focus-ring-pulse 1.6s ease-in-out infinite;
-  }
-}
-
-@keyframes focus-ring-pulse {
-  0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 transparent); }
-  50%      { opacity: .55; filter: drop-shadow(0 0 10px var(--danger)); }
 }
 
 .focus-estimate-label {

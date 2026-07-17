@@ -2982,6 +2982,19 @@ input:checked + .cal-sid-toggle-track::after {
   flex-shrink: 0;
 }
 
+.todo-focustime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .todo-reorder {
   display: flex;
   flex-direction: column;
@@ -13613,6 +13626,32 @@ body.view-focus header {
   backdrop-filter: blur(14px) saturate(0.8);
 }
 
+.focus-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--success) 40%, transparent) 0%, color-mix(in srgb, var(--success) 14%, transparent) 55%, transparent 100%);
+  box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--success) 55%, transparent);
+  transition: height 1s linear, background 0.6s ease, box-shadow 0.6s ease;
+}
+.focus-fill.over {
+  background: linear-gradient(to top, color-mix(in srgb, var(--danger) 46%, transparent) 0%, color-mix(in srgb, var(--danger) 16%, transparent) 55%, transparent 100%);
+  box-shadow: 0 -1px 0 0 color-mix(in srgb, var(--danger) 65%, transparent);
+  animation: focus-fill-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes focus-fill-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.68;
+  }
+}
 .focus-topbar {
   display: flex;
   align-items: center;
@@ -13731,16 +13770,7 @@ body.view-focus header {
   }
 }
 
-.focus-timer-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .focus-timer {
-  position: relative;
-  z-index: 1;
   font-size: clamp(80px, 17vw, 240px);
   font-weight: 800;
   line-height: 1;
@@ -13753,50 +13783,6 @@ body.view-focus header {
   opacity: 0.35;
 }
 
-.focus-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(200px, 30vw, 380px);
-  height: clamp(200px, 30vw, 380px);
-  transform: translate(-50%, -50%) rotate(-90deg);
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.3s;
-}
-
-.focus-timer-wrap.no-estimate .focus-ring {
-  opacity: 0;
-}
-
-.focus-ring-track {
-  fill: none;
-  stroke: var(--surface2);
-  stroke-width: 5;
-}
-
-.focus-ring-progress {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 5;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear, stroke 0.3s;
-}
-.focus-ring-progress.over {
-  stroke: var(--danger);
-  animation: focus-ring-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes focus-ring-pulse {
-  0%, 100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 0 transparent);
-  }
-  50% {
-    opacity: 0.55;
-    filter: drop-shadow(0 0 10px var(--danger));
-  }
-}
 .focus-estimate-label {
   font-size: 13px;
   font-weight: 600;

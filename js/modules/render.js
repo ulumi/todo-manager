@@ -109,6 +109,18 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const timeBadge = todo.startTime
     ? `<span class="todo-time-badge"><svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="6" cy="6" r="5"/><polyline points="6 3.5 6 6 8 7.2"/></svg>${todo.startTime}</span>`
     : '';
+  // Temps focus : durée réelle (occurrence complétée) ou progression en
+  // cours (focusTimeSpent, tâche non complétée reprise depuis un focus
+  // précédent) + estimation — vue jour uniquement
+  const focusTimeBadge = (() => {
+    if (!dayView) return '';
+    const est = todo.durationEstimated || null;
+    const spentMin = done ? (todo.durationReal || null) : (todo.focusTimeSpent ? Math.round(todo.focusTimeSpent / 60) : null);
+    if (!spentMin && !est) return '';
+    const label = spentMin && est ? `${spentMin}/${est} min` : spentMin ? `${spentMin} min` : `~${est} min`;
+    const title = spentMin && est ? 'Temps passé en focus / estimé' : spentMin ? 'Temps passé en focus' : 'Temps estimé';
+    return `<span class="todo-focustime-badge" title="${title}">⏱ ${label}</span>`;
+  })();
   const counterBar = (() => {
     if (!todo.counterEnabled || todo.countTo === undefined) return '';
     const cur  = todo.countCurrent ?? todo.countFrom ?? 0;
@@ -124,7 +136,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <span class="todo-counter-target">/ ${to}${unit}</span>
     </div>`;
   })();
-  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge;
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
   const isExpanded = window.app?.isSubtasksExpanded?.(todo.id) || false;
@@ -135,7 +147,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
         ${counterBar}
         ${dotsHTML}
       </div>

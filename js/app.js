@@ -63,7 +63,7 @@ import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
   focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
-  getPomodoro, savePomodoro, applyFocusEstimate,
+  getPomodoro, savePomodoro, applyFocusEstimate, saveFocusProgress,
 } from './modules/focus.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
@@ -2020,6 +2020,10 @@ class TodoApp {
   exitFocus() {
     if (state.view !== 'focus') return;
     this._stopFocusTick();
+    // Quitte sans compléter : sauvegarde le temps déjà passé sur la tâche
+    // courante (reprend à ce point la prochaine fois qu'on la refocus)
+    saveFocusProgress(this);
+    clearTimerState();
     this._focusWasFullscreen = false;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     const back = this._preFocusView && this._preFocusView !== 'focus' ? this._preFocusView : 'day';
@@ -2105,6 +2109,7 @@ class TodoApp {
       t.durationHistory.push({ date: DS(today()), minutes });
       if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
     }
+    delete t.focusTimeSpent; // occurrence complétée : plus de progression à reprendre
     toggleTodo(t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
@@ -2132,6 +2137,7 @@ class TodoApp {
   focusSkip() {
     const queue = getFocusQueue(this);
     if (queue.length < 2) return;
+    saveFocusProgress(this);
     focusMarkSkipped(queue[0].id);
     focusUnpin();
     clearTimerState();
@@ -2141,6 +2147,7 @@ class TodoApp {
   focusTomorrow() {
     const t = getFocusQueue(this)[0];
     if (!t || (t.recurrence && t.recurrence !== 'none')) return;
+    saveFocusProgress(this);
     focusUnpin();
     clearTimerState();
     this._sendManyTo([t.id], { date: DS(addDays(today(), 1)), backlog: false });
@@ -2155,6 +2162,8 @@ class TodoApp {
   }
 
   focusJumpTo(id) {
+    if (id === getFocusQueue(this)[0]?.id) return;
+    saveFocusProgress(this);
     focusPin(id);
     clearTimerState();
     this.render();
@@ -2258,6 +2267,8 @@ class TodoApp {
     const focusable = getTodosForDate(d, state.todos)
       .some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
     if (!focusable) { this.openEditModal(id, ds); return; }
+    // Déjà en focus sur une autre tâche : sauvegarde sa progression avant de basculer
+    if (state.view === 'focus' && id !== getFocusQueue(this)[0]?.id) saveFocusProgress(this);
     focusPin(id);
     clearTimerState();
     if (state.view === 'focus') this.render();

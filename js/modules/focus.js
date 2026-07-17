@@ -10,15 +10,12 @@ import * as state from './state.js';
 import { DS, today, esc } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
 import { getCategories } from './admin.js';
+import { saveTodos } from './storage.js';
 
 const PERIOD_RANK = { morning: 0, afternoon: 1, evening: 2 };
 const PERIOD_LABEL = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
 export const POMO_WORK = 25 * 60;
 export const POMO_BREAK = 5 * 60;
-
-// Anneau de décompte autour du chrono — rayon fixe (voir .focus-ring en SCSS)
-const RING_R = 92;
-const RING_C = 2 * Math.PI * RING_R;
 
 // Ids passés via « Passer » — renvoyés en fin de file (session seulement)
 let _skipped = [];
@@ -170,14 +167,44 @@ export function getFocusQueue(app) {
 
 // ── Chrono de tâche (persiste au refresh via localStorage) ──
 // { taskId, startedAt (ms, si en cours), accum (sec cumulées), paused }
+// Quand une NOUVELLE tâche démarre (taskId différent), reprend depuis
+// t.focusTimeSpent si la tâche a déjà du temps accumulé (Échap, Passer,
+// Demain, changement de tâche prioritaire — voir saveFocusProgress()) au
+// lieu de repartir de zéro. Filet de sécurité : si la tâche quittée n'est
+// pas passée par saveFocusProgress() avant d'être remplacée, on la
+// sauvegarde ici avant d'écraser son état.
 export function getTimerState(taskId) {
   let ts = null;
   try { ts = JSON.parse(localStorage.getItem('focusTimer')); } catch { /* corrompu */ }
   if (!ts || ts.taskId !== taskId) {
-    ts = { taskId, startedAt: Date.now(), accum: 0, paused: false };
+    if (ts) _flushProgress(ts.taskId, ts);
+    const t = state.todos.find(x => x.id === taskId);
+    const resume = Math.max(0, Math.round(t?.focusTimeSpent || 0));
+    ts = { taskId, startedAt: Date.now(), accum: resume, paused: false };
     localStorage.setItem('focusTimer', JSON.stringify(ts));
   }
   return ts;
+}
+
+function _flushProgress(taskId, ts) {
+  if (!ts || ts.taskId !== taskId) return;
+  const sec = elapsedSeconds(ts);
+  if (sec < 5) return; // micro-session : rien à sauvegarder
+  const t = state.todos.find(x => x.id === taskId);
+  if (!t) return;
+  t.focusTimeSpent = Math.round(sec);
+  t.updatedAt = Date.now();
+  saveTodos(state.todos);
+}
+
+// Sauvegarde la progression de la tâche courante AVANT de la quitter sans
+// la compléter (Échap, Passer, Demain, clic sur une autre tâche pour la
+// prioriser). Elle reprendra exactement à ce temps la prochaine fois
+// qu'on la (re)focus, via getTimerState() ci-dessus.
+export function saveFocusProgress(app) {
+  const t = getFocusQueue(app)[0];
+  if (!t) return;
+  _flushProgress(t.id, getTimerState(t.id));
 }
 
 export function saveTimerState(ts) {
@@ -372,22 +399,13 @@ export function renderFocusView(app) {
   const isRec = current.recurrence && current.recurrence !== 'none';
   const ts = getTimerState(current.id);
 
-  // Anneau de décompte : entoure le chrono (jamais recréé par
-  // applyFocusEstimate() — seuls son visibilité/ses attributs bougent,
-  // pour ne jamais interrompre le chrono en cours). Draine dans le sens
-  // horaire à mesure que le temps estimé s'écoule ; passe en rouge au-delà.
+  // Progression vers l'estimation : toute l'interface Focus se remplit
+  // depuis le bas (#focusFill, en dehors de .focus-main — jamais recréé
+  // par applyFocusEstimate() pour ne jamais interrompre le chrono en cours).
   const estSec = est * 60;
   const sec0 = elapsedSeconds(ts);
-  const ringRatio0 = estSec > 0 ? Math.min(1, sec0 / estSec) : 0;
-  const ringOver0 = estSec > 0 && sec0 > estSec;
-  const timerWrapHTML = `
-    <div class="focus-timer-wrap${est > 0 ? '' : ' no-estimate'}">
-      <svg class="focus-ring" viewBox="0 0 200 200" aria-hidden="true">
-        <circle class="focus-ring-track" cx="100" cy="100" r="${RING_R}"></circle>
-        <circle class="focus-ring-progress${ringOver0 ? ' over' : ''}" id="focusRingProgress" cx="100" cy="100" r="${RING_R}" style="stroke-dasharray:${RING_C};stroke-dashoffset:${RING_C * ringRatio0}"></circle>
-      </svg>
-      <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(sec0)}</div>
-    </div>`;
+  const fillRatio0 = estSec > 0 ? Math.min(1, sec0 / estSec) : 0;
+  const fillOver0 = estSec > 0 && sec0 > estSec;
 
   const estimateSideHTML = est > 0 ? `
     <span class="focus-estimate-label" id="focusEstimateLabel"></span>` : `
@@ -482,11 +500,12 @@ export function renderFocusView(app) {
     </div>` : '';
 
   return `<div class="focus-view">
+    <div class="focus-fill${fillOver0 ? ' over' : ''}" id="focusFill" style="height:${fillRatio0 * 100}%"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
     <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
       <div class="focus-main">
-        ${timerWrapHTML}
+        <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="Temps écoulé sur cette tâche">${fmtElapsed(sec0)}</div>
         ${estimateSideHTML}
         <div class="focus-task-title">${esc(current.title)}</div>
         ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
@@ -511,18 +530,18 @@ export function renderFocusView(app) {
   </div>`;
 }
 
-// Met à jour l'anneau de décompte + son libellé pour la tâche courante,
-// sans toucher au chrono lui-même. Partagé entre le tick 1 s et
+// Met à jour le remplissage de l'écran + son libellé pour la tâche
+// courante, sans toucher au chrono lui-même. Partagé entre le tick 1 s et
 // applyFocusEstimate() (saisie inline d'une estimation en cours de tâche).
 function _applyEstimateVisuals(current) {
   const est = (parseInt(current.durationEstimated) || 0) * 60;
-  const ring = document.getElementById('focusRingProgress');
-  if (est <= 0 || !ring) return;
+  const fill = document.getElementById('focusFill');
+  if (est <= 0 || !fill) return;
   const ts = getTimerState(current.id);
   const sec = elapsedSeconds(ts);
   const ratio = Math.min(1, sec / est);
-  ring.style.strokeDashoffset = String(RING_C * ratio);
-  ring.classList.toggle('over', sec > est);
+  fill.style.height = (ratio * 100) + '%';
+  fill.classList.toggle('over', sec > est);
   const label = document.getElementById('focusEstimateLabel');
   if (label) {
     label.textContent = sec <= est
@@ -533,14 +552,12 @@ function _applyEstimateVisuals(current) {
 
 // Applique une estimation saisie via le prompt inline SANS re-render complet
 // — sinon #focusTimer serait recréé et l'intervalle redémarré, interrompant
-// visuellement le chrono en cours. Seuls l'anneau (déjà présent, masqué) et
-// le prompt sont mis à jour en place.
+// visuellement le chrono en cours. Seul le prompt (remplacé par le libellé)
+// et le remplissage (déjà présent, à 0%) sont mis à jour en place.
 export function applyFocusEstimate(app) {
   const queue = getFocusQueue(app);
   const current = queue[0];
   if (!current) return;
-  const wrap = document.querySelector('.focus-timer-wrap');
-  if (wrap) wrap.classList.remove('no-estimate');
   const promptEl = document.getElementById('focusEstimateBlock');
   if (promptEl) promptEl.outerHTML = '<span class="focus-estimate-label" id="focusEstimateLabel"></span>';
   const progLabel = document.querySelector('.focus-progress-label');
