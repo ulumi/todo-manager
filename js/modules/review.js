@@ -168,6 +168,23 @@ export function renderTimeStatsRows(todos, { limit = 10 } = {}) {
     </div>`).join('');
 }
 
+// Ponctuelles en retard groupées par jour, avec actions (Fait/Auj./Dem./
+// date/BL/abandonner) — partagé entre le modal Bilan et le bandeau de
+// rappel de la vue jour (le bilan peut se faire directement dans les deux)
+export function renderOverdueGroups(overdue) {
+  if (!overdue.length) return '';
+  const byDate = new Map();
+  overdue.forEach(t => {
+    if (!byDate.has(t.date)) byDate.set(t.date, []);
+    byDate.get(t.date).push(t);
+  });
+  return [...byDate.entries()].map(([ds, items]) => `
+    <div class="review-group">
+      <div class="review-group-label">${_dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>
+      ${items.map(t => _itemRow(t)).join('')}
+    </div>`).join('');
+}
+
 // Corps du modal Bilan
 export function renderReviewBody(todos) {
   const overdue   = getOverduePunctual(todos);
@@ -178,19 +195,9 @@ export function renderReviewBody(todos) {
 
   // ── Ponctuelles en retard, groupées par jour ──
   if (overdue.length) {
-    const byDate = new Map();
-    overdue.forEach(t => {
-      if (!byDate.has(t.date)) byDate.set(t.date, []);
-      byDate.get(t.date).push(t);
-    });
-    const groups = [...byDate.entries()].map(([ds, items]) => `
-      <div class="review-group">
-        <div class="review-group-label">${_dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>
-        ${items.map(t => _itemRow(t)).join('')}
-      </div>`).join('');
     html += `<div class="review-section">
       <div class="review-section-title">Laissées pour compte <span class="review-section-badge">${overdue.length}</span></div>
-      ${groups}
+      ${renderOverdueGroups(overdue)}
       <div class="review-bulk">
         <button class="btn btn-primary" onclick="window.app.reviewAllToday()">Tout reporter à aujourd'hui</button>
         <button class="btn btn-ghost" onclick="window.app.reviewAllBacklog()">Tout en backlog</button>

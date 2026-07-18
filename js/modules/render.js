@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTas
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -691,12 +691,15 @@ export function renderDayView(todos) {
     const missed = getOverduePunctual(todos).filter(t => t.date >= cutoff);
     if (missed.length > 0) {
       pastDueBanner = `<div class="past-due-banner">
-        <span class="past-due-banner-icon">⚠</span>
-        <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
-        <div class="past-due-banner-actions">
-          <button class="past-due-banner-btn past-due-banner-btn--primary" onclick="window.app.openReviewModal()">Faire le bilan</button>
-          <button class="past-due-banner-btn" onclick="window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})">Reporter à aujourd'hui</button>
+        <div class="past-due-banner-head">
+          <span class="past-due-banner-icon">⚠</span>
+          <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
+          <div class="past-due-banner-actions">
+            <button class="past-due-banner-btn past-due-banner-btn--primary" onclick="window.app.openReviewModal()">Bilan complet</button>
+            <button class="past-due-banner-btn" onclick="window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})">Tout à aujourd'hui</button>
+          </div>
         </div>
+        <div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>
       </div>`;
     }
   }

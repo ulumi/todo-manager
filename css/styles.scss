@@ -13188,15 +13188,33 @@ body.view-focus header { display: none; }
 /* Bandeau jour passé (vue jour) */
 .past-due-banner {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
   margin: 0 0 16px;
-  padding: 10px 16px;
+  padding: 10px 16px 14px;
   border-radius: var(--radius);
   border: 1.5px solid color-mix(in srgb, var(--danger) 35%, transparent);
   background: color-mix(in srgb, var(--danger) 8%, var(--surface));
   animation: modal-in .35s cubic-bezier(.25,.46,.45,.94);
+}
+
+.past-due-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+// Bilan directement dans le bandeau : mêmes lignes (.review-item) et
+// actions (.review-act) que le modal Bilan, via renderOverdueGroups()
+.past-due-banner-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 340px;
+  overflow-y: auto;
+
+  .review-group:last-child { margin-bottom: 0; }
 }
 
 .past-due-banner-icon {
