@@ -12529,32 +12529,49 @@ body.view-focus header { display: none; }
   backdrop-filter: blur(14px) saturate(.8);
 }
 
-// Progression vers l'estimation : tout l'écran Focus se teinte d'une
-// couleur nette (pas de dégradé) dont l'opacité monte avec le temps
-// écoulé — vert jusqu'à mi-parcours, jaune passé la moitié du temps
-// estimé, rouge pulsant au-delà. z-index négatif : reste sous le contenu
+// Progression vers l'estimation : l'écran Focus se remplit depuis le bas,
+// façon niveau qui monte. Le dégradé est FIXE (paliers nets, pas de
+// fondu) et calé sur la hauteur du viewport, ancré en bas — seule la
+// hauteur de l'élément change (0 → 100%), ce qui révèle progressivement
+// vert (moitié basse) → jaune (3e quart) → rouge (dernier quart), sans
+// jamais recalculer de couleur. z-index négatif : reste sous le contenu
 // normal de .focus-view sans avoir à toucher celui-ci (ni #focusTimer,
 // jamais recréé — voir focus.js).
 .focus-fill {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
   z-index: -1;
   pointer-events: none;
-  background: var(--success);
-  opacity: 0;
-  transition: opacity 1s linear, background .6s ease;
+  opacity: .34;
+  background: linear-gradient(to top,
+    var(--success) 0%,   var(--success) 50%,
+    var(--warning) 50%,  var(--warning) 75%,
+    var(--danger)  75%,  var(--danger)  100%);
+  background-size: 100% 100vh;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  transition: height 1s linear;
 
-  &.half { background: var(--warning); }
-
-  &.over {
-    background: var(--danger);
-    animation: focus-fill-pulse 1.8s ease-in-out infinite;
-  }
+  // Dernier quart (ou dépassement) : pulsation rapide pour attirer l'œil
+  &.danger-zone { animation: focus-fill-pulse 1s ease-in-out infinite; }
 }
 
 @keyframes focus-fill-pulse {
-  0%, 100% { opacity: .40; }
+  0%, 100% { opacity: .42; }
   50%      { opacity: .16; }
+}
+
+// L'heure actuelle, bien visible près du chrono géant (en plus de
+// .focus-clock dans la barre du haut)
+.focus-now {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  letter-spacing: .02em;
 }
 
 // Bascule chrono (temps écoulé) ↔ compte à rebours (temps restant) — à

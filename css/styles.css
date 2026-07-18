@@ -13630,29 +13630,39 @@ body.view-focus header {
 
 .focus-fill {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
   z-index: -1;
   pointer-events: none;
-  background: var(--success);
-  opacity: 0;
-  transition: opacity 1s linear, background 0.6s ease;
+  opacity: 0.34;
+  background: linear-gradient(to top, var(--success) 0%, var(--success) 50%, var(--warning) 50%, var(--warning) 75%, var(--danger) 75%, var(--danger) 100%);
+  background-size: 100% 100vh;
+  background-position: bottom;
+  background-repeat: no-repeat;
+  transition: height 1s linear;
 }
-.focus-fill.half {
-  background: var(--warning);
-}
-.focus-fill.over {
-  background: var(--danger);
-  animation: focus-fill-pulse 1.8s ease-in-out infinite;
+.focus-fill.danger-zone {
+  animation: focus-fill-pulse 1s ease-in-out infinite;
 }
 
 @keyframes focus-fill-pulse {
   0%, 100% {
-    opacity: 0.4;
+    opacity: 0.42;
   }
   50% {
     opacity: 0.16;
   }
 }
+.focus-now {
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
 .focus-estimate-row {
   display: flex;
   align-items: center;
