@@ -15,6 +15,15 @@ import { saveTodos } from './storage.js';
 const PERIOD_RANK = { morning: 0, afternoon: 1, evening: 2 };
 const PERIOD_LABEL = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
 
+// Seuils du remplissage plein écran (ratio temps écoulé / estimé) : vert
+// jusqu'à WARNING_RATIO, jaune jusqu'à DANGER_RATIO — vert + jaune couvrent
+// donc l'essentiel (90 %) du temps prévu, le rouge ne marque que la toute
+// fin (derniers 10 %) au lieu d'un tiers égal façon drapeau. Passé
+// DANGER_RATIO : mode « urgence » (.focus-emergency) — chrono rouge
+// pulsant, file « Ensuite » et métadonnées secondaires s'effacent.
+const WARNING_RATIO = 0.5;
+const DANGER_RATIO = 0.9;
+
 // Ids passés via « Passer » — renvoyés en fin de file (session seulement)
 let _skipped = [];
 // Tâche courante épinglée : elle reste devant même si une tâche à heure
@@ -385,16 +394,16 @@ export function renderFocusView(app) {
   // Progression vers l'estimation : l'écran Focus se remplit depuis le bas
   // (#focusFill, en dehors de .focus-main — jamais recréé par
   // applyFocusEstimate() pour ne jamais interrompre le chrono en cours).
-  // Dégradé fixe à paliers nets (pas de fondu) : vert sur la moitié basse,
-  // jaune sur le 3e quart, rouge sur le dernier quart — la hauteur du
-  // remplissage (= temps écoulé / estimé) révèle progressivement ces
-  // paliers depuis le bas, façon niveau qui monte. Pulsation rapide dès
-  // le dernier quart pour attirer l'attention.
+  // Dégradé fixe à paliers nets (pas de fondu) : vert jusqu'à WARNING_RATIO,
+  // jaune jusqu'à DANGER_RATIO, rouge seulement sur les 10% finaux — la
+  // hauteur du remplissage (= temps écoulé / estimé) révèle progressivement
+  // ces paliers depuis le bas, façon niveau qui monte. Passé DANGER_RATIO :
+  // mode urgence (voir .focus-emergency plus bas).
   const estSec = est * 60;
   const sec0 = elapsedSeconds(ts);
   const fillRatio0 = estSec > 0 ? sec0 / estSec : 0;
   const fillHeight0 = Math.min(1, fillRatio0) * 100;
-  const fillDanger0 = fillRatio0 >= 0.75;
+  const fillDanger0 = fillRatio0 >= DANGER_RATIO;
 
   const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : `
     <div class="focus-estimate-prompt" id="focusEstimateBlock">
@@ -491,7 +500,7 @@ export function renderFocusView(app) {
       </div>
     </div>` : '';
 
-  return `<div class="focus-view">
+  return `<div class="focus-view${fillDanger0 ? ' focus-emergency' : ''}" id="focusView">
     <div class="focus-fill${fillDanger0 ? ' danger-zone' : ''}" id="focusFill" style="height:${fillHeight0}%"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
@@ -560,7 +569,9 @@ function _applyEstimateVisuals(current) {
   const sec = elapsedSeconds(ts);
   const ratio = sec / est;
   fill.style.height = (Math.min(1, ratio) * 100) + '%';
-  fill.classList.toggle('danger-zone', ratio >= 0.75);
+  const emergency = ratio >= DANGER_RATIO;
+  fill.classList.toggle('danger-zone', emergency);
+  document.getElementById('focusView')?.classList.toggle('focus-emergency', emergency);
   const label = document.getElementById('focusEstimateLabel');
   if (label) {
     label.textContent = sec <= est
@@ -632,7 +643,7 @@ export function renderFocusPip(app) {
   const sec = elapsedSeconds(getTimerState(current.id));
   const est = (parseInt(current.durationEstimated) || 0) * 60;
   const ratio = est > 0 ? sec / est : 0;
-  const zone = est <= 0 ? '' : ratio >= 0.75 ? ' zone-danger' : ratio >= 0.5 ? ' zone-warning' : ' zone-success';
+  const zone = est <= 0 ? '' : ratio >= DANGER_RATIO ? ' zone-danger' : ratio >= WARNING_RATIO ? ' zone-warning' : ' zone-success';
 
   let pip = document.getElementById('focusPip');
   if (!pip) {

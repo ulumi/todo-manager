@@ -13655,7 +13655,7 @@ body.view-focus header {
   z-index: -1;
   pointer-events: none;
   opacity: 0.34;
-  background: linear-gradient(to top, var(--success) 0%, var(--success) 50%, var(--warning) 50%, var(--warning) 75%, var(--danger) 75%, var(--danger) 100%);
+  background: linear-gradient(to top, var(--success) 0%, var(--success) 50%, var(--warning) 50%, var(--warning) 90%, var(--danger) 90%, var(--danger) 100%);
   background-size: 100% 100vh;
   background-position: bottom;
   background-repeat: no-repeat;
@@ -13673,12 +13673,54 @@ body.view-focus header {
     opacity: 0.16;
   }
 }
+.focus-progress,
+.focus-task-meta,
+.focus-task-desc,
+.focus-subtasks,
+.focus-counter,
+.focus-estimate-row {
+  transition: opacity 0.35s ease;
+}
+
+.focus-view.focus-emergency .focus-progress,
+.focus-view.focus-emergency .focus-task-meta,
+.focus-view.focus-emergency .focus-task-desc,
+.focus-view.focus-emergency .focus-subtasks,
+.focus-view.focus-emergency .focus-counter,
+.focus-view.focus-emergency .focus-estimate-row {
+  opacity: 0;
+  pointer-events: none;
+}
+.focus-view.focus-emergency .focus-queue {
+  grid-template-rows: 0fr;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.focus-view.focus-emergency .focus-timer {
+  color: var(--danger);
+  animation: focus-emergency-glow 1s ease-in-out infinite;
+}
+.focus-view.focus-emergency .focus-now {
+  color: color-mix(in srgb, var(--danger) 65%, var(--text-muted));
+}
+
+@keyframes focus-emergency-glow {
+  0%, 100% {
+    text-shadow: 0 0 20px color-mix(in srgb, var(--danger) 45%, transparent);
+  }
+  50% {
+    text-shadow: 0 0 42px color-mix(in srgb, var(--danger) 80%, transparent);
+  }
+}
 .focus-now {
   font-size: 18px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+  transition: color 0.4s ease;
 }
 
 .focus-estimate-row {
@@ -13839,7 +13881,7 @@ body.view-focus header {
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
-  transition: opacity 0.3s;
+  transition: opacity 0.3s, color 0.4s ease;
 }
 .focus-timer.paused {
   opacity: 0.35;
@@ -14081,16 +14123,18 @@ body.view-focus header {
 .focus-queue {
   flex-shrink: 0;
   padding: 18px 22px 26px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-rows: 1fr;
+  justify-items: center;
   width: 100%;
+  transition: grid-template-rows 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.35s ease;
 }
 .focus-queue .focus-queue-inner {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-height: 0;
+  overflow: hidden;
 }
 .focus-queue .focus-queue-head {
   display: flex;

@@ -12549,7 +12549,8 @@ body.view-focus header { display: none; }
 // façon niveau qui monte. Le dégradé est FIXE (paliers nets, pas de
 // fondu) et calé sur la hauteur du viewport, ancré en bas — seule la
 // hauteur de l'élément change (0 → 100%), ce qui révèle progressivement
-// vert (moitié basse) → jaune (3e quart) → rouge (dernier quart), sans
+// vert (jusqu'à WARNING_RATIO) → jaune (jusqu'à DANGER_RATIO) → rouge
+// (derniers 10 % seulement, pas un tiers égal façon drapeau), sans
 // jamais recalculer de couleur. z-index négatif : reste sous le contenu
 // normal de .focus-view sans avoir à toucher celui-ci (ni #focusTimer,
 // jamais recréé — voir focus.js).
@@ -12564,20 +12565,70 @@ body.view-focus header { display: none; }
   opacity: .34;
   background: linear-gradient(to top,
     var(--success) 0%,   var(--success) 50%,
-    var(--warning) 50%,  var(--warning) 75%,
-    var(--danger)  75%,  var(--danger)  100%);
+    var(--warning) 50%,  var(--warning) 90%,
+    var(--danger)  90%,  var(--danger)  100%);
   background-size: 100% 100vh;
   background-position: bottom;
   background-repeat: no-repeat;
   transition: height 1s linear;
 
-  // Dernier quart (ou dépassement) : pulsation rapide pour attirer l'œil
+  // Derniers 10 % (ou dépassement) : pulsation rapide pour attirer l'œil
   &.danger-zone { animation: focus-fill-pulse 1s ease-in-out infinite; }
 }
 
 @keyframes focus-fill-pulse {
   0%, 100% { opacity: .42; }
   50%      { opacity: .16; }
+}
+
+// ── Mode urgence (au-delà de DANGER_RATIO, focus.js) ──
+// Le chrono passe au rouge et pulse ; tout ce qui n'est pas essentiel
+// (métadonnées, sous-tâches, compteur, estimation, barre de progression,
+// file « Ensuite ») s'efface pour ne laisser que l'heure, le chrono, le
+// titre et les actions. Uniquement de l'opacité/repli — jamais de
+// clipping permanent hors de ce mode (le contenu reste consultable en
+// temps normal quelle que soit sa longueur).
+.focus-progress,
+.focus-task-meta,
+.focus-task-desc,
+.focus-subtasks,
+.focus-counter,
+.focus-estimate-row {
+  transition: opacity .35s ease;
+}
+
+.focus-view.focus-emergency {
+  .focus-progress,
+  .focus-task-meta,
+  .focus-task-desc,
+  .focus-subtasks,
+  .focus-counter,
+  .focus-estimate-row {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .focus-queue {
+    grid-template-rows: 0fr;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .focus-timer {
+    color: var(--danger);
+    animation: focus-emergency-glow 1s ease-in-out infinite;
+  }
+
+  .focus-now {
+    color: color-mix(in srgb, var(--danger) 65%, var(--text-muted));
+  }
+}
+
+@keyframes focus-emergency-glow {
+  0%, 100% { text-shadow: 0 0 20px color-mix(in srgb, var(--danger) 45%, transparent); }
+  50%      { text-shadow: 0 0 42px color-mix(in srgb, var(--danger) 80%, transparent); }
 }
 
 // L'heure actuelle, bien visible près du chrono géant (en plus de
@@ -12588,6 +12639,7 @@ body.view-focus header { display: none; }
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
   letter-spacing: .02em;
+  transition: color .4s ease;
 }
 
 // Bascule chrono (temps écoulé) ↔ compte à rebours (temps restant) — à
@@ -12748,7 +12800,7 @@ body.view-focus header { display: none; }
   letter-spacing: -.02em;
   font-variant-numeric: tabular-nums;
   color: var(--text);
-  transition: opacity .3s;
+  transition: opacity .3s, color .4s ease;
 
   &.paused { opacity: .35; }
 }
@@ -12981,20 +13033,27 @@ body.view-focus header { display: none; }
 }
 
 // ── File d'attente ──
+// display:grid + grid-template-rows: 1fr↔0fr (au lieu de max-height) pour
+// un repli qui s'anime en douceur quelle que soit la hauteur réelle du
+// contenu (1 à 3 colonnes, nombre de tâches variable) — voir .focus-emergency.
 .focus-queue {
   flex-shrink: 0;
   padding: 18px 22px 26px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  grid-template-rows: 1fr;
+  justify-items: center;
   width: 100%;
+  transition: grid-template-rows .45s cubic-bezier(.25,.46,.45,.94),
+              padding .45s cubic-bezier(.25,.46,.45,.94),
+              opacity .35s ease;
 
   // Largeur pilotée par le nombre de colonnes choisi (inline style)
   .focus-queue-inner {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    min-height: 0;
+    overflow: hidden;
   }
 
   // En-tête : titre repliable à gauche, contrôles vue/tri/colonnes à droite
