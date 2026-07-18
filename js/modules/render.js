@@ -254,6 +254,9 @@ export function renderDayView(todos) {
 
   const isStatsMode = state.pastDisplayMode === 'stats';
   const isPastDay = dateStr < DS(new Date());
+  // Nombre d'items réellement visibles (les complétées masquées en mode
+  // stats ne comptent pas) — une section/un groupe sans item visible disparaît
+  const _visCount = items => isStatsMode ? items.filter(t => !isCompleted(t, navDate)).length : items.length;
 
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
@@ -356,27 +359,29 @@ export function renderDayView(todos) {
 
   let leftCol = '';
 
-  // Daily items — split by period (only render non-empty sections)
-  const hasDailyPeriods = sortedDailyMorning.length > 0 || sortedDailyAfternoon.length > 0 || sortedDailyEvening.length > 0 || sortedDailyNoPeriod.length > 0;
+  // Daily items — split by period (only render non-empty sections, i.e.
+  // au moins un item visible : une section entièrement complétée-masquée
+  // en mode stats disparaît comme si elle était vide)
+  const hasDailyPeriods = _visCount(sortedDailyMorning) > 0 || _visCount(sortedDailyAfternoon) > 0 || _visCount(sortedDailyEvening) > 0 || _visCount(sortedDailyNoPeriod) > 0;
   if (hasDailyPeriods) {
     leftCol += dailyGroupLabel;
     if (recPeriodGroups) {
-      if (sortedDailyNoPeriod.length > 0)
+      if (_visCount(sortedDailyNoPeriod) > 0)
         leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-      if (sortedDailyMorning.length > 0)
+      if (_visCount(sortedDailyMorning) > 0)
         leftCol += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="daily-morning" style="${recColStyle}">${sortedDailyMorning.map(t => todoItemHTML(t, navDate, 'daily-morning', true)).join('')}</div>`;
-      if (sortedDailyAfternoon.length > 0)
+      if (_visCount(sortedDailyAfternoon) > 0)
         leftCol += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="daily-afternoon" style="${recColStyle}">${sortedDailyAfternoon.map(t => todoItemHTML(t, navDate, 'daily-afternoon', true)).join('')}</div>`;
-      if (sortedDailyEvening.length > 0)
+      if (_visCount(sortedDailyEvening) > 0)
         leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
     } else {
       const allDaily = sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []);
       leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${allDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
     }
   }
-  if (sortedWeekly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
-  if (sortedMonthly.length > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
-  if (sortedYearly.length > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
+  if (_visCount(sortedWeekly) > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
+  if (_visCount(sortedMonthly) > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
+  if (_visCount(sortedYearly) > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
   if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
   // Column count — icon buttons (forcé à 1 quand le panneau de relance occupe la 3e colonne)
@@ -428,10 +433,14 @@ export function renderDayView(todos) {
   const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
   let rightColItems = '';
 
-  // Punctual period sections — always render all 3 when period groups enabled (for drop targets)
+  // Punctual period sections — toujours rendues même vides quand groupes de
+  // périodes activés (pour garder une cible de drop) — SAUF si elles ont des
+  // items mais qu'ils sont tous complétés-masqués (mode stats) : là, la
+  // section disparaît comme une vraie section vide de sens
   const hasPunctualPeriods = dayPeriodGroupsForRender;
   let punctualPeriodSections = '';
   const _mkPeriodSection = (items, group, label) => {
+    if (items.length > 0 && _visCount(items) === 0) return '';
     const content = items.length
       ? items.map(t => todoItemHTML(t, navDate, group)).join('')
       : `<div class="period-dropzone"></div>`;
@@ -540,6 +549,7 @@ export function renderDayView(todos) {
     const _moonSvg    = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 
     const mkHeureSection = (items, group, period, label, icon) => {
+      if (items.length > 0 && _visCount(items) === 0) return '';
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
       const listContent = items.length
         ? items.map(t => todoItemHTML(t, navDate, group)).join('')
