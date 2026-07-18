@@ -2199,18 +2199,6 @@ input:checked + .cal-sid-toggle-track::after {
   min-width: 0;
 }
 
-.period-dropzone {
-  height: 44px;
-  border: 1.5px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  margin: 2px 0;
-  transition: border-color 0.15s, background 0.15s;
-}
-.dragging-active .period-dropzone {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.03);
-}
-
 .day-heure-label {
   display: flex;
   align-items: center;
