@@ -307,18 +307,12 @@ export function renderDayView(todos) {
   const recDone = recActive.filter(t => isCompleted(t, navDate)).length;
   const punctDone = punctActive.filter(t => isCompleted(t, navDate)).length;
 
-  // Combined stats bar (single, in left column only) — annulées hors compte
+  // Annulées hors compte
   const totalAll = punctActive.length + recActive.length;
   // Journée bouclée (aujourd'hui/futur, tout complété) → 3e colonne de relance,
   // et la colonne Aujourd'hui repasse sur une seule colonne
   const hasRefill = !isPastDay && totalAll > 0 && (punctDone + recDone) === totalAll;
   const doneAll = punctDone + recDone;
-  const statsPct = totalAll > 0 ? Math.round((doneAll / totalAll) * 100) : 0;
-  const combinedStats = totalAll > 0 ? `<div class="day-stats-summary">
-    <div class="day-stats-bar"><div class="day-stats-fill" style="width:${statsPct}%"></div></div>
-    <span class="day-stats-label">${doneAll}/${totalAll}</span>
-    <span class="day-stats-pct">${statsPct}%</span>
-  </div>` : '';
 
   // Always render ALL items (CSS hides .done items in stats-mode)
   // Daily column count (only for daily group)
@@ -714,7 +708,7 @@ export function renderDayView(todos) {
     }
   }
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${combinedStats}${actionBar}</div>`;
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

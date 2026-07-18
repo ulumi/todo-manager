@@ -940,23 +940,8 @@ input:checked + .cal-sid-toggle-track::after {
   letter-spacing: 0.02em;
 }
 
-.day-stats-summary {
-  display: none;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  margin: 4px 0 0;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-}
-
 .day-view.stats-mode .todo-item.done {
   display: none;
-}
-
-.day-view.stats-mode .day-stats-summary {
-  display: flex;
 }
 
 .day-view.stats-mode .day-done-accordion-bd .todo-item {
@@ -1304,35 +1289,6 @@ input:checked + .cal-sid-toggle-track::after {
   font-weight: 600;
   color: var(--success);
   padding: 4px 0 0;
-}
-
-.day-stats-bar {
-  flex: 1;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.day-stats-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.day-stats-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.day-stats-pct {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  white-space: nowrap;
 }
 
 .week-today-score {
