@@ -81,7 +81,7 @@ export function setupEventListeners(app) {
     if (visible('leavePromptOverlay'))   { app.closeLeavePrompt();   return; }
     if (visible('avatarEditorOverlay'))  { app.closeAvatarEditor();  return; }
     if (visible('guestNameOverlay'))     { app.skipGuestName();      return; }
-    if (document.body.classList.contains('view-focus')) { app.exitFocus(); return; }
+    if (document.body.classList.contains('view-focus')) { app.minimizeFocus(); return; }
   });
 
   // Keyboard shortcuts

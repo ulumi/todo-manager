@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════
 //  MODE FOCUS — plein écran, une tâche à la fois
 //  File intelligente des tâches du jour, chrono géant depuis le
-//  début de la tâche, compte à rebours sur durée estimée, Pomodoro,
-//  sous-tâches, compteurs. Voir app.js pour les actions (enterFocus,
-//  focusComplete, focusSkip, …).
+//  début de la tâche, compte à rebours sur durée estimée, réduction en
+//  PiP, sous-tâches, compteurs. Voir app.js pour les actions (enterFocus,
+//  focusComplete, focusSkip, minimizeFocus, …).
 // ════════════════════════════════════════════════════════
 
 import * as state from './state.js';
@@ -14,8 +14,6 @@ import { saveTodos } from './storage.js';
 
 const PERIOD_RANK = { morning: 0, afternoon: 1, evening: 2 };
 const PERIOD_LABEL = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir' };
-export const POMO_WORK = 25 * 60;
-export const POMO_BREAK = 5 * 60;
 
 // Ids passés via « Passer » — renvoyés en fin de file (session seulement)
 let _skipped = [];
@@ -242,22 +240,6 @@ export function fmtElapsed(sec) {
   return h > 0 ? `${h}:${p2(m)}:${p2(s)}` : `${p2(m)}:${p2(s)}`;
 }
 
-// ── Pomodoro ─────────────────────────────────────────────
-// { on, phase: 'work'|'break', phaseStart (ms) }
-export function getPomodoro() {
-  try { return JSON.parse(localStorage.getItem('focusPomodoro')) || { on: false }; }
-  catch { return { on: false }; }
-}
-
-export function savePomodoro(p) {
-  localStorage.setItem('focusPomodoro', JSON.stringify(p));
-}
-
-export function pomodoroRemaining(p) {
-  const dur = p.phase === 'break' ? POMO_BREAK : POMO_WORK;
-  return dur - Math.floor((Date.now() - p.phaseStart) / 1000);
-}
-
 // ── Panneau de relance « Journée bouclée » ───────────────
 // Partagé entre le mode Focus et la vue jour : piocher dans le backlog
 // (la tâche est datée `ds` et sortie du backlog) ou créer une tâche pour `ds`.
@@ -365,7 +347,6 @@ export function renderFocusView(app) {
     ? ` · ~${remainMin >= 60 ? `${Math.floor(remainMin / 60)}h${String(remainMin % 60).padStart(2, '0')}` : `${remainMin} min`} restantes`
     : '';
   const pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
-  const pomo = getPomodoro();
 
   const topbar = `
     <div class="focus-topbar">
@@ -375,8 +356,10 @@ export function renderFocusView(app) {
         <span class="focus-progress-label">${doneCount}/${total}${remainLabel}</span>
       </div>
       <div class="focus-topbar-actions">
-        <button class="focus-pill${pomo.on ? ' active' : ''}" id="focusPomoBtn" onclick="window.app.focusTogglePomodoro()" title="Pomodoro 25/5">🍅<span id="focusPomoLabel">${pomo.on ? '' : ' Pomodoro'}</span></button>
-        <button class="focus-pill" onclick="window.app.exitFocus()" title="Quitter (Échap)">✕</button>
+        <button class="focus-pill" onclick="window.app.minimizeFocus()" title="Réduire, façon Picture-in-Picture (Échap)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="focus-pill" onclick="window.app.closeFocus()" title="Fermer le focus">✕</button>
       </div>
     </div>`;
 
@@ -390,7 +373,7 @@ export function renderFocusView(app) {
         <div class="focus-done-title">Journée bouclée</div>
         <div class="focus-done-sub">${doneCount} tâche${doneCount > 1 ? 's' : ''} complétée${doneCount > 1 ? 's' : ''} aujourd'hui</div>
         ${renderRefillPanel({ ds: DS(d), mode: 'focus', header: false })}
-        <button class="focus-action" onclick="window.app.exitFocus()">Quitter le focus</button>
+        <button class="focus-action" onclick="window.app.closeFocus()">Quitter le focus</button>
       </div>
     </div>`;
   }
@@ -527,18 +510,12 @@ export function renderFocusView(app) {
       </div>
     </div>
     ${queueHTML}
-    <div class="focus-break-overlay hidden" id="focusBreakOverlay">
-      <div class="focus-break-emoji">☕</div>
-      <div class="focus-break-title">Pause</div>
-      <div class="focus-break-timer" id="focusBreakTimer">5:00</div>
-      <button class="focus-action" onclick="window.app.focusSkipBreak()">Reprendre maintenant</button>
-    </div>
   </div>`;
 }
 
 // ── Mode d'affichage du chrono : temps écoulé (défaut) ou compte à
 // rebours (uniquement affiché si une estimation existe). Préférence
-// globale locale (non synchronisée, comme focusPomodoro). ──
+// globale locale (non synchronisée). ──
 export function getTimerMode() {
   return localStorage.getItem('focusTimerMode') === 'countdown' ? 'countdown' : 'elapsed';
 }
@@ -633,7 +610,45 @@ export function applyTimerMode(app) {
   }
 }
 
-// ── Tick (1 s) — met à jour chrono, estimation, pomodoro, bandeau ──
+// ── Picture-in-Picture : petit widget flottant quand le Focus est réduit
+// (app.minimizeFocus()/restoreFocus()/closeFocus(), app.js). Vit en dehors
+// de #mainContent (appendé à document.body) pour survivre aux changements
+// de vue pendant que la session continue. Le chrono garde son état réel
+// (getTimerState) — seul l'affichage change ; focusTick() met à jour son
+// texte chaque seconde comme pour la vue plein écran.
+export function renderFocusPip(app) {
+  if (!app._focusMinimized) { removeFocusPip(); return; }
+  const queue = getFocusQueue(app);
+  const current = queue[0];
+  if (!current) { app._focusMinimized = false; removeFocusPip(); return; }
+  // Garde le tick synchronisé même quand renderFocusView() (qui pose
+  // normalement _focusRenderedQueueSig) n'est pas appelée
+  app._focusRenderedQueueSig = queue.map(t => t.id).join(',');
+
+  const sec = elapsedSeconds(getTimerState(current.id));
+  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const ratio = est > 0 ? sec / est : 0;
+  const zone = est <= 0 ? '' : ratio >= 0.75 ? ' zone-danger' : ratio >= 0.5 ? ' zone-warning' : ' zone-success';
+
+  let pip = document.getElementById('focusPip');
+  if (!pip) {
+    pip = document.createElement('div');
+    pip.id = 'focusPip';
+    pip.onclick = () => window.app.restoreFocus();
+    document.body.appendChild(pip);
+  }
+  pip.className = `focus-pip${zone}`;
+  pip.innerHTML = `
+    <div class="focus-pip-timer" id="focusPipTimer">${_timerDisplayText(current, sec)}</div>
+    <div class="focus-pip-title">${esc(current.title)}</div>
+    <button class="focus-pip-close" onclick="event.stopPropagation();window.app.closeFocus()" title="Fermer">✕</button>`;
+}
+
+export function removeFocusPip() {
+  document.getElementById('focusPip')?.remove();
+}
+
+// ── Tick (1 s) — met à jour chrono, estimation, bandeau, PiP si réduit ──
 // sans re-render complet. Retourne true si un render est nécessaire.
 export function focusTick(app) {
   const queue = getFocusQueue(app);
@@ -653,34 +668,10 @@ export function focusTick(app) {
   const sec = elapsedSeconds(ts);
   const timerEl = document.getElementById('focusTimer');
   if (timerEl) timerEl.textContent = _timerDisplayText(current, sec);
+  const pipTimerEl = document.getElementById('focusPipTimer');
+  if (pipTimerEl) pipTimerEl.textContent = _timerDisplayText(current, sec);
 
   _applyEstimateVisuals(current);
-
-  // Pomodoro : transitions de phase + affichage
-  const pomo = getPomodoro();
-  const pomoLabel = document.getElementById('focusPomoLabel');
-  const breakOverlay = document.getElementById('focusBreakOverlay');
-  if (pomo.on) {
-    let left = pomodoroRemaining(pomo);
-    if (left <= 0) {
-      pomo.phase = pomo.phase === 'work' ? 'break' : 'work';
-      pomo.phaseStart = Date.now();
-      savePomodoro(pomo);
-      // La pause du pomodoro met le chrono de tâche en pause
-      if (pomo.phase === 'break') pauseTimer(getTimerState(current.id));
-      else resumeTimer(getTimerState(current.id));
-      left = pomodoroRemaining(pomo);
-    }
-    const mm = Math.floor(left / 60), ss = String(left % 60).padStart(2, '0');
-    if (pomoLabel) pomoLabel.textContent = ` ${mm}:${ss}`;
-    if (breakOverlay) {
-      breakOverlay.classList.toggle('hidden', pomo.phase !== 'break');
-      const bt = document.getElementById('focusBreakTimer');
-      if (bt) bt.textContent = `${mm}:${ss}`;
-    }
-  } else if (breakOverlay) {
-    breakOverlay.classList.add('hidden');
-  }
 
   // Bandeau : une tâche à heure fixe est échue et n'est pas la courante
   const nowHM = _nowHM();

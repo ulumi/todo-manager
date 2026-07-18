@@ -12664,6 +12664,8 @@ body.view-focus header { display: none; }
   cursor: pointer;
   transition: background .15s cubic-bezier(.25,.46,.45,.94), border-color .15s;
 
+  svg { width: 14px; height: 14px; }
+
   &:hover { background: var(--surface2); }
   &.active { border-color: var(--primary); color: var(--primary); }
 }
@@ -13172,30 +13174,64 @@ body.view-focus header { display: none; }
   .focus-done-sub   { font-size: 16px; color: var(--text-muted); }
 }
 
-// ── Pause pomodoro ──
-.focus-break-overlay {
+// ── Picture-in-Picture : widget flottant quand le Focus est réduit ──
+// (app.minimizeFocus()/restoreFocus()/closeFocus(), focus.js renderFocusPip())
+.focus-pip {
   position: fixed;
-  inset: 0;
-  z-index: 520;
+  right: 20px;
+  bottom: 20px;
+  z-index: 600;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--primary);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  max-width: min(340px, calc(100vw - 40px));
+  animation: modal-in .3s cubic-bezier(.25,.46,.45,.94);
+
+  &.zone-success { border-left-color: var(--success); }
+  &.zone-warning { border-left-color: var(--warning); }
+  &.zone-danger  { border-left-color: var(--danger); animation: focus-fill-pulse 1s ease-in-out infinite, modal-in .3s cubic-bezier(.25,.46,.45,.94); }
+}
+
+.focus-pip-timer {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.focus-pip-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-pip-close {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(18px);
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s;
 
-  &.hidden { display: none; }
-
-  .focus-break-emoji { font-size: 60px; }
-  .focus-break-title { font-size: 26px; font-weight: 700; }
-
-  .focus-break-timer {
-    font-size: clamp(56px, 10vw, 120px);
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-muted);
-  }
+  &:hover { background: var(--surface2); color: var(--text); }
 }
 
 /* ════════════════════════════════════════════════════════

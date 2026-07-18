@@ -63,8 +63,9 @@ import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
   focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
-  getPomodoro, savePomodoro, applyFocusEstimate, saveFocusProgress,
+  applyFocusEstimate, saveFocusProgress,
   toggleTimerMode, applyTimerMode,
+  renderFocusPip, removeFocusPip,
 } from './modules/focus.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
@@ -2007,6 +2008,7 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   enterFocus() {
     if (state.view === 'focus') return;
+    if (this._focusMinimized) { this.restoreFocus(); return; }
     this._preFocusView = state.view;
     state.setView('focus');
     localStorage.setItem('view', 'focus');
@@ -2018,13 +2020,13 @@ class TodoApp {
     }).catch(() => {});
   }
 
-  exitFocus() {
+  // Réduit le Focus en petit widget flottant (Picture-in-Picture) : la
+  // session continue (le chrono tourne toujours), seule l'interface plein
+  // écran disparaît. Action de base en quittant (Échap, sortie du plein
+  // écran natif) — voir closeFocus() pour fermer la session pour de bon.
+  minimizeFocus() {
     if (state.view !== 'focus') return;
-    this._stopFocusTick();
-    // Quitte sans compléter : sauvegarde le temps déjà passé sur la tâche
-    // courante (reprend à ce point la prochaine fois qu'on la refocus)
-    saveFocusProgress(this);
-    clearTimerState();
+    this._focusMinimized = true;
     this._focusWasFullscreen = false;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
     const back = this._preFocusView && this._preFocusView !== 'focus' ? this._preFocusView : 'day';
@@ -2034,19 +2036,56 @@ class TodoApp {
     this.render();
   }
 
+  // Restaure le Focus plein écran depuis le widget PiP
+  restoreFocus() {
+    if (!this._focusMinimized) return;
+    this._focusMinimized = false;
+    removeFocusPip();
+    this._preFocusView = state.view;
+    state.setView('focus');
+    localStorage.setItem('view', 'focus');
+    this._pushHistory();
+    this.render();
+    document.documentElement.requestFullscreen?.().then(() => {
+      this._focusWasFullscreen = true;
+    }).catch(() => {});
+  }
+
+  // Ferme la session pour de bon (bouton ✕, plein écran ou PiP) : sauvegarde
+  // la progression, arrête le chrono, quitte la vue Focus et le PiP.
+  closeFocus() {
+    if (state.view !== 'focus' && !this._focusMinimized) return;
+    this._stopFocusTick();
+    // Sauvegarde le temps déjà passé sur la tâche courante (reprend à ce
+    // point la prochaine fois qu'on la refocus)
+    saveFocusProgress(this);
+    clearTimerState();
+    this._focusMinimized = false;
+    removeFocusPip();
+    this._focusWasFullscreen = false;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    if (state.view === 'focus') {
+      const back = this._preFocusView && this._preFocusView !== 'focus' ? this._preFocusView : 'day';
+      state.setView(back);
+      localStorage.setItem('view', back);
+      this._pushHistory();
+    }
+    this.render();
+  }
+
   initFocusView() {
     this._stopFocusTick();
     this.initFocusQueueDnD();
     this._focusInterval = setInterval(() => {
-      if (state.view !== 'focus') { this._stopFocusTick(); return; }
+      if (state.view !== 'focus' && !this._focusMinimized) { this._stopFocusTick(); return; }
       if (focusTick(this)) this.render();
     }, 1000);
-    // Sortie du plein écran natif (Échap navigateur) → quitter le focus
+    // Sortie du plein écran natif (Échap navigateur) → réduit en PiP
     if (!this._focusFsBound) {
       this._focusFsBound = true;
       document.addEventListener('fullscreenchange', () => {
         if (!document.fullscreenElement && state.view === 'focus' && this._focusWasFullscreen) {
-          this.exitFocus();
+          this.minimizeFocus();
         }
       });
     }
@@ -2223,29 +2262,6 @@ class TodoApp {
     this.render();
   }
 
-  focusTogglePomodoro() {
-    const p = getPomodoro();
-    if (p.on) {
-      savePomodoro({ on: false });
-      const t = getFocusQueue(this)[0];
-      if (t) resumeTimer(getTimerState(t.id));
-    } else {
-      savePomodoro({ on: true, phase: 'work', phaseStart: Date.now() });
-    }
-    this.render();
-  }
-
-  focusSkipBreak() {
-    const p = getPomodoro();
-    if (!p.on) return;
-    p.phase = 'work';
-    p.phaseStart = Date.now();
-    savePomodoro(p);
-    const t = getFocusQueue(this)[0];
-    if (t) resumeTimer(getTimerState(t.id));
-    this.render();
-  }
-
   focusToggleSubtask(todoId, stid) {
     this.toggleSubtask(todoId, stid, DS(today()));
   }
@@ -2277,8 +2293,9 @@ class TodoApp {
     const focusable = getTodosForDate(d, state.todos)
       .some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
     if (!focusable) { this.openEditModal(id, ds); return; }
-    // Déjà en focus sur une autre tâche : sauvegarde sa progression avant de basculer
-    if (state.view === 'focus' && id !== getFocusQueue(this)[0]?.id) saveFocusProgress(this);
+    // Déjà en focus (plein écran ou réduit) sur une autre tâche : sauvegarde
+    // sa progression avant de basculer
+    if ((state.view === 'focus' || this._focusMinimized) && id !== getFocusQueue(this)[0]?.id) saveFocusProgress(this);
     focusPin(id);
     clearTimerState();
     if (state.view === 'focus') this.render();
@@ -3136,7 +3153,8 @@ class TodoApp {
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
-    if (state.view === 'focus') this.initFocusView(); else this._stopFocusTick();
+    if (state.view === 'focus' || this._focusMinimized) this.initFocusView(); else this._stopFocusTick();
+    renderFocusPip(this);
     document.querySelector('.focus-tab')?.classList.toggle('active', state.view === 'focus');
     this.initHeaderDropZones();
     this.renderQACloud();
