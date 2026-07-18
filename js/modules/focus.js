@@ -243,6 +243,14 @@ export function resumeTimer(ts) {
   return ts;
 }
 
+// Remet le chrono de la tâche courante à zéro (garde l'état pause/lecture)
+export function resetTimer(ts) {
+  ts.accum = 0;
+  ts.startedAt = Date.now();
+  saveTimerState(ts);
+  return ts;
+}
+
 export function fmtElapsed(sec) {
   const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
   const p2 = n => String(n).padStart(2, '0');
@@ -405,12 +413,7 @@ export function renderFocusView(app) {
   const fillHeight0 = Math.min(1, fillRatio0) * 100;
   const fillDanger0 = fillRatio0 >= DANGER_RATIO;
 
-  const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : `
-    <div class="focus-estimate-prompt" id="focusEstimateBlock">
-      <span class="focus-estimate-prompt-label">Combien de temps pour cette tâche ?</span>
-      <input type="number" min="1" step="1" inputmode="numeric" class="focus-estimate-input" id="focusEstimateInput" placeholder="min" onkeydown="if(event.key==='Enter')window.app.focusSetEstimate('${current.id}', this.value)">
-      <button class="focus-estimate-save" onclick="window.app.focusSetEstimate('${current.id}', document.getElementById('focusEstimateInput').value)">OK</button>
-    </div>`;
+  const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : _estimatePromptHTML(current.id);
 
   const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
 
@@ -422,6 +425,7 @@ export function renderFocusView(app) {
     play:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>`,
     skip:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v12l8-6-8-6Z"/><path d="M13 6v12l8-6-8-6Z"/></svg>`,
     tomorrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10h16"/><path d="M9 15h4M9 15l1.6-1.6M9 15l1.6 1.6"/></svg>`,
+    reset: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 1 0 18 16"/><polyline points="20 4 20 11 13 11"/></svg>`,
   };
   const actBtn = (cls, onclick, id, icon, label, kbd) =>
     `<button class="focus-action ${cls}" onclick="${onclick}"${id ? ` id="${id}"` : ''} title="${label} (${kbd})">${icon}</button>`;
@@ -507,7 +511,10 @@ export function renderFocusView(app) {
     <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
       <div class="focus-main">
         <div class="focus-now" id="focusNow">${_nowHM()}</div>
-        <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="${_timerTitle(current)}">${_timerDisplayText(current, sec0)}</div>
+        <div class="focus-timer-row">
+          <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="${_timerTitle(current)}">${_timerDisplayText(current, sec0)}</div>
+          <button class="focus-timer-reset" onclick="window.app.focusResetTimer('${current.id}')" title="Réinitialiser le chrono">${ICON.reset}</button>
+        </div>
         ${estimateSideHTML}
         <div class="focus-task-title">${esc(current.title)}</div>
         ${current.description ? `<div class="focus-task-desc">${esc(current.description)}</div>` : ''}
@@ -550,10 +557,38 @@ function _timerTitle(current) {
   return (est > 0 && getTimerMode() === 'countdown') ? 'Temps restant avant l\'estimation' : 'Temps écoulé sur cette tâche';
 }
 
+// Invitation à estimer / rééditer le temps prévu — même bloc utilisé au
+// premier réglage (renderFocusView, value vide) et pour changer une
+// estimation déjà définie (app.focusEditEstimate(), value pré-remplie) :
+// focusSetEstimate() cherche #focusEstimateBlock et le remplace toujours
+// par _estimateLabelRowHTML() via applyFocusEstimate(), donc ce même id
+// fonctionne dans les deux cas sans code dédié.
+function _estimatePromptHTML(id, value = '') {
+  return `<div class="focus-estimate-prompt" id="focusEstimateBlock">
+      <span class="focus-estimate-prompt-label">${value ? 'Nouvelle estimation ?' : 'Combien de temps pour cette tâche ?'}</span>
+      <input type="number" min="1" step="1" inputmode="numeric" class="focus-estimate-input" id="focusEstimateInput" value="${value}" placeholder="min" onkeydown="if(event.key==='Enter')window.app.focusSetEstimate('${id}', this.value)">
+      <button class="focus-estimate-save" onclick="window.app.focusSetEstimate('${id}', document.getElementById('focusEstimateInput').value)">OK</button>
+    </div>`;
+}
+
+// Lance l'édition d'une estimation déjà définie : remplace la ligne
+// libellé + toggle par le même prompt que le réglage initial, pré-rempli.
+// Patch DOM ciblé (jamais de render() complet — voir applyFocusEstimate).
+export function startEditEstimate(app) {
+  const current = getFocusQueue(app)[0];
+  if (!current) return;
+  const row = document.querySelector('.focus-estimate-row');
+  if (!row) return;
+  row.outerHTML = _estimatePromptHTML(current.id, current.durationEstimated || '');
+  const input = document.getElementById('focusEstimateInput');
+  input?.focus();
+  input?.select();
+}
+
 function _estimateLabelRowHTML() {
   const mode = getTimerMode();
   return `<div class="focus-estimate-row">
-      <span class="focus-estimate-label" id="focusEstimateLabel"></span>
+      <span class="focus-estimate-label" id="focusEstimateLabel" onclick="window.app.focusEditEstimate()" title="Cliquer pour changer l'estimation"></span>
       <button class="focus-timermode-btn${mode === 'countdown' ? ' active' : ''}" id="focusTimerModeBtn" onclick="window.app.focusToggleTimerMode()" title="${mode === 'countdown' ? 'Revenir au chrono (temps écoulé)' : 'Passer en compte à rebours (temps restant)'}">⏳</button>
     </div>`;
 }
@@ -589,8 +624,11 @@ export function applyFocusEstimate(app) {
   const queue = getFocusQueue(app);
   const current = queue[0];
   if (!current) return;
+  // Ne remplace le prompt que s'il a effectivement été répondu (une
+  // estimation existe désormais) — appelé aussi par focusResetTimer(),
+  // qui ne doit pas fermer un prompt encore sans réponse.
   const promptEl = document.getElementById('focusEstimateBlock');
-  if (promptEl) promptEl.outerHTML = _estimateLabelRowHTML();
+  if (promptEl && current.durationEstimated > 0) promptEl.outerHTML = _estimateLabelRowHTML();
   const progLabel = document.querySelector('.focus-progress-label');
   if (progLabel) {
     const todayAll = getTodosForDate(today(), state.todos);

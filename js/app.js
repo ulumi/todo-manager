@@ -62,8 +62,8 @@ import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECT
 import {
   renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
   focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
-  getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer,
-  applyFocusEstimate, saveFocusProgress,
+  getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer, resetTimer,
+  applyFocusEstimate, saveFocusProgress, startEditEstimate,
   toggleTimerMode, applyTimerMode,
   renderFocusPip, removeFocusPip,
 } from './modules/focus.js';
@@ -2181,6 +2181,24 @@ class TodoApp {
     t.durationEstimated = minutes;
     t.updatedAt = Date.now();
     saveTodos(state.todos);
+    applyFocusEstimate(this);
+  }
+
+  // Rouvre le prompt d'estimation (pré-rempli) pour la tâche courante —
+  // clic sur le libellé « reste X min » une fois l'estimation déjà définie.
+  focusEditEstimate() {
+    startEditEstimate(this);
+  }
+
+  // Remet le chrono de la tâche courante à zéro sans la compléter.
+  focusResetTimer(id) {
+    const current = getFocusQueue(this)[0];
+    if (!current || current.id !== id) return;
+    resetTimer(getTimerState(id));
+    if (current.focusTimeSpent) {
+      delete current.focusTimeSpent;
+      saveTodos(state.todos);
+    }
     applyFocusEstimate(this);
   }
 

@@ -12805,11 +12805,46 @@ body.view-focus header { display: none; }
   &.paused { opacity: .35; }
 }
 
+.focus-timer-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+// Petit rond pour remettre le chrono de la tâche courante à zéro
+.focus-timer-reset {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .18s cubic-bezier(.25,.46,.45,.94), border-color .18s, color .18s, transform .3s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 16px; height: 16px; }
+
+  &:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
+  }
+  &:active { transform: rotate(-70deg) scale(.92); }
+}
+
 .focus-estimate-label {
   font-size: 13px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-muted);
+  cursor: pointer;
+  transition: color .15s;
+
+  &:hover { color: var(--primary); }
 }
 
 // Invitation à estimer le temps quand la tâche n'a pas de durationEstimated
