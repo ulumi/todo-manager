@@ -7,7 +7,8 @@
 
 import * as state from './state.js';
 
-// Tout élément représentant une tâche, dans toutes les vues
+// Tout élément représentant une tâche, dans toutes les vues. Règle : tout
+// nouvel item de tâche (peu importe la vue) doit être ajouté ici.
 export const MS_SELECTABLE = [
   '.todo-item[data-id]',
   '.inbox-item[data-id]',
@@ -16,6 +17,7 @@ export const MS_SELECTABLE = [
   '.month-todo-dot[data-id]',
   '.focus-queue-item[data-id]',
   '.focus-current-item[data-id]',
+  '.review-item[data-id]',
 ].join(', ');
 
 const selected = new Set();

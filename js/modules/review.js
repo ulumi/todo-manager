@@ -70,9 +70,11 @@ function _itemActions(t, { withToday = true } = {}) {
   </div>`;
 }
 
+// data-id + data-date : sélectionnable (MS_SELECTABLE) et clic droit (menu
+// contextuel, résolu via data-date par _resolveOccurrences())
 function _itemRow(t, opts) {
   const prioDot = t.priority ? `<span class="review-prio-dot prio-${t.priority}"></span>` : '';
-  return `<div class="review-item" data-id="${t.id}">
+  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}>
     <div class="review-item-main">
       ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}
     </div>

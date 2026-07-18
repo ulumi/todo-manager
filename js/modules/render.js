@@ -690,16 +690,21 @@ export function renderDayView(todos) {
     const cutoff = DS(addDays(navDate, -PAST_DUE_WINDOW_DAYS));
     const missed = getOverduePunctual(todos).filter(t => t.date >= cutoff);
     if (missed.length > 0) {
+      const collapsed = localStorage.getItem('pastDueBannerCollapsed') === 'true';
+      const chevron = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="past-due-banner-chevron${collapsed ? ' collapsed' : ''}"><polyline points="6,9 12,15 18,9"/></svg>`;
       pastDueBanner = `<div class="past-due-banner">
         <div class="past-due-banner-head">
-          <span class="past-due-banner-icon">⚠</span>
-          <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
+          <button class="past-due-banner-toggle" onclick="window.app.togglePastDueBanner()" title="${collapsed ? 'Déplier' : 'Replier'}">
+            ${chevron}
+            <span class="past-due-banner-icon">⚠</span>
+            <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
+          </button>
           <div class="past-due-banner-actions">
             <button class="past-due-banner-btn past-due-banner-btn--primary" onclick="window.app.openReviewModal()">Bilan complet</button>
             <button class="past-due-banner-btn" onclick="window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})">Tout à aujourd'hui</button>
           </div>
         </div>
-        <div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>
+        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>` : ''}
       </div>`;
     }
   }

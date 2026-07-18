@@ -14296,6 +14296,32 @@ body.view-focus header {
   flex-wrap: wrap;
 }
 
+.past-due-banner-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+  border: none;
+  background: transparent;
+  padding: 2px;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+
+.past-due-banner-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--danger);
+  opacity: 0.8;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.past-due-banner-chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
 .past-due-banner-list {
   display: flex;
   flex-direction: column;
@@ -14433,6 +14459,8 @@ body.view-focus header {
   border-radius: 10px;
   background: var(--surface);
   margin-bottom: 6px;
+  width: fit-content;
+  max-width: 100%;
   transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .review-item:hover {

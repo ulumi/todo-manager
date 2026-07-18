@@ -3875,6 +3875,13 @@ class TodoApp {
     this.render();
   }
 
+  // Replie/déplie la liste de tâches du bandeau de rappel (vue jour)
+  togglePastDueBanner() {
+    const collapsed = localStorage.getItem('pastDueBannerCollapsed') === 'true';
+    localStorage.setItem('pastDueBannerCollapsed', String(!collapsed));
+    this.render();
+  }
+
   // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
   initHeaderDropZones() {
     const inboxBtn   = document.getElementById('inboxTab');
