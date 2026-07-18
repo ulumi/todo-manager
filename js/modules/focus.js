@@ -420,7 +420,11 @@ export function renderFocusView(app) {
   // File « Ensuite » : groupée selon la préférence (Type par défaut),
   // sur 1 à 3 colonnes, repliable. Le drag-and-drop n'est actif qu'en
   // tri Auto + 1 colonne (un tri explicite ou une grille multi-colonnes
-  // recalculerait/désaligne l'ordre au prochain rendu)
+  // recalculerait/désaligne l'ordre au prochain rendu). `data-group`
+  // (rec/punct, moment, ou 'none') laisse app.initFocusQueueDnD()
+  // contraindre le survol au même groupe que l'item saisi : getFocusQueue()
+  // re-trie toujours par groupe après l'ordre manuel, donc un drag inter-
+  // groupes serait silencieusement annulé au prochain rendu si on le permettait.
   const prefs = getQueuePrefs();
   const canDrag = prefs.sort === 'auto' && prefs.cols === '1';
   const groupOf = t => {
@@ -442,7 +446,7 @@ export function renderFocusView(app) {
       lastGroup = g.key;
     }
     queueRows += `
-        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}"${canDrag ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag ? ' · Glisser : réordonner' : ''} · Clic droit : actions">
+        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}"${canDrag ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" data-group="${g ? g.key : 'none'}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag ? ' · Glisser : réordonner' : ''} · Clic droit : actions">
           ${canDrag ? _grip : ''}
           <span class="focus-queue-text">${esc(t.title)}</span>
           ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}

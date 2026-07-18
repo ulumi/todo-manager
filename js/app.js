@@ -2099,7 +2099,12 @@ class TodoApp {
   }
 
   // Drag-and-drop de la file « Ensuite » : réordonne le DOM pendant le
-  // survol, persiste l'ordre complet (courante en tête) au lâcher
+  // survol, persiste l'ordre complet (courante en tête) au lâcher.
+  // Le survol est contraint au même data-group (rec/punct, moment ou
+  // 'none') que l'item saisi : getFocusQueue() re-trie toujours par
+  // groupe après l'ordre manuel (le regroupement prime), donc un drop
+  // inter-groupes serait accepté visuellement puis silencieusement
+  // annulé au rendu suivant — mieux vaut l'empêcher pendant le geste.
   initFocusQueueDnD() {
     const list = document.getElementById('focusQueueList');
     if (!list) return;
@@ -2125,12 +2130,17 @@ class TodoApp {
       if (!dragEl) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      const after = [...list.querySelectorAll('.focus-queue-item:not(.dragging)')].find(el => {
+      const groupItems = [...list.querySelectorAll('.focus-queue-item:not(.dragging)')]
+        .filter(el => el.dataset.group === dragEl.dataset.group);
+      if (!groupItems.length) return; // seul item de son groupe : rien à réordonner
+      const after = groupItems.find(el => {
         const r = el.getBoundingClientRect();
         return e.clientY < r.top + r.height / 2;
       });
-      if (after) list.insertBefore(dragEl, after);
-      else list.appendChild(dragEl);
+      // Pas de cible trouvée après le point de survol : replacer en fin de
+      // CE groupe (avant l'en-tête ou le 1er item du groupe suivant), pas
+      // en toute fin de liste qui pourrait appartenir à un autre groupe.
+      list.insertBefore(dragEl, after || groupItems[groupItems.length - 1].nextSibling);
     });
   }
 
