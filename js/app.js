@@ -3860,11 +3860,12 @@ class TodoApp {
     });
   }
 
-  // Bandeau jour passé : reporter à aujourd'hui les ponctuelles non faites du jour affiché
-  postponeDayToToday(ds) {
-    const targets = state.todos.filter(t =>
-      (!t.recurrence || t.recurrence === 'none') && t.date === ds && !t.completed && !t.cancelled
-    );
+  // Bandeau vue du jour (aujourd'hui uniquement) : reporter à aujourd'hui
+  // les ponctuelles non faites des `days` derniers jours, peu importe leur
+  // propre date — le rappel suit l'utilisateur sur aujourd'hui
+  postponeRecentOverdueToToday(days = 5) {
+    const cutoff = DS(addDays(today(), -days));
+    const targets = getOverduePunctual(state.todos).filter(t => t.date >= cutoff);
     if (!targets.length) return;
     snapshot(state.todos);
     const todayStr = DS(today());
