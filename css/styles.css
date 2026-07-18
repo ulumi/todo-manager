@@ -2602,6 +2602,16 @@ input:checked + .cal-sid-toggle-track::after {
   color: var(--success);
 }
 
+@keyframes subtask-list-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .subtask-list {
   flex: 0 0 calc(100% - 34px);
   margin-left: 34px;
@@ -2611,6 +2621,12 @@ input:checked + .cal-sid-toggle-track::after {
   padding-bottom: 4px;
   overflow: hidden;
   border-radius: 6px;
+  animation: subtask-list-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.subtask-list.two-col {
+  display: block;
+  column-count: 2;
+  column-gap: 14px;
 }
 
 .subtask-item {
@@ -2619,6 +2635,7 @@ input:checked + .cal-sid-toggle-track::after {
   gap: 8px;
   padding: 3px 4px;
   border-radius: 6px;
+  break-inside: avoid;
 }
 .subtask-item:hover .subtask-del {
   opacity: 1;
@@ -2706,6 +2723,7 @@ input:checked + .cal-sid-toggle-track::after {
   padding: 3px 4px;
   text-align: left;
   width: 100%;
+  column-span: all;
   transition: opacity 0.15s, color 0.15s, border-color 0.15s;
 }
 .subtask-add-btn:hover {

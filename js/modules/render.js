@@ -41,7 +41,9 @@ function _subtaskListHTML(subtasks, todoId, ds) {
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}')">${esc(s.title)}</span>
       <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}')">×</button>
     </div>`).join('');
-  return `<div class="subtask-list">
+  // Au-delà de 2 sous-tâches, bascule en deux colonnes (CSS multi-colonnes fluide)
+  const twoCol = (subtasks || []).length > 2;
+  return `<div class="subtask-list${twoCol ? ' two-col' : ''}">
     ${items}
     <button class="subtask-add-btn" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')">+ sous-tâche</button>
   </div>`;

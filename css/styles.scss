@@ -2510,6 +2510,11 @@ main {
   }
 }
 
+@keyframes subtask-list-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .subtask-list {
   flex: 0 0 calc(100% - 34px);
   margin-left: 34px; // check (22px) + gap (12px)
@@ -2519,6 +2524,15 @@ main {
   padding-bottom: 4px;
   overflow: hidden;
   border-radius: 6px;
+  animation: subtask-list-in .22s cubic-bezier(.25, .46, .45, .94);
+
+  // Au-delà de 2 sous-tâches : deux colonnes fluides (CSS multi-colonnes,
+  // se rééquilibrent seules selon le nombre d'items, pas de grille figée)
+  &.two-col {
+    display: block;
+    column-count: 2;
+    column-gap: 14px;
+  }
 }
 
 .subtask-item {
@@ -2527,6 +2541,7 @@ main {
   gap: 8px;
   padding: 3px 4px;
   border-radius: 6px;
+  break-inside: avoid; // ne jamais couper un item entre deux colonnes
 
   &:hover {
     .subtask-del { opacity: 1; }
@@ -2615,6 +2630,7 @@ main {
   padding: 3px 4px;
   text-align: left;
   width: 100%;
+  column-span: all; // toujours pleine largeur, même en deux colonnes
   transition: opacity .15s, color .15s, border-color .15s;
 
   &:hover {
