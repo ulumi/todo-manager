@@ -39,6 +39,9 @@ function _subtaskListHTML(subtasks, todoId, ds) {
     <div class="subtask-item${s.completed ? ' done' : ''}">
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}')"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}')">${esc(s.title)}</span>
+      <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}')" title="Focus sur cette tâche">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
+      </button>
       <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}')">×</button>
     </div>`).join('');
   // Au-delà de 2 sous-tâches, bascule en deux colonnes (CSS multi-colonnes fluide)

@@ -2544,7 +2544,7 @@ main {
   break-inside: avoid; // ne jamais couper un item entre deux colonnes
 
   &:hover {
-    .subtask-del { opacity: 1; }
+    .subtask-focus-btn, .subtask-del { opacity: 1; }
   }
 
   &.done { opacity: .6; }
@@ -2596,6 +2596,28 @@ main {
     &[contenteditable="true"] {
       background: var(--surface2);
       box-shadow: 0 0 0 1px var(--primary);
+    }
+  }
+
+  .subtask-focus-btn {
+    flex-shrink: 0;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 0 3px;
+    border-radius: 3px;
+    transition: opacity .15s, color .15s, background .15s;
+
+    svg { width: 12px; height: 12px; }
+
+    &:hover {
+      color: var(--primary);
+      background: var(--surface2);
     }
   }
 
@@ -12975,6 +12997,35 @@ body.view-focus header { display: none; }
         &::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 800; }
       }
     }
+  }
+
+  // Ajout de sous-tâche depuis le Focus — toujours visible (pas de hover à
+  // révéler ici, contrairement à .subtask-add-btn en vue jour)
+  .focus-subtask-add {
+    background: none;
+    border: 1.5px dashed var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 8px 12px;
+    text-align: left;
+    width: 100%;
+    transition: color .15s, border-color .15s;
+
+    &:hover { color: var(--primary); border-color: var(--primary); }
+  }
+
+  .focus-subtask-new-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--primary);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+
+    &:focus { outline: none; }
   }
 }
 

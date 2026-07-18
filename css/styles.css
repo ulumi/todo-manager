@@ -2637,7 +2637,7 @@ input:checked + .cal-sid-toggle-track::after {
   border-radius: 6px;
   break-inside: avoid;
 }
-.subtask-item:hover .subtask-del {
+.subtask-item:hover .subtask-focus-btn, .subtask-item:hover .subtask-del {
   opacity: 1;
 }
 .subtask-item.done {
@@ -2693,6 +2693,28 @@ input:checked + .cal-sid-toggle-track::after {
 .subtask-item .subtask-title[contenteditable=true] {
   background: var(--surface2);
   box-shadow: 0 0 0 1px var(--primary);
+}
+.subtask-item .subtask-focus-btn {
+  flex-shrink: 0;
+  opacity: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.subtask-item .subtask-focus-btn svg {
+  width: 12px;
+  height: 12px;
+}
+.subtask-item .subtask-focus-btn:hover {
+  color: var(--primary);
+  background: var(--surface2);
 }
 .subtask-item .subtask-del {
   flex-shrink: 0;
@@ -14065,6 +14087,34 @@ body.view-focus header {
   color: #fff;
   font-size: 11px;
   font-weight: 800;
+}
+.focus-subtasks .focus-subtask-add {
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 8px 12px;
+  text-align: left;
+  width: 100%;
+  transition: color 0.15s, border-color 0.15s;
+}
+.focus-subtasks .focus-subtask-add:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.focus-subtasks .focus-subtask-new-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+.focus-subtasks .focus-subtask-new-input:focus {
+  outline: none;
 }
 
 .focus-counter {

@@ -62,13 +62,13 @@ export function focusSaveManualOrder(ids) {
 // ── Préférences d'affichage de la file « Ensuite » ────────
 // { group: 'type'|'moment'|'none', sort: 'auto'|'time'|'prio',
 //   cols: '1'|'2'|'3', collapsed: boolean }
-// Défaut : groupée Ponctuelles / Récurrentes, ordre intelligent, 1 colonne, dépliée.
+// Défaut : groupée Ponctuelles / Récurrentes, ordre intelligent, 1 colonne, repliée.
 // Synchronisée via getAppConfig() / _applyBackup (clé `focusQueueView`).
 export function getQueuePrefs() {
   try {
     const p = JSON.parse(localStorage.getItem('focusQueueView')) || {};
-    return { group: p.group || 'type', sort: p.sort || 'auto', cols: p.cols || '1', collapsed: !!p.collapsed };
-  } catch { return { group: 'type', sort: 'auto', cols: '1', collapsed: false }; }
+    return { group: p.group || 'type', sort: p.sort || 'auto', cols: p.cols || '1', collapsed: p.collapsed ?? true };
+  } catch { return { group: 'type', sort: 'auto', cols: '1', collapsed: true }; }
 }
 
 export function saveQueuePrefs(p) {
@@ -322,16 +322,20 @@ function _metaBadges(t) {
 }
 
 function _subtasksHTML(t) {
-  if (!t.subtasks?.length) return '';
-  const rows = t.subtasks.map(s => `
+  const subtasks = t.subtasks || [];
+  const rows = subtasks.map(s => `
     <div class="focus-subtask${s.completed ? ' done' : ''}" onclick="window.app.focusToggleSubtask('${t.id}','${s.id}')">
       <div class="focus-subtask-check${s.completed ? ' checked' : ''}"></div>
       <span>${esc(s.title)}</span>
     </div>`).join('');
-  const done = t.subtasks.filter(s => s.completed).length;
-  return `<div class="focus-subtasks">
-    <div class="focus-subtasks-count">${done}/${t.subtasks.length}</div>
+  const done = subtasks.filter(s => s.completed).length;
+  // Toujours rendu (même sans sous-tâche) pour garder le bouton d'ajout
+  // accessible — data-id : cible de app.focusAddSubtask() (ancre le nouvel
+  // input, comme .subtask-list/data-id pour addSubtaskInline en vue jour).
+  return `<div class="focus-subtasks" data-id="${t.id}">
+    ${subtasks.length ? `<div class="focus-subtasks-count">${done}/${subtasks.length}</div>` : ''}
     ${rows}
+    <button class="focus-subtask-add" onclick="event.stopPropagation();window.app.focusAddSubtask('${t.id}')">+ sous-tâche</button>
   </div>`;
 }
 

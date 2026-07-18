@@ -2294,6 +2294,38 @@ class TodoApp {
     this.toggleSubtask(todoId, stid, DS(today()));
   }
 
+  // Ajout de sous-tâche depuis le mode Focus — même mécanique que
+  // addSubtaskInline (vue jour), scopée à .focus-subtasks/.focus-subtask-add
+  // au lieu de .subtask-list/.subtask-add-btn. Persiste via _saveNewSubtask()
+  // (partagé), donc identique en base à un ajout fait depuis la vue jour.
+  focusAddSubtask(todoId) {
+    const box = document.querySelector(`.focus-subtasks[data-id="${todoId}"]`);
+    if (!box) return;
+    const addBtn = box.querySelector('.focus-subtask-add');
+    if (!addBtn) return;
+    const input = document.createElement('input');
+    input.className = 'focus-subtask-new-input';
+    input.placeholder = 'Nouvelle sous-tâche…';
+    input.autocomplete = 'off';
+    let saved = false;
+    const confirm = () => {
+      if (saved) return;
+      saved = true;
+      const title = input.value.trim();
+      input.remove();
+      addBtn.style.display = '';
+      if (title) this._saveNewSubtask(todoId, title);
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
+    });
+    input.addEventListener('blur', confirm);
+    addBtn.style.display = 'none';
+    box.appendChild(input);
+    input.focus();
+  }
+
   focusCounterStep(id, dir) {
     dir > 0 ? this.incrementCount(id) : this.decrementCount(id);
   }
