@@ -2725,21 +2725,27 @@ input:checked + .cal-sid-toggle-track::after {
   border-color: var(--primary);
 }
 
-.todo-item:hover .subtask-add-mini,
-.subtask-list:hover .subtask-add-mini {
+.subtask-add-mini-slot {
+  display: flex;
+  align-items: center;
+  height: 0;
+  overflow: hidden;
+  column-span: all;
+  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.todo-item:hover .subtask-add-mini-slot,
+.subtask-list:hover .subtask-add-mini-slot {
   height: 26px;
-  opacity: 1;
 }
 
 .subtask-add-mini {
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-start;
   flex-shrink: 0;
   width: 26px;
-  height: 0;
-  overflow: hidden;
+  height: 26px;
   border: none;
   border-radius: 50%;
   background: var(--primary);
@@ -2750,11 +2756,17 @@ input:checked + .cal-sid-toggle-track::after {
   padding: 0;
   cursor: pointer;
   opacity: 0;
-  column-span: all;
-  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
+  transform: scale(0.4);
+  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
 }
 .subtask-add-mini:hover {
-  transform: scale(1.12);
+  filter: brightness(1.12);
+}
+
+.todo-item:hover .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .subtask-new-input {

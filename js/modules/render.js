@@ -36,7 +36,9 @@ export function subtaskListHTML(subtasks, todoId, ds) {
   const twoCol = (subtasks || []).length > 2;
   return `<div class="subtask-list${twoCol ? ' two-col' : ''}">
     ${items}
-    <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')" title="Ajouter une sous-tâche">＋</button>
+    <span class="subtask-add-mini-slot">
+      <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')" title="Ajouter une sous-tâche">＋</button>
+    </span>
   </div>`;
 }
 
