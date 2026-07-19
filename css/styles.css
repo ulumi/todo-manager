@@ -2557,42 +2557,6 @@ input:checked + .cal-sid-toggle-track::after {
   color: #fff;
 }
 
-.subtask-dots {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-  padding: 2px 0;
-  border-radius: 8px;
-}
-.subtask-dots .st-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 1.5px solid var(--text-muted);
-  transition: background 0.15s, border-color 0.15s;
-}
-.subtask-dots .st-dot.done {
-  background: var(--success);
-  border-color: var(--success);
-}
-.subtask-dots .st-dot-more {
-  font-size: 10px;
-  color: var(--text-muted);
-  line-height: 1;
-}
-.subtask-dots .st-count {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: 3px;
-  font-weight: 500;
-  line-height: 1;
-}
-.subtask-dots .st-count.all-done {
-  color: var(--success);
-}
-
 .subtask-list {
   flex: 0 0 calc(100% - 34px);
   margin-left: 34px;

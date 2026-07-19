@@ -20,21 +20,9 @@ function _hasInt(t, id) { return _getIntIds(t).includes(id); }
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
-function _subtaskDotsHTML(subtasks, todoId, ds) {
-  if (!subtasks?.length) return '';
-  const total = subtasks.length;
-  const done  = subtasks.filter(s => s.completed).length;
-  const allDone = done === total;
-  const shown = Math.min(total, 5);
-  let dots = '';
-  for (let i = 0; i < shown; i++) {
-    dots += `<span class="st-dot${i < done ? ' done' : ''}"></span>`;
-  }
-  if (total > 5) dots += `<span class="st-dot-more">+${total - 5}</span>`;
-  return `<span class="subtask-dots" onclick="event.stopPropagation();window.app.toggleSubtasks('${todoId}')" title="${done}/${total} sous-tâches">${dots}<span class="st-count${allDone ? ' all-done' : ''}">${done}/${total}</span></span>`;
-}
-
-function _subtaskListHTML(subtasks, todoId, ds) {
+// Exportée : app.ctxAddSubtask() injecte ce même bloc par patch DOM ciblé
+// (pas de render() complet) quand une tâche sans sous-tâche en reçoit sa 1re
+export function subtaskListHTML(subtasks, todoId, ds) {
   const items = (subtasks || []).map(s => `
     <div class="subtask-item${s.completed ? ' done' : ''}">
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}')"></div>
@@ -144,12 +132,9 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
-  const isExpanded = window.app?.isSubtasksExpanded?.(todo.id) || false;
-  // Ajout forcé (menu contextuel « Ajouter une sous-tâche » sur une tâche
-  // qui n'en a encore aucune) : seul ce cas affiche le bloc sans sous-tâche existante
-  const forceSubtaskAdd = window.app?._forceSubtaskAdd === todo.id;
-  const dotsHTML = _subtaskDotsHTML(subtasks, todo.id, ds);
-  const expandedHTML = (isExpanded && (subtasks.length > 0 || forceSubtaskAdd)) ? _subtaskListHTML(subtasks, todo.id, ds) : '';
+  // Toujours affichées (pas de collapse) — l'ajout de la 1re sous-tâche
+  // passe par app.ctxAddSubtask() qui injecte ce bloc via patch DOM ciblé
+  const expandedHTML = subtasks.length > 0 ? subtaskListHTML(subtasks, todo.id, ds) : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
@@ -157,7 +142,6 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
         <span class="todo-text">${esc(todo.title)}</span>
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
         ${counterBar}
-        ${dotsHTML}
       </div>
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}

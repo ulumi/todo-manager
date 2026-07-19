@@ -2462,45 +2462,6 @@ main {
 
 // ── Subtasks ──────────────────────────────────────────────────────────────────
 
-.subtask-dots {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-  padding: 2px 0;
-  border-radius: 8px;
-
-  .st-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    border: 1.5px solid var(--text-muted);
-    transition: background .15s, border-color .15s;
-
-    &.done {
-      background: var(--success);
-      border-color: var(--success);
-    }
-  }
-
-  .st-dot-more {
-    font-size: 10px;
-    color: var(--text-muted);
-    line-height: 1;
-  }
-
-  .st-count {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: 3px;
-    font-weight: 500;
-    line-height: 1;
-
-    &.all-done { color: var(--success); }
-  }
-}
-
 .subtask-list {
   flex: 0 0 calc(100% - 34px);
   margin-left: 34px; // check (22px) + gap (12px)
