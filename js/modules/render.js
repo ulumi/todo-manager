@@ -145,8 +145,11 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
   const isExpanded = window.app?.isSubtasksExpanded?.(todo.id) || false;
+  // Ajout forcé (menu contextuel « Ajouter une sous-tâche » sur une tâche
+  // qui n'en a encore aucune) : seul ce cas affiche le bloc sans sous-tâche existante
+  const forceSubtaskAdd = window.app?._forceSubtaskAdd === todo.id;
   const dotsHTML = _subtaskDotsHTML(subtasks, todo.id, ds);
-  const expandedHTML = isExpanded ? _subtaskListHTML(subtasks, todo.id, ds) : '';
+  const expandedHTML = (isExpanded && (subtasks.length > 0 || forceSubtaskAdd)) ? _subtaskListHTML(subtasks, todo.id, ds) : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>

@@ -2593,16 +2593,6 @@ input:checked + .cal-sid-toggle-track::after {
   color: var(--success);
 }
 
-@keyframes subtask-list-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 .subtask-list {
   flex: 0 0 calc(100% - 34px);
   margin-left: 34px;
@@ -2612,7 +2602,6 @@ input:checked + .cal-sid-toggle-track::after {
   padding-bottom: 4px;
   overflow: hidden;
   border-radius: 6px;
-  animation: subtask-list-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .subtask-list.two-col {
   display: block;

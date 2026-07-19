@@ -100,6 +100,7 @@ class TodoApp {
     this._clickTimer = null;
     this._quickAddInDayMode = false;
     this._collapsedSubtasks = new Set(); // dépliées par défaut — Set des ids explicitement repliées
+    this._forceSubtaskAdd = null; // id en cours d'ajout de 1re sous-tâche (menu contextuel)
     this.init();
   }
 
@@ -1126,10 +1127,14 @@ class TodoApp {
     this.render();
   }
 
-  // Menu contextuel « Ajouter une sous-tâche » : s'assure que la checklist
-  // n'est pas repliée sous l'item visé avant d'ouvrir l'input inline
+  // Menu contextuel « Ajouter une sous-tâche » sur une tâche qui n'en a
+  // encore aucune : le bloc sous-tâches ne s'affiche normalement que si
+  // subtasks.length > 0 (voir todoItemHTML) — _forceSubtaskAdd force son
+  // rendu le temps de l'input inline, effacé par addSubtaskInline() à la
+  // confirmation/annulation (voir plus bas)
   ctxAddSubtask(id) {
     this._collapsedSubtasks.delete(id);
+    this._forceSubtaskAdd = id;
     this.render();
     this.addSubtaskInline(id);
   }
@@ -1165,6 +1170,7 @@ class TodoApp {
     input.placeholder = 'Nouvelle sous-tâche…';
     input.autocomplete = 'off';
     let saved = false;
+    const clearForceAdd = () => { if (this._forceSubtaskAdd === todoId) this._forceSubtaskAdd = null; };
     const confirm = () => {
       if (saved) return;
       saved = true;
@@ -1172,10 +1178,11 @@ class TodoApp {
       input.remove();
       addBtn.style.display = '';
       if (title) this._saveNewSubtask(todoId, title);
+      else clearForceAdd();
     };
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); confirm(); }
-      if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
+      if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; clearForceAdd(); }
     });
     input.addEventListener('blur', confirm);
     addBtn.style.display = 'none';
