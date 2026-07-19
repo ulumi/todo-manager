@@ -2616,8 +2616,35 @@ main {
   }
 }
 
-.todo-item:hover .subtask-add-btn,
-.subtask-list:hover .subtask-add-btn { opacity: 1; }
+// Bouton mini rond « + », vue jour uniquement (le modal garde .subtask-add-btn
+// ci-dessus, toujours visible via #modalSubtaskSection) — même langage visuel
+// que .add-item-placeholder (pastille colorée), en miniature, à la place de
+// l'ancien bouton pointillé pleine largeur
+.todo-item:hover .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini { opacity: 1; }
+
+.subtask-add-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  column-span: all; // reste sur sa propre ligne même en deux colonnes
+  justify-self: start;
+  transition: opacity .15s, transform .15s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover { transform: scale(1.1); }
+}
 
 .subtask-new-input {
   flex: 1;
@@ -12955,7 +12982,7 @@ body.view-focus header { display: none; }
   }
 
   // Ajout de sous-tâche depuis le Focus — toujours visible (pas de hover à
-  // révéler ici, contrairement à .subtask-add-btn en vue jour)
+  // révéler ici, contrairement à .subtask-add-mini en vue jour)
   .focus-subtask-add {
     background: none;
     border: 1.5px dashed var(--border);

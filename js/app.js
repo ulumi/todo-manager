@@ -1151,7 +1151,7 @@ class TodoApp {
   addSubtaskInline(todoId) {
     const list = document.querySelector(`[data-id="${todoId}"] .subtask-list`);
     if (!list) return;
-    const addBtn = list.querySelector('.subtask-add-btn');
+    const addBtn = list.querySelector('.subtask-add-mini');
     if (!addBtn) return;
     const input = document.createElement('input');
     input.className = 'subtask-new-input';
@@ -2182,7 +2182,7 @@ class TodoApp {
       t.durationHistory.push({ date: DS(today()), minutes });
       if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
     }
-    delete t.focusTimeSpent; // occurrence complétée : plus de progression à reprendre
+    delete t.focusTimeSpent; delete t.focusTimeSpentDate; // occurrence complétée : plus de progression à reprendre
     toggleTodo(t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
@@ -2220,6 +2220,7 @@ class TodoApp {
     resetTimer(getTimerState(id));
     if (current.focusTimeSpent) {
       delete current.focusTimeSpent;
+      delete current.focusTimeSpentDate;
       saveTodos(state.todos);
     }
     applyFocusEstimate(this);
@@ -2319,7 +2320,7 @@ class TodoApp {
 
   // Ajout de sous-tâche depuis le mode Focus — même mécanique que
   // addSubtaskInline (vue jour), scopée à .focus-subtasks/.focus-subtask-add
-  // au lieu de .subtask-list/.subtask-add-btn. Persiste via _saveNewSubtask()
+  // au lieu de .subtask-list/.subtask-add-mini. Persiste via _saveNewSubtask()
   // (partagé), donc identique en base à un ajout fait depuis la vue jour.
   focusAddSubtask(todoId) {
     const box = document.querySelector(`.focus-subtasks[data-id="${todoId}"]`);

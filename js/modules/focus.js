@@ -180,13 +180,18 @@ export function getFocusQueue(app) {
 // lieu de repartir de zéro. Filet de sécurité : si la tâche quittée n'est
 // pas passée par saveFocusProgress() avant d'être remplacée, on la
 // sauvegarde ici avant d'écraser son état.
+// Pour une tâche RÉCURRENTE, ce temps ne doit reprendre que s'il vient de
+// l'occurrence d'AUJOURD'HUI (t.focusTimeSpentDate) — sinon un reste non
+// terminé hier resterait affecté à la nouvelle occurrence du jour.
 export function getTimerState(taskId) {
   let ts = null;
   try { ts = JSON.parse(localStorage.getItem('focusTimer')); } catch { /* corrompu */ }
   if (!ts || ts.taskId !== taskId) {
     if (ts) _flushProgress(ts.taskId, ts);
     const t = state.todos.find(x => x.id === taskId);
-    const resume = Math.max(0, Math.round(t?.focusTimeSpent || 0));
+    const isRec = t?.recurrence && t.recurrence !== 'none';
+    const sameDayProgress = !isRec || t?.focusTimeSpentDate === DS(today());
+    const resume = sameDayProgress ? Math.max(0, Math.round(t?.focusTimeSpent || 0)) : 0;
     ts = { taskId, startedAt: Date.now(), accum: resume, paused: false };
     localStorage.setItem('focusTimer', JSON.stringify(ts));
   }
@@ -200,6 +205,7 @@ function _flushProgress(taskId, ts) {
   const t = state.todos.find(x => x.id === taskId);
   if (!t) return;
   t.focusTimeSpent = Math.round(sec);
+  t.focusTimeSpentDate = DS(today());
   t.updatedAt = Date.now();
   saveTodos(state.todos);
 }

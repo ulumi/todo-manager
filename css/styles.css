@@ -2702,9 +2702,33 @@ input:checked + .cal-sid-toggle-track::after {
   border-color: var(--primary);
 }
 
-.todo-item:hover .subtask-add-btn,
-.subtask-list:hover .subtask-add-btn {
+.todo-item:hover .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini {
   opacity: 1;
+}
+
+.subtask-add-mini {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  column-span: all;
+  justify-self: start;
+  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.subtask-add-mini:hover {
+  transform: scale(1.1);
 }
 
 .subtask-new-input {

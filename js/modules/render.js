@@ -36,7 +36,7 @@ export function subtaskListHTML(subtasks, todoId, ds) {
   const twoCol = (subtasks || []).length > 2;
   return `<div class="subtask-list${twoCol ? ' two-col' : ''}">
     ${items}
-    <button class="subtask-add-btn" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')">+ sous-tâche</button>
+    <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')" title="Ajouter une sous-tâche">＋</button>
   </div>`;
 }
 
@@ -108,7 +108,10 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const focusTimeBadge = (() => {
     if (!dayView) return '';
     const est = todo.durationEstimated || null;
-    const spentMin = done ? (todo.durationReal || null) : (todo.focusTimeSpent ? Math.round(todo.focusTimeSpent / 60) : null);
+    // Récurrente : un focusTimeSpent d'une occurrence passée ne doit pas
+    // s'afficher sur celle d'aujourd'hui — voir focusTimeSpentDate (focus.js)
+    const sameDayProgress = !isRec || todo.focusTimeSpentDate === ds;
+    const spentMin = done ? (todo.durationReal || null) : ((sameDayProgress && todo.focusTimeSpent) ? Math.round(todo.focusTimeSpent / 60) : null);
     if (!spentMin && !est) return '';
     const label = spentMin && est ? `${spentMin}/${est} min` : spentMin ? `${spentMin} min` : `~${est} min`;
     const title = spentMin && est ? 'Temps passé en focus / estimé' : spentMin ? 'Temps passé en focus' : 'Temps estimé';
