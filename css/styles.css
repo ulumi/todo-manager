@@ -2564,7 +2564,6 @@ input:checked + .cal-sid-toggle-track::after {
   flex-direction: column;
   gap: 5px;
   padding-bottom: 4px;
-  overflow: hidden;
   border-radius: 6px;
 }
 .subtask-list.two-col {
@@ -2711,6 +2710,8 @@ input:checked + .cal-sid-toggle-track::after {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: flex-start;
+  flex-shrink: 0;
   width: 26px;
   height: 26px;
   border: none;
@@ -2724,7 +2725,6 @@ input:checked + .cal-sid-toggle-track::after {
   cursor: pointer;
   opacity: 0;
   column-span: all;
-  justify-self: start;
   transition: opacity 0.15s, transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .subtask-add-mini:hover {

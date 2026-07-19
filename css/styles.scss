@@ -2469,8 +2469,9 @@ main {
   flex-direction: column;
   gap: 5px;
   padding-bottom: 4px;
-  overflow: hidden;
   border-radius: 6px;
+  // Pas d'overflow:hidden : coupait le bord du bouton rond .subtask-add-mini
+  // (le border-radius du conteneur rognait son arrondi près du coin)
   // Pas d'animation d'entrée : les sous-tâches sont dépliées par défaut et
   // ce bloc est régénéré à CHAQUE render() (pas seulement au 1er affichage) —
   // une animation ici rejouerait sans arrêt et ferait clignoter les items
@@ -2627,6 +2628,8 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
+  align-self: flex-start;
+  flex-shrink: 0;
   width: 26px;
   height: 26px;
   border: none;
@@ -2640,7 +2643,6 @@ main {
   cursor: pointer;
   opacity: 0;
   column-span: all; // reste sur sa propre ligne même en deux colonnes
-  justify-self: start;
   transition: opacity .15s, transform .15s cubic-bezier(.25,.46,.45,.94);
 
   &:hover { transform: scale(1.1); }
