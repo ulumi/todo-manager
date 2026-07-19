@@ -2367,7 +2367,7 @@ input:checked + .cal-sid-toggle-track::after {
 .todo-item:hover .todo-reorder-btn {
   opacity: 0.5;
 }
-.todo-item:hover .todo-menu-btn {
+.todo-item:hover .todo-menu-btn, .todo-item:hover .todo-focus-btn {
   opacity: 1;
 }
 .todo-item.done .todo-text {
@@ -2413,6 +2413,30 @@ input:checked + .cal-sid-toggle-track::after {
 .todo-menu-btn:hover {
   background: var(--surface2);
   color: var(--text);
+}
+
+.todo-focus-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+.todo-focus-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.todo-focus-btn:hover {
+  background: var(--surface2);
+  color: var(--primary);
 }
 
 .todo-ctx-menu {
@@ -2703,6 +2727,7 @@ input:checked + .cal-sid-toggle-track::after {
 
 .todo-item:hover .subtask-add-mini,
 .subtask-list:hover .subtask-add-mini {
+  height: 26px;
   opacity: 1;
 }
 
@@ -2713,7 +2738,8 @@ input:checked + .cal-sid-toggle-track::after {
   align-self: flex-start;
   flex-shrink: 0;
   width: 26px;
-  height: 26px;
+  height: 0;
+  overflow: hidden;
   border: none;
   border-radius: 50%;
   background: var(--primary);
@@ -2725,10 +2751,10 @@ input:checked + .cal-sid-toggle-track::after {
   cursor: pointer;
   opacity: 0;
   column-span: all;
-  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
 }
 .subtask-add-mini:hover {
-  transform: scale(1.1);
+  transform: scale(1.12);
 }
 
 .subtask-new-input {
@@ -3010,6 +3036,36 @@ input:checked + .cal-sid-toggle-track::after {
   flex-shrink: 0;
 }
 
+.todo-estimate-hover-input {
+  width: 52px;
+  padding: 3px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  animation: todo-estimate-hover-in 0.18s ease;
+}
+.todo-estimate-hover-input:focus {
+  outline: none;
+}
+.todo-estimate-hover-input::-webkit-outer-spin-button, .todo-estimate-hover-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes todo-estimate-hover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .todo-reorder {
   display: flex;
   flex-direction: column;

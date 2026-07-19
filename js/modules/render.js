@@ -146,6 +146,9 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
         ${counterBar}
       </div>
+      <button class="todo-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todo.id}','${ds}')" title="Focus sur cette tâche">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
+      </button>
       <button class="todo-menu-btn" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${todo.id}','${ds}')" title="Actions">⋯</button>
       ${dragHandleHTML}
       ${expandedHTML}
@@ -1528,12 +1531,15 @@ export function renderBacklogView(todos) {
 
 export function setupTodoItemHoverAnimations() {
   document.querySelectorAll('.todo-item').forEach(item => {
-    item.addEventListener('mouseenter', () =>
-      gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' })
-    );
-    item.addEventListener('mouseleave', () =>
-      gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' })
-    );
+    item.addEventListener('mouseenter', () => {
+      gsap.to(item, { y: -3, duration: 0.12, ease: 'power2.out' });
+      // Survol prolongé (2 s) → édition rapide de la durée estimée
+      item._estimateHoverTimer = setTimeout(() => window.app.showEstimateHoverEdit(item), 2000);
+    });
+    item.addEventListener('mouseleave', () => {
+      gsap.to(item, { y: 0, duration: 0.18, ease: 'power2.inOut' });
+      clearTimeout(item._estimateHoverTimer);
+    });
   });
 
   const placeholder = document.querySelector('.add-item-placeholder');

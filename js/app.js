@@ -1110,6 +1110,50 @@ class TodoApp {
     this._refreshCategoryPanel();
   }
 
+  // Survol prolongé (2 s, setupTodoItemHoverAnimations() dans render.js) —
+  // édition rapide de la durée estimée sans ouvrir le modal. Patch DOM
+  // ciblé (pas de render()) tant que la valeur n'est pas confirmée.
+  showEstimateHoverEdit(itemEl) {
+    if (!itemEl.isConnected || itemEl.querySelector('.todo-estimate-hover-input')) return;
+    const id = itemEl.dataset.id;
+    const t = state.todos.find(x => x.id === id);
+    const content = itemEl.querySelector('.todo-content');
+    if (!t || !content) return;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.className = 'todo-estimate-hover-input';
+    input.placeholder = 'min';
+    input.title = 'Durée estimée (minutes)';
+    if (t.durationEstimated) input.value = t.durationEstimated;
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
+    let saved = false;
+    const confirm = () => {
+      if (saved) return;
+      saved = true;
+      const val = parseInt(input.value, 10);
+      input.remove();
+      if (val > 0 && val !== t.durationEstimated) {
+        snapshot(state.todos);
+        t.durationEstimated = val;
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+        this.render();
+      }
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { saved = true; input.remove(); }
+    });
+    input.addEventListener('blur', confirm);
+    content.appendChild(input);
+    input.focus();
+    input.select();
+  }
+
   // ── Subtask methods ────────────────────────────────────────────────────────
 
   // Menu contextuel « Ajouter une sous-tâche » sur une tâche qui n'en a
@@ -6657,6 +6701,7 @@ function _renderCtxMenu() {
   _todoCtxMenu.innerHTML = `
     <div class="ctx-item" data-action="complete"><span>${allDone ? '↺' : '✓'}</span> ${allDone ? 'Décompléter' : 'Compléter'}${nb}</div>
     ${group ? '' : `
+    <div class="ctx-item" data-action="focus"><span>▶</span> Focus</div>
     <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
     <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
     <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>`}
@@ -6724,6 +6769,7 @@ _todoCtxMenu.addEventListener('click', e => {
   if (periodBtn) { app.setDayPeriodMany(ids, periodBtn.dataset.period); return; }
   const action = item.dataset.action;
   if (action === 'complete')    app.completeMany(ids);
+  if (action === 'focus')       app.focusStartOn(single, ds);
   if (action === 'edit')        app.openEditModal(single, ds);
   if (action === 'add-after')   app.addTaskAfter(single, ds);
   if (action === 'add-subtask') app.ctxAddSubtask(single);

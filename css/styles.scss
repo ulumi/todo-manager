@@ -2294,7 +2294,7 @@ main {
     border-color: var(--primary);
 
     .todo-reorder-btn { opacity: 0.5; }
-    .todo-menu-btn { opacity: 1; }
+    .todo-menu-btn, .todo-focus-btn { opacity: 1; }
   }
 
   &.done {
@@ -2339,6 +2339,31 @@ main {
   &:hover {
     background: var(--surface2);
     color: var(--text);
+  }
+}
+
+// Focus direct sur la tâche, même icône que .subtask-focus-btn — révélé au
+// survol comme .todo-menu-btn
+.todo-focus-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, background .15s, color .15s;
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover {
+    background: var(--surface2);
+    color: var(--primary);
   }
 }
 
@@ -2620,9 +2645,15 @@ main {
 // Bouton mini rond « + », vue jour uniquement (le modal garde .subtask-add-btn
 // ci-dessus, toujours visible via #modalSubtaskSection) — même langage visuel
 // que .add-item-placeholder (pastille colorée), en miniature, à la place de
-// l'ancien bouton pointillé pleine largeur
+// l'ancien bouton pointillé pleine largeur. Replié à hauteur 0 tant que non
+// révélé : ne réserve aucun espace avant d'apparaître (contrairement à un
+// simple opacity:0) — au survol, il pousse l'item pour se faire une place,
+// avec un rebond (cubic-bezier « back-out ») pour un effet plus vivant.
 .todo-item:hover .subtask-add-mini,
-.subtask-list:hover .subtask-add-mini { opacity: 1; }
+.subtask-list:hover .subtask-add-mini {
+  height: 26px;
+  opacity: 1;
+}
 
 .subtask-add-mini {
   display: flex;
@@ -2631,7 +2662,8 @@ main {
   align-self: flex-start;
   flex-shrink: 0;
   width: 26px;
-  height: 26px;
+  height: 0;
+  overflow: hidden;
   border: none;
   border-radius: 50%;
   background: var(--primary);
@@ -2643,9 +2675,9 @@ main {
   cursor: pointer;
   opacity: 0;
   column-span: all; // reste sur sa propre ligne même en deux colonnes
-  transition: opacity .15s, transform .15s cubic-bezier(.25,.46,.45,.94);
+  transition: height .4s cubic-bezier(.34, 1.56, .64, 1), opacity .25s ease;
 
-  &:hover { transform: scale(1.1); }
+  &:hover { transform: scale(1.12); }
 }
 
 .subtask-new-input {
@@ -2928,6 +2960,29 @@ main {
   letter-spacing: .02em;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+// Édition rapide de la durée estimée après 2 s de survol sur l'item
+// (app.showEstimateHoverEdit) — injecté/retiré par patch DOM, sans render()
+.todo-estimate-hover-input {
+  width: 52px;
+  padding: 3px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  animation: todo-estimate-hover-in .18s ease;
+
+  &:focus { outline: none; }
+  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
+@keyframes todo-estimate-hover-in {
+  from { opacity: 0; transform: scale(.85); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .todo-reorder {
