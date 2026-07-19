@@ -2731,7 +2731,7 @@ input:checked + .cal-sid-toggle-track::after {
   height: 0;
   overflow: hidden;
   column-span: all;
-  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
 }
 
 .todo-item:hover .subtask-add-mini-slot,
@@ -2757,7 +2757,7 @@ input:checked + .cal-sid-toggle-track::after {
   cursor: pointer;
   opacity: 0;
   transform: rotate(-150deg);
-  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
+  transition: opacity 0.22s ease 0.5s, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.5s, filter 0.15s ease;
 }
 .subtask-add-mini:hover {
   filter: brightness(1.12);
