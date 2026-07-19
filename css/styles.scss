@@ -2131,6 +2131,19 @@ main {
   min-width: 0;
 }
 
+.period-dropzone {
+  height: 44px;
+  border: 1.5px dashed rgba(255,255,255,.12);
+  border-radius: 10px;
+  margin: 2px 0;
+  transition: border-color .15s, background .15s;
+
+  .dragging-active & {
+    border-color: rgba(255,255,255,.28);
+    background: rgba(255,255,255,.03);
+  }
+}
+
 .day-heure-label {
   display:       flex;
   align-items:   center;
@@ -2412,6 +2425,39 @@ main {
       &--none.active   { background: var(--surface2); color: var(--text); }
     }
   }
+
+  // Ligne de choix rapide du moment de la journée (dayPeriod)
+  .ctx-period-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+
+    .ctx-period-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-right: auto;
+    }
+
+    .ctx-period-btn {
+      width: 24px;
+      height: 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s, border-color .15s;
+
+      &:hover { background: var(--surface2); color: var(--text); }
+      &.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    }
+  }
 }
 
 // ── Subtasks ──────────────────────────────────────────────────────────────────
@@ -2465,7 +2511,7 @@ main {
   margin-left: 34px; // check (22px) + gap (12px)
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 5px;
   padding-bottom: 4px;
   overflow: hidden;
   border-radius: 6px;
@@ -2477,15 +2523,21 @@ main {
     display: block;
     column-count: 2;
     column-gap: 14px;
+
+    .subtask-item { margin-bottom: 5px; }
   }
 }
 
+// Items à bordure propre (pas un style checklist compact) — chacun se
+// distingue visuellement, tout en restant à l'intérieur de la tâche parente
 .subtask-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 4px;
-  border-radius: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
   break-inside: avoid; // ne jamais couper un item entre deux colonnes
 
   &:hover {

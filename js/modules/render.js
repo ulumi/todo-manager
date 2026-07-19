@@ -433,13 +433,16 @@ export function renderDayView(todos) {
   const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
   let rightColItems = '';
 
-  // Punctual period sections — disparaissent dès qu'il n'y a aucun item
-  // visible dedans (aucun item du tout, ou tous complétés-masqués en mode stats)
+  // Punctual period sections — toujours rendues même vides (pour garder une
+  // cible de drop) — SAUF si elles ont des items mais qu'ils sont tous
+  // complétés-masqués (mode stats) : là, la section disparaît
   const hasPunctualPeriods = dayPeriodGroupsForRender;
   let punctualPeriodSections = '';
   const _mkPeriodSection = (items, group, label) => {
-    if (_visCount(items) === 0) return '';
-    const content = items.map(t => todoItemHTML(t, navDate, group)).join('');
+    if (items.length > 0 && _visCount(items) === 0) return '';
+    const content = items.length
+      ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+      : `<div class="period-dropzone"></div>`;
     return `<div class="day-heure-section" data-period="${group.replace('punctual-', '')}"><div class="day-period-label day-heure-label" data-period="${group.replace('punctual-', '')}">${label}</div><div class="todo-list" data-group="${group}" style="${colStyle}">${content}</div></div>`;
   };
   if (dayPeriodGroupsForRender && daySort !== 'chrono') {
@@ -545,9 +548,11 @@ export function renderDayView(todos) {
     const _moonSvg    = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 
     const mkHeureSection = (items, group, period, label, icon) => {
-      if (_visCount(items) === 0) return '';
+      if (items.length > 0 && _visCount(items) === 0) return '';
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
-      const listContent = items.map(t => todoItemHTML(t, navDate, group)).join('');
+      const listContent = items.length
+        ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+        : `<div class="period-dropzone"></div>`;
       const listHtml  = `<div class="todo-list" data-group="${group}" style="${colStyle}">${listContent}</div>`;
       return `<div class="day-heure-section" data-period="${period}">${labelHtml}${listHtml}</div>`;
     };

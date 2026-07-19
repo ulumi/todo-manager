@@ -99,7 +99,7 @@ class TodoApp {
     this.punctualPeriodOrder = JSON.parse(localStorage.getItem('punctualPeriodOrder') || '{}');
     this._clickTimer = null;
     this._quickAddInDayMode = false;
-    this._expandedSubtasks = new Set();
+    this._collapsedSubtasks = new Set(); // dépliées par défaut — Set des ids explicitement repliées
     this.init();
   }
 
@@ -1112,17 +1112,26 @@ class TodoApp {
 
   // ── Subtask methods ────────────────────────────────────────────────────────
 
+  // Dépliées par défaut — repliée seulement si explicitement dans le Set
   isSubtasksExpanded(id) {
-    return this._expandedSubtasks.has(id);
+    return !this._collapsedSubtasks.has(id);
   }
 
   toggleSubtasks(id) {
-    if (this._expandedSubtasks.has(id)) {
-      this._expandedSubtasks.delete(id);
+    if (this._collapsedSubtasks.has(id)) {
+      this._collapsedSubtasks.delete(id);
     } else {
-      this._expandedSubtasks.add(id);
+      this._collapsedSubtasks.add(id);
     }
     this.render();
+  }
+
+  // Menu contextuel « Ajouter une sous-tâche » : s'assure que la checklist
+  // n'est pas repliée sous l'item visé avant d'ouvrir l'input inline
+  ctxAddSubtask(id) {
+    this._collapsedSubtasks.delete(id);
+    this.render();
+    this.addSubtaskInline(id);
   }
 
   toggleSubtask(todoId, stid, ds) {
@@ -2001,6 +2010,20 @@ class TodoApp {
     targets.forEach(t => { t.priority = prio; t.updatedAt = Date.now(); });
     saveTodos(state.todos);
     this.render(); // la sélection est conservée (action modifiante, pas de déplacement)
+  }
+
+  // '' → sans moment : delete plutôt que '' (toute valeur hors
+  // morning/afternoon/evening/absent rend la tâche invisible en vue jour — cf. state.js)
+  setDayPeriodMany(ids, period) {
+    const targets = state.todos.filter(t => ids.includes(t.id));
+    if (!targets.length) return;
+    snapshot(state.todos);
+    targets.forEach(t => {
+      if (period) t.dayPeriod = period; else delete t.dayPeriod;
+      t.updatedAt = Date.now();
+    });
+    saveTodos(state.todos);
+    this.render();
   }
 
   // ═══════════════════════════════════════════════════
@@ -6621,11 +6644,21 @@ function _renderCtxMenu() {
     ['low',    'B', 'Priorité basse'],
     ['',       '—', 'Sans priorité'],
   ];
+  const curPeriod = group
+    ? (occ.every(({ t }) => (t.dayPeriod || '') === (occ[0].t.dayPeriod || '')) ? (occ[0].t.dayPeriod || '') : null)
+    : (occ[0] ? (occ[0].t.dayPeriod || '') : null);
+  const periods = [
+    ['morning',   '🌅', 'Matin'],
+    ['afternoon', '☀',  'Après-midi'],
+    ['evening',   '🌙', 'Soir'],
+    ['',          '—',  'Sans moment'],
+  ];
   _todoCtxMenu.innerHTML = `
     <div class="ctx-item" data-action="complete"><span>${allDone ? '↺' : '✓'}</span> ${allDone ? 'Décompléter' : 'Compléter'}${nb}</div>
     ${group ? '' : `
     <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
-    <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>`}
+    <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
+    <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>`}
     <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
     ${!anyMovable ? '' : `
     <div class="ctx-sep"></div>
@@ -6637,6 +6670,10 @@ function _renderCtxMenu() {
     <div class="ctx-prio-row">
       <span class="ctx-prio-label">Priorité</span>
       ${prios.map(([v, l, title]) => `<button class="ctx-prio-btn ctx-prio-btn--${v || 'none'}${curPrio === v ? ' active' : ''}" data-prio="${v}" title="${title}">${l}</button>`).join('')}
+    </div>
+    <div class="ctx-period-row">
+      <span class="ctx-period-label">Moment</span>
+      ${periods.map(([v, l, title]) => `<button class="ctx-period-btn${curPeriod === v ? ' active' : ''}" data-period="${v}" title="${title}">${l}</button>`).join('')}
     </div>
     <div class="ctx-sep"></div>
     <div class="ctx-item" data-action="cancel"><span>⊘</span> ${allCancelled ? 'Restaurer' : 'Annuler'}${nb}</div>
@@ -6675,25 +6712,28 @@ function _hideTodoCtxMenu() {
 
 _todoCtxMenu.addEventListener('click', e => {
   const prioBtn = e.target.closest('.ctx-prio-btn');
+  const periodBtn = e.target.closest('.ctx-period-btn');
   const item = e.target.closest('.ctx-item');
-  if ((!item && !prioBtn) || !_ctxTarget) return;
+  if ((!item && !prioBtn && !periodBtn) || !_ctxTarget) return;
   const { ids, ds } = _ctxTarget;
   const single = ids[0];
   _hideTodoCtxMenu();
   const app = window.app;
-  if (prioBtn) { app.setPriorityMany(ids, prioBtn.dataset.prio); return; }
+  if (prioBtn)   { app.setPriorityMany(ids, prioBtn.dataset.prio); return; }
+  if (periodBtn) { app.setDayPeriodMany(ids, periodBtn.dataset.period); return; }
   const action = item.dataset.action;
-  if (action === 'complete')   app.completeMany(ids);
-  if (action === 'edit')       app.openEditModal(single, ds);
-  if (action === 'add-after')  app.addTaskAfter(single, ds);
-  if (action === 'duplicate')  app.duplicateMany(ids);
-  if (action === 'today')      app._sendManyTo(ids, { date: DS(today()), backlog: false });
-  if (action === 'tomorrow')   app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });
-  if (action === 'inbox')      app._sendManyTo(ids, { date: null, backlog: false });
-  if (action === 'backlog')    app._sendManyTo(ids, { date: null, backlog: true });
-  if (action === 'cancel')     app.cancelMany(ids);
-  if (action === 'delete')     ids.length > 1 ? app.deleteMany(ids) : app.deleteTodo(single, ds);
-  if (action === 'deselect')   msClear();
+  if (action === 'complete')    app.completeMany(ids);
+  if (action === 'edit')        app.openEditModal(single, ds);
+  if (action === 'add-after')   app.addTaskAfter(single, ds);
+  if (action === 'add-subtask') app.ctxAddSubtask(single);
+  if (action === 'duplicate')   app.duplicateMany(ids);
+  if (action === 'today')       app._sendManyTo(ids, { date: DS(today()), backlog: false });
+  if (action === 'tomorrow')    app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });
+  if (action === 'inbox')       app._sendManyTo(ids, { date: null, backlog: false });
+  if (action === 'backlog')     app._sendManyTo(ids, { date: null, backlog: true });
+  if (action === 'cancel')      app.cancelMany(ids);
+  if (action === 'delete')      ids.length > 1 ? app.deleteMany(ids) : app.deleteTodo(single, ds);
+  if (action === 'deselect')    msClear();
 });
 
 document.addEventListener('click', e => {

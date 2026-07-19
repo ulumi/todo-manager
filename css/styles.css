@@ -2199,6 +2199,18 @@ input:checked + .cal-sid-toggle-track::after {
   min-width: 0;
 }
 
+.period-dropzone {
+  height: 44px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  margin: 2px 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+.dragging-active .period-dropzone {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .day-heure-label {
   display: flex;
   align-items: center;
@@ -2509,6 +2521,41 @@ input:checked + .cal-sid-toggle-track::after {
   background: var(--surface2);
   color: var(--text);
 }
+.todo-ctx-menu .ctx-period-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+}
+.todo-ctx-menu .ctx-period-row .ctx-period-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-right: auto;
+}
+.todo-ctx-menu .ctx-period-row .ctx-period-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.15s, border-color 0.15s;
+}
+.todo-ctx-menu .ctx-period-row .ctx-period-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.todo-ctx-menu .ctx-period-row .ctx-period-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
 
 .subtask-dots {
   flex-basis: 100%;
@@ -2561,7 +2608,7 @@ input:checked + .cal-sid-toggle-track::after {
   margin-left: 34px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 5px;
   padding-bottom: 4px;
   overflow: hidden;
   border-radius: 6px;
@@ -2572,13 +2619,18 @@ input:checked + .cal-sid-toggle-track::after {
   column-count: 2;
   column-gap: 14px;
 }
+.subtask-list.two-col .subtask-item {
+  margin-bottom: 5px;
+}
 
 .subtask-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 4px;
-  border-radius: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2);
   break-inside: avoid;
 }
 .subtask-item:hover .subtask-focus-btn, .subtask-item:hover .subtask-del {
