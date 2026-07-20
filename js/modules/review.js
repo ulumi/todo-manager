@@ -59,6 +59,22 @@ function _postponedBadge(t) {
   return `<span class="review-postponed-badge" title="Reportée ${n} fois${t.originalDate ? ` depuis le ${t.originalDate}` : ''}">↪ ×${n}</span>`;
 }
 
+// t.id = Date.now() à la création (même convention que getTodosForDate()
+// dans calendar.js, qui l'utilise déjà comme date de création par défaut)
+function _daysSinceCreated(t) {
+  const created = new Date(parseInt(t.id, 10));
+  if (isNaN(created.getTime())) return null;
+  created.setHours(0, 0, 0, 0);
+  return Math.round((today() - created) / 86400000);
+}
+
+function _ageBadge(t) {
+  const days = _daysSinceCreated(t);
+  if (days === null) return '';
+  const label = days <= 0 ? 'auj.' : `${days} j`;
+  return `<span class="review-age-badge" title="Créée ${days <= 0 ? "aujourd'hui" : `il y a ${days} jour${days > 1 ? 's' : ''}`}">${label}</span>`;
+}
+
 // data-id + data-date : sélectionnable (MS_SELECTABLE), clic droit (menu
 // contextuel, résolu via data-date par _resolveOccurrences()) et draggable
 // vers les grosses zones de dépôt (renderOverdueDropZones) — aucun bouton
@@ -70,7 +86,7 @@ function _itemRow(t) {
     ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
     ondragend="this.classList.remove('dragging')">
     <div class="review-item-main">
-      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}
+      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${_ageBadge(t)}
     </div>
   </div>`;
 }
@@ -217,7 +233,7 @@ export function renderOverdueGroups(overdue) {
   return [...byDate.entries()].map(([ds, items]) => `
     <div class="review-group">
       <div class="review-group-label">${_dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>
-      <div class="review-group-items${items.length > 2 ? ' two-col' : ''}">${items.map(t => _itemRow(t)).join('')}</div>
+      <div class="review-group-items">${items.map(t => _itemRow(t)).join('')}</div>
     </div>`).join('');
 }
 

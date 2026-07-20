@@ -13668,14 +13668,17 @@ body.view-focus header { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
-// Au-delà de 2 tâches dans le groupe : deux colonnes fluides (CSS
-// multi-colonnes, même convention que .subtask-list.two-col) plutôt qu'une
-// longue liste verticale
-.review-group-items.two-col {
-  column-count: 2;
-  column-gap: 14px;
+// Items empaquetés à plat (flex-wrap, pas column-count) : le nombre de
+// colonnes se calcule tout seul selon la largeur dispo et celle de chaque
+// item (`.review-item` reste `width: fit-content`) — jamais d'espace blanc
+// à droite d'une colonne trop étroite pour son contenu, contrairement à
+// une mise en page multi-colonnes qui découpe des tracks de largeur fixe
+.review-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
 
-  .review-item { break-inside: avoid; }
+  .review-item { margin-bottom: 0; }
 }
 
 .review-item {
@@ -13732,6 +13735,20 @@ body.view-focus header { display: none; }
   border-radius: 8px;
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+// Nombre de jours depuis la création (app._daysSinceCreated(), t.id
+// utilisé comme date de création — même convention que getTodosForDate()
+// dans calendar.js) — neutre, contrairement au badge de report (danger)
+.review-age-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 

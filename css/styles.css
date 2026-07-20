@@ -14729,12 +14729,13 @@ body.view-focus header {
   font-variant-numeric: tabular-nums;
 }
 
-.review-group-items.two-col {
-  column-count: 2;
-  column-gap: 14px;
+.review-group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
 }
-.review-group-items.two-col .review-item {
-  break-inside: avoid;
+.review-group-items .review-item {
+  margin-bottom: 0;
 }
 
 .review-item {
@@ -14801,6 +14802,17 @@ body.view-focus header {
   border-radius: 8px;
   background: color-mix(in srgb, var(--danger) 12%, transparent);
   color: var(--danger);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-age-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
