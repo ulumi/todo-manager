@@ -1429,7 +1429,7 @@ class TodoApp {
     // Close menu on outside click
     if (!visible) {
       const close = (e) => {
-        if (!menu.contains(e.target) && e.target.id !== 'completeFromEditBtn') {
+        if (!menu.contains(e.target) && e.target.id !== 'completeMenuToggle') {
           menu.style.display = 'none';
           document.removeEventListener('click', close);
         }

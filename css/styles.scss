@@ -4084,6 +4084,8 @@ body.marquee-active {
 // Complete from edit modal
 .complete-btn-wrap {
   position: relative;
+  display: inline-flex;
+  align-items: stretch;
 }
 .btn-success {
   background: var(--accent, #22c55e);
@@ -4095,6 +4097,25 @@ body.marquee-active {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.15s;
+  &:hover { background: color-mix(in srgb, var(--accent, #22c55e) 85%, #000); }
+
+  // Bouton principal du split : glissée en bloc unique avec le chevron
+  .complete-btn-wrap & {
+    border-radius: 8px 0 0 8px;
+  }
+}
+// Second bouton du split (▾) : ouvre le menu des dates alternatives —
+// "Compléter" seul (1 clic) complète directement à aujourd'hui
+.btn-success-chevron {
+  background: var(--accent, #22c55e);
+  color: #fff;
+  border: none;
+  border-left: 1px solid rgba(255,255,255,.3);
+  border-radius: 0 8px 8px 0;
+  padding: 7px 8px;
+  font-size: 11px;
+  cursor: pointer;
   transition: background 0.15s;
   &:hover { background: color-mix(in srgb, var(--accent, #22c55e) 85%, #000); }
 }

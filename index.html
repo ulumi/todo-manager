@@ -473,10 +473,10 @@
       <div class="modal-footer">
         <div class="modal-footer-actions">
           <div class="complete-btn-wrap" id="completeFromEditWrap" style="display:none">
-            <button class="btn btn-success" id="completeFromEditBtn" onclick="window.app.toggleCompleteMenu()">✓ Compléter</button>
+            <button class="btn btn-success" id="completeFromEditBtn" onclick="window.app.completeFromEditModal('today')">✓ Compléter</button>
+            <button class="btn-success-chevron" id="completeMenuToggle" onclick="window.app.toggleCompleteMenu()" title="Compléter à une autre date">▾</button>
             <div class="complete-menu" id="completeMenu" style="display:none">
               <button class="complete-menu-item" id="completeOrigDate" onclick="window.app.completeFromEditModal('original')">📅 Date de la tâche</button>
-              <button class="complete-menu-item" id="completeToday" onclick="window.app.completeFromEditModal('today')">☀️ Aujourd'hui</button>
               <button class="complete-menu-item" id="completePickDate" onclick="window.app.showCompleteDatePicker()">🗓 Choisir une date</button>
               <input type="date" id="completeDatePicker" class="complete-date-input" style="display:none" onchange="window.app.completeFromEditModal('pick')">
             </div>

@@ -4244,6 +4244,8 @@ body.marquee-active {
 
 .complete-btn-wrap {
   position: relative;
+  display: inline-flex;
+  align-items: stretch;
 }
 
 .btn-success {
@@ -4259,6 +4261,24 @@ body.marquee-active {
   transition: background 0.15s;
 }
 .btn-success:hover {
+  background: color-mix(in srgb, var(--accent, #22c55e) 85%, #000);
+}
+.complete-btn-wrap .btn-success {
+  border-radius: 8px 0 0 8px;
+}
+
+.btn-success-chevron {
+  background: var(--accent, #22c55e);
+  color: #fff;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0 8px 8px 0;
+  padding: 7px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-success-chevron:hover {
   background: color-mix(in srgb, var(--accent, #22c55e) 85%, #000);
 }
 
