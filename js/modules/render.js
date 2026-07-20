@@ -436,7 +436,7 @@ export function renderDayView(todos) {
   const _mkPeriodSection = (items, group, label) => {
     if (items.length > 0 && _visCount(items) === 0) return '';
     const content = items.length
-      ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+      ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
       : `<div class="period-dropzone"></div>`;
     return `<div class="day-heure-section" data-period="${group.replace('punctual-', '')}"><div class="day-period-label day-heure-label" data-period="${group.replace('punctual-', '')}">${label}</div><div class="todo-list" data-group="${group}" style="${colStyle}">${content}</div></div>`;
   };
@@ -457,7 +457,7 @@ export function renderDayView(todos) {
     const grouped = prioGroups.map(g => {
       const items = itemsForRender.filter(t => g.key === 'none' ? !t.priority : t.priority === g.key);
       if (!items.length) return '';
-      const listHtml = `<div class="todo-list" data-group="punctual" data-priority="${g.key}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+      const listHtml = `<div class="todo-list" data-group="punctual" data-priority="${g.key}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', true)).join('')}</div>`;
       return `<div class="day-spacer-group"><div class="day-auto-group-label">${g.label}</div>${listHtml}</div>`;
     }).join('');
     rightColItems = grouped || `<div class="day-col-empty">${state.T.emptyPunctual || state.T.emptyDay}</div>`;
@@ -502,13 +502,13 @@ export function renderDayView(todos) {
       let grouped = '';
       if (untagged.length) {
         const isVisible = !excludedTags.includes('none');
-        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="none" style="${colStyle}">${untagged.map(t => todoItemHTML(t, navDate, 'punctual', true, true)).join('')}</div>`;
         grouped += `<div class="day-tag-section${isVisible ? '' : ' hidden'}" data-tag-id="none">${listHtml}</div>`;
       }
       grouped += catGroups.map(c => {
         const isVisible = !excludedTags.includes(c.id);
         const items = itemsForRender.filter(t => _hasCat(t, c.id));
-        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', false, true)).join('')}</div>`;
+        const listHtml = `<div class="todo-list" data-group="punctual" data-tag="${c.id}" style="${colStyle}">${items.map(t => todoItemHTML(t, navDate, 'punctual', true, true)).join('')}</div>`;
         return `<div class="day-tag-section${isVisible ? '' : ' hidden'}" draggable="true" data-tag-id="${c.id}"><div class="day-auto-group-label" style="background:${c.color}">${esc(c.name)}</div>${listHtml}</div>`;
       }).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="day-tag-sections">${grouped}</div>`;
@@ -519,7 +519,7 @@ export function renderDayView(todos) {
         if (!cids.length) return !excludedTags.includes('none');
         return cids.some(cid => !excludedTags.includes(cid));
       });
-      const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('');
+      const flat = filteredItems.map(t => todoItemHTML(t, navDate, 'punctual', true)).join('');
       rightColItems = `<div class="day-tag-controls">${groupToggle}${tagCloud}</div><div class="todo-list" data-group="punctual" style="${colStyle}">${flat}</div>`;
     }
 
@@ -546,14 +546,14 @@ export function renderDayView(todos) {
       if (items.length > 0 && _visCount(items) === 0) return '';
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
       const listContent = items.length
-        ? items.map(t => todoItemHTML(t, navDate, group)).join('')
+        ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
         : `<div class="period-dropzone"></div>`;
       const listHtml  = `<div class="todo-list" data-group="${group}" style="${colStyle}">${listContent}</div>`;
       return `<div class="day-heure-section" data-period="${period}">${labelHtml}${listHtml}</div>`;
     };
 
     let hHtml = '';
-    if (hNone.length) hHtml += `<div class="todo-list" data-group="punctual" style="${colStyle}">${hNone.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>`;
+    if (hNone.length) hHtml += `<div class="todo-list" data-group="punctual" style="${colStyle}">${hNone.map(t => todoItemHTML(t, navDate, 'punctual', true)).join('')}</div>`;
     const heureSections =
       mkHeureSection(hMorn, 'punctual-morning',   'morning',   'Matin',      _sunriseSvg) +
       mkHeureSection(hAftn, 'punctual-afternoon', 'afternoon', 'Après-midi', _sunSvg) +
@@ -591,7 +591,7 @@ export function renderDayView(todos) {
           groups.push(cur);
         } else {
           const t = itemsForRender.find(x => x.id === id);
-          if (t) cur.items.push(todoItemHTML(t, navDate, 'punctual'));
+          if (t) cur.items.push(todoItemHTML(t, navDate, 'punctual', true));
         }
       }
       rightColItems = groups.map(g => {
@@ -637,7 +637,7 @@ export function renderDayView(todos) {
           <span class="day-done-accordion-cnt">${doneItems.length}</span>
         </button>
         <div class="day-done-accordion-bd">
-          <div class="todo-list" data-group="punctual">${doneItems.map(t => todoItemHTML(t, navDate, 'punctual')).join('')}</div>
+          <div class="todo-list" data-group="punctual">${doneItems.map(t => todoItemHTML(t, navDate, 'punctual', true)).join('')}</div>
         </div>
       </div>`;
     }
