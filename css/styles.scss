@@ -2753,6 +2753,72 @@ main {
   }
 }
 
+// Après complétion d'une tâche sans aucune estimation ni temps loggé
+// (ni Focus, ni manuel) — proposition non bloquante de noter la durée
+// réelle après coup (app._showTimeLogPrompt(), même ancrage que
+// .subtask-warning-popover)
+.time-log-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 34px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.14);
+  z-index: 500;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+
+  .tlp-close {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+
+    &:hover { color: var(--text); }
+  }
+
+  .tlp-label { color: var(--text-muted); margin-bottom: 8px; padding-right: 14px; }
+
+  .tlp-actions {
+    display: flex;
+    gap: 6px;
+
+    .tlp-input {
+      width: 64px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 12px;
+
+      &:focus { outline: none; border-color: var(--primary); }
+    }
+
+    button:not(.tlp-close) {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      transition: opacity .15s;
+
+      &:hover { opacity: .85; }
+    }
+  }
+}
+
 // Modal subtask section
 .modal-subtask-item {
   display: flex;
@@ -13529,33 +13595,6 @@ body.view-focus header { display: none; }
   strong { color: var(--danger); }
 }
 
-.past-due-banner-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.past-due-banner-btn {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-  transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s cubic-bezier(.25,.46,.45,.94);
-
-  &:hover { background: var(--surface2); }
-
-  &--primary {
-    background: var(--danger);
-    border-color: var(--danger);
-    color: #fff;
-
-    &:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
-  }
-}
-
 /* Mise en avant des ponctuelles non faites sur un jour passé */
 .day-view.day-past .day-col--punctual .todo-item:not(.done) {
   border-left: 3px solid color-mix(in srgb, var(--danger) 65%, transparent);
@@ -13629,6 +13668,16 @@ body.view-focus header { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
+// Au-delà de 2 tâches dans le groupe : deux colonnes fluides (CSS
+// multi-colonnes, même convention que .subtask-list.two-col) plutôt qu'une
+// longue liste verticale
+.review-group-items.two-col {
+  column-count: 2;
+  column-gap: 14px;
+
+  .review-item { break-inside: avoid; }
+}
+
 .review-item {
   display: flex;
   align-items: center;
@@ -13697,6 +13746,7 @@ body.view-focus header { display: none; }
 }
 
 .overdue-drop-zone {
+  position: relative;
   flex: 1 1 100px;
   display: flex;
   flex-direction: column;
@@ -13723,22 +13773,47 @@ body.view-focus header { display: none; }
   &--done.drag-over   { border-color: var(--success); background: color-mix(in srgb, var(--success) 16%, var(--surface)); color: var(--success); }
   &--cancel.drag-over { border-color: var(--danger);  background: color-mix(in srgb, var(--danger) 16%, var(--surface));  color: var(--danger); }
 
-  input[type="date"] {
-    margin-top: 1px;
-    max-width: 100%;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font-size: 10.5px;
-    font-weight: 600;
-    text-align: center;
+  // Zone Aujourd'hui du bandeau : aussi cliquable (tout reporter), pas
+  // seulement glissable — bordure pleine pour se distinguer des zones
+  // glisser-seulement, badge « tout » dans le coin pour expliciter le double usage
+  &--clickable {
     cursor: pointer;
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+
+    &:hover { background: var(--primary-light); color: var(--primary); }
+  }
+
+  // Lien de navigation (Bilan complet) plutôt qu'une cible de drop : style
+  // plein pour ne pas être confondu avec les zones en pointillés
+  &--link {
+    cursor: pointer;
+    border-style: solid;
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+
+    &:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
   }
 }
 
 .overdue-drop-zone-icon {
   font-size: 16px;
   line-height: 1;
+}
+
+.overdue-drop-zone-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
 }
 
 .review-bulk {

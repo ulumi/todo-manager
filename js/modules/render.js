@@ -702,12 +702,11 @@ export function renderDayView(todos) {
             <span class="past-due-banner-icon">⚠</span>
             <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
           </button>
-          <div class="past-due-banner-actions">
-            <button class="past-due-banner-btn past-due-banner-btn--primary" onclick="window.app.openReviewModal()">Bilan complet</button>
-            <button class="past-due-banner-btn" onclick="window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})">Tout à aujourd'hui</button>
-          </div>
         </div>
-        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>${renderOverdueDropZones()}` : ''}
+        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>${renderOverdueDropZones({
+          onTodayClick: `window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})`,
+          bilanLink: true,
+        })}` : ''}
       </div>`;
     }
   }

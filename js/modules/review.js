@@ -77,22 +77,30 @@ function _itemRow(t) {
 
 // Grosses zones de dépôt partagées (bandeau vue jour + modal Bilan) : on
 // drague une tâche (ou toute la sélection multiple, via app._dropIds())
-// dessus pour appliquer l'action, plutôt que des boutons sur chaque ligne
+// dessus pour appliquer l'action, plutôt que des boutons sur chaque ligne.
+// - onTodayClick : le bandeau vue jour n'a plus de bouton « Tout à
+//   aujourd'hui » séparé — cette action est intégrée à la zone Aujourd'hui
+//   (clic = tout le lot fenêtré, glisser = juste la tâche déposée), signalée
+//   par un badge distinctif pour ne pas la confondre avec les zones
+//   glisser-seulement. Le modal Bilan garde ses propres boutons « Tout... »
+//   dédiés (`.review-bulk`) donc n'active pas cette option.
+// - bilanLink : ajoute un bouton « Bilan complet » dans la même rangée
+//   (bandeau seulement — inutile depuis le modal, qui EST le Bilan) — style
+//   plein, pas en pointillés, pour signaler que ce n'est pas une cible de
+//   drop mais un lien de navigation
 const _DZ_COMMON = `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"`;
-export function renderOverdueDropZones() {
+export function renderOverdueDropZones({ onTodayClick = null, bilanLink = false } = {}) {
+  const todayClickAttr = onTodayClick ? ` onclick="${onTodayClick}"` : '';
+  const todayBadge = onTodayClick ? `<span class="overdue-drop-zone-badge" title="Clic = tout reporter à aujourd'hui">tout</span>` : '';
   return `<div class="overdue-drop-zones">
     <div class="overdue-drop-zone overdue-drop-zone--done" ${_DZ_COMMON} ondrop="window.app.overdueDropDone(event)" title="Marquer comme faite">
       <span class="overdue-drop-zone-icon">✓</span>Fait
     </div>
-    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropToday(event)" title="Reporter à aujourd'hui">
-      <span class="overdue-drop-zone-icon">☀</span>Aujourd'hui
+    <div class="overdue-drop-zone${onTodayClick ? ' overdue-drop-zone--clickable' : ''}" ${_DZ_COMMON}${todayClickAttr} ondrop="window.app.overdueDropToday(event)" title="${onTodayClick ? 'Glisser une tâche : la reporter · Clic : tout reporter à aujourd\'hui' : 'Reporter à aujourd\'hui'}">
+      ${todayBadge}<span class="overdue-drop-zone-icon">☀</span>Aujourd'hui
     </div>
     <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropTomorrow(event)" title="Reporter à demain">
       <span class="overdue-drop-zone-icon">→</span>Demain
-    </div>
-    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropDate(event)" title="Reporter à une date précise">
-      <span class="overdue-drop-zone-icon">📅</span>Autre date
-      <input type="date" onclick="event.stopPropagation()" ondragstart="event.preventDefault()">
     </div>
     <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropBacklog(event)" title="Envoyer au backlog">
       <span class="overdue-drop-zone-icon">🗂</span>Backlog
@@ -100,6 +108,9 @@ export function renderOverdueDropZones() {
     <div class="overdue-drop-zone overdue-drop-zone--cancel" ${_DZ_COMMON} ondrop="window.app.overdueDropCancel(event)" title="Abandonner (annuler la tâche — reste visible, barrée)">
       <span class="overdue-drop-zone-icon">⊘</span>Abandonner
     </div>
+    ${bilanLink ? `<div class="overdue-drop-zone overdue-drop-zone--link" onclick="window.app.openReviewModal()" title="Ouvrir le bilan complet">
+      <span class="overdue-drop-zone-icon">📋</span>Bilan complet
+    </div>` : ''}
   </div>`;
 }
 
@@ -206,7 +217,7 @@ export function renderOverdueGroups(overdue) {
   return [...byDate.entries()].map(([ds, items]) => `
     <div class="review-group">
       <div class="review-group-label">${_dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>
-      ${items.map(t => _itemRow(t)).join('')}
+      <div class="review-group-items${items.length > 2 ? ' two-col' : ''}">${items.map(t => _itemRow(t)).join('')}</div>
     </div>`).join('');
 }
 
