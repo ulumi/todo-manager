@@ -13502,8 +13502,9 @@ body.view-focus header { display: none; }
   &.collapsed { transform: rotate(-90deg); }
 }
 
-// Bilan directement dans le bandeau : mêmes lignes (.review-item) et
-// actions (.review-act) que le modal Bilan, via renderOverdueGroups()
+// Bilan directement dans le bandeau : mêmes lignes (.review-item), via
+// renderOverdueGroups() — les grosses zones de dépôt (.overdue-drop-zones)
+// sont rendues séparément, hors de ce conteneur scrollable
 .past-due-banner-list {
   display: flex;
   flex-direction: column;
@@ -13639,9 +13640,12 @@ body.view-focus header { display: none; }
   margin-bottom: 6px;
   width: fit-content;
   max-width: 100%;
-  transition: background .15s cubic-bezier(.25,.46,.45,.94);
+  cursor: grab;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), opacity .15s cubic-bezier(.25,.46,.45,.94);
 
   &:hover { background: var(--surface2); }
+  &:active { cursor: grabbing; }
+  &.dragging { opacity: .4; }
 }
 
 .review-item-main {
@@ -13682,55 +13686,59 @@ body.view-focus header { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
-.review-item-actions {
+// Grosses zones de dépôt (renderOverdueDropZones, review.js) : on drague
+// une ligne .review-item dessus pour appliquer l'action, plutôt que des
+// boutons sur chaque ligne
+.overdue-drop-zones {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  opacity: .55;
-  transition: opacity .15s cubic-bezier(.25,.46,.45,.94);
-
-  .review-item:hover & { opacity: 1; }
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
-.review-act {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
+.overdue-drop-zone {
+  flex: 1 1 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--border);
+  background: var(--surface);
   color: var(--text-muted);
-  cursor: pointer;
-  transition: background .12s, color .12s, border-color .12s;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), border-color .15s cubic-bezier(.25,.46,.45,.94), color .15s cubic-bezier(.25,.46,.45,.94);
 
-  &:hover {
-    background: var(--primary);
+  &.drag-over {
+    border-style: solid;
     border-color: var(--primary);
-    color: #fff;
+    background: var(--primary-light);
+    color: var(--primary);
   }
 
-  &--done:hover {
-    background: var(--success);
-    border-color: var(--success);
-  }
+  &--done.drag-over   { border-color: var(--success); background: color-mix(in srgb, var(--success) 16%, var(--surface)); color: var(--success); }
+  &--cancel.drag-over { border-color: var(--danger);  background: color-mix(in srgb, var(--danger) 16%, var(--surface));  color: var(--danger); }
 
-  &--del:hover {
-    background: var(--danger);
-    border-color: var(--danger);
+  input[type="date"] {
+    margin-top: 1px;
+    max-width: 100%;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
   }
+}
 
-  &--date {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-
-    input[type="date"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-  }
+.overdue-drop-zone-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .review-bulk {

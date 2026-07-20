@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTas
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -707,7 +707,7 @@ export function renderDayView(todos) {
             <button class="past-due-banner-btn" onclick="window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})">Tout à aujourd'hui</button>
           </div>
         </div>
-        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>` : ''}
+        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>${renderOverdueDropZones()}` : ''}
       </div>`;
     }
   }

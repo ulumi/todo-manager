@@ -14703,10 +14703,17 @@ body.view-focus header {
   margin-bottom: 6px;
   width: fit-content;
   max-width: 100%;
-  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: grab;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .review-item:hover {
   background: var(--surface2);
+}
+.review-item:active {
+  cursor: grabbing;
+}
+.review-item.dragging {
+  opacity: 0.4;
 }
 
 .review-item-main {
@@ -14752,51 +14759,61 @@ body.view-focus header {
   font-variant-numeric: tabular-nums;
 }
 
-.review-item-actions {
+.overdue-drop-zones {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  opacity: 0.55;
-  transition: opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.review-item:hover .review-item-actions {
-  opacity: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
-.review-act {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
-}
-.review-act:hover {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.review-act--done:hover {
-  background: var(--success);
-  border-color: var(--success);
-}
-.review-act--del:hover {
-  background: var(--danger);
-  border-color: var(--danger);
-}
-.review-act--date {
-  position: relative;
-  display: inline-flex;
+.overdue-drop-zone {
+  flex: 1 1 100px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 8px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.review-act--date input[type=date] {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
+.overdue-drop-zone.drag-over {
+  border-style: solid;
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.overdue-drop-zone--done.drag-over {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 16%, var(--surface));
+  color: var(--success);
+}
+.overdue-drop-zone--cancel.drag-over {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+  color: var(--danger);
+}
+.overdue-drop-zone input[type=date] {
+  margin-top: 1px;
+  max-width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
   cursor: pointer;
+}
+
+.overdue-drop-zone-icon {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .review-bulk {

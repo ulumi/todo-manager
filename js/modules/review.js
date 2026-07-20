@@ -59,26 +59,47 @@ function _postponedBadge(t) {
   return `<span class="review-postponed-badge" title="Reportée ${n} fois${t.originalDate ? ` depuis le ${t.originalDate}` : ''}">↪ ×${n}</span>`;
 }
 
-function _itemActions(t, { withToday = true } = {}) {
-  return `<div class="review-item-actions">
-    <button class="review-act review-act--done" onclick="window.app.reviewDone('${t.id}')" title="Marquer comme faite">✓ Fait</button>
-    ${withToday ? `<button class="review-act" onclick="window.app.reviewToToday('${t.id}')" title="Reporter à aujourd'hui">Auj.</button>` : ''}
-    <button class="review-act" onclick="window.app.reviewToTomorrow('${t.id}')" title="Reporter à demain">Dem.</button>
-    <label class="review-act review-act--date" title="Choisir une date">📅<input type="date" onchange="window.app.reviewSetDate('${t.id}', this.value)"></label>
-    <button class="review-act" onclick="window.app.reviewToBacklog('${t.id}')" title="Envoyer au backlog">BL</button>
-    <button class="review-act review-act--del" onclick="window.app.reviewCancel('${t.id}')" title="Abandonner (annuler la tâche — reste visible, barrée)">⊘</button>
-  </div>`;
-}
-
-// data-id + data-date : sélectionnable (MS_SELECTABLE) et clic droit (menu
-// contextuel, résolu via data-date par _resolveOccurrences())
-function _itemRow(t, opts) {
+// data-id + data-date : sélectionnable (MS_SELECTABLE), clic droit (menu
+// contextuel, résolu via data-date par _resolveOccurrences()) et draggable
+// vers les grosses zones de dépôt (renderOverdueDropZones) — aucun bouton
+// sur la ligne elle-même, uniquement le titre
+function _itemRow(t) {
   const prioDot = t.priority ? `<span class="review-prio-dot prio-${t.priority}"></span>` : '';
-  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}>
+  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}
+    draggable="true"
+    ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
+    ondragend="this.classList.remove('dragging')">
     <div class="review-item-main">
       ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}
     </div>
-    ${_itemActions(t, opts)}
+  </div>`;
+}
+
+// Grosses zones de dépôt partagées (bandeau vue jour + modal Bilan) : on
+// drague une tâche (ou toute la sélection multiple, via app._dropIds())
+// dessus pour appliquer l'action, plutôt que des boutons sur chaque ligne
+const _DZ_COMMON = `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"`;
+export function renderOverdueDropZones() {
+  return `<div class="overdue-drop-zones">
+    <div class="overdue-drop-zone overdue-drop-zone--done" ${_DZ_COMMON} ondrop="window.app.overdueDropDone(event)" title="Marquer comme faite">
+      <span class="overdue-drop-zone-icon">✓</span>Fait
+    </div>
+    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropToday(event)" title="Reporter à aujourd'hui">
+      <span class="overdue-drop-zone-icon">☀</span>Aujourd'hui
+    </div>
+    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropTomorrow(event)" title="Reporter à demain">
+      <span class="overdue-drop-zone-icon">→</span>Demain
+    </div>
+    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropDate(event)" title="Reporter à une date précise">
+      <span class="overdue-drop-zone-icon">📅</span>Autre date
+      <input type="date" onclick="event.stopPropagation()" ondragstart="event.preventDefault()">
+    </div>
+    <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropBacklog(event)" title="Envoyer au backlog">
+      <span class="overdue-drop-zone-icon">🗂</span>Backlog
+    </div>
+    <div class="overdue-drop-zone overdue-drop-zone--cancel" ${_DZ_COMMON} ondrop="window.app.overdueDropCancel(event)" title="Abandonner (annuler la tâche — reste visible, barrée)">
+      <span class="overdue-drop-zone-icon">⊘</span>Abandonner
+    </div>
   </div>`;
 }
 
@@ -170,9 +191,11 @@ export function renderTimeStatsRows(todos, { limit = 10 } = {}) {
     </div>`).join('');
 }
 
-// Ponctuelles en retard groupées par jour, avec actions (Fait/Auj./Dem./
-// date/BL/abandonner) — partagé entre le modal Bilan et le bandeau de
-// rappel de la vue jour (le bilan peut se faire directement dans les deux)
+// Ponctuelles en retard groupées par jour — lignes de titre pur (aucun
+// bouton) : on drague une ligne vers renderOverdueDropZones() pour agir
+// dessus (rendu séparément par l'appelant, hors de la zone scrollable, pour
+// rester toujours atteignable pendant le drag). Partagé entre le modal
+// Bilan et le bandeau de rappel de la vue jour
 export function renderOverdueGroups(overdue) {
   if (!overdue.length) return '';
   const byDate = new Map();
@@ -200,6 +223,7 @@ export function renderReviewBody(todos) {
     html += `<div class="review-section">
       <div class="review-section-title">Laissées pour compte <span class="review-section-badge">${overdue.length}</span></div>
       ${renderOverdueGroups(overdue)}
+      ${renderOverdueDropZones()}
       <div class="review-bulk">
         <button class="btn btn-primary" onclick="window.app.reviewAllToday()">Tout reporter à aujourd'hui</button>
         <button class="btn btn-ghost" onclick="window.app.reviewAllBacklog()">Tout en backlog</button>
@@ -213,7 +237,7 @@ export function renderReviewBody(todos) {
   if (postponed.length) {
     html += `<div class="review-section">
       <div class="review-section-title">Souvent reportées</div>
-      ${postponed.map(t => _itemRow(t, { withToday: false })).join('')}
+      ${postponed.map(t => _itemRow(t)).join('')}
     </div>`;
   }
 

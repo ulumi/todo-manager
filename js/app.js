@@ -3949,48 +3949,50 @@ class TodoApp {
     this.render();
   }
 
-  reviewDone(id) {
+  // Grosses zones de dépôt du Bilan (bandeau vue jour + modal) : on drague
+  // une tâche — ou toute la sélection multiple si elle en fait partie, via
+  // _dropIds() — dessus pour appliquer l'action. Remplace les anciens
+  // boutons par-ligne (review-act).
+  _reviewDrop(event, mutateEach) {
+    event.preventDefault();
+    event.currentTarget.classList.remove('drag-over');
+    const taskId = event.dataTransfer.getData('text/plain');
+    if (!taskId) return;
+    const ids = this._dropIds(taskId);
     this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) { t.completed = true; t.updatedAt = Date.now(); }
+      ids.forEach(id => {
+        const t = state.todos.find(x => x.id === id);
+        if (t) mutateEach(t);
+      });
     });
+    if (ids.length > 1) msClear();
   }
 
-  reviewToToday(id) {
-    this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) this._postpone(t, DS(today()));
-    });
+  overdueDropDone(event) {
+    this._reviewDrop(event, t => { t.completed = true; t.updatedAt = Date.now(); });
   }
 
-  reviewToTomorrow(id) {
-    this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) this._postpone(t, DS(addDays(today(), 1)));
-    });
+  overdueDropToday(event) {
+    this._reviewDrop(event, t => this._postpone(t, DS(today())));
   }
 
-  reviewSetDate(id, ds) {
-    if (!ds) return;
-    this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) this._postpone(t, ds);
-    });
+  overdueDropTomorrow(event) {
+    this._reviewDrop(event, t => this._postpone(t, DS(addDays(today(), 1))));
   }
 
-  reviewToBacklog(id) {
-    this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) { t.date = null; t.backlog = true; t.updatedAt = Date.now(); }
-    });
+  overdueDropDate(event) {
+    const ds = event.currentTarget.querySelector('input[type="date"]')?.value;
+    if (!ds) { event.preventDefault(); event.currentTarget.classList.remove('drag-over'); return; }
+    this._reviewDrop(event, t => this._postpone(t, ds));
+  }
+
+  overdueDropBacklog(event) {
+    this._reviewDrop(event, t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
   }
 
   // « Abandonner » dans le Bilan = annuler (trace conservée), pas supprimer
-  reviewCancel(id) {
-    this._reviewMutate(() => {
-      const t = state.todos.find(x => x.id === id);
-      if (t) { t.cancelled = true; t.completed = false; t.updatedAt = Date.now(); }
-    });
+  overdueDropCancel(event) {
+    this._reviewDrop(event, t => { t.cancelled = true; t.completed = false; t.updatedAt = Date.now(); });
   }
 
   reviewAllToday() {
