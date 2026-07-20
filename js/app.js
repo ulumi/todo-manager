@@ -1063,61 +1063,6 @@ class TodoApp {
           .to(check, { scale: 1, duration: 0.2, ease: 'elastic.out(1.2, 0.5)' });
       }
     }, 0);
-    // Tâche complétée sans jamais avoir eu ni estimation ni temps loggé
-    // (ni via Focus, ni manuellement) → propose de le noter après coup.
-    // Non bloquant : la tâche est déjà complétée, ce popover est juste une
-    // occasion ratée si ignoré (clic dehors), pas une confirmation requise.
-    if (!wasCompleted && this._hasNoTimeInfo(todo)) this._showTimeLogPrompt(id, DS(d));
-  }
-
-  _hasNoTimeInfo(t) {
-    return !t.durationEstimated && !t.durationReal && (!Array.isArray(t.durationHistory) || t.durationHistory.length === 0);
-  }
-
-  _showTimeLogPrompt(id, ds) {
-    document.querySelectorAll('.time-log-popover').forEach(el => el.remove());
-    const item = document.querySelector(`[data-id="${id}"]`);
-    if (!item) return;
-    const popover = document.createElement('div');
-    popover.className = 'time-log-popover';
-    popover.onclick = e => e.stopPropagation();
-    popover.innerHTML = `
-      <button class="tlp-close" onclick="this.closest('.time-log-popover').remove()" title="Ignorer">×</button>
-      <div class="tlp-label">Combien de temps ça a pris ?</div>
-      <div class="tlp-actions">
-        <input type="number" min="1" step="1" inputmode="numeric" class="tlp-input" placeholder="min" onkeydown="if(event.key==='Enter')window.app.logTaskDuration('${id}','${ds}',this.value)">
-        <button onclick="window.app.logTaskDuration('${id}','${ds}',this.previousElementSibling.value)">OK</button>
-      </div>`;
-    item.appendChild(popover);
-    popover.querySelector('.tlp-input')?.focus();
-    setTimeout(() => {
-      const dismiss = e => {
-        if (!popover.isConnected) { document.removeEventListener('click', dismiss); return; }
-        if (!popover.contains(e.target)) {
-          popover.remove();
-          document.removeEventListener('click', dismiss);
-        }
-      };
-      document.addEventListener('click', dismiss);
-    }, 10);
-  }
-
-  // Historise la durée réelle saisie après coup (même schéma que
-  // focusComplete() : durationReal + append durationHistory borné à 30)
-  logTaskDuration(id, ds, val) {
-    document.querySelectorAll('.time-log-popover').forEach(el => el.remove());
-    const minutes = parseInt(val, 10);
-    if (!minutes || minutes <= 0) return;
-    const t = state.todos.find(x => x.id === id);
-    if (!t) return;
-    snapshot(state.todos);
-    t.durationReal = minutes;
-    if (!Array.isArray(t.durationHistory)) t.durationHistory = [];
-    t.durationHistory.push({ date: ds, minutes });
-    if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
-    t.updatedAt = Date.now();
-    saveTodos(state.todos);
-    this.render();
   }
 
   _showSubtaskWarning(id, d, count) {
@@ -1163,7 +1108,6 @@ class TodoApp {
     celebrate(state.lang);
     this.render();
     this._refreshCategoryPanel();
-    if (this._hasNoTimeInfo(todo)) this._showTimeLogPrompt(id, dsStr);
   }
 
   // Survol prolongé (2 s, setupTodoItemHoverAnimations() dans render.js) —
