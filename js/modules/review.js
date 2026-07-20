@@ -45,11 +45,20 @@ export function computeAdherence(todos, nDays = 7) {
   }).filter(r => r.expected > 0).sort((a, b) => a.rate - b.rate);
 }
 
-function _dayLabel(ds) {
+// inline: version minuscule sans détail, pour s'insérer dans une phrase
+// (ex. « 6 tâches non accomplies hier ») — utilisée par render.js quand le
+// bandeau ne couvre qu'un seul jour, pour ne pas répéter l'info deux fois
+// (titre du bandeau + libellé de groupe redondants)
+export function dayLabel(ds, { inline = false } = {}) {
   const diff = Math.round((today() - parseDS(ds)) / 86400000);
+  const d = parseDS(ds);
+  if (inline) {
+    if (diff === 1) return 'hier';
+    if (diff === 2) return 'avant-hier';
+    return `le ${state.DAY_FULL[d.getDay()]} ${d.getDate()} ${state.MONTHS[d.getMonth()]}`;
+  }
   if (diff === 1) return 'Hier';
   if (diff === 2) return 'Avant-hier';
-  const d = parseDS(ds);
   return `${state.DAY_FULL[d.getDay()]} ${d.getDate()} ${state.MONTHS[d.getMonth()]} · il y a ${diff} jours`;
 }
 
@@ -75,16 +84,23 @@ function _ageBadge(t) {
   return `<span class="review-age-badge" title="Créée ${days <= 0 ? "aujourd'hui" : `il y a ${days} jour${days > 1 ? 's' : ''}`}">${label}</span>`;
 }
 
-// data-id + data-date : sélectionnable (MS_SELECTABLE), clic droit (menu
-// contextuel, résolu via data-date par _resolveOccurrences()) et draggable
-// vers les grosses zones de dépôt (renderOverdueDropZones) — aucun bouton
-// sur la ligne elle-même, uniquement le titre
+// Petit handle dédié (grip à 6 points) : seul point de départ du drag, pour
+// ne pas rendre toute la ligne « draggable » (le clic/la sélection restent
+// libres ailleurs sur la ligne). draggable="true" est sur le handle, mais
+// dragstart lit '${t.id}' par closure donc le payload est correct quel que
+// soit l'élément qui a initié le drag ; .closest('.review-item') porte la
+// classe .dragging pour que toute la ligne s'estompe, pas juste le handle
+const _DRAG_HANDLE_SVG = `<svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="2.5" r="1.4"/><circle cx="7.5" cy="2.5" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/></svg>`;
+
+// data-id + data-date : sélectionnable (MS_SELECTABLE) et clic droit (menu
+// contextuel, résolu via data-date par _resolveOccurrences()) — aucun
+// bouton sur la ligne elle-même, uniquement le titre + le handle de drag
 function _itemRow(t) {
   const prioDot = t.priority ? `<span class="review-prio-dot prio-${t.priority}"></span>` : '';
-  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}
-    draggable="true"
-    ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
-    ondragend="this.classList.remove('dragging')">
+  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}>
+    <span class="review-item-handle" draggable="true" title="Glisser vers une zone d'action"
+      ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.closest('.review-item').classList.add('dragging')"
+      ondragend="this.closest('.review-item').classList.remove('dragging')">${_DRAG_HANDLE_SVG}</span>
     <div class="review-item-main">
       ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${_ageBadge(t)}
     </div>
@@ -104,28 +120,42 @@ function _itemRow(t) {
 //   (bandeau seulement — inutile depuis le modal, qui EST le Bilan) — style
 //   plein, pas en pointillés, pour signaler que ce n'est pas une cible de
 //   drop mais un lien de navigation
+//
+// Icônes en SVG trait (stroke="currentColor"), jamais en emoji : contrainte
+// globale de Hugues (voir ~/.claude/CLAUDE.md), pas seulement pour éviter
+// l'ancien 🗂 du Backlog qu'il n'aimait pas — aucune icône de l'app ne doit
+// être un pictogramme multicolore, la couleur ne doit venir que du thème
+// (currentColor hérite de la couleur du texte/état de la zone)
+const _DZ_ICONS = {
+  done:     `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  today:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/></svg>`,
+  tomorrow: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>`,
+  backlog:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>`,
+  cancel:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>`,
+  bilan:    `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>`,
+};
 const _DZ_COMMON = `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('drag-over')"`;
 export function renderOverdueDropZones({ onTodayClick = null, bilanLink = false } = {}) {
   const todayClickAttr = onTodayClick ? ` onclick="${onTodayClick}"` : '';
   const todayBadge = onTodayClick ? `<span class="overdue-drop-zone-badge" title="Clic = tout reporter à aujourd'hui">tout</span>` : '';
   return `<div class="overdue-drop-zones">
     <div class="overdue-drop-zone overdue-drop-zone--done" ${_DZ_COMMON} ondrop="window.app.overdueDropDone(event)" title="Marquer comme faite">
-      <span class="overdue-drop-zone-icon">✓</span>Fait
+      <span class="overdue-drop-zone-icon">${_DZ_ICONS.done}</span>Fait
     </div>
     <div class="overdue-drop-zone${onTodayClick ? ' overdue-drop-zone--clickable' : ''}" ${_DZ_COMMON}${todayClickAttr} ondrop="window.app.overdueDropToday(event)" title="${onTodayClick ? 'Glisser une tâche : la reporter · Clic : tout reporter à aujourd\'hui' : 'Reporter à aujourd\'hui'}">
-      ${todayBadge}<span class="overdue-drop-zone-icon">☀</span>Aujourd'hui
+      ${todayBadge}<span class="overdue-drop-zone-icon">${_DZ_ICONS.today}</span>Aujourd'hui
     </div>
     <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropTomorrow(event)" title="Reporter à demain">
-      <span class="overdue-drop-zone-icon">→</span>Demain
+      <span class="overdue-drop-zone-icon">${_DZ_ICONS.tomorrow}</span>Demain
     </div>
     <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropBacklog(event)" title="Envoyer au backlog">
-      <span class="overdue-drop-zone-icon">🗂</span>Backlog
+      <span class="overdue-drop-zone-icon">${_DZ_ICONS.backlog}</span>Backlog
     </div>
     <div class="overdue-drop-zone overdue-drop-zone--cancel" ${_DZ_COMMON} ondrop="window.app.overdueDropCancel(event)" title="Abandonner (annuler la tâche — reste visible, barrée)">
-      <span class="overdue-drop-zone-icon">⊘</span>Abandonner
+      <span class="overdue-drop-zone-icon">${_DZ_ICONS.cancel}</span>Abandonner
     </div>
     ${bilanLink ? `<div class="overdue-drop-zone overdue-drop-zone--link" onclick="window.app.openReviewModal()" title="Ouvrir le bilan complet">
-      <span class="overdue-drop-zone-icon">📋</span>Bilan complet
+      <span class="overdue-drop-zone-icon">${_DZ_ICONS.bilan}</span>Bilan complet
     </div>` : ''}
   </div>`;
 }
@@ -222,17 +252,23 @@ export function renderTimeStatsRows(todos, { limit = 10 } = {}) {
 // bouton) : on drague une ligne vers renderOverdueDropZones() pour agir
 // dessus (rendu séparément par l'appelant, hors de la zone scrollable, pour
 // rester toujours atteignable pendant le drag). Partagé entre le modal
-// Bilan et le bandeau de rappel de la vue jour
-export function renderOverdueGroups(overdue) {
+// Bilan et le bandeau de rappel de la vue jour.
+// hideSingleGroupLabel : quand un seul jour est concerné, le bandeau vue
+// jour unifie déjà ce jour dans son titre (« N tâches non accomplies hier »
+// plutôt que « ... ces 5 derniers jours ») — inutile de répéter le même
+// libellé juste en dessous (« Hier 6 ») ; le modal Bilan n'active pas cette
+// option, son titre de section ne mentionne pas de jour
+export function renderOverdueGroups(overdue, { hideSingleGroupLabel = false } = {}) {
   if (!overdue.length) return '';
   const byDate = new Map();
   overdue.forEach(t => {
     if (!byDate.has(t.date)) byDate.set(t.date, []);
     byDate.get(t.date).push(t);
   });
+  const skipLabel = hideSingleGroupLabel && byDate.size === 1;
   return [...byDate.entries()].map(([ds, items]) => `
     <div class="review-group">
-      <div class="review-group-label">${_dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>
+      ${skipLabel ? '' : `<div class="review-group-label">${dayLabel(ds)}<span class="review-group-count">${items.length}</span></div>`}
       <div class="review-group-items">${items.map(t => _itemRow(t)).join('')}</div>
     </div>`).join('');
 }

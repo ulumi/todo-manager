@@ -171,10 +171,15 @@ const MARQUEE_THRESHOLD = 5; // px avant d'activer le lasso (préserve les clics
 // draggable qu'en tri Auto + 1 colonne — hors de ce mode, un clic-glisser
 // pour tenter de le réordonner ne doit pas non plus déclencher le lasso ;
 // celui-ci reste utilisable en démarrant depuis le vide autour des items
-// (.focus-queue-item[data-id] fait partie de MS_SELECTABLE).
+// (.focus-queue-item[data-id] fait partie de MS_SELECTABLE). Même raison
+// pour .review-item : seul son .review-item-handle est draggable="true"
+// (review.js), pas la ligne entière — sans cette exclusion explicite, un
+// clic-glisser démarré sur le titre (hors du handle) déclencherait le
+// lasso au lieu de ne rien faire.
 const MARQUEE_EXCLUDE = [
   '[draggable="true"]',
   '.focus-queue-item',
+  '.review-item',
   'button, input, textarea, select, a, [contenteditable="true"]',
   '.modal-overlay', '.plan-resize-handle', '.multi-select-bar',
   '.day-mini-week',

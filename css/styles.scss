@@ -13684,7 +13684,7 @@ body.view-focus header { display: none; }
 .review-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 7px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -13692,12 +13692,25 @@ body.view-focus header { display: none; }
   margin-bottom: 6px;
   width: fit-content;
   max-width: 100%;
-  cursor: grab;
   transition: background .15s cubic-bezier(.25,.46,.45,.94), opacity .15s cubic-bezier(.25,.46,.45,.94);
 
   &:hover { background: var(--surface2); }
-  &:active { cursor: grabbing; }
   &.dragging { opacity: .4; }
+}
+
+// Seul point de départ du drag (voir _itemRow(), review.js) — le reste de
+// la ligne n'est plus draggable, pour laisser le clic/la sélection libres
+.review-item-handle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: .35;
+  cursor: grab;
+  transition: opacity .15s cubic-bezier(.25,.46,.45,.94);
+
+  .review-item:hover & { opacity: .8; }
+  &:active { cursor: grabbing; }
 }
 
 .review-item-main {
@@ -13815,8 +13828,10 @@ body.view-focus header { display: none; }
 }
 
 .overdue-drop-zone-icon {
-  font-size: 16px;
+  display: flex;
   line-height: 1;
+
+  svg { display: block; }
 }
 
 .overdue-drop-zone-badge {

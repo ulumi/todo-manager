@@ -7,7 +7,7 @@ import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTas
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -695,15 +695,20 @@ export function renderDayView(todos) {
     if (missed.length > 0) {
       const collapsed = localStorage.getItem('pastDueBannerCollapsed') === 'true';
       const chevron = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="past-due-banner-chevron${collapsed ? ' collapsed' : ''}"><polyline points="6,9 12,15 18,9"/></svg>`;
+      // Un seul jour concerné (le cas le plus fréquent : « Hier ») → ce jour
+      // est intégré au titre plutôt que répété juste en dessous par le
+      // libellé de groupe (renderOverdueGroups({ hideSingleGroupLabel })) — évite le doublon « 6 tâches... » / « Hier 6 »
+      const missedDates = [...new Set(missed.map(t => t.date))];
+      const singleDayLabel = missedDates.length === 1 ? dayLabel(missedDates[0], { inline: true }) : null;
       pastDueBanner = `<div class="past-due-banner">
         <div class="past-due-banner-head">
           <button class="past-due-banner-toggle" onclick="window.app.togglePastDueBanner()" title="${collapsed ? 'Déplier' : 'Replier'}">
             ${chevron}
             <span class="past-due-banner-icon">⚠</span>
-            <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ces ${PAST_DUE_WINDOW_DAYS} derniers jours</span>
+            <span class="past-due-banner-text"><strong>${missed.length} tâche${missed.length > 1 ? 's' : ''} non accomplie${missed.length > 1 ? 's' : ''}</strong> ${singleDayLabel || `ces ${PAST_DUE_WINDOW_DAYS} derniers jours`}</span>
           </button>
         </div>
-        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed)}</div>${renderOverdueDropZones({
+        ${!collapsed ? `<div class="past-due-banner-list">${renderOverdueGroups(missed, { hideSingleGroupLabel: true })}</div>${renderOverdueDropZones({
           onTodayClick: `window.app.postponeRecentOverdueToToday(${PAST_DUE_WINDOW_DAYS})`,
           bilanLink: true,
         })}` : ''}
