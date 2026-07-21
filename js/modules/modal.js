@@ -133,6 +133,35 @@ document.addEventListener('focusout', e => {
   _commitDurationDisplay(display);
 });
 
+// Invitation à saisir une durée estimée : au premier essai de sauvegarde
+// d'une NOUVELLE tâche (pas en édition) sans durée, on met le champ en
+// évidence au lieu de sauvegarder tout de suite — un second clic sauvegarde
+// quand même (non bloquant, une seule invitation par ouverture de modale).
+export function maybeInviteDurationEstimate() {
+  const input = document.getElementById('taskDurationEstimated');
+  const stepper = input?.closest('.duration-stepper');
+  // offsetParent couvre à la fois inbox/backlog (dateTimeGroup masqué) et le
+  // mode guidé (formulaire principal caché derrière l'overlay guidé) — pas
+  // d'invite invisible qui avalerait silencieusement le premier clic
+  if (!input || !stepper || stepper.offsetParent === null) return false;
+  if (parseInt(input.value) > 0) return false;
+  if (stepper.dataset.invited === '1') return false;
+  stepper.dataset.invited = '1';
+  document.getElementById('durationInviteHint')?.classList.add('show');
+  stepper.classList.remove('duration-stepper--invite');
+  void stepper.offsetWidth;
+  stepper.classList.add('duration-stepper--invite');
+  stepper.querySelector('.dur-display')?.focus();
+  setTimeout(() => stepper.classList.remove('duration-stepper--invite'), 1600);
+  return true;
+}
+
+function _resetDurationInvite() {
+  const stepper = document.getElementById('taskDurationEstimated')?.closest('.duration-stepper');
+  if (stepper) { delete stepper.dataset.invited; stepper.classList.remove('duration-stepper--invite'); }
+  document.getElementById('durationInviteHint')?.classList.remove('show');
+}
+
 // ─── Date trigger button ───────────────────────────────────────────────────
 
 const _MONTHS_SHORT = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
@@ -741,6 +770,7 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   document.getElementById('taskDurationReal').value = '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  _resetDurationInvite();
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = 'none';
   // Reset counter fields
@@ -874,6 +904,7 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  _resetDurationInvite();
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
   populateCategoryTags(t.categoryIds || (t.categoryId ? [t.categoryId] : []));

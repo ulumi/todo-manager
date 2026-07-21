@@ -3003,6 +3003,43 @@ main {
   to   { opacity: 1; transform: scale(1); }
 }
 
+// Invite « Durée ? » à la complétion d'une tâche jamais chronométrée
+// (app._showCompletionDurationPrompt) — inline dans .todo-content, jamais
+// un overlay : ne peut donc jamais recouvrir la ligne voisine
+.todo-duration-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  animation: todo-duration-prompt-in .18s ease;
+}
+
+@keyframes todo-duration-prompt-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tdp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.tdp-input {
+  width: 52px;
+  padding: 3px 8px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+
+  &:focus { outline: none; }
+  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
 .todo-reorder {
   display: flex;
   flex-direction: column;
@@ -10476,6 +10513,34 @@ body:has(.bottom-panel:not(.hidden))::before {
       opacity: 1;
     }
   }
+}
+
+// Invitation à estimer une durée (nouvelle tâche, au moment de sauvegarder
+// sans durée estimée) — bulle qui apparaît, jamais de réservation d'espace
+.duration-invite-hint {
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--primary);
+  transition: height 0.3s cubic-bezier(.16,1,.3,1), opacity 0.3s ease, margin-bottom 0.3s cubic-bezier(.16,1,.3,1);
+
+  &.show {
+    height: 18px;
+    opacity: 1;
+    margin-bottom: 6px;
+  }
+}
+
+.duration-stepper--invite {
+  animation: duration-invite-pulse 1.6s ease;
+}
+
+@keyframes duration-invite-pulse {
+  0%, 100%{ box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); }
+  25%     { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent); }
 }
 
 .timing-flex {

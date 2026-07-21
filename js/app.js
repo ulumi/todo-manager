@@ -34,7 +34,7 @@ import {
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask,
-  consumeModalSubtasksDirty
+  consumeModalSubtasksDirty, maybeInviteDurationEstimate
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -1063,6 +1063,69 @@ class TodoApp {
           .to(check, { scale: 1, duration: 0.2, ease: 'elastic.out(1.2, 0.5)' });
       }
     }, 0);
+    if (!wasCompleted && !e?.altKey && this._hasNoTimerInfo(todo)) {
+      this._showCompletionDurationPrompt(id, DS(d));
+    }
+  }
+
+  _hasNoTimerInfo(t) {
+    return !t?.durationReal && (!Array.isArray(t?.durationHistory) || t.durationHistory.length === 0);
+  }
+
+  // Invite « Durée ? » à la complétion d'une tâche jamais chronométrée.
+  // Inline dans .todo-content (jamais un overlay) : contrairement à
+  // l'ancien popover ancré à l'item (retiré, voir historique git — il
+  // recouvrait la ligne voisine et cassait la complétion en un clic),
+  // ceci participe au flux normal de la ligne et ne peut donc jamais
+  // chevaucher un item voisin. Ignoré silencieusement si laissé vide.
+  _showCompletionDurationPrompt(id, ds) {
+    const item = document.querySelector(`[data-id="${id}"]`);
+    if (!item || item.querySelector('.todo-duration-prompt')) return;
+    if (item.offsetParent === null) return; // masquée (ex. mode stats) — inutile d'inviter dans le vide
+    const content = item.querySelector('.todo-content');
+    if (!content) return;
+    const wrap = document.createElement('span');
+    wrap.className = 'todo-duration-prompt';
+    wrap.innerHTML = '<span class="tdp-label">Durée ?</span>';
+    wrap.addEventListener('click', ev => ev.stopPropagation());
+    wrap.addEventListener('mousedown', ev => ev.stopPropagation());
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.className = 'tdp-input';
+    input.placeholder = 'min';
+    input.title = 'Combien de temps ça a pris ?';
+    input.addEventListener('click', ev => ev.stopPropagation());
+    input.addEventListener('mousedown', ev => ev.stopPropagation());
+    wrap.appendChild(input);
+    let done = false;
+    const commit = () => {
+      if (done) return;
+      done = true;
+      const minutes = parseInt(input.value, 10);
+      wrap.remove();
+      if (minutes > 0) {
+        const t = state.todos.find(x => x.id === id);
+        if (!t) return;
+        snapshot(state.todos);
+        t.durationReal = minutes;
+        if (!Array.isArray(t.durationHistory)) t.durationHistory = [];
+        t.durationHistory.push({ date: ds, minutes });
+        if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+        this.render();
+      }
+    };
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') { ev.preventDefault(); commit(); }
+      if (ev.key === 'Escape') { done = true; wrap.remove(); }
+    });
+    input.addEventListener('blur', commit);
+    content.appendChild(wrap);
+    input.focus();
   }
 
   _showSubtaskWarning(id, d, count) {
@@ -1841,6 +1904,7 @@ class TodoApp {
   guidedAddCategory() { guidedAddCategory(); }
 
   saveTask() {
+    if (!state.editingId && maybeInviteDurationEstimate()) return;
     const before = JSON.parse(JSON.stringify(state.todos));
     const hadError = saveTaskLogic(state.todos);
     if (!hadError) {
@@ -6877,22 +6941,6 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       const [y, m, d] = hoveredItem.ds.split('-').map(Number);
       window.app.toggleTodo(hoveredItem.id, new Date(y, m-1, d));
-    }
-    if (e.code === 'ArrowLeft') {
-      e.preventDefault();
-      const d = new Date(window.app.getNavDate());
-      d.setDate(d.getDate() - 1);
-      state.setNavDate(d);
-      window.app._pushHistory();
-      window.app._animateViewChange(-1);
-    }
-    if (e.code === 'ArrowRight') {
-      e.preventDefault();
-      const d = new Date(window.app.getNavDate());
-      d.setDate(d.getDate() + 1);
-      state.setNavDate(d);
-      window.app._pushHistory();
-      window.app._animateViewChange(1);
     }
   }
 });
