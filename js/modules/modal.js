@@ -52,8 +52,36 @@ function _syncDurationStepper(inputId) {
   const display = stepper.querySelector('.dur-display');
   if (!display) return;
   const val = parseInt(input.value) || 0;
-  display.textContent = _formatDuration(val);
+  if (document.activeElement !== display) display.value = _formatDuration(val);
   display.classList.toggle('is-empty', !val);
+}
+
+const DUR_STEPS = [0, 1, 2, 3, 5, 10, 15, 30, 60, 90];
+
+function _stepDuration(current, isPlus) {
+  const max = DUR_STEPS[DUR_STEPS.length - 1];
+  if (isPlus) {
+    if (current >= max) return current;
+    const next = DUR_STEPS.find(v => v > current);
+    return next !== undefined ? next : max;
+  }
+  if (current <= 0) return 0;
+  for (let i = DUR_STEPS.length - 1; i >= 0; i--) {
+    if (DUR_STEPS[i] < current) return DUR_STEPS[i];
+  }
+  return 0;
+}
+
+function _commitDurationDisplay(display) {
+  const stepper = display.closest('.duration-stepper');
+  if (!stepper) return;
+  const inputId = stepper.dataset.target;
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const val = Math.max(0, parseInt(display.value) || 0);
+  input.value = val || '';
+  _syncDurationStepper(inputId);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 document.addEventListener('click', e => {
@@ -66,14 +94,43 @@ document.addEventListener('click', e => {
   if (!input) return;
   const isPlus = btn.classList.contains('dur-btn--plus');
   const current = parseInt(input.value) || 0;
-  const step = (current > 0 && current < 60) ? 15 : (current >= 60 ? 30 : 15);
-  let next = current + (isPlus ? step : -step);
-  if (isPlus && current > 0 && current < 60 && next >= 60) next = 60;
-  if (!isPlus && current >= 60 && next < 60) next = 45;
-  next = Math.max(0, next);
+  const next = _stepDuration(current, isPlus);
   input.value = next || '';
   _syncDurationStepper(inputId);
   input.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
+// Édition directe : au focus, affiche la valeur brute (minutes) sélectionnée
+// pour taper une valeur exacte ; au blur/Entrée, on committe vers l'input caché.
+document.addEventListener('focusin', e => {
+  const display = e.target.closest('.duration-stepper .dur-display');
+  if (!display) return;
+  const stepper = display.closest('.duration-stepper');
+  const input = document.getElementById(stepper.dataset.target);
+  if (!input) return;
+  display.value = parseInt(input.value) || '';
+  requestAnimationFrame(() => display.select());
+});
+
+document.addEventListener('input', e => {
+  const display = e.target.closest('.duration-stepper .dur-display');
+  if (!display) return;
+  const cleaned = display.value.replace(/[^0-9]/g, '');
+  if (cleaned !== display.value) display.value = cleaned;
+});
+
+document.addEventListener('keydown', e => {
+  const display = e.target.closest('.duration-stepper .dur-display');
+  if (!display) return;
+  if (e.key === 'Enter') { e.preventDefault(); display.blur(); }
+  else if (e.key === 'Escape') { e.preventDefault(); display._cancel = true; display.blur(); }
+});
+
+document.addEventListener('focusout', e => {
+  const display = e.target.closest('.duration-stepper .dur-display');
+  if (!display) return;
+  if (display._cancel) { display._cancel = false; _syncDurationStepper(display.closest('.duration-stepper').dataset.target); return; }
+  _commitDurationDisplay(display);
 });
 
 // ─── Date trigger button ───────────────────────────────────────────────────

@@ -11362,18 +11362,27 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 .duration-stepper .dur-display {
   flex: 1;
+  min-width: 0;
   text-align: center;
   font-size: 13px;
   font-weight: 600;
+  font-family: inherit;
   color: var(--text);
   padding: 10px 4px;
   line-height: 1;
   white-space: nowrap;
+  border: none;
+  background: transparent;
+  outline: none;
 }
 .duration-stepper .dur-display.is-empty {
   color: var(--text-muted);
   font-weight: 400;
   opacity: 0.4;
+}
+.duration-stepper .dur-display:focus {
+  color: var(--primary);
+  opacity: 1;
 }
 
 .timing-flex {
