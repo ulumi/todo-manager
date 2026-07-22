@@ -1330,6 +1330,120 @@ class TodoApp {
     }, { once: true });
   }
 
+  // ── Task grouping — commissions-style : tâche+sous-tâches ⇄ groupe de
+  // tâches indépendantes reliées par groupId/groupTitle (pas de collection
+  // séparée, juste une étiquette partagée — cf. CLAUDE.md) ────────────────
+
+  // Convertit une tâche + ses sous-tâches en un groupe de tâches indépendantes
+  // (date/moment/priorité/tag hérités du parent) ; la tâche parente disparaît,
+  // chaque sous-tâche devient une vraie tâche à part entière.
+  convertTaskToGroup(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t || !t.subtasks?.length) return;
+    snapshot(state.todos);
+    const groupId = 'grp-' + Date.now().toString();
+    const base = Date.now();
+    const children = t.subtasks.map((s, i) => {
+      const child = {
+        id: String(base + i + 1),
+        title: s.title,
+        completed: s.completed,
+        completedDates: [],
+        date: t.date,
+        groupId,
+        groupTitle: t.title,
+        updatedAt: base + i + 1,
+      };
+      if (t.dayPeriod) child.dayPeriod = t.dayPeriod;
+      if (t.priority) child.priority = t.priority;
+      if (t.categoryIds?.length) child.categoryIds = [...t.categoryIds];
+      else if (t.categoryId) child.categoryId = t.categoryId;
+      if (t.projectIds?.length) child.projectIds = [...t.projectIds];
+      else if (t.projectId) child.projectId = t.projectId;
+      if (t.intentionIds?.length) child.intentionIds = [...t.intentionIds];
+      else if (t.intentionId) child.intentionId = t.intentionId;
+      return child;
+    });
+    const idx = state.todos.findIndex(x => x.id === id);
+    state.todos.splice(idx, 1, ...children);
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Inverse : réunit toutes les tâches partageant ce groupId en une seule
+  // tâche + sous-tâches. Si les membres ont des dates différentes, elles
+  // sont toutes réunies sur celle du 1er membre — confirmation demandée.
+  convertGroupToTask(groupId) {
+    const members = state.todos.filter(x => x.groupId === groupId);
+    if (members.length < 2) return;
+    const dates = new Set(members.map(m => m.date));
+    if (dates.size > 1 && !confirm(`Ces tâches ont des dates différentes : elles seront toutes réunies sur ${members[0].date}. Continuer ?`)) return;
+    snapshot(state.todos);
+    const first = members[0];
+    const parent = {
+      id: Date.now().toString(),
+      title: first.groupTitle || first.title,
+      date: first.date,
+      completed: false,
+      completedDates: [],
+      subtasks: members.map(m => ({ id: m.id, title: m.title, completed: !!m.completed })),
+      updatedAt: Date.now(),
+    };
+    if (first.dayPeriod) parent.dayPeriod = first.dayPeriod;
+    if (first.priority) parent.priority = first.priority;
+    if (first.categoryIds?.length) parent.categoryIds = [...first.categoryIds];
+    else if (first.categoryId) parent.categoryId = first.categoryId;
+    if (first.projectIds?.length) parent.projectIds = [...first.projectIds];
+    else if (first.projectId) parent.projectId = first.projectId;
+    if (first.intentionIds?.length) parent.intentionIds = [...first.intentionIds];
+    else if (first.intentionId) parent.intentionId = first.intentionId;
+    const memberIds = members.map(m => m.id);
+    const remaining = state.todos.filter(x => !memberIds.includes(x.id));
+    remaining.push(parent);
+    state.setTodos(remaining);
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Groupe une sélection de tâches existantes sous un chapeau commun
+  // (menu contextuel multi-sélection → showGroupPrompt() demande le titre)
+  groupTasks(ids, title) {
+    const targets = state.todos.filter(t => ids.includes(t.id));
+    if (targets.length < 2 || !title) return;
+    snapshot(state.todos);
+    const groupId = 'grp-' + Date.now().toString();
+    targets.forEach(t => { t.groupId = groupId; t.groupTitle = title; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    msClear();
+    this.render();
+  }
+
+  // Injecte un input inline dans la barre flottante de multi-sélection pour
+  // nommer le nouveau groupe (jamais de prompt() natif, cf. patterns projet)
+  showGroupPrompt(ids) {
+    const bar = document.getElementById('multiSelectBar');
+    if (!bar || bar.querySelector('.multi-select-group-input')) return;
+    const input = document.createElement('input');
+    input.className = 'multi-select-group-input';
+    input.placeholder = 'Nom du groupe…';
+    input.autocomplete = 'off';
+    let saved = false;
+    const confirmFn = () => {
+      if (saved) return;
+      saved = true;
+      const title = input.value.trim();
+      input.remove();
+      if (title) this.groupTasks(ids, title);
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirmFn(); }
+      if (e.key === 'Escape') { saved = true; input.remove(); }
+    });
+    input.addEventListener('blur', confirmFn);
+    bar.appendChild(input);
+    input.focus();
+  }
+
   // ── Modal subtask delegates (called via window.app from modal HTML) ────────
   toggleModalSubtask(stid)    { toggleModalSubtask(stid); }
   removeModalSubtask(stid)    { removeModalSubtask(stid); }
@@ -6747,6 +6861,11 @@ function _renderCtxMenu() {
   const allDone = occ.length > 0 && occ.every(({ t, ds }) => window.app._isDoneAt(t, ds));
   const allCancelled = occ.length > 0 && occ.every(({ t, ds }) => window.app._isCancelledAt(t, ds));
   const anyMovable = occ.some(({ t }) => !t.recurrence || t.recurrence === 'none');
+  // Grouping : tâche seule avec sous-tâches (pas déjà groupée) → peut devenir
+  // un groupe ; tâche seule déjà groupée → peut se re-fondre en sous-tâches
+  const single = !group ? occ[0]?.t : null;
+  const canGroupify = !!single && (single.subtasks?.length > 0) && !single.groupId;
+  const canUngroupify = !!single && !!single.groupId;
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
@@ -6772,7 +6891,10 @@ function _renderCtxMenu() {
     <div class="ctx-item" data-action="focus"><span>▶</span> Focus</div>
     <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
     <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
-    <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>`}
+    <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>
+    ${canGroupify ? `<div class="ctx-item" data-action="task-to-group"><span>⊞</span> Voir comme groupe</div>` : ''}
+    ${canUngroupify ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}`}
+    ${group ? `<div class="ctx-item" data-action="group"><span>⊞</span> Grouper${nb}</div>` : ''}
     <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
     ${!anyMovable ? '' : `
     <div class="ctx-sep"></div>
@@ -6841,6 +6963,12 @@ _todoCtxMenu.addEventListener('click', e => {
   if (action === 'edit')        app.openEditModal(single, ds);
   if (action === 'add-after')   app.addTaskAfter(single, ds);
   if (action === 'add-subtask') app.ctxAddSubtask(single);
+  if (action === 'task-to-group') app.convertTaskToGroup(single);
+  if (action === 'group-to-task') {
+    const t = state.todos.find(x => x.id === single);
+    if (t?.groupId) app.convertGroupToTask(t.groupId);
+  }
+  if (action === 'group')       app.showGroupPrompt(ids);
   if (action === 'duplicate')   app.duplicateMany(ids);
   if (action === 'today')       app._sendManyTo(ids, { date: DS(today()), backlog: false });
   if (action === 'tomorrow')    app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });

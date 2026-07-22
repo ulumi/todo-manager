@@ -2160,6 +2160,36 @@ main {
   }
 }
 
+// Task groups (commissions-style) — en-tête inséré devant le 1er membre
+// visible d'un groupId partagé, à l'intérieur d'un .todo-list en grid :
+// doit occuper toute la largeur de la rangée, pas une seule cellule.
+.task-group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+
+  &:first-child { margin-top: 0; }
+}
+
+.task-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.task-group-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 // Modal — period selector buttons
 .day-period-select {
   display: flex;
@@ -3235,6 +3265,17 @@ body.marquee-active {
       background: var(--surface2);
       color: var(--text);
     }
+  }
+
+  .multi-select-group-input {
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    padding: 4px 12px;
+    color: var(--text);
+    outline: none;
+    width: 140px;
   }
 }
 

@@ -157,6 +157,26 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     </div>`;
 }
 
+// Rend une liste d'items en insérant un en-tête de groupe (titre + badge de
+// progression) devant le 1er membre rencontré d'un groupId partagé par ≥2
+// items visibles — sans réordonner la liste (les membres suivants du même
+// groupe restent à leur position normale, pas de 2e en-tête).
+function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge = false) {
+  const seen = new Set();
+  return items.map(t => {
+    let header = '';
+    if (t.groupId && !seen.has(t.groupId)) {
+      const members = items.filter(x => x.groupId === t.groupId);
+      if (members.length > 1) {
+        seen.add(t.groupId);
+        const done = members.filter(m => isCompleted(m, navDate)).length;
+        header = `<div class="task-group-header"><span class="task-group-title">${esc(t.groupTitle || '')}</span><span class="task-group-count">${done}/${members.length}</span></div>`;
+      }
+    }
+    return header + todoItemHTML(t, navDate, group, dayView, hideCategoryBadge);
+  }).join('');
+}
+
 function recLabel(t, dayView = false) {
   if (!t.recurrence || t.recurrence==='none') return '';
   if (t.recurrence==='daily') return dayView ? '' : `↻ ${state.T.recDaily}`;
@@ -546,14 +566,14 @@ export function renderDayView(todos) {
       if (items.length > 0 && _visCount(items) === 0) return '';
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
       const listContent = items.length
-        ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
+        ? todoListHTML(items, navDate, group, true)
         : `<div class="period-dropzone"></div>`;
       const listHtml  = `<div class="todo-list" data-group="${group}" style="${colStyle}">${listContent}</div>`;
       return `<div class="day-heure-section" data-period="${period}">${labelHtml}${listHtml}</div>`;
     };
 
     let hHtml = '';
-    if (hNone.length) hHtml += `<div class="todo-list" data-group="punctual" style="${colStyle}">${hNone.map(t => todoItemHTML(t, navDate, 'punctual', true)).join('')}</div>`;
+    if (hNone.length) hHtml += `<div class="todo-list" data-group="punctual" style="${colStyle}">${todoListHTML(hNone, navDate, 'punctual', true)}</div>`;
     const heureSections =
       mkHeureSection(hMorn, 'punctual-morning',   'morning',   'Matin',      _sunriseSvg) +
       mkHeureSection(hAftn, 'punctual-afternoon', 'afternoon', 'Après-midi', _sunSvg) +

@@ -2226,6 +2226,34 @@ input:checked + .cal-sid-toggle-track::after {
   color: var(--primary);
 }
 
+.task-group-header {
+  grid-column: 1/-1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.task-group-header:first-child {
+  margin-top: 0;
+}
+
+.task-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.task-group-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
 .day-period-select {
   display: flex;
   gap: 8px;
@@ -3310,6 +3338,16 @@ body.marquee-active {
 .multi-select-bar .multi-select-clear:hover {
   background: var(--surface2);
   color: var(--text);
+}
+.multi-select-bar .multi-select-group-input {
+  font-size: 13px;
+  background: var(--surface2);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  padding: 4px 12px;
+  color: var(--text);
+  outline: none;
+  width: 140px;
 }
 
 .header-drop-hover {
