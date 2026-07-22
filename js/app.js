@@ -2143,6 +2143,14 @@ class TodoApp {
     this._preFocusView = state.view;
     state.setView('focus');
     localStorage.setItem('view', 'focus');
+    // La file « Ensuite » démarre toujours repliée à l'ouverture du mode,
+    // même si elle avait été laissée dépliée lors d'une session précédente.
+    const qp = getQueuePrefs();
+    if (!qp.collapsed) {
+      qp.collapsed = true;
+      saveQueuePrefs(qp);
+      this._saveConfigChange();
+    }
     this._pushHistory();
     this.render();
     // Plein écran au mieux (refusé sans geste utilisateur, ex. restauration)
