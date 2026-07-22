@@ -593,15 +593,70 @@ main.plan-mode, main.search-mode {
   position: sticky;
   top: calc(var(--header-h) + 30px);
   z-index: 1;
-  padding: 0 12px 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-height: calc(100vh - var(--header-h) - 30px);
   scrollbar-width: none;
+  transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 #calSidebar::-webkit-scrollbar {
   display: none;
+}
+#calSidebar.collapsed {
+  width: 28px;
+  overflow: hidden;
+}
+
+.cal-sidebar-inner {
+  width: 158px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.2s ease;
+}
+
+#calSidebar.collapsed .cal-sidebar-inner {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cal-sidebar-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.15s;
+  z-index: 2;
+}
+.cal-sidebar-handle svg {
+  width: 13px;
+  height: 13px;
+}
+.cal-sidebar-handle:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.cal-sidebar-handle-chevron {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.cal-sidebar-handle-chevron.collapsed {
+  transform: rotate(180deg);
 }
 
 .cal-sid-month {
@@ -8804,6 +8859,15 @@ body:has(.bottom-panel:not(.hidden))::before {
 .glass-mode .cal-sid-month,
 .glass-mode .cal-sid-options {
   border-color: rgba(255, 255, 255, 0.2) !important;
+}
+.glass-mode .cal-sidebar-handle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.7);
+}
+.glass-mode .cal-sidebar-handle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
 }
 .glass-mode .cal-sid-viz-btn {
   background: rgba(255, 255, 255, 0.08);

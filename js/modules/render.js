@@ -1114,6 +1114,16 @@ function renderSidebarOptions() {
   </div>`;
 }
 
+// Petit onglet toujours visible (même colonne repliée) pour replier/déplier
+// la colonne calendrier — app.toggleCalSidebar() bascule juste une classe
+// CSS sur #calSidebar (pas de render() complet, transition en pur CSS).
+function _calSidebarHandleHTML() {
+  const collapsed = localStorage.getItem('calSidebarCollapsed') === 'true';
+  return `<button class="cal-sidebar-handle" onclick="window.app.toggleCalSidebar()" title="${collapsed ? 'Déplier le calendrier' : 'Replier le calendrier'}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="cal-sidebar-handle-chevron${collapsed ? ' collapsed' : ''}"><polyline points="15,6 9,12 15,18"/></svg>
+  </button>`;
+}
+
 export function renderSidebar(todos) {
   const MONTH_H = 185;
   const headerH = document.querySelector('header')?.offsetHeight ?? 65;
@@ -1128,7 +1138,7 @@ export function renderSidebar(todos) {
     const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() + i, 1);
     html += renderSideMonth(monthDate, todayDate, navDate, todos);
   }
-  return html;
+  return `${_calSidebarHandleHTML()}<div class="cal-sidebar-inner">${html}</div>`;
 }
 
 export function renderWeekSidebar(todos) {
@@ -1146,7 +1156,7 @@ export function renderWeekSidebar(todos) {
     const monthDate = new Date(y, m + i, 1);
     html += renderSideMonth(monthDate, todayDate, state.navDate, todos);
   }
-  return html;
+  return `${_calSidebarHandleHTML()}<div class="cal-sidebar-inner">${html}</div>`;
 }
 
 function renderSideMonthWeek(monthDate, todayDate, weekStartDS, weekEndDS, todos) {
@@ -1193,7 +1203,7 @@ export function renderYearSidebar() {
       onclick="window.app.setNavDateAndView(new Date(${yr},0,1),'year')">${yr}</div>`;
   }
   html += '</div>';
-  return html;
+  return `${_calSidebarHandleHTML()}<div class="cal-sidebar-inner">${html}</div>`;
 }
 
 function renderSideMonth(monthDate, todayDate, navDate, todos) {

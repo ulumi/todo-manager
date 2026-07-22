@@ -596,14 +596,71 @@ main {
   position: sticky;
   top: calc(var(--header-h) + 30px);
   z-index: 1;
-  padding: 0 12px 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
   max-height: calc(100vh - var(--header-h) - 30px);
   // overflow-y: auto;
   scrollbar-width: none;
+  transition: width .3s cubic-bezier(.25,.46,.45,.94);
   &::-webkit-scrollbar { display: none; }
+
+  // Repliée : ne reste que l'onglet (position:absolute, hors du flux flex),
+  // le contenu réel (.cal-sidebar-inner) s'efface en fondu et est clippé.
+  &.collapsed {
+    width: 28px;
+    overflow: hidden;
+  }
+}
+
+// Colonne réelle, largeur fixe (170px de #calSidebar moins les 12px de
+// marge/gouttière) — ne se redimensionne jamais elle-même : c'est
+// #calSidebar (le conteneur) qui rétrécit et la clippe au besoin, pour que
+// le contenu ne se tasse jamais visuellement pendant la transition.
+.cal-sidebar-inner {
+  width: 158px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity .2s ease;
+}
+
+#calSidebar.collapsed .cal-sidebar-inner {
+  opacity: 0;
+  pointer-events: none;
+}
+
+// Onglet replier/déplier — toujours visible, même colonne repliée
+.cal-sidebar-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), color .15s;
+  z-index: 2;
+
+  svg { width: 13px; height: 13px; }
+
+  &:hover { background: var(--surface2); color: var(--text); }
+}
+
+.cal-sidebar-handle-chevron {
+  transition: transform .3s cubic-bezier(.25,.46,.45,.94);
+  &.collapsed { transform: rotate(180deg); }
 }
 
 .cal-sid-month {
@@ -8281,6 +8338,17 @@ body:has(.bottom-panel:not(.hidden))::before {
   .cal-sid-month,
   .cal-sid-options {
     border-color: rgba(255,255,255,.2) !important;
+  }
+
+  .cal-sidebar-handle {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.2);
+    color: rgba(255,255,255,.7);
+
+    &:hover {
+      background: rgba(255,255,255,.14);
+      color: #f1f5f9;
+    }
   }
 
   .cal-sid-viz-btn {

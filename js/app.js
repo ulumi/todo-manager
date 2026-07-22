@@ -3562,6 +3562,7 @@ class TodoApp {
         sidebar.innerHTML = '';
       } else {
         sidebar.style.display = '';
+        sidebar.classList.toggle('collapsed', localStorage.getItem('calSidebarCollapsed') === 'true');
         if (state.view === 'week' || state.view === 'biweek') {
           sidebar.innerHTML = renderWeekSidebar(state.todos);
         } else if (state.view === 'year') {
@@ -4317,6 +4318,21 @@ class TodoApp {
     const collapsed = localStorage.getItem('pastDueBannerCollapsed') === 'true';
     localStorage.setItem('pastDueBannerCollapsed', String(!collapsed));
     this.render();
+  }
+
+  // Replie/déplie la colonne calendrier (mini calendrier + options, sidebar
+  // #calSidebar — day/week/month/year partagent le même élément). Patch DOM
+  // ciblé (pas de render() complet) pour profiter de la transition CSS de
+  // largeur ; l'onglet reste toujours visible, replié ou non.
+  toggleCalSidebar() {
+    const collapsed = localStorage.getItem('calSidebarCollapsed') === 'true';
+    const next = !collapsed;
+    localStorage.setItem('calSidebarCollapsed', String(next));
+    const sidebar = document.getElementById('calSidebar');
+    sidebar?.classList.toggle('collapsed', next);
+    const btn = sidebar?.querySelector('.cal-sidebar-handle');
+    if (btn) btn.title = next ? 'Déplier le calendrier' : 'Replier le calendrier';
+    sidebar?.querySelector('.cal-sidebar-handle-chevron')?.classList.toggle('collapsed', next);
   }
 
   // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
