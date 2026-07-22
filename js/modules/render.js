@@ -157,10 +157,13 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     </div>`;
 }
 
-// Rend une liste d'items en insérant un en-tête de groupe (titre + badge de
-// progression) devant le 1er membre rencontré d'un groupId partagé par ≥2
-// items visibles — sans réordonner la liste (les membres suivants du même
-// groupe restent à leur position normale, pas de 2e en-tête).
+// Rend une liste d'items en insérant un en-tête de groupe (titre, draggable
+// pour déplacer tout le groupe d'un bloc) devant le 1er membre rencontré
+// d'un groupId partagé par ≥2 items visibles — sans réordonner la liste
+// (les membres suivants du même groupe restent à leur position normale,
+// pas de 2e en-tête). data-ids porte tous les membres du groupe DANS CETTE
+// LISTE (même bucket moment/type) : app.initDayDragDrop() les lit au
+// dragstart pour peupler _dragMultiIds et déplacer le groupe entier.
 function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge = false) {
   const seen = new Set();
   return items.map(t => {
@@ -169,8 +172,8 @@ function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge 
       const members = items.filter(x => x.groupId === t.groupId);
       if (members.length > 1) {
         seen.add(t.groupId);
-        const done = members.filter(m => isCompleted(m, navDate)).length;
-        header = `<div class="task-group-header"><span class="task-group-title">${esc(t.groupTitle || '')}</span><span class="task-group-count">${done}/${members.length}</span></div>`;
+        const ids = members.map(m => m.id).join(',');
+        header = `<div class="task-group-header" draggable="true" data-group="${group}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
       }
     }
     return header + todoItemHTML(t, navDate, group, dayView, hideCategoryBadge);

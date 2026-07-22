@@ -1405,6 +1405,28 @@ class TodoApp {
     this.render();
   }
 
+  // Retire une seule tâche de son groupe (reste une tâche normale) sans
+  // toucher aux autres membres. Si un seul membre reste après ce retrait,
+  // il est aussi dégroupé — un groupe d'1 seul membre n'a pas de sens
+  // (l'en-tête ne s'affiche que pour ≥2 membres, cf. todoListHTML()).
+  ungroupTask(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t?.groupId) return;
+    const groupId = t.groupId;
+    snapshot(state.todos);
+    delete t.groupId;
+    delete t.groupTitle;
+    t.updatedAt = Date.now();
+    const remaining = state.todos.filter(x => x.groupId === groupId);
+    if (remaining.length === 1) {
+      delete remaining[0].groupId;
+      delete remaining[0].groupTitle;
+      remaining[0].updatedAt = Date.now();
+    }
+    saveTodos(state.todos);
+    this.render();
+  }
+
   // Groupe une sélection de tâches existantes sous un chapeau commun
   // (menu contextuel multi-sélection → showGroupPrompt() demande le titre)
   groupTasks(ids, title) {
@@ -2908,7 +2930,7 @@ class TodoApp {
       if (draggedEl) { draggedEl.style.display = ''; draggedEl.classList.remove('dragging'); }
     };
 
-    const draggableSel = '.todo-item[draggable], .day-spacer[draggable]';
+    const draggableSel = '.todo-item[draggable], .day-spacer[draggable], .task-group-header[draggable]';
 
     container.addEventListener('dragstart', e => {
       const item = e.target.closest(draggableSel);
@@ -2918,7 +2940,21 @@ class TodoApp {
       draggedHeight = item.offsetHeight;
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', item.dataset.id);
-      if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id);
+      // Drag du titre d'un groupe (task-group-header) : emporte tous ses
+      // membres (data-ids, posé par todoListHTML() dans render.js) via le
+      // même mécanisme que le drag d'une multi-sélection (_dragMultiIds/
+      // _dropIds) — dropReorder()/le drop plus bas s'appliquent alors à
+      // tout le groupe d'un coup, sans code spécifique supplémentaire.
+      let groupTitleOverride = null;
+      if (item.classList.contains('task-group-header')) {
+        const memberIds = (item.dataset.ids || '').split(',').filter(Boolean);
+        this._dragMultiIds = memberIds;
+        groupTitleOverride = state.todos.find(x => x.id === memberIds[0])?.groupTitle || null;
+        memberIds.forEach(mid => {
+          container.querySelector(`.todo-item[data-id="${mid}"]`)?.classList.add('multi-dragging');
+        });
+      }
+      if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id, groupTitleOverride);
       container.classList.add('dragging-active');
       requestAnimationFrame(() => { item.style.display = 'none'; });
     });
@@ -4270,12 +4306,14 @@ class TodoApp {
   }
 
   // Custom drag ghost: small card with task title (+ count badge when
-  // dragging a multi-selection)
-  _setDragGhost(event, taskId) {
+  // dragging a multi-selection). titleOverride : titre du groupe quand on
+  // drague un task-group-header (taskId n'est alors qu'un membre du groupe,
+  // pas le titre à afficher)
+  _setDragGhost(event, taskId, titleOverride) {
     const t = state.todos.find(x => x.id === taskId);
     const ghost = document.createElement('div');
     ghost.className = 'drag-ghost';
-    ghost.textContent = t ? t.title : '…';
+    ghost.textContent = titleOverride || (t ? t.title : '…');
     const multi = this._dragMultiIds;
     if (multi && multi.length > 1 && multi.includes(taskId)) {
       ghost.classList.add('drag-ghost--multi');
@@ -6893,7 +6931,8 @@ function _renderCtxMenu() {
     <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
     <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>
     ${canGroupify ? `<div class="ctx-item" data-action="task-to-group"><span>⊞</span> Voir comme groupe</div>` : ''}
-    ${canUngroupify ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}`}
+    ${canUngroupify ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}
+    ${canUngroupify ? `<div class="ctx-item" data-action="ungroup"><span>⊟</span> Dégrouper</div>` : ''}`}
     ${group ? `<div class="ctx-item" data-action="group"><span>⊞</span> Grouper${nb}</div>` : ''}
     <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
     ${!anyMovable ? '' : `
@@ -6968,6 +7007,7 @@ _todoCtxMenu.addEventListener('click', e => {
     const t = state.todos.find(x => x.id === single);
     if (t?.groupId) app.convertGroupToTask(t.groupId);
   }
+  if (action === 'ungroup')     app.ungroupTask(single);
   if (action === 'group')       app.showGroupPrompt(ids);
   if (action === 'duplicate')   app.duplicateMany(ids);
   if (action === 'today')       app._sendManyTo(ids, { date: DS(today()), backlog: false });

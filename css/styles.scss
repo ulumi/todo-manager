@@ -2163,14 +2163,17 @@ main {
 // Task groups (commissions-style) — en-tête inséré devant le 1er membre
 // visible d'un groupId partagé, à l'intérieur d'un .todo-list en grid :
 // doit occuper toute la largeur de la rangée, pas une seule cellule.
+// Draggable : déplace tout le groupe d'un bloc (cf. initDayDragDrop, app.js).
 .task-group-header {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 2px;
+  cursor: grab;
 
   &:first-child { margin-top: 0; }
+  &:active { cursor: grabbing; }
 }
 
 .task-group-title {
@@ -2179,15 +2182,6 @@ main {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .08em;
-}
-
-.task-group-count {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-  background: var(--surface2);
-  border-radius: 999px;
-  padding: 1px 7px;
 }
 
 // Modal — period selector buttons

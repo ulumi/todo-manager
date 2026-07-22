@@ -2232,9 +2232,13 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   gap: 8px;
   margin-top: 2px;
+  cursor: grab;
 }
 .task-group-header:first-child {
   margin-top: 0;
+}
+.task-group-header:active {
+  cursor: grabbing;
 }
 
 .task-group-title {
@@ -2243,15 +2247,6 @@ input:checked + .cal-sid-toggle-track::after {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-}
-
-.task-group-count {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-muted);
-  background: var(--surface2);
-  border-radius: 999px;
-  padding: 1px 7px;
 }
 
 .day-period-select {
