@@ -14174,12 +14174,96 @@ body.view-focus header {
   opacity: 0.85;
 }
 
+.focus-break-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  transition: border-color 0.3s, background 0.3s;
+}
+.focus-break-banner .focus-break-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.focus-break-banner .focus-break-elapsed {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.focus-break-banner .focus-break-target {
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.focus-break-banner .focus-break-target:hover {
+  color: var(--primary);
+}
+.focus-break-banner.past-target {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  animation: focus-fill-pulse 1s ease-in-out infinite;
+}
+.focus-break-banner.past-target .focus-break-elapsed {
+  color: var(--warning);
+}
+
+.focus-break-target-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.focus-break-target-prompt .focus-break-target-input {
+  width: 48px;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.focus-break-target-prompt .focus-break-target-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.focus-break-target-prompt .focus-break-target-input::-webkit-outer-spin-button, .focus-break-target-prompt .focus-break-target-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.focus-break-target-prompt .focus-break-target-save {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.focus-break-target-prompt .focus-break-target-save:hover {
+  opacity: 0.85;
+}
+
 .focus-task-title {
   font-size: clamp(36px, 6vw, 72px);
   font-weight: 800;
   line-height: 1.12;
   max-width: min(980px, 92vw);
   overflow-wrap: break-word;
+}
+
+.focus-current-done .focus-task-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
 }
 
 .focus-task-desc {
@@ -14356,6 +14440,11 @@ body.view-focus header {
 .focus-actions .focus-action:active {
   transform: scale(0.96);
 }
+.focus-actions .focus-action[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: default;
+}
 .focus-actions .focus-action--primary {
   width: 72px;
   height: 72px;
@@ -14373,6 +14462,17 @@ body.view-focus header {
   border-color: color-mix(in srgb, var(--success) 72%, #000);
   box-shadow: 0 9px 26px color-mix(in srgb, var(--success) 45%, transparent);
   transform: scale(1.06);
+}
+.focus-actions .focus-action--primary.done {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.focus-actions .focus-action--primary.done:hover {
+  background: var(--surface2);
+  border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
+  box-shadow: none;
 }
 @media (max-width: 900px) {
   .focus-actions {
@@ -14608,6 +14708,9 @@ body.view-focus header {
   border-left-color: var(--danger);
   animation: focus-fill-pulse 1s ease-in-out infinite, modal-in 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+.focus-pip.done {
+  border-left-color: var(--border);
+}
 
 .focus-pip-timer {
   font-size: 20px;
@@ -14627,6 +14730,14 @@ body.view-focus header {
   white-space: nowrap;
 }
 
+.focus-pip-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.focus-pip-btn,
 .focus-pip-close {
   flex-shrink: 0;
   width: 22px;
@@ -14641,9 +14752,15 @@ body.view-focus header {
   cursor: pointer;
   transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.15s;
 }
+.focus-pip-btn:hover,
 .focus-pip-close:hover {
   background: var(--surface2);
   color: var(--text);
+}
+
+.focus-pip-btn svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* ════════════════════════════════════════════════════════

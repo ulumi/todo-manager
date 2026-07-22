@@ -16,7 +16,12 @@
       "Bash(npx sass css/styles.scss css/styles.css --style=expanded)",
       "Bash(git commit -m \"fix: change month view title truncation to 15 characters:*)",
       "Bash(brew install:*)",
-      "Bash(node /tmp/screenshot-month2.js)"
+      "Bash(node /tmp/screenshot-month2.js)",
+      "Bash(node --check js/modules/focus.js)",
+      "Bash(node --check js/app.js)",
+      "Bash(node --check js/modules/events.js)",
+      "Bash(node --check js/modules/storage.js)",
+      "Bash(grep -n \"^| \\\\`focus.js\\\\`\" CLAUDE.md)"
     ]
   }
 }

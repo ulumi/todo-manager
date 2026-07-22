@@ -61,12 +61,14 @@ import {
 import { snapshot, undo, canUndo } from './modules/undo.js';
 import { initMultiSelect, msClear, msRefreshUI, msIds, msHas, msCount, MS_SELECTABLE } from './modules/multiselect.js';
 import {
-  renderFocusView, getFocusQueue, focusTick, focusMarkSkipped, focusPin, focusUnpin,
+  renderFocusView, getFocusQueue, getFocusOrder, getCurrentFocusTask, focusTick, focusMarkSkipped,
+  focusSetCurrent, focusResetSession, focusMarkCompletion,
   focusSaveManualOrder, getQueuePrefs, saveQueuePrefs,
   getTimerState, clearTimerState, elapsedSeconds, pauseTimer, resumeTimer, resetTimer,
   applyFocusEstimate, saveFocusProgress, startEditEstimate,
   toggleTimerMode, applyTimerMode,
   renderFocusPip, removeFocusPip,
+  getBreakTargetMinutes, setBreakTargetMinutes, startEditBreakTarget, applyFocusBreakTarget,
 } from './modules/focus.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
@@ -2335,6 +2337,7 @@ class TodoApp {
     // point la prochaine fois qu'on la refocus)
     saveFocusProgress(this);
     clearTimerState();
+    focusResetSession();
     this._focusMinimized = false;
     removeFocusPip();
     this._focusWasFullscreen = false;
@@ -2396,8 +2399,11 @@ class TodoApp {
         if (!dragEl) return;
         dragEl = null;
         const ids = [...list.querySelectorAll('.focus-queue-item')].map(el => el.dataset.id);
-        const current = getFocusQueue(this)[0];
-        focusSaveManualOrder(current ? [current.id, ...ids] : ids);
+        // Une tâche courante complétée n'a pas de position dans la file
+        // vivante — ne pas l'insérer dans l'ordre manuel persisté.
+        const current = getCurrentFocusTask(this);
+        const currentLive = current && getFocusQueue(this).some(t => t.id === current.id) ? current : null;
+        focusSaveManualOrder(currentLive ? [currentLive.id, ...ids] : ids);
         this.render();
       });
     });
@@ -2419,27 +2425,32 @@ class TodoApp {
     });
   }
 
+  // Bascule compléter/décompléter (Entrée, ou bouton Compléter/Décompléter) —
+  // ne change plus jamais la tâche affichée (_currentId inchangé) : c'est ce
+  // qui remplace l'ancienne avance automatique après complétion. Décompléter
+  // ne retire pas les stats déjà écrites (durationReal/durationHistory) —
+  // journal en ajout seul, plus simple qu'un rollback exact.
   focusComplete() {
-    const t = getFocusQueue(this)[0];
+    const t = getCurrentFocusTask(this);
     if (!t) return;
+    const wasCompleted = isCompleted(t, today());
     const sec = elapsedSeconds(getTimerState(t.id));
     snapshot(state.todos);
     // Durée réelle = temps passé sur la tâche en mode focus (minutes).
     // Historisée dans durationHistory (borné à 30 entrées) pour pouvoir
     // comparer une occurrence aux précédentes dans la vue Analyse.
-    if (sec >= 30) {
+    if (!wasCompleted && sec >= 30) {
       const minutes = Math.max(1, Math.round(sec / 60));
       t.durationReal = minutes;
       if (!Array.isArray(t.durationHistory)) t.durationHistory = [];
       t.durationHistory.push({ date: DS(today()), minutes });
       if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
     }
-    delete t.focusTimeSpent; delete t.focusTimeSpentDate; // occurrence complétée : plus de progression à reprendre
+    if (!wasCompleted) { delete t.focusTimeSpent; delete t.focusTimeSpentDate; } // occurrence complétée : plus de progression à reprendre
     toggleTodo(t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
-    focusUnpin();
-    celebrate(state.lang);
+    if (!wasCompleted) { focusMarkCompletion(); celebrate(state.lang); }
     this.render();
   }
 
@@ -2465,10 +2476,23 @@ class TodoApp {
     startEditEstimate(this);
   }
 
+  // Objectif de pause (bandeau après complétion) — clic sur « objectif X min »
+  focusEditBreakTarget() {
+    startEditBreakTarget();
+  }
+
+  focusSetBreakTarget(val) {
+    const minutes = parseInt(val, 10);
+    if (!minutes || minutes <= 0) return;
+    setBreakTargetMinutes(minutes);
+    this._saveConfigChange();
+    applyFocusBreakTarget();
+  }
+
   // Remet le chrono de la tâche courante à zéro sans la compléter.
   focusResetTimer(id) {
-    const current = getFocusQueue(this)[0];
-    if (!current || current.id !== id) return;
+    const current = getCurrentFocusTask(this);
+    if (!current || current.id !== id || isCompleted(current, today()) || isCancelled(current, today())) return;
     resetTimer(getTimerState(id));
     if (current.focusTimeSpent) {
       delete current.focusTimeSpent;
@@ -2487,39 +2511,87 @@ class TodoApp {
     applyTimerMode(this);
   }
 
+  // « Autre chose à faire maintenant » — pas de la navigation (flèches) :
+  // choisit explicitement la meilleure tâche suivante, l'avance automatique
+  // par re-render n'existant plus (voir getFocusQueue()/getCurrentFocusTask()).
   focusSkip() {
+    const t = getCurrentFocusTask(this);
     const queue = getFocusQueue(this);
-    if (queue.length < 2) return;
+    if (!t || isCompleted(t, today()) || isCancelled(t, today()) || queue.filter(x => x.id !== t.id).length === 0) return;
     saveFocusProgress(this);
-    focusMarkSkipped(queue[0].id);
-    focusUnpin();
+    focusMarkSkipped(t.id);
     clearTimerState();
+    const next = getFocusQueue(this)[0]; // re-triée post-passage — t est maintenant en fin de file
+    if (next) focusSetCurrent(next.id);
     this.render();
   }
 
   focusTomorrow() {
-    const t = getFocusQueue(this)[0];
-    if (!t || (t.recurrence && t.recurrence !== 'none')) return;
+    const t = getCurrentFocusTask(this);
+    if (!t || isCompleted(t, today()) || isCancelled(t, today()) || (t.recurrence && t.recurrence !== 'none')) return;
     saveFocusProgress(this);
-    focusUnpin();
     clearTimerState();
-    this._sendManyTo([t.id], { date: DS(addDays(today(), 1)), backlog: false });
+    const rest = getFocusQueue(this).filter(x => x.id !== t.id); // avant que _sendManyTo ne change t.date
+    if (rest[0]) focusSetCurrent(rest[0].id);
+    this._sendManyTo([t.id], { date: DS(addDays(today(), 1)), backlog: false }); // appelle déjà this.render()
   }
 
   focusPauseResume() {
-    const t = getFocusQueue(this)[0];
-    if (!t) return;
+    const t = getCurrentFocusTask(this);
+    if (!t || isCompleted(t, today()) || isCancelled(t, today())) return;
     const ts = getTimerState(t.id);
     ts.paused ? resumeTimer(ts) : pauseTimer(ts);
     this.render();
   }
 
   focusJumpTo(id) {
-    if (id === getFocusQueue(this)[0]?.id) return;
+    if (id === getCurrentFocusTask(this)?.id) return;
     saveFocusProgress(this);
-    focusPin(id);
+    focusSetCurrent(id);
     clearTimerState();
     this.render();
+  }
+
+  // Navigation ← → : parcourt l'ordre stable de la session (getFocusOrder),
+  // indépendant de la file vivante — une tâche complétée y reste atteignable.
+  // Bornes : ne rien faire, SAUF → en bout de file avec la tâche courante
+  // complétée, qui affiche l'écran de relance (_currentId = null).
+  focusNext() {
+    const order = getFocusOrder(this);
+    const cur = getCurrentFocusTask(this);
+    const idx = cur ? order.indexOf(cur.id) : -1;
+    if (idx >= 0 && idx < order.length - 1) {
+      saveFocusProgress(this);
+      focusSetCurrent(order[idx + 1]);
+      clearTimerState();
+      this.render();
+      return;
+    }
+    if (idx === order.length - 1 && cur && isCompleted(cur, today())) {
+      saveFocusProgress(this);
+      focusSetCurrent(null);
+      clearTimerState();
+      this.render();
+    }
+  }
+
+  focusPrev() {
+    const order = getFocusOrder(this);
+    const cur = getCurrentFocusTask(this);
+    const idx = cur ? order.indexOf(cur.id) : -1;
+    if (idx > 0) {
+      saveFocusProgress(this);
+      focusSetCurrent(order[idx - 1]);
+      clearTimerState();
+      this.render();
+      return;
+    }
+    if (idx === -1 && order.length) {
+      saveFocusProgress(this);
+      focusSetCurrent(order[order.length - 1]);
+      clearTimerState();
+      this.render();
+    }
   }
 
   // Options de vue/tri/colonnes de la file « Ensuite » (segmented controls)
@@ -2549,7 +2621,7 @@ class TodoApp {
     t.backlog = false;
     t.updatedAt = Date.now();
     saveTodos(state.todos);
-    if (mode === 'focus') { focusPin(id); clearTimerState(); }
+    if (mode === 'focus') { focusSetCurrent(id); clearTimerState(); }
     this.render();
   }
 
@@ -2562,7 +2634,7 @@ class TodoApp {
     addTask({ title, date: ds, recurrence: 'none' }, state.todos);
     const created = state.todos[state.todos.length - 1];
     saveTodos(state.todos);
-    if (mode === 'focus') { focusPin(created.id); clearTimerState(); }
+    if (mode === 'focus') { focusSetCurrent(created.id); clearTimerState(); }
     this.render();
   }
 
@@ -2631,8 +2703,8 @@ class TodoApp {
     if (!focusable) { this.openEditModal(id, ds); return; }
     // Déjà en focus (plein écran ou réduit) sur une autre tâche : sauvegarde
     // sa progression avant de basculer
-    if ((state.view === 'focus' || this._focusMinimized) && id !== getFocusQueue(this)[0]?.id) saveFocusProgress(this);
-    focusPin(id);
+    if ((state.view === 'focus' || this._focusMinimized) && id !== getCurrentFocusTask(this)?.id) saveFocusProgress(this);
+    focusSetCurrent(id);
     clearTimerState();
     if (state.view === 'focus') this.render();
     else this.enterFocus();
@@ -3406,6 +3478,7 @@ class TodoApp {
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
         if (data.config.autoPostpone) localStorage.setItem('autoPostpone', data.config.autoPostpone);
         if (data.config.focusQueueView) localStorage.setItem('focusQueueView', data.config.focusQueueView);
+        if (data.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', data.config.focusBreakMinutes);
         const _bPal1 = data.config.bgPalette;
         if (_bPal1)  this.setPalette(_bPal1);
         if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
@@ -6319,6 +6392,7 @@ class TodoApp {
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
       if (backup.config.autoPostpone) localStorage.setItem('autoPostpone', backup.config.autoPostpone);
       if (backup.config.focusQueueView) localStorage.setItem('focusQueueView', backup.config.focusQueueView);
+      if (backup.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', backup.config.focusBreakMinutes);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);

@@ -13103,12 +13103,103 @@ body.view-focus header { display: none; }
   }
 }
 
+// ── Bandeau de pause (après complétion) ──
+// Occupe le même emplacement que .focus-estimate-prompt (tâche non
+// complétée) — compte le temps écoulé DEPUIS la complétion (démarre à 0,
+// monte), jamais un décompte. Dépasser l'objectif = signal visuel seul
+// (.past-target), jamais bloquant.
+.focus-break-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  transition: border-color .3s, background .3s;
+
+  .focus-break-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .focus-break-elapsed {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .focus-break-target {
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s;
+
+    &:hover { color: var(--primary); }
+  }
+
+  // Objectif dépassé : simple pulsation de couleur, jamais bloquant —
+  // réutilise le même dégradé/keyframe que le remplissage plein écran.
+  &.past-target {
+    border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+    background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+    animation: focus-fill-pulse 1s ease-in-out infinite;
+
+    .focus-break-elapsed { color: var(--warning); }
+  }
+}
+
+// Prompt d'édition de l'objectif — même convention que .focus-estimate-prompt
+.focus-break-target-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  .focus-break-target-input {
+    width: 48px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+
+    &:focus { outline: none; border-color: var(--primary); }
+    &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  }
+
+  .focus-break-target-save {
+    padding: 3px 10px;
+    border: none;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+
+    &:hover { opacity: .85; }
+  }
+}
+
 .focus-task-title {
   font-size: clamp(36px, 6vw, 72px);
   font-weight: 800;
   line-height: 1.12;
   max-width: min(980px, 92vw);
   overflow-wrap: break-word;
+}
+
+// Tâche affichée mais complétée (Décompléter, navigation ← →) : même
+// convention que .todo-item.done ailleurs dans l'app.
+.focus-current-done {
+  .focus-task-title { text-decoration: line-through; color: var(--text-muted); }
 }
 
 .focus-task-desc {
@@ -13282,6 +13373,15 @@ body.view-focus header { display: none; }
     }
     &:active { transform: scale(.96); }
 
+    // Bornes de navigation ← → : reste cliquable visuellement (le cas
+    // « dernière tâche complétée » fait toujours quelque chose au clic),
+    // seul un vrai bout de file inerte passe par cet état.
+    &[disabled] {
+      opacity: .35;
+      pointer-events: none;
+      cursor: default;
+    }
+
     &--primary {
       width: 72px;
       height: 72px;
@@ -13297,6 +13397,21 @@ body.view-focus header { display: none; }
         border-color: color-mix(in srgb, var(--success) 72%, #000);
         box-shadow: 0 9px 26px color-mix(in srgb, var(--success) 45%, transparent);
         transform: scale(1.06);
+      }
+
+      // Tâche déjà complétée : bouton devient « Décompléter » — même taille,
+      // mais teinte neutre plutôt que le vert « à faire ».
+      &.done {
+        background: var(--surface);
+        border-color: var(--border);
+        color: var(--text-muted);
+        box-shadow: none;
+
+        &:hover {
+          background: var(--surface2);
+          border-color: color-mix(in srgb, var(--text-muted) 35%, var(--border));
+          box-shadow: none;
+        }
       }
     }
   }
@@ -13546,6 +13661,7 @@ body.view-focus header { display: none; }
   &.zone-success { border-left-color: var(--success); }
   &.zone-warning { border-left-color: var(--warning); }
   &.zone-danger  { border-left-color: var(--danger); animation: focus-fill-pulse 1s ease-in-out infinite, modal-in .3s cubic-bezier(.25,.46,.45,.94); }
+  &.done { border-left-color: var(--border); }
 }
 
 .focus-pip-timer {
@@ -13566,6 +13682,14 @@ body.view-focus header { display: none; }
   white-space: nowrap;
 }
 
+.focus-pip-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.focus-pip-btn,
 .focus-pip-close {
   flex-shrink: 0;
   width: 22px;
@@ -13582,6 +13706,8 @@ body.view-focus header { display: none; }
 
   &:hover { background: var(--surface2); color: var(--text); }
 }
+
+.focus-pip-btn svg { width: 13px; height: 13px; }
 
 /* ════════════════════════════════════════════════════════
    BILAN / REVIEW — tâches laissées pour compte

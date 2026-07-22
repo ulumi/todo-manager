@@ -26,24 +26,32 @@ const DANGER_RATIO = 0.9;
 
 // Ids passés via « Passer » — renvoyés en fin de file (session seulement)
 let _skipped = [];
-// Tâche courante épinglée : elle reste devant même si une tâche à heure
-// fixe devient échue entre-temps (le bandeau propose le basculement,
-// il ne l'impose jamais). Levée à la complétion / passage / report.
-let _pinned = null;
+// Ordre de navigation stable de la session (flèches ← →) — grossit quand une
+// tâche apparaît (relance, backlog, nouvelle occurrence), rétrécit quand une
+// tâche quitte vraiment la journée (supprimée, reportée) mais PAS quand elle
+// est simplement complétée (elle doit rester atteignable via ←).
+let _order = [];
+// Tâche actuellement affichée — pointeur explicite, jamais recalculé au
+// rendu (contrairement à l'ancien `_pinned` qui se recalait sur queue[0] à
+// chaque render et causait l'avance automatique après complétion).
+let _currentId = null;
+// Horodatage de la dernière complétion (bandeau de pause) — global à la
+// session, pas lié à une tâche précise.
+let _lastCompletionAt = null;
 
-export function focusResetSkipped() { _skipped = []; _pinned = null; }
+export function focusResetSession() { _skipped = []; _currentId = null; _order = []; _lastCompletionAt = null; }
 
 export function focusMarkSkipped(id) {
   _skipped = _skipped.filter(x => x !== id);
   _skipped.push(id);
 }
 
-export function focusPin(id) {
+export function focusSetCurrent(id) {
   _skipped = _skipped.filter(x => x !== id);
-  _pinned = id;
+  _currentId = id;
 }
 
-export function focusUnpin() { _pinned = null; }
+export function focusMarkCompletion() { _lastCompletionAt = Date.now(); }
 
 // ── Ordre manuel de la file (drag-and-drop) ──────────────
 // Persisté pour la journée (localStorage `focusManualOrder`) — prime sur
@@ -73,6 +81,18 @@ export function getQueuePrefs() {
 
 export function saveQueuePrefs(p) {
   localStorage.setItem('focusQueueView', JSON.stringify(p));
+}
+
+// ── Objectif de pause (minutes) — édité en ligne dans le bandeau de pause ──
+// Synchronisé via getAppConfig() / _applyBackup (clé `focusBreakMinutes`).
+const DEFAULT_BREAK_MINUTES = 5;
+export function getBreakTargetMinutes() {
+  const n = parseInt(localStorage.getItem('focusBreakMinutes'), 10);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_BREAK_MINUTES;
+}
+export function setBreakTargetMinutes(min) {
+  const n = parseInt(min, 10);
+  if (Number.isFinite(n) && n > 0) localStorage.setItem('focusBreakMinutes', String(n));
 }
 
 function _nowHM() {
@@ -163,13 +183,40 @@ export function getFocusQueue(app) {
     queue = [...queue].sort((a, b) => moment(a) - moment(b));
   }
 
-  // La tâche épinglée reste en tête
-  if (_pinned) {
-    const i = queue.findIndex(t => t.id === _pinned);
-    if (i > 0) queue.unshift(queue.splice(i, 1)[0]);
-    if (i === -1) _pinned = null; // complétée/supprimée entre-temps
-  }
   return queue;
+}
+
+// ── Tâche courante / ordre de navigation (flèches ← →) ───
+// Remplace l'ancien mécanisme d'épinglage (qui se recalait sur queue[0] à
+// chaque render, empêchant de rester sur une tâche tout juste complétée).
+// _order grossit quand une tâche apparaît dans la file vivante (relance,
+// backlog, nouvelle occurrence) et ne rétrécit que si une tâche a vraiment
+// quitté la journée (supprimée, reportée à demain) — jamais parce qu'elle a
+// été complétée, pour rester atteignable via ←.
+function _ensureOrder(app) {
+  const validToday = new Set(getTodosForDate(today(), state.todos).map(t => t.id));
+  _order = _order.filter(id => validToday.has(id));
+  for (const t of getFocusQueue(app)) if (!_order.includes(t.id)) _order.push(t.id);
+}
+
+export function getFocusOrder(app) {
+  _ensureOrder(app);
+  return _order;
+}
+
+// Tâche actuellement affichée en Focus — à appeler partout où l'ancien code
+// lisait `getFocusQueue(app)[0]` comme « la tâche courante ». Résout
+// directement dans state.todos (pas via la file filtrée) pour qu'une tâche
+// tout juste complétée reste affichable.
+export function getCurrentFocusTask(app) {
+  _ensureOrder(app);
+  if (_currentId) {
+    const t = state.todos.find(x => x.id === _currentId);
+    if (t && _order.includes(_currentId)) return t;
+  }
+  const queue = getFocusQueue(app);
+  _currentId = queue[0]?.id ?? null;
+  return queue[0] ?? null;
 }
 
 // ── Chrono de tâche (persiste au refresh via localStorage) ──
@@ -215,8 +262,8 @@ function _flushProgress(taskId, ts) {
 // prioriser). Elle reprendra exactement à ce temps la prochaine fois
 // qu'on la (re)focus, via getTimerState() ci-dessus.
 export function saveFocusProgress(app) {
-  const t = getFocusQueue(app)[0];
-  if (!t) return;
+  const t = getCurrentFocusTask(app);
+  if (!t || isCompleted(t, today()) || isCancelled(t, today())) return;
   _flushProgress(t.id, getTimerState(t.id));
 }
 
@@ -358,13 +405,15 @@ function _counterHTML(t) {
 export function renderFocusView(app) {
   const d = today();
   const queue = getFocusQueue(app);
-  const current = queue[0] || null;
-  // Épingle la courante et mémorise ce qui est affiché (le tick détecte
-  // les désynchronisations, ex. complétion via un autre appareil)
-  if (current) _pinned = current.id;
+  // Tâche affichée : pointeur explicite (getCurrentFocusTask), pas queue[0] —
+  // c'est ce qui permet de rester sur une tâche tout juste complétée (elle a
+  // disparu de `queue`, la file vivante filtrée) au lieu d'avancer seule.
+  const current = getCurrentFocusTask(app);
   app._focusRenderedId = current?.id || null;
   app._focusRenderedQueueSig = queue.map(t => t.id).join(',');
-  const next = queue.slice(1); // toute la journée restante
+  // « Ensuite » = toute la file vivante sauf ce qui est affiché (current
+  // peut être absent de `queue` s'il est complété, ou pas forcément en tête).
+  const next = current ? queue.filter(t => t.id !== current.id) : queue;
 
   const todayAll = getTodosForDate(d, state.todos);
   const doneCount = todayAll.filter(t => isCompleted(t, d)).length;
@@ -407,7 +456,11 @@ export function renderFocusView(app) {
 
   const est = parseInt(current.durationEstimated) || 0;
   const isRec = current.recurrence && current.recurrence !== 'none';
-  const ts = getTimerState(current.id);
+  // Tâche affichée mais complétée/annulée : chrono figé, jamais getTimerState()
+  // (qui créerait sinon un timer vivant sur une tâche « faite »), pas de
+  // remplissage ni d'invitation d'estimation — juste le bandeau de pause.
+  const isCurrentDone = isCompleted(current, d) || isCancelled(current, d);
+  const ts = isCurrentDone ? null : getTimerState(current.id);
 
   // Progression vers l'estimation : l'écran Focus se remplit depuis le bas
   // (#focusFill, en dehors de .focus-main — jamais recréé par
@@ -418,12 +471,14 @@ export function renderFocusView(app) {
   // ces paliers depuis le bas, façon niveau qui monte. Passé DANGER_RATIO :
   // mode urgence (voir .focus-emergency plus bas).
   const estSec = est * 60;
-  const sec0 = elapsedSeconds(ts);
-  const fillRatio0 = estSec > 0 ? sec0 / estSec : 0;
-  const fillHeight0 = Math.min(1, fillRatio0) * 100;
-  const fillDanger0 = fillRatio0 >= DANGER_RATIO;
+  const sec0 = isCurrentDone ? (current.durationReal || 0) * 60 : elapsedSeconds(ts);
+  const fillRatio0 = !isCurrentDone && estSec > 0 ? sec0 / estSec : 0;
+  const fillHeight0 = isCurrentDone ? 0 : Math.min(1, fillRatio0) * 100;
+  const fillDanger0 = !isCurrentDone && fillRatio0 >= DANGER_RATIO;
 
-  const estimateSideHTML = est > 0 ? _estimateLabelRowHTML() : _estimatePromptHTML(current.id);
+  const estimateSideHTML = isCurrentDone
+    ? (_lastCompletionAt != null ? _breakBannerHTML() : '')
+    : (est > 0 ? _estimateLabelRowHTML() : _estimatePromptHTML(current.id));
 
   const _grip = `<svg class="focus-queue-grip" viewBox="0 0 10 16" width="10" height="16" fill="currentColor"><circle cx="3" cy="3" r="1.4"/><circle cx="7" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="7" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="7" cy="13" r="1.4"/></svg>`;
 
@@ -436,9 +491,21 @@ export function renderFocusView(app) {
     skip:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v12l8-6-8-6Z"/><path d="M13 6v12l8-6-8-6Z"/></svg>`,
     tomorrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M4 10h16"/><path d="M9 15h4M9 15l1.6-1.6M9 15l1.6 1.6"/></svg>`,
     reset: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11A8 8 0 1 0 18 16"/><polyline points="20 4 20 11 13 11"/></svg>`,
+    prev: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15,6 9,12 15,18"/></svg>`,
+    next: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,6 15,12 9,18"/></svg>`,
   };
-  const actBtn = (cls, onclick, id, icon, label, kbd) =>
-    `<button class="focus-action ${cls}" onclick="${onclick}"${id ? ` id="${id}"` : ''} title="${label} (${kbd})">${icon}</button>`;
+  const actBtn = (cls, onclick, id, icon, label, kbd, disabled = false) =>
+    `<button class="focus-action ${cls}" onclick="${onclick}"${id ? ` id="${id}"` : ''} title="${label}${kbd ? ` (${kbd})` : ''}"${disabled ? ' disabled' : ''}>${icon}</button>`;
+
+  // Navigation ← → : bornes de l'ordre stable de la session. Le bouton
+  // Suivante n'est vraiment inerte qu'en bout de file avec la tâche non
+  // complétée (rien à faire) — sur la dernière tâche COMPLÉTÉE, il reste
+  // actif car il affiche l'écran de relance (voir app.focusNext()).
+  const order = getFocusOrder(app);
+  const idxCur = order.indexOf(current.id);
+  const prevDisabled = idxCur <= 0;
+  const nextAtEnd = idxCur === -1 || idxCur >= order.length - 1;
+  const nextDisabled = nextAtEnd && !isCurrentDone;
 
   // File « Ensuite » : groupée selon la préférence (Type par défaut),
   // sur 1 à 3 colonnes, repliable. Le drag-and-drop n'est actif qu'en
@@ -518,12 +585,12 @@ export function renderFocusView(app) {
     <div class="focus-fill${fillDanger0 ? ' danger-zone' : ''}" id="focusFill" style="height:${fillHeight0}%"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
-    <div class="focus-stage focus-current-item" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
+    <div class="focus-stage focus-current-item${isCurrentDone ? ' focus-current-done' : ''}" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
       <div class="focus-main">
         <div class="focus-now" id="focusNow">${_nowHM()}</div>
         <div class="focus-timer-row">
-          <div class="focus-timer${ts.paused ? ' paused' : ''}" id="focusTimer" title="${_timerTitle(current)}">${_timerDisplayText(current, sec0)}</div>
-          <button class="focus-timer-reset" onclick="window.app.focusResetTimer('${current.id}')" title="Réinitialiser le chrono">${ICON.reset}</button>
+          <div class="focus-timer${!isCurrentDone && ts.paused ? ' paused' : ''}" id="focusTimer" title="${_timerTitle(current)}">${_timerDisplayText(current, sec0)}</div>
+          ${!isCurrentDone ? `<button class="focus-timer-reset" onclick="window.app.focusResetTimer('${current.id}')" title="Réinitialiser le chrono">${ICON.reset}</button>` : ''}
         </div>
         ${estimateSideHTML}
         <div class="focus-task-title">${esc(current.title)}</div>
@@ -533,10 +600,12 @@ export function renderFocusView(app) {
         ${_counterHTML(current)}
       </div>
       <div class="focus-actions">
-        ${actBtn('focus-action--primary', 'window.app.focusComplete()', null, ICON.check, 'Terminer', 'Espace')}
-        ${actBtn('', 'window.app.focusPauseResume()', 'focusPauseBtn', ts.paused ? ICON.play : ICON.pause, ts.paused ? 'Reprendre' : 'Pause', 'P')}
-        ${queue.length > 1 ? actBtn('', 'window.app.focusSkip()', null, ICON.skip, 'Passer', 'S') : ''}
-        ${!isRec ? actBtn('', 'window.app.focusTomorrow()', null, ICON.tomorrow, 'Demain', 'D') : ''}
+        ${actBtn('', 'window.app.focusPrev()', null, ICON.prev, 'Précédente', '←', prevDisabled)}
+        ${actBtn(`focus-action--primary${isCurrentDone ? ' done' : ''}`, 'window.app.focusComplete()', null, ICON.check, isCurrentDone ? 'Décompléter' : 'Terminer', 'Entrée')}
+        ${!isCurrentDone ? actBtn('', 'window.app.focusPauseResume()', 'focusPauseBtn', ts.paused ? ICON.play : ICON.pause, ts.paused ? 'Reprendre' : 'Pause', 'Espace') : ''}
+        ${!isCurrentDone && queue.length > 1 ? actBtn('', 'window.app.focusSkip()', null, ICON.skip, 'Passer', 'S') : ''}
+        ${!isCurrentDone && !isRec ? actBtn('', 'window.app.focusTomorrow()', null, ICON.tomorrow, 'Demain', 'D') : ''}
+        ${actBtn('', 'window.app.focusNext()', null, ICON.next, 'Suivante', '→', nextDisabled)}
       </div>
     </div>
     ${queueHTML}
@@ -585,7 +654,7 @@ function _estimatePromptHTML(id, value = '') {
 // libellé + toggle par le même prompt que le réglage initial, pré-rempli.
 // Patch DOM ciblé (jamais de render() complet — voir applyFocusEstimate).
 export function startEditEstimate(app) {
-  const current = getFocusQueue(app)[0];
+  const current = getCurrentFocusTask(app);
   if (!current) return;
   const row = document.querySelector('.focus-estimate-row');
   if (!row) return;
@@ -632,7 +701,7 @@ function _applyEstimateVisuals(current) {
 // sont mis à jour en place.
 export function applyFocusEstimate(app) {
   const queue = getFocusQueue(app);
-  const current = queue[0];
+  const current = getCurrentFocusTask(app);
   if (!current) return;
   // Ne remplace le prompt que s'il a effectivement été répondu (une
   // estimation existe désormais) — appelé aussi par focusResetTimer(),
@@ -658,7 +727,7 @@ export function applyFocusEstimate(app) {
 // #focusTimerModeBtn) — met à jour #focusTimer immédiatement plutôt que
 // d'attendre le prochain tick (≤ 1 s).
 export function applyTimerMode(app) {
-  const current = getFocusQueue(app)[0];
+  const current = getCurrentFocusTask(app);
   if (!current) return;
   const timerEl = document.getElementById('focusTimer');
   if (timerEl) {
@@ -673,6 +742,61 @@ export function applyTimerMode(app) {
   }
 }
 
+// ── Bandeau de pause : affiché tant que la tâche courante est complétée et
+// qu'une complétion a eu lieu dans la session (_lastCompletionAt). Compte le
+// temps écoulé DEPUIS la dernière complétion (démarre à 0, monte) — pas un
+// compte à rebours. Dépasser l'objectif (minutes, éditable en ligne) est un
+// simple signal visuel (.past-target), jamais bloquant.
+function _breakTargetLabelHTML() {
+  return `<span class="focus-break-target-wrap" id="focusBreakTargetWrap"><span class="focus-break-target" id="focusBreakTargetLabel" onclick="window.app.focusEditBreakTarget()" title="Cliquer pour changer l'objectif">objectif ${getBreakTargetMinutes()} min</span></span>`;
+}
+
+function _breakBannerHTML() {
+  const sec = _lastCompletionAt ? Math.floor((Date.now() - _lastCompletionAt) / 1000) : 0;
+  const pastTarget = sec >= getBreakTargetMinutes() * 60;
+  return `<div class="focus-break-banner${pastTarget ? ' past-target' : ''}" id="focusBreakBanner">
+      <span class="focus-break-label">Temps depuis la dernière tâche complétée</span>
+      <span class="focus-break-elapsed" id="focusBreakElapsed">${fmtElapsed(sec)}</span>
+      ${_breakTargetLabelHTML()}
+    </div>`;
+}
+
+// Patch DOM ciblé appelé chaque seconde par focusTick() — jamais de render()
+// complet (même raison que _applyEstimateVisuals : ne pas interrompre le
+// chrono de la tâche courante s'il tourne encore ailleurs sur l'écran).
+function _applyBreakBanner() {
+  const el = document.getElementById('focusBreakBanner');
+  if (!el || _lastCompletionAt == null) return;
+  const sec = Math.floor((Date.now() - _lastCompletionAt) / 1000);
+  const elapsedEl = document.getElementById('focusBreakElapsed');
+  if (elapsedEl) elapsedEl.textContent = fmtElapsed(sec);
+  el.classList.toggle('past-target', sec >= getBreakTargetMinutes() * 60);
+}
+
+function _breakTargetPromptHTML(value) {
+  return `<span class="focus-break-target-prompt" id="focusBreakTargetWrap">
+      <input type="number" min="1" step="1" inputmode="numeric" class="focus-break-target-input" id="focusBreakTargetInput" value="${value}" placeholder="min" onkeydown="if(event.key==='Enter')window.app.focusSetBreakTarget(this.value)">
+      <button class="focus-break-target-save" onclick="window.app.focusSetBreakTarget(document.getElementById('focusBreakTargetInput').value)">OK</button>
+    </span>`;
+}
+
+// Clic sur l'objectif du bandeau de pause → prompt d'édition pré-rempli
+// (même convention que startEditEstimate pour la durée estimée).
+export function startEditBreakTarget() {
+  const wrap = document.getElementById('focusBreakTargetWrap');
+  if (!wrap) return;
+  wrap.outerHTML = _breakTargetPromptHTML(getBreakTargetMinutes());
+  const input = document.getElementById('focusBreakTargetInput');
+  input?.focus();
+  input?.select();
+}
+
+export function applyFocusBreakTarget() {
+  const wrap = document.getElementById('focusBreakTargetWrap');
+  if (wrap) wrap.outerHTML = _breakTargetLabelHTML();
+  _applyBreakBanner();
+}
+
 // ── Picture-in-Picture : petit widget flottant quand le Focus est réduit
 // (app.minimizeFocus()/restoreFocus()/closeFocus(), app.js). Vit en dehors
 // de #mainContent (appendé à document.body) pour survivre aux changements
@@ -682,16 +806,20 @@ export function applyTimerMode(app) {
 export function renderFocusPip(app) {
   if (!app._focusMinimized) { removeFocusPip(); return; }
   const queue = getFocusQueue(app);
-  const current = queue[0];
+  const current = getCurrentFocusTask(app);
   if (!current) { app._focusMinimized = false; removeFocusPip(); return; }
   // Garde le tick synchronisé même quand renderFocusView() (qui pose
   // normalement _focusRenderedQueueSig) n'est pas appelée
   app._focusRenderedQueueSig = queue.map(t => t.id).join(',');
 
-  const sec = elapsedSeconds(getTimerState(current.id));
+  const isDone = isCompleted(current, today()) || isCancelled(current, today());
+  // Tâche affichée mais complétée : chrono figé (durationReal), jamais
+  // getTimerState() — sinon un timer live repartirait sur une tâche « faite ».
+  const sec = isDone ? (current.durationReal || 0) * 60 : elapsedSeconds(getTimerState(current.id));
   const est = (parseInt(current.durationEstimated) || 0) * 60;
   const ratio = est > 0 ? sec / est : 0;
-  const zone = est <= 0 ? '' : ratio >= DANGER_RATIO ? ' zone-danger' : ratio >= WARNING_RATIO ? ' zone-warning' : ' zone-success';
+  const zone = isDone ? '' : est <= 0 ? '' : ratio >= DANGER_RATIO ? ' zone-danger' : ratio >= WARNING_RATIO ? ' zone-warning' : ' zone-success';
+  const paused = !isDone && getTimerState(current.id).paused;
 
   let pip = document.getElementById('focusPip');
   if (!pip) {
@@ -700,11 +828,19 @@ export function renderFocusPip(app) {
     pip.onclick = () => window.app.restoreFocus();
     document.body.appendChild(pip);
   }
-  pip.className = `focus-pip${zone}`;
+  pip.className = `focus-pip${zone}${isDone ? ' done' : ''}`;
+  const pauseIcon = paused
+    ? `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>`
+    : `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4.5" height="14" rx="1.2"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.2"/></svg>`;
+  const skipIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6v12l8-6-8-6Z"/><path d="M13 6v12l8-6-8-6Z"/></svg>`;
   pip.innerHTML = `
-    <div class="focus-pip-timer" id="focusPipTimer">${_timerDisplayText(current, sec)}</div>
+    <div class="focus-pip-timer" id="focusPipTimer">${isDone ? fmtElapsed(sec) : _timerDisplayText(current, sec)}</div>
     <div class="focus-pip-title">${esc(current.title)}</div>
-    <button class="focus-pip-close" onclick="event.stopPropagation();window.app.closeFocus()" title="Fermer">✕</button>`;
+    <div class="focus-pip-actions">
+      ${!isDone ? `<button class="focus-pip-btn" onclick="event.stopPropagation();window.app.focusPauseResume()" title="${paused ? 'Reprendre' : 'Pause'} (Espace)">${pauseIcon}</button>` : ''}
+      ${!isDone && queue.length > 1 ? `<button class="focus-pip-btn" onclick="event.stopPropagation();window.app.focusSkip()" title="Passer (S)">${skipIcon}</button>` : ''}
+      <button class="focus-pip-close" onclick="event.stopPropagation();window.app.closeFocus()" title="Fermer">✕</button>
+    </div>`;
 }
 
 export function removeFocusPip() {
@@ -715,7 +851,7 @@ export function removeFocusPip() {
 // sans re-render complet. Retourne true si un render est nécessaire.
 export function focusTick(app) {
   const queue = getFocusQueue(app);
-  const current = queue[0];
+  const current = getCurrentFocusTask(app);
   const nowStr = _nowHM();
   const clock = document.getElementById('focusClock');
   if (clock) clock.textContent = nowStr;
@@ -725,16 +861,20 @@ export function focusTick(app) {
   // Comparer toute la file, pas juste la courante : une tâche complétée
   // depuis un autre appareil doit disparaître de « Ensuite » aussi.
   if (queue.map(t => t.id).join(',') !== app._focusRenderedQueueSig) return true;
+  _applyBreakBanner(); // indépendant de current : reste vrai même file vide (dernière tâche du jour complétée)
   if (!current) return false;
+  const isDone = isCompleted(current, today()) || isCancelled(current, today());
 
-  const ts = getTimerState(current.id);
-  const sec = elapsedSeconds(ts);
-  const timerEl = document.getElementById('focusTimer');
-  if (timerEl) timerEl.textContent = _timerDisplayText(current, sec);
-  const pipTimerEl = document.getElementById('focusPipTimer');
-  if (pipTimerEl) pipTimerEl.textContent = _timerDisplayText(current, sec);
+  if (!isDone) {
+    const ts = getTimerState(current.id);
+    const sec = elapsedSeconds(ts);
+    const timerEl = document.getElementById('focusTimer');
+    if (timerEl) timerEl.textContent = _timerDisplayText(current, sec);
+    const pipTimerEl = document.getElementById('focusPipTimer');
+    if (pipTimerEl) pipTimerEl.textContent = _timerDisplayText(current, sec);
 
-  _applyEstimateVisuals(current);
+    _applyEstimateVisuals(current);
+  }
 
   // Bandeau : une tâche à heure fixe est échue et n'est pas la courante
   const nowHM = _nowHM();

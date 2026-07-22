@@ -90,7 +90,10 @@ export function setupEventListeners(app) {
     if (document.activeElement.tagName==='INPUT' || document.activeElement.tagName==='SELECT' || document.activeElement.tagName==='TEXTAREA' || document.activeElement.isContentEditable) return;
     // Mode focus : raccourcis dédiés, pas de navigation générique
     if (document.body.classList.contains('view-focus')) {
-      if (e.key === ' ') { e.preventDefault(); app.focusComplete(); }
+      if (e.key === ' ')          { e.preventDefault(); app.focusPauseResume(); }
+      if (e.key === 'Enter')      { e.preventDefault(); app.focusComplete(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); app.focusNext(); }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); app.focusPrev(); }
       if (e.key === 's') app.focusSkip();
       if (e.key === 'd') app.focusTomorrow();
       if (e.key === 'p') app.focusPauseResume();

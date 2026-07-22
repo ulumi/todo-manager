@@ -101,6 +101,7 @@ export function getAppConfig() {
     bgColor:   localStorage.getItem('bgColor'),
     autoPostpone: localStorage.getItem('autoPostpone'),
     focusQueueView: localStorage.getItem('focusQueueView'),
+    focusBreakMinutes: localStorage.getItem('focusBreakMinutes'),
   };
 }
 
