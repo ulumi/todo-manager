@@ -3170,6 +3170,17 @@ input:checked + .cal-sid-toggle-track::after {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.todo-focustime-badge.editable {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  transition: background 0.15s, color 0.15s;
+}
+.todo-focustime-badge.editable:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
 
 .todo-estimate-hover-input {
   width: 52px;

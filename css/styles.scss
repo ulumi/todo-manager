@@ -3109,6 +3109,18 @@ main {
   letter-spacing: .02em;
   white-space: nowrap;
   flex-shrink: 0;
+
+  // Une estimation déjà définie s'édite en cliquant dessus
+  // (window.app.showEstimateHoverEdit, même prompt que le survol de 2 s)
+  &.editable {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin: -1px -4px;
+    transition: background .15s, color .15s;
+
+    &:hover { background: var(--surface2); color: var(--text); }
+  }
 }
 
 // Édition rapide de la durée estimée après 2 s de survol sur l'item

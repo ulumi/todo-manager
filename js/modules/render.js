@@ -119,7 +119,12 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     if (!spentMin && !est) return '';
     const label = spentMin && est ? `${spentMin}/${est} min` : spentMin ? `${spentMin} min` : `~${est} min`;
     const title = spentMin && est ? 'Temps passé en focus / estimé' : spentMin ? 'Temps passé en focus' : 'Temps estimé';
-    return `<span class="todo-focustime-badge" title="${title}">⏱ ${label}</span>`;
+    // Une estimation déjà définie s'édite directement en cliquant dessus
+    // (même prompt que le survol prolongé de 2 s — showEstimateHoverEdit)
+    const cls = `todo-focustime-badge${est ? ' editable' : ''}`;
+    const badgeTitle = est ? `${title} — cliquer pour modifier` : title;
+    const onclick = est ? ` onclick="event.stopPropagation();window.app.showEstimateHoverEdit(this.closest('.todo-item'))"` : '';
+    return `<span class="${cls}" title="${badgeTitle}"${onclick}>⏱ ${label}</span>`;
   })();
   const counterBar = (() => {
     if (!todo.counterEnabled || todo.countTo === undefined) return '';
