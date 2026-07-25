@@ -2528,7 +2528,20 @@ class TodoApp {
     toggleTodo(t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
-    if (!wasCompleted) { focusMarkCompletion(); celebrate(state.lang); }
+    if (!wasCompleted) {
+      focusMarkCompletion();
+      celebrate(state.lang);
+      // Tâche tout juste complétée : déplier la file « Ensuite » pour
+      // enchaîner facilement sur la suivante (repliée par défaut à l'entrée
+      // en Focus — voir enterFocus() — mais pas d'intérêt à le rester une
+      // fois qu'il n'y a plus « rien à faire maintenant »)
+      const qp = getQueuePrefs();
+      if (qp.collapsed) {
+        qp.collapsed = false;
+        saveQueuePrefs(qp);
+        this._saveConfigChange();
+      }
+    }
     this.render();
   }
 
