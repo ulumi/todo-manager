@@ -1177,14 +1177,20 @@ class TodoApp {
   }
 
   // Survol prolongé (2 s, setupTodoItemHoverAnimations() dans render.js) —
-  // édition rapide de la durée estimée sans ouvrir le modal. Patch DOM
-  // ciblé (pas de render()) tant que la valeur n'est pas confirmée.
+  // édition rapide de la durée estimée sans ouvrir le modal. Si un badge
+  // temps focus (.todo-focustime-label) est déjà affiché, l'édition se fait
+  // en place dedans (_editEstimateLabel, partagé avec editEstimateBadge) ;
+  // sinon (aucun temps passé ni estimation, donc aucun badge) un input
+  // flottant est ajouté dans .todo-content faute d'endroit où s'insérer.
   showEstimateHoverEdit(itemEl) {
-    if (!itemEl.isConnected || itemEl.querySelector('.todo-estimate-hover-input')) return;
+    if (!itemEl.isConnected) return;
     const id = itemEl.dataset.id;
     const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    const label = itemEl.querySelector('.todo-focustime-label');
+    if (label) { this._editEstimateLabel(label, t); return; }
     const content = itemEl.querySelector('.todo-content');
-    if (!t || !content) return;
+    if (!content || content.querySelector('.todo-estimate-hover-input')) return;
     const input = document.createElement('input');
     input.type = 'number';
     input.min = '1';
@@ -1193,7 +1199,6 @@ class TodoApp {
     input.className = 'todo-estimate-hover-input';
     input.placeholder = 'min';
     input.title = 'Durée estimée (minutes)';
-    if (t.durationEstimated) input.value = t.durationEstimated;
     input.addEventListener('click', e => e.stopPropagation());
     input.addEventListener('mousedown', e => e.stopPropagation());
     let saved = false;
@@ -1216,6 +1221,58 @@ class TodoApp {
     });
     input.addEventListener('blur', confirm);
     content.appendChild(input);
+    input.focus();
+    input.select();
+  }
+
+  // Clic direct sur le badge temps focus (.todo-focustime-badge.editable,
+  // posé seulement si durationEstimated existe déjà) — même édition en
+  // place que showEstimateHoverEdit, déclenchée immédiatement sans survol
+  editEstimateBadge(badgeEl, id) {
+    const t = state.todos.find(x => x.id === id);
+    const label = badgeEl.querySelector('.todo-focustime-label');
+    if (!t || !label) return;
+    this._editEstimateLabel(label, t);
+  }
+
+  // Remplace le contenu texte du badge par un <input> in situ — même
+  // position, même taille de police (voir .todo-focustime-input en SCSS) —
+  // pour éditer sans jamais faire apparaître un champ ailleurs sur la ligne
+  _editEstimateLabel(label, t) {
+    if (label.querySelector('input')) return;
+    const prevText = label.textContent;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.className = 'todo-focustime-input';
+    if (t.durationEstimated) input.value = t.durationEstimated;
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
+    let settled = false;
+    const restore = () => { label.textContent = prevText; };
+    const confirm = () => {
+      if (settled) return;
+      settled = true;
+      const val = parseInt(input.value, 10);
+      if (val > 0 && val !== t.durationEstimated) {
+        snapshot(state.todos);
+        t.durationEstimated = val;
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+        this.render();
+      } else {
+        restore();
+      }
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { settled = true; restore(); }
+    });
+    input.addEventListener('blur', confirm);
+    label.textContent = '';
+    label.appendChild(input);
     input.focus();
     input.select();
   }

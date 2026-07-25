@@ -3110,8 +3110,8 @@ main {
   white-space: nowrap;
   flex-shrink: 0;
 
-  // Une estimation déjà définie s'édite en cliquant dessus
-  // (window.app.showEstimateHoverEdit, même prompt que le survol de 2 s)
+  // Une estimation déjà définie s'édite en cliquant dessus — le libellé
+  // (.todo-focustime-label) devient un input à sa place, voir plus bas
   &.editable {
     cursor: pointer;
     border-radius: 4px;
@@ -3123,8 +3123,31 @@ main {
   }
 }
 
-// Édition rapide de la durée estimée après 2 s de survol sur l'item
-// (app.showEstimateHoverEdit) — injecté/retiré par patch DOM, sans render()
+// Édition en place : le texte du badge (app._editEstimateLabel, appelé par
+// editEstimateBadge au clic ou showEstimateHoverEdit au survol) est
+// remplacé par ce champ, même taille/police que le libellé qu'il remplace
+.todo-focustime-input {
+  width: 30px;
+  padding: 0 2px;
+  border: none;
+  border-bottom: 1.5px solid var(--primary);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  text-align: center;
+  line-height: 1.3;
+
+  &:focus { outline: none; }
+  &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
+
+// Édition rapide de la durée estimée après 2 s de survol sur un item sans
+// badge existant (aucun temps passé ni estimation) — input flottant ajouté
+// dans .todo-content faute d'endroit où éditer en place (app.showEstimateHoverEdit)
 .todo-estimate-hover-input {
   width: 52px;
   padding: 3px 8px;
