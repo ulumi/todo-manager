@@ -2,7 +2,7 @@
 //  RENDERING FUNCTIONS
 // ════════════════════════════════════════════════════════
 
-import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc } from './utils.js';
+import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
@@ -19,6 +19,8 @@ function _hasProj(t, id) { return _getProjIds(t).includes(id); }
 function _hasInt(t, id) { return _getIntIds(t).includes(id); }
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
+
+const _subtaskChevronSVG = (collapsed) => `<svg class="subtask-toggle-chevron${collapsed ? ' collapsed' : ''}" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
 
 // Exportée : app.ctxAddSubtask() injecte ce même bloc par patch DOM ciblé
 // (pas de render() complet) quand une tâche sans sous-tâche en reçoit sa 1re
@@ -134,18 +136,25 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <span class="todo-counter-target">/ ${to}${unit}</span>
     </div>`;
   })();
-  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge;
-  const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   const subtasks = todo.subtasks || [];
-  // Toujours affichées (pas de collapse) — l'ajout de la 1re sous-tâche
-  // passe par app.ctxAddSubtask() qui injecte ce bloc via patch DOM ciblé
-  const expandedHTML = subtasks.length > 0 ? subtaskListHTML(subtasks, todo.id, ds) : '';
+  // Repli/dépli persistant par tâche (isSubtaskCollapsed, utils.js) — l'ajout
+  // de la 1re sous-tâche passe par app.ctxAddSubtask() qui injecte le bloc
+  // déplié directement via patch DOM ciblé (pas ce chemin de render())
+  const subtasksCollapsed = subtasks.length > 0 && isSubtaskCollapsed(todo.id);
+  const subtaskToggleHTML = subtasks.length > 0
+    ? `<button class="todo-subtask-toggle" onclick="event.stopPropagation();window.app.toggleSubtasksCollapse(this,'${todo.id}')" title="${subtasksCollapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches'}">${_subtaskChevronSVG(subtasksCollapsed)}<span class="todo-subtask-toggle-cnt">${subtasks.filter(s=>s.completed).length}/${subtasks.length}</span></button>`
+    : '';
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || subtaskToggleHTML;
+  const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
+  const expandedHTML = subtasks.length > 0
+    ? `<div class="subtask-collapse${subtasksCollapsed ? ' collapsed' : ''}"><div class="subtask-collapse-inner">${subtaskListHTML(subtasks, todo.id, ds)}</div></div>`
+    : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
         ${counterBar}
       </div>
       <button class="todo-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todo.id}','${ds}')" title="Focus sur cette tâche">

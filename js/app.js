@@ -6,7 +6,8 @@ import { TRANSLATIONS, ZOOM_SIZES } from './modules/config.js';
 import { initLowPolyBg, setPalette as _setBgPalette, setBgColor as _setBgColor, PALETTE_OPTIONS } from './modules/lowpoly-bg.js';
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
-  daysInMonth, firstDayOfMonth, esc
+  daysInMonth, firstDayOfMonth, esc,
+  toggleSubtaskCollapsed, expandSubtask
 } from './modules/utils.js';
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
@@ -1231,9 +1232,29 @@ class TodoApp {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
     if (!itemEl) return;
     if (!itemEl.querySelector('.subtask-list')) {
-      itemEl.insertAdjacentHTML('beforeend', subtaskListHTML([], id, DS(today())));
+      itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, DS(today()))}</div></div>`);
+    } else {
+      // La liste peut déjà exister mais être repliée (grid-template-rows:0)
+      // — sans dépli, l'input inline serait injecté hors de vue
+      const wrap = itemEl.querySelector('.subtask-collapse.collapsed');
+      if (wrap) {
+        wrap.classList.remove('collapsed');
+        expandSubtask(id);
+        const toggleBtn = itemEl.querySelector('.todo-subtask-toggle');
+        toggleBtn?.querySelector('.subtask-toggle-chevron')?.classList.remove('collapsed');
+        if (toggleBtn) toggleBtn.title = 'Masquer les sous-tâches';
+      }
     }
     this.addSubtaskInline(id);
+  }
+
+  toggleSubtasksCollapse(btn, id) {
+    const collapsed = toggleSubtaskCollapsed(id);
+    const item = btn.closest('.todo-item');
+    const wrap = item?.querySelector('.subtask-collapse');
+    if (wrap) wrap.classList.toggle('collapsed', collapsed);
+    btn.querySelector('.subtask-toggle-chevron')?.classList.toggle('collapsed', collapsed);
+    btn.title = collapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches';
   }
 
   toggleSubtask(todoId, stid, ds) {
@@ -1271,7 +1292,7 @@ class TodoApp {
     // si l'ajout est annulé sans rien créer, retirer le bloc entièrement
     // plutôt que de laisser un bouton d'ajout vide traîner sur l'item
     const cancel = () => {
-      if (!list.querySelector('.subtask-item')) list.remove();
+      if (!list.querySelector('.subtask-item')) (list.closest('.subtask-collapse') || list).remove();
       else addBtn.style.display = '';
     };
     const confirm = () => {

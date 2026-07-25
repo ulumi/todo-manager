@@ -39,3 +39,32 @@ export function firstDayOfMonth(y,m) {
 export function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// Repli/dépli des sous-tâches en vue jour — état purement local (comme
+// calSidebarCollapsed/pastDueBannerCollapsed), pas synchronisé entre
+// appareils. Dépliées par défaut (comportement historique inchangé).
+const SUBTASK_COLLAPSED_KEY = 'subtasksCollapsed';
+
+export function isSubtaskCollapsed(todoId) {
+  try {
+    return JSON.parse(localStorage.getItem(SUBTASK_COLLAPSED_KEY) || '[]').includes(todoId);
+  } catch { return false; }
+}
+
+// Retourne le nouvel état (true = replié) après bascule
+export function toggleSubtaskCollapsed(todoId) {
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem(SUBTASK_COLLAPSED_KEY) || '[]'); } catch { ids = []; }
+  const wasCollapsed = ids.includes(todoId);
+  ids = wasCollapsed ? ids.filter(x => x !== todoId) : [...ids, todoId];
+  localStorage.setItem(SUBTASK_COLLAPSED_KEY, JSON.stringify(ids));
+  return !wasCollapsed;
+}
+
+export function expandSubtask(todoId) {
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem(SUBTASK_COLLAPSED_KEY) || '[]'); } catch { ids = []; }
+  if (!ids.includes(todoId)) return;
+  ids = ids.filter(x => x !== todoId);
+  localStorage.setItem(SUBTASK_COLLAPSED_KEY, JSON.stringify(ids));
+}

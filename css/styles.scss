@@ -2568,9 +2568,59 @@ main {
 
 // ── Subtasks ──────────────────────────────────────────────────────────────────
 
-.subtask-list {
+// Bascule replier/déplier (todo-meta) — état persistant par tâche
+// (isSubtaskCollapsed/toggleSubtaskCollapsed, utils.js), pas de render()
+// complet au clic (app.toggleSubtasksCollapse patch le DOM ciblé)
+.todo-subtask-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+
+  &:hover { background: var(--surface2); color: var(--text); }
+}
+
+.subtask-toggle-chevron {
+  flex-shrink: 0;
+  transition: transform .2s cubic-bezier(.25,.46,.45,.94);
+
+  &.collapsed { transform: rotate(-90deg); }
+}
+
+// Repli/dépli animé — display:grid + grid-template-rows: 1fr↔0fr (même
+// technique que .focus-queue) : s'adapte à n'importe quelle hauteur de
+// contenu (1 à N sous-tâches, 1 ou 2 colonnes) sans jamais clipper à l'état
+// déplié. La sizing en flex-basis (indentation alignée sur le contenu, ex
+// check 22px + gap 12px) vit ici — .subtask-list garde son propre layout
+// interne inchangé.
+.subtask-collapse {
   flex: 0 0 calc(100% - 34px);
-  margin-left: 34px; // check (22px) + gap (12px)
+  margin-left: 34px;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows .3s cubic-bezier(.25,.46,.45,.94);
+
+  &.collapsed { grid-template-rows: 0fr; }
+}
+
+.subtask-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.subtask-list {
   display: flex;
   flex-direction: column;
   gap: 5px;
