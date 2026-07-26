@@ -13908,6 +13908,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--text-muted);
 }
 
+.analyse-sub--danger {
+  color: var(--danger);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
 .analyse-delta {
   font-size: 12px;
   font-weight: 600;

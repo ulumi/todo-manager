@@ -86,6 +86,33 @@ export function ageBadge(t) {
   return `<span class="review-age-badge" title="Créée ${days <= 0 ? "aujourd'hui" : `il y a ${days} jour${days > 1 ? 's' : ''}`}">${label}</span>`;
 }
 
+// Échéance optionnelle d'un item de backlog (t.deadline, YYYY-MM-DD) —
+// badge cliquable qui devient un <input type=date> en place au clic
+// (app.editBacklogDeadline(), app.js) ; rouge (.overdue) si dépassée.
+// Exportée : partagée entre renderBacklogView() (render.js, ghostIfEmpty
+// activé — invite à en poser une) et _itemRow() ci-dessous (ghostIfEmpty
+// désactivé par défaut — sans intérêt hors de la vue Backlog elle-même).
+export function deadlineBadge(t, { ghostIfEmpty = false } = {}) {
+  const hasDeadline = !!t.deadline;
+  if (!hasDeadline && !ghostIfEmpty) return '';
+  const overdue = hasDeadline && t.deadline < DS(today());
+  const d = hasDeadline ? parseDS(t.deadline) : null;
+  const label = hasDeadline ? `${d.getDate()} ${state.MONTHS[d.getMonth()]}` : '+ Échéance';
+  const title = hasDeadline ? 'Échéance — cliquer pour modifier' : 'Ajouter une échéance';
+  return `<span class="backlog-deadline-badge${hasDeadline ? '' : ' ghost'}${overdue ? ' overdue' : ''}" title="${title}" onclick="event.stopPropagation();window.app.editBacklogDeadline(this,'${t.id}')"><span class="backlog-deadline-label">${label}</span></span>`;
+}
+
+// Items de backlog dont l'échéance auto-imposée est dépassée — les items
+// de backlog n'ont pas de date propre, donc pas couverts par
+// getOverduePunctual() ; plus ancienne échéance d'abord.
+export function getBacklogPastDeadline(todos) {
+  const todayStr = DS(today());
+  return todos
+    .filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && !t.cancelled
+      && t.deadline && t.deadline < todayStr)
+    .sort((a, b) => a.deadline.localeCompare(b.deadline));
+}
+
 // Petit handle dédié (grip à 6 points) : seul point de départ du drag, pour
 // ne pas rendre toute la ligne « draggable » (le clic/la sélection restent
 // libres ailleurs sur la ligne). draggable="true" est sur le handle, mais
@@ -104,7 +131,7 @@ function _itemRow(t) {
       ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.closest('.review-item').classList.add('dragging')"
       ondragend="this.closest('.review-item').classList.remove('dragging')">${_DRAG_HANDLE_SVG}</span>
     <div class="review-item-main">
-      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${ageBadge(t)}
+      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${ageBadge(t)}${deadlineBadge(t)}
     </div>
   </div>`;
 }
@@ -277,9 +304,10 @@ export function renderOverdueGroups(overdue, { hideSingleGroupLabel = false } = 
 
 // Corps du modal Bilan
 export function renderReviewBody(todos) {
-  const overdue   = getOverduePunctual(todos);
-  const postponed = getFrequentlyPostponed(todos);
-  const adherence = renderAdherenceRows(todos, { limit: 6 });
+  const overdue      = getOverduePunctual(todos);
+  const postponed    = getFrequentlyPostponed(todos);
+  const backlogDue   = getBacklogPastDeadline(todos);
+  const adherence    = renderAdherenceRows(todos, { limit: 6 });
 
   let html = '';
 
@@ -303,6 +331,14 @@ export function renderReviewBody(todos) {
     html += `<div class="review-section">
       <div class="review-section-title">Souvent reportées</div>
       ${postponed.map(t => _itemRow(t)).join('')}
+    </div>`;
+  }
+
+  // ── Backlog : échéances auto-imposées dépassées ──
+  if (backlogDue.length) {
+    html += `<div class="review-section">
+      <div class="review-section-title">Échéances de backlog dépassées <span class="review-section-badge">${backlogDue.length}</span></div>
+      <div class="review-group-items">${backlogDue.map(t => _itemRow(t)).join('')}</div>
     </div>`;
   }
 
