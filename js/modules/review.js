@@ -77,7 +77,9 @@ function _daysSinceCreated(t) {
   return Math.round((today() - created) / 86400000);
 }
 
-function _ageBadge(t) {
+// Exportée : réutilisée par renderBacklogView() (render.js) pour afficher
+// « ajoutée il y a N jours » sur les items du backlog
+export function ageBadge(t) {
   const days = _daysSinceCreated(t);
   if (days === null) return '';
   const label = days <= 0 ? 'auj.' : `${days} j`;
@@ -102,7 +104,7 @@ function _itemRow(t) {
       ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.closest('.review-item').classList.add('dragging')"
       ondragend="this.closest('.review-item').classList.remove('dragging')">${_DRAG_HANDLE_SVG}</span>
     <div class="review-item-main">
-      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${_ageBadge(t)}
+      ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${ageBadge(t)}
     </div>
   </div>`;
 }

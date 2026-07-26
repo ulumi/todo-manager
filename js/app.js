@@ -2051,6 +2051,49 @@ class TodoApp {
     this.render();
   }
 
+  // Échéance d'un item de backlog (t.deadline, optionnelle — distincte de
+  // t.date, que les tâches en backlog n'ont pas) : édition en place, même
+  // pattern que _editEstimateLabel — le libellé du badge devient un
+  // <input type=date>, jamais un champ ailleurs sur la ligne.
+  editBacklogDeadline(badgeEl, id) {
+    const t = state.todos.find(x => x.id === id);
+    const label = badgeEl.querySelector('.backlog-deadline-label');
+    if (!t || !label || label.querySelector('input')) return;
+    const prevHTML = label.innerHTML;
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'backlog-deadline-input';
+    if (t.deadline) input.value = t.deadline;
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
+    let settled = false;
+    const restore = () => { label.innerHTML = prevHTML; };
+    const confirm = () => {
+      if (settled) return;
+      settled = true;
+      const val = input.value;
+      if (val !== (t.deadline || '')) {
+        snapshot(state.todos);
+        if (val) t.deadline = val; else delete t.deadline;
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+        this.render();
+      } else {
+        restore();
+      }
+    };
+    input.addEventListener('change', confirm);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { settled = true; restore(); }
+    });
+    input.addEventListener('blur', confirm);
+    label.innerHTML = '';
+    label.appendChild(input);
+    input.focus();
+    input.showPicker?.();
+  }
+
   _reloadPlanCol() {
     const col = document.getElementById('planInboxCol');
     if (col) { col.innerHTML = renderPlanInboxList(state.todos, this._overdueSelected || new Set()); this.initPlanDragDrop(); }

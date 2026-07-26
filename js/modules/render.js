@@ -2,12 +2,12 @@
 //  RENDERING FUNCTIONS
 // ════════════════════════════════════════════════════════
 
-import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed } from './utils.js';
+import { DS, parseDS, today, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -1526,8 +1526,19 @@ export function renderBacklogView(todos) {
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
+    // Échéance optionnelle (t.deadline, YYYY-MM-DD) — propre au backlog, pas
+    // une date de planification. Badge cliquable → app.editBacklogDeadline()
+    // remplace .backlog-deadline-label par un <input type=date> en place
+    // (même pattern que l'estimation de durée éditable, todoItemHTML).
+    // Comparaison de chaînes YYYY-MM-DD valide pour l'ordre chronologique.
+    const hasDeadline = !!t.deadline;
+    const overdue = hasDeadline && t.deadline < DS(today());
+    const deadlineText = hasDeadline
+      ? `${parseDS(t.deadline).getDate()} ${state.MONTHS[parseDS(t.deadline).getMonth()]}`
+      : '+ Échéance';
+    const deadlineTitle = hasDeadline ? 'Échéance — cliquer pour modifier' : 'Ajouter une échéance';
+    const deadlineBadge = `<span class="backlog-deadline-badge${hasDeadline ? '' : ' ghost'}${overdue ? ' overdue' : ''}" title="${deadlineTitle}" onclick="event.stopPropagation();window.app.editBacklogDeadline(this,'${t.id}')"><span class="backlog-deadline-label">${deadlineText}</span></span>`;
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
-    const hasMeta = !!catBadge;
     return `
       <div class="inbox-item${prioCls}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
@@ -1536,7 +1547,7 @@ export function renderBacklogView(todos) {
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          ${hasMeta ? `<div class="todo-meta">${catBadge}</div>` : ''}
+          <div class="todo-meta">${catBadge}${ageBadge(t)}${deadlineBadge}</div>
         </div>
         <div class="inbox-item-actions">
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Planifier aujourd'hui">

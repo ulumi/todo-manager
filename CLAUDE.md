@@ -88,7 +88,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `year` | 12 mini-calendars, annual overview |
 | `plan` | Planifier: resizable inbox column left + drag-and-drop calendar right. Modes: week/biweek/month |
 | `inbox` | Undated tasks — to schedule. Badge count |
-| `backlog` | Overdue tasks (past date, not done). Red urgency badge |
+| `backlog` | Tâches ponctuelles mises de côté volontairement (`t.backlog === true`, sans date — `renderBacklogView()`), **pas** des tâches en retard (ça, c'est le bandeau `.past-due-banner`/Bilan de la vue jour, voir plus bas). Chaque item affiche un badge d'ancienneté (« ajoutée il y a N j », `ageBadge()` de `review.js`, partagé avec le Bilan) + une échéance optionnelle (`t.deadline`, YYYY-MM-DD — distincte de `t.date` qu'un item de backlog n'a pas) : badge cliquable (`.backlog-deadline-badge`, rouge via `.overdue` si dépassée) qui devient un `<input type="date">` **en place** au clic (`app.editBacklogDeadline()`, même pattern que l'édition en place de la durée estimée) ; sans échéance, une pastille fantôme en pointillés (« + Échéance ») propose d'en poser une, toujours visible (pas de hover-reveal) |
 | `categories` | Tag cards grid. Each card = tag with associated tasks |
 | `projects` | Project cards grid. Statuses, lifecycle |
 | `intentions` | Long-term goals. Cards with linked tasks as chips |
@@ -125,6 +125,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   countUnit?: string,                // optional label ("km", "pages", etc.)
   postponedCount?: number,           // nb de reports de date (incrémenté par app._postpone())
   originalDate?: string,             // date d'origine avant le premier report
+  deadline?: string,                 // YYYY-MM-DD — échéance optionnelle d'un item de backlog (t.backlog), distincte de date/startDate qu'un item de backlog n'a pas
   cancelled?: boolean,               // annulée (ponctuelle) — visible barrée, hors compteurs
   cancelledDates?: [],               // occurrences annulées (récurrentes), parallèle à completedDates
   subtasks?: [{ id, title, completed }],  // checklist dans le modal d'édition
