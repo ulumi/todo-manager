@@ -9624,6 +9624,52 @@ body:has(.bottom-panel:not(.hidden))::before {
     opacity: 0;
   }
 }
+.newday-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px 10px 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.newday-toast--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.newday-toast-cancel {
+  border: none;
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.newday-toast-cancel:hover {
+  background: color-mix(in srgb, var(--bg) 38%, transparent);
+}
+
+.newday-toast-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 .priority-options {
   display: flex;
   gap: 6px;

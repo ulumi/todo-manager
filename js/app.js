@@ -214,6 +214,7 @@ class TodoApp {
     if (vl) vl.textContent = 'v' + VERSION;
     setupEventListeners(this);
     initMultiSelect(this);
+    this._initNewDayWatch();
 
     // Register celebrate debug panel (independent of server sync)
     onCelebrateDebug((data) => { this._showCelebrateDebugPanel(data); });
@@ -902,6 +903,66 @@ class TodoApp {
     state.setNavDate(today());
     this._pushHistory();
     this.render();
+  }
+
+  // ── Détection du changement de jour à la réactivation de l'onglet ──────────
+  // Contrairement à la session « périmée » (>8h, voir init()) qui ne se
+  // corrige qu'au rechargement, ceci réagit sans reload quand l'onglet est
+  // resté ouvert (ordinateur en veille, changement d'appli) et qu'on y
+  // revient après minuit : visibilitychange + focus fenêtre, plus un filet
+  // de secours périodique (les deux événements ne sont pas garantis au
+  // réveil d'un ordinateur endormi selon navigateur/OS).
+  _initNewDayWatch() {
+    if (!localStorage.getItem('lastSeenDay')) localStorage.setItem('lastSeenDay', DS(today()));
+    const check = () => this._maybeShowNewDayToast();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    window.addEventListener('focus', check);
+    setInterval(check, 5 * 60 * 1000);
+  }
+
+  _maybeShowNewDayToast() {
+    const freshToday = DS(today());
+    const lastSeenDay = localStorage.getItem('lastSeenDay');
+    localStorage.setItem('lastSeenDay', freshToday);
+    // Rien à signaler : jour inchangé, ou déjà sur la vue d'aujourd'hui
+    if (!lastSeenDay || lastSeenDay === freshToday || DS(state.navDate) === freshToday) return;
+    this._showNewDayToast();
+  }
+
+  // Toast dédié (pas _showToast/#undoToast, non interactif) : bouton Annuler
+  // + décompte 3→1s avant de sauter à aujourd'hui (todayNav()).
+  _showNewDayToast() {
+    document.getElementById('newDayToast')?.remove();
+    if (this._newDayInterval) clearInterval(this._newDayInterval);
+    const toast = document.createElement('div');
+    toast.id = 'newDayToast';
+    toast.className = 'newday-toast';
+    document.body.appendChild(toast);
+    let remaining = 3;
+    const paint = () => {
+      toast.innerHTML = `<span class="newday-toast-msg">Nouvelle journée — retour à aujourd'hui dans <span class="newday-toast-count">${remaining}</span>s</span><button class="newday-toast-cancel" onclick="window.app.cancelNewDayJump()">Annuler</button>`;
+    };
+    paint();
+    requestAnimationFrame(() => toast.classList.add('newday-toast--visible'));
+    this._newDayInterval = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) { this._finishNewDayJump(); return; }
+      paint();
+    }, 1000);
+  }
+
+  cancelNewDayJump() {
+    if (this._newDayInterval) { clearInterval(this._newDayInterval); this._newDayInterval = null; }
+    const toast = document.getElementById('newDayToast');
+    if (!toast) return;
+    toast.classList.remove('newday-toast--visible');
+    setTimeout(() => toast.remove(), 200);
+  }
+
+  _finishNewDayJump() {
+    if (this._newDayInterval) { clearInterval(this._newDayInterval); this._newDayInterval = null; }
+    document.getElementById('newDayToast')?.remove();
+    this.todayNav();
   }
 
   async setView(v) {

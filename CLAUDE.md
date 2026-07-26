@@ -188,6 +188,8 @@ Every persistent write must:
 - Last active view must restore on refresh (all views, no exception)
 - If a modal was open, reopen it on refresh
 - Persist via `localStorage` or URL hash
+- **Session périmée (>8h) au chargement** : `init()` (app.js) compare `_lastSeen` (epoch ms, localStorage) à `Date.now()` — si l'écart dépasse 8h, snap silencieux vue jour + `navDate = today()` (pas de hash/nav restauré). Concerne uniquement un **rechargement** de page.
+- **Changement de jour en cours de session (onglet resté ouvert, pas de reload)** : `app._initNewDayWatch()` écoute `visibilitychange`(→visible) + `focus` fenêtre + un filet de secours toutes les 5 min (aucun des deux événements n'est garanti au réveil d'un ordinateur endormi selon navigateur/OS) → `_maybeShowNewDayToast()` compare le jour courant à `lastSeenDay` (localStorage, mis à jour à chaque check) ; si le jour a changé **et** que `navDate` n'est pas déjà aujourd'hui, affiche `.newday-toast` (bouton Annuler + décompte 3→1s) puis saute automatiquement via `todayNav()` (`app._finishNewDayJump()`) sauf annulation (`app.cancelNewDayJump()`). Complémentaire de la règle ci-dessus, pas un doublon : celle-ci réagit **sans** recharger la page.
 
 ---
 

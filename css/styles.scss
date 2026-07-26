@@ -8882,6 +8882,59 @@ body:has(.bottom-panel:not(.hidden))::before {
   100% { opacity: 0; }
 }
 
+// Réactivation de l'onglet après changement de jour (app._initNewDayWatch) —
+// contrairement à .undo-toast (texte seul, non interactif), celui-ci porte
+// un bouton Annuler + décompte : pointer-events actif, pas d'auto-fade CSS
+// (retiré par JS, sur Annuler ou une fois le saut vers aujourd'hui effectué)
+.newday-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px 10px 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity .2s ease, transform .2s ease;
+
+  &--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.newday-toast-cancel {
+  border: none;
+  // color-mix avec --bg (jamais rgba(255,255,255,..) figé) : la pastille
+  // reste visible que le fond du toast (var(--text)) soit sombre (thème
+  // clair) ou clair (thème sombre) — s'inverse tout seul avec le thème
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background .15s;
+
+  &:hover { background: color-mix(in srgb, var(--bg) 38%, transparent); }
+}
+
+.newday-toast-count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────
 // 24. Priority Selector (Modal)
