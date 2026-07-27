@@ -11969,6 +11969,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .inbox-item:hover .inbox-item-actions {
+  max-width: 160px;
   opacity: 1;
 }
 .inbox-item.done {
@@ -12011,9 +12012,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   align-items: center;
   gap: 4px;
+  max-width: 0;
+  overflow: hidden;
   opacity: 0;
-  transition: opacity 0.15s;
   flex-shrink: 0;
+  transition: max-width 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .inbox-assign-today {

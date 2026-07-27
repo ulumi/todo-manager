@@ -11074,7 +11074,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-color: var(--primary);
     box-shadow:   0 2px 8px rgba(0,0,0,.06);
 
-    .inbox-item-actions { opacity: 1; }
+    .inbox-item-actions { max-width: 160px; opacity: 1; }
   }
 
   &.done {
@@ -11109,13 +11109,22 @@ body:has(.bottom-panel:not(.hidden))::before {
   min-width: 0;
 }
 
+// Invisible tant que non survolée → ne doit jamais réserver son espace
+// (sinon en colonnes multiples le titre n'a presque plus de place et
+// retombe en retour à la ligne lettre par lettre). max-width:0 fait office
+// de wrapper replié ; délai « hover intent » 500ms dans la transition de
+// base (jamais écrasé dans :hover) pour ne pas faire clignoter chaque
+// carte au passage rapide de la souris dans une grille.
 .inbox-item-actions {
   display:     flex;
   align-items: center;
   gap:         4px;
+  max-width:   0;
+  overflow:    hidden;
   opacity:     0;
-  transition:  opacity .15s;
   flex-shrink: 0;
+  transition:  max-width .25s cubic-bezier(.25,.46,.45,.94) .5s,
+               opacity   .25s cubic-bezier(.25,.46,.45,.94) .5s;
 }
 
 .inbox-assign-today {

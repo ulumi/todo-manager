@@ -1492,9 +1492,12 @@ export function renderInboxView(todos) {
   const sortBtns = sortLabels.map(([v, l]) =>
     `<button class="inbox-sort-btn${prefs.sort === v ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','sort','${v}')">${l}</button>`
   ).join('');
-  const colBtns = ['1', '2', '3'].map(c =>
-    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','cols','${c}')" title="${c} colonne${c !== '1' ? 's' : ''}">${c}</button>`
+  const colBtns = ['1', '2', '3', '4', 'auto'].map(c =>
+    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','cols','${c}')" title="${c === 'auto' ? 'Colonnes automatiques' : `${c} colonne${c !== '1' ? 's' : ''}`}">${c === 'auto' ? 'Auto' : c}</button>`
   ).join('');
+  const colsStyle = prefs.cols === 'auto'
+    ? 'grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));'
+    : `--cols:${prefs.cols};`;
 
   return `
     <div class="inbox-view">
@@ -1511,7 +1514,7 @@ export function renderInboxView(todos) {
         </div>
       </div>
       ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list" id="inboxList" style="--cols:${prefs.cols}">${items}</div>` : ''}
+      ${sorted.length > 0 ? `<div class="inbox-list" id="inboxList" style="${colsStyle}">${items}</div>` : ''}
     </div>`;
 }
 
@@ -1572,9 +1575,12 @@ export function renderBacklogView(todos) {
   const sortBtns = sortLabels.map(([v, l]) =>
     `<button class="inbox-sort-btn${prefs.sort === v ? ' active' : ''}" onclick="window.app.setListQueueView('backlog','sort','${v}')">${l}</button>`
   ).join('');
-  const colBtns = ['1', '2', '3'].map(c =>
-    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('backlog','cols','${c}')" title="${c} colonne${c !== '1' ? 's' : ''}">${c}</button>`
+  const colBtns = ['1', '2', '3', '4', 'auto'].map(c =>
+    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('backlog','cols','${c}')" title="${c === 'auto' ? 'Colonnes automatiques' : `${c} colonne${c !== '1' ? 's' : ''}`}">${c === 'auto' ? 'Auto' : c}</button>`
   ).join('');
+  const colsStyle = prefs.cols === 'auto'
+    ? 'grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));'
+    : `--cols:${prefs.cols};`;
 
   return `
     <div class="inbox-view">
@@ -1591,7 +1597,7 @@ export function renderBacklogView(todos) {
         </div>
       </div>
       ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="--cols:${prefs.cols}">${items}</div>` : ''}
+      ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
     </div>`;
 }
 

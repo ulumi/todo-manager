@@ -7,7 +7,7 @@
 
 import { esc } from './utils.js';
 
-// { sort: 'date'|'priority'|'title'|'category'|'manual', cols: '1'|'2'|'3' }
+// { sort: 'date'|'priority'|'title'|'category'|'manual', cols: '1'|'2'|'3'|'4'|'auto' }
 // Défaut : Récentes, 1 colonne. Synchronisée via getAppConfig()/_applyBackup
 // (clés `backlogQueueView`/`inboxQueueView`).
 export function getListPrefs(view) {
