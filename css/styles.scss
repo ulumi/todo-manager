@@ -11050,9 +11050,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-list {
-  display:        flex;
-  flex-direction: column;
-  gap:            6px;
+  display:               grid;
+  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+  gap:                   6px;
+
+  // En-tête de groupe non draggable ici (contrairement à la vue Jour) —
+  // pas d'affordance grab trompeuse.
+  .task-group-header { cursor: default; }
 }
 
 .inbox-item {
@@ -11076,6 +11080,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   &.done {
     opacity: .55;
     .todo-text { text-decoration: line-through; }
+  }
+
+  // Tri Manuel + 1 colonne : réordonnancement par glisser-déposer actif
+  &--draggable { cursor: grab; }
+
+  &.dragging {
+    opacity:      .35;
+    border-style: dashed;
   }
 }
 

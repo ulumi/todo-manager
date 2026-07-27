@@ -71,6 +71,7 @@ import {
   renderFocusPip, removeFocusPip,
   getBreakTargetMinutes, setBreakTargetMinutes, startEditBreakTarget, applyFocusBreakTarget,
 } from './modules/focus.js';
+import { getListPrefs, saveListPrefs, saveManualOrder } from './modules/backlogInboxView.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
@@ -2052,14 +2053,55 @@ class TodoApp {
     this.render();
   }
 
-  setInboxSort(sort) {
-    localStorage.setItem('inboxSort', sort);
+  // Préférences d'affichage (tri, colonnes) du Backlog/Inbox — mirrors
+  // focusSetQueueView. Synchronisées entre appareils (getAppConfig()).
+  setListQueueView(view, key, val) {
+    const p = getListPrefs(view);
+    p[key] = val;
+    saveListPrefs(view, p);
+    this._saveConfigChange();
     this.render();
   }
 
-  setBacklogSort(sort) {
-    localStorage.setItem('backlogSort', sort);
-    this.render();
+  // Drag-and-drop de réordonnancement manuel du Backlog/Inbox — actif
+  // seulement en tri Manuel + 1 colonne (au-delà, le calcul de position
+  // par curseur Y n'a pas de sens en grille, même garde-fou que la file
+  // « Ensuite » du Focus). N'attache jamais de handler 'drop' sur la
+  // liste : le drag-and-drop existant vers les onglets du header
+  // (planDragStart, déjà posé en inline sur .inbox-item) continue de
+  // fonctionner sans collision — ces listeners s'ajoutent en plus,
+  // jamais à la place.
+  initQueueListDnD(view) {
+    const prefs = getListPrefs(view);
+    if (prefs.sort !== 'manual' || prefs.cols !== '1') return;
+    const list = document.getElementById(view === 'backlog' ? 'backlogList' : 'inboxList');
+    if (!list) return;
+    let dragEl = null;
+    list.querySelectorAll('.inbox-item').forEach(item => {
+      item.addEventListener('dragstart', () => {
+        dragEl = item;
+        item.classList.add('dragging');
+      });
+      item.addEventListener('dragend', () => {
+        item.classList.remove('dragging');
+        if (!dragEl) return;
+        dragEl = null;
+        const ids = [...list.querySelectorAll('.inbox-item')].map(el => el.dataset.id);
+        saveManualOrder(view, ids);
+        this._saveConfigChange();
+        this.render();
+      });
+    });
+    list.addEventListener('dragover', e => {
+      if (!dragEl) return;
+      e.preventDefault();
+      const items = [...list.querySelectorAll('.inbox-item:not(.dragging)')];
+      const after = items.find(el => {
+        const r = el.getBoundingClientRect();
+        return e.clientY < r.top + r.height / 2;
+      });
+      list.insertBefore(dragEl, after || null);
+    });
   }
 
   // Échéance d'un item de backlog (t.deadline, optionnelle — distincte de
@@ -3685,6 +3727,8 @@ class TodoApp {
         if (data.config.autoPostpone) localStorage.setItem('autoPostpone', data.config.autoPostpone);
         if (data.config.focusQueueView) localStorage.setItem('focusQueueView', data.config.focusQueueView);
         if (data.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', data.config.focusBreakMinutes);
+        if (data.config.backlogQueueView) localStorage.setItem('backlogQueueView', data.config.backlogQueueView);
+        if (data.config.inboxQueueView)   localStorage.setItem('inboxQueueView',   data.config.inboxQueueView);
         const _bPal1 = data.config.bgPalette;
         if (_bPal1)  this.setPalette(_bPal1);
         if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
@@ -3697,6 +3741,8 @@ class TodoApp {
       if (data.templates) localStorage.setItem('dayTemplates', JSON.stringify(data.templates));
       if (data.suggestedTasks) localStorage.setItem('suggestedTasks', JSON.stringify(data.suggestedTasks));
       if (data.taskOrder) localStorage.setItem('projectTaskOrder', JSON.stringify(data.taskOrder));
+      if (data.backlogOrder) localStorage.setItem('backlogOrder', JSON.stringify(data.backlogOrder));
+      if (data.inboxOrder) localStorage.setItem('inboxOrder', JSON.stringify(data.inboxOrder));
       saveTodos(state.todos);
       closeAdminModal();
       this.render();
@@ -3783,6 +3829,7 @@ class TodoApp {
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
+    if (state.view === 'backlog' || state.view === 'inbox') this.initQueueListDnD(state.view);
     if (state.view === 'focus' || this._focusMinimized) this.initFocusView(); else this._stopFocusTick();
     renderFocusPip(this);
     document.querySelector('.focus-tab')?.classList.toggle('active', state.view === 'focus');
@@ -6610,6 +6657,16 @@ class TodoApp {
       const next = JSON.stringify(backup.taskOrder);
       if (prev !== next) { localStorage.setItem('projectTaskOrder', next); changed = true; }
     }
+    if (backup.backlogOrder) {
+      const prev = localStorage.getItem('backlogOrder');
+      const next = JSON.stringify(backup.backlogOrder);
+      if (prev !== next) { localStorage.setItem('backlogOrder', next); changed = true; }
+    }
+    if (backup.inboxOrder) {
+      const prev = localStorage.getItem('inboxOrder');
+      const next = JSON.stringify(backup.inboxOrder);
+      if (prev !== next) { localStorage.setItem('inboxOrder', next); changed = true; }
+    }
     if (backup.intentions) {
       const prev = localStorage.getItem('intentions');
       const next = JSON.stringify(backup.intentions);
@@ -6629,6 +6686,8 @@ class TodoApp {
       if (backup.config.autoPostpone) localStorage.setItem('autoPostpone', backup.config.autoPostpone);
       if (backup.config.focusQueueView) localStorage.setItem('focusQueueView', backup.config.focusQueueView);
       if (backup.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', backup.config.focusBreakMinutes);
+      if (backup.config.backlogQueueView) localStorage.setItem('backlogQueueView', backup.config.backlogQueueView);
+      if (backup.config.inboxQueueView)   localStorage.setItem('inboxQueueView',   backup.config.inboxQueueView);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);

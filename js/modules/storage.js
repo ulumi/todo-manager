@@ -102,6 +102,8 @@ export function getAppConfig() {
     autoPostpone: localStorage.getItem('autoPostpone'),
     focusQueueView: localStorage.getItem('focusQueueView'),
     focusBreakMinutes: localStorage.getItem('focusBreakMinutes'),
+    backlogQueueView: localStorage.getItem('backlogQueueView'),
+    inboxQueueView: localStorage.getItem('inboxQueueView'),
   };
 }
 
@@ -115,6 +117,8 @@ export function getFullBackup(todos) {
     templates: raw('dayTemplates'),
     suggestedTasks: raw('suggestedTasks'),
     taskOrder: raw('projectTaskOrder'),
+    backlogOrder: raw('backlogOrder'),
+    inboxOrder: raw('inboxOrder'),
     avatar: raw('profileAvatar'),
     intentions: raw('intentions'),
     projects: raw('projects'),

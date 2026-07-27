@@ -9,6 +9,7 @@ import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
+import { getListPrefs, applyManualOrder, renderGroupedItems } from './backlogInboxView.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
 function _getCatIds(t) { return t.categoryIds || (t.categoryId ? [t.categoryId] : []); }
@@ -1436,17 +1437,18 @@ export function getBacklogCount(todos) {
 export function renderInboxView(todos) {
   const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed && !t.cancelled);
 
-  const sort = localStorage.getItem('inboxSort') || 'date';
+  const prefs = getListPrefs('inbox');
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
-  const sorted = [...inboxItems].sort((a, b) => {
-    if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
-    if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
+  const sorted = prefs.sort === 'manual' ? applyManualOrder('inbox', inboxItems) : [...inboxItems].sort((a, b) => {
+    if (prefs.sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
+    if (prefs.sort === 'title')    return a.title.localeCompare(b.title);
+    if (prefs.sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
     return b.id.localeCompare(a.id); // newest first (default)
   });
+  const canDrag = prefs.sort === 'manual' && prefs.cols === '1';
 
   const categories = getCategories();
-  const items = sorted.map(t => {
+  const itemTemplate = t => {
     const cat = t.categoryId ? categories.find(c => c.id === t.categoryId) : null;
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
@@ -1454,7 +1456,7 @@ export function renderInboxView(todos) {
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
     const hasMeta = !!catBadge;
     return `
-      <div class="inbox-item${prioCls}" data-id="${t.id}" draggable="true"
+      <div class="inbox-item${prioCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}', null)">
@@ -1474,7 +1476,8 @@ export function renderInboxView(todos) {
           <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
         </div>
       </div>`;
-  }).join('');
+  };
+  const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
 
   const empty = sorted.length === 0 ? `
     <div class="inbox-empty">
@@ -1485,9 +1488,12 @@ export function renderInboxView(todos) {
       <button class="btn btn-primary" onclick="window.app.openModalForInbox()">＋ Capturer une tâche</button>
     </div>` : '';
 
-  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie']];
+  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie'], ['manual', 'Manuel']];
   const sortBtns = sortLabels.map(([v, l]) =>
-    `<button class="inbox-sort-btn${sort === v ? ' active' : ''}" onclick="window.app.setInboxSort('${v}')">${l}</button>`
+    `<button class="inbox-sort-btn${prefs.sort === v ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','sort','${v}')">${l}</button>`
+  ).join('');
+  const colBtns = ['1', '2', '3'].map(c =>
+    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','cols','${c}')" title="${c} colonne${c !== '1' ? 's' : ''}">${c}</button>`
   ).join('');
 
   return `
@@ -1500,35 +1506,37 @@ export function renderInboxView(todos) {
         <div class="inbox-view-controls">
           <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
           <div class="inbox-sort-group">${sortBtns}</div>
+          <div class="inbox-sort-group">${colBtns}</div>
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
         </div>
       </div>
       ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
+      ${sorted.length > 0 ? `<div class="inbox-list" id="inboxList" style="--cols:${prefs.cols}">${items}</div>` : ''}
     </div>`;
 }
 
 export function renderBacklogView(todos) {
   const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && !t.cancelled);
 
-  const sort = localStorage.getItem('backlogSort') || 'date';
+  const prefs = getListPrefs('backlog');
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
-  const sorted = [...backlogItems].sort((a, b) => {
-    if (sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
-    if (sort === 'title')    return a.title.localeCompare(b.title);
-    if (sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
+  const sorted = prefs.sort === 'manual' ? applyManualOrder('backlog', backlogItems) : [...backlogItems].sort((a, b) => {
+    if (prefs.sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
+    if (prefs.sort === 'title')    return a.title.localeCompare(b.title);
+    if (prefs.sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
     return b.id.localeCompare(a.id);
   });
+  const canDrag = prefs.sort === 'manual' && prefs.cols === '1';
 
   const categories = getCategories();
-  const items = sorted.map(t => {
+  const itemTemplate = t => {
     const cat = t.categoryId ? categories.find(c => c.id === t.categoryId) : null;
     const catBadge = cat
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
     return `
-      <div class="inbox-item${prioCls}" data-id="${t.id}" draggable="true"
+      <div class="inbox-item${prioCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}', null)">
@@ -1548,7 +1556,8 @@ export function renderBacklogView(todos) {
           <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
         </div>
       </div>`;
-  }).join('');
+  };
+  const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
 
   const empty = sorted.length === 0 ? `
     <div class="inbox-empty">
@@ -1559,9 +1568,12 @@ export function renderBacklogView(todos) {
       <button class="btn btn-primary" onclick="window.app.openModalForBacklog()">＋ Ajouter au backlog</button>
     </div>` : '';
 
-  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie']];
+  const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie'], ['manual', 'Manuel']];
   const sortBtns = sortLabels.map(([v, l]) =>
-    `<button class="inbox-sort-btn${sort === v ? ' active' : ''}" onclick="window.app.setBacklogSort('${v}')">${l}</button>`
+    `<button class="inbox-sort-btn${prefs.sort === v ? ' active' : ''}" onclick="window.app.setListQueueView('backlog','sort','${v}')">${l}</button>`
+  ).join('');
+  const colBtns = ['1', '2', '3'].map(c =>
+    `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('backlog','cols','${c}')" title="${c} colonne${c !== '1' ? 's' : ''}">${c}</button>`
   ).join('');
 
   return `
@@ -1574,11 +1586,12 @@ export function renderBacklogView(todos) {
         <div class="inbox-view-controls">
           <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
           <div class="inbox-sort-group">${sortBtns}</div>
+          <div class="inbox-sort-group">${colBtns}</div>
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
         </div>
       </div>
       ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list">${items}</div>` : ''}
+      ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="--cols:${prefs.cols}">${items}</div>` : ''}
     </div>`;
 }
 

@@ -11945,9 +11945,12 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
   gap: 6px;
+}
+.inbox-list .task-group-header {
+  cursor: default;
 }
 
 .inbox-item {
@@ -11973,6 +11976,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 .inbox-item.done .todo-text {
   text-decoration: line-through;
+}
+.inbox-item--draggable {
+  cursor: grab;
+}
+.inbox-item.dragging {
+  opacity: 0.35;
+  border-style: dashed;
 }
 
 .todo-check {
