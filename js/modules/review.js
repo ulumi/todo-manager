@@ -151,15 +151,16 @@ function _itemRow(t) {
 //   drop mais un lien de navigation
 //
 // Zone Aujourd'hui : contient deux rendus superposés, .today-zone-default
-// (icône + libellé, visible normalement) et .today-zone-periods (Matin/
-// Après-midi/Soir, caché par défaut) — basculés par CSS via body.is-dragging-
-// task (posé par app.planDragStart() pour TOUT drag dans l'app, pas au survol
-// précis de la zone : évite un décalage de mise en page sous le curseur au
-// moment où il atteint la zone). Chaque bouton de moment a son propre ondrop
-// (stopPropagation + nettoyage du .drag-over hérité de la zone parente) qui
-// pose aussi t.dayPeriod (app.overdueDropTodayPeriod) ; déposer entre les
-// boutons ou hors d'un moment précis retombe sur le comportement par défaut
-// de la zone (app.overdueDropToday, sans moment).
+// (icône + libellé, visible normalement) et .today-zone-periods (Sans
+// moment/Matin/Après-midi/Soir, caché par défaut) — basculés par CSS via
+// body.is-dragging-task (posé par app.planDragStart() pour TOUT drag dans
+// l'app, pas au survol précis de la zone : évite un décalage de mise en
+// page sous le curseur au moment où il atteint la zone). « Sans moment »
+// est un bouton explicite au même titre que les 3 moments — pas seulement
+// « déposer entre les boutons » — pour rester une cible visible et précise ;
+// son ondrop appelle directement app.overdueDropToday(), les 3 autres
+// app.overdueDropTodayPeriod() (pose t.dayPeriod en plus). Chacun stoppe
+// la propagation + nettoie le .drag-over hérité de la zone parente.
 //
 // Icônes en SVG trait (stroke="currentColor"), jamais en emoji : contrainte
 // globale de Hugues (voir ~/.claude/CLAUDE.md), pas seulement pour éviter
@@ -188,6 +189,7 @@ export function renderOverdueDropZones({ onTodayClick = null, bilanLink = false 
         <span class="overdue-drop-zone-icon">${_DZ_ICONS.today}</span>Aujourd'hui
       </div>
       <div class="today-zone-periods">
+        <div class="today-period-btn today-period-btn--none" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropToday(event)" title="Aujourd'hui — sans moment">Sans moment</div>
         <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'morning')" title="Aujourd'hui — matin">Matin</div>
         <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'afternoon')" title="Aujourd'hui — après-midi">Après-midi</div>
         <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'evening')" title="Aujourd'hui — soir">Soir</div>

@@ -15348,6 +15348,11 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   background: var(--primary-light);
   color: var(--primary);
 }
+.today-period-btn--none {
+  margin-bottom: 2px;
+  padding-bottom: 6px;
+  border-bottom-style: solid;
+}
 
 .overdue-drop-zone-icon {
   display: flex;

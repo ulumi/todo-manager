@@ -14312,6 +14312,16 @@ body.view-focus header { display: none; }
     background: var(--primary-light);
     color: var(--primary);
   }
+
+  // « Sans moment » : même cible qu'Aujourd'hui hors drag — séparée des 3
+  // moments par une fine ligne pleine pour signaler que c'est l'option par
+  // défaut, pas un 4e moment de la journée (le reste du contour garde le
+  // style pointillé hérité)
+  &--none {
+    margin-bottom: 2px;
+    padding-bottom: 6px;
+    border-bottom-style: solid;
+  }
 }
 
 .overdue-drop-zone-icon {
