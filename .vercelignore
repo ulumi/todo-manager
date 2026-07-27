@@ -1,0 +1,38 @@
+# `vercel --prod` uploads the local working directory as-is (unlike a
+# git-based deploy) — files here are NEVER excluded just because they're
+# gitignored or untracked. outputDirectory is "." (vercel.json), so
+# anything not listed here is served as a public static file.
+#
+# This list exists because firebase-service-account.json (a live Firebase
+# Admin service-account credential, gitignored, never committed) was found
+# publicly downloadable at https://todo.hugues.app/firebase-service-account.json
+# — it and server.js/supabase-schema.sql/etc. were being uploaded and served
+# purely because nothing told the CLI not to.
+
+# Secrets & credentials — must NEVER be served publicly
+firebase-service-account.json
+.env
+.env.*
+uid-mapping.json
+
+# Internal dev-only scripts & data — not part of the served app
+server.js
+deploy.sh
+start-server.sh
+migrate-to-supabase.cjs
+supabase-schema.sql
+admin.html
+
+# Editor/tooling/docs — no reason to be public
+.claude/
+.vscode/
+.DS_Store
+APP_OVERVIEW.md
+CLAUDE.md
+README.md
+todo-manager.code-workspace
+month-view-verification.png
+
+# Internal working directories — dev artifacts, not app content
+reviews/
+supabase/
