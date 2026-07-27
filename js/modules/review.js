@@ -150,6 +150,17 @@ function _itemRow(t) {
 //   plein, pas en pointillés, pour signaler que ce n'est pas une cible de
 //   drop mais un lien de navigation
 //
+// Zone Aujourd'hui : contient deux rendus superposés, .today-zone-default
+// (icône + libellé, visible normalement) et .today-zone-periods (Matin/
+// Après-midi/Soir, caché par défaut) — basculés par CSS via body.is-dragging-
+// task (posé par app.planDragStart() pour TOUT drag dans l'app, pas au survol
+// précis de la zone : évite un décalage de mise en page sous le curseur au
+// moment où il atteint la zone). Chaque bouton de moment a son propre ondrop
+// (stopPropagation + nettoyage du .drag-over hérité de la zone parente) qui
+// pose aussi t.dayPeriod (app.overdueDropTodayPeriod) ; déposer entre les
+// boutons ou hors d'un moment précis retombe sur le comportement par défaut
+// de la zone (app.overdueDropToday, sans moment).
+//
 // Icônes en SVG trait (stroke="currentColor"), jamais en emoji : contrainte
 // globale de Hugues (voir ~/.claude/CLAUDE.md), pas seulement pour éviter
 // l'ancien 🗂 du Backlog qu'il n'aimait pas — aucune icône de l'app ne doit
@@ -171,8 +182,16 @@ export function renderOverdueDropZones({ onTodayClick = null, bilanLink = false 
     <div class="overdue-drop-zone overdue-drop-zone--done" ${_DZ_COMMON} ondrop="window.app.overdueDropDone(event)" title="Marquer comme faite">
       <span class="overdue-drop-zone-icon">${_DZ_ICONS.done}</span>Fait
     </div>
-    <div class="overdue-drop-zone${onTodayClick ? ' overdue-drop-zone--clickable' : ''}" ${_DZ_COMMON}${todayClickAttr} ondrop="window.app.overdueDropToday(event)" title="${onTodayClick ? 'Glisser une tâche : la reporter · Clic : tout reporter à aujourd\'hui' : 'Reporter à aujourd\'hui'}">
-      ${todayBadge}<span class="overdue-drop-zone-icon">${_DZ_ICONS.today}</span>Aujourd'hui
+    <div class="overdue-drop-zone overdue-drop-zone--today${onTodayClick ? ' overdue-drop-zone--clickable' : ''}" ${_DZ_COMMON}${todayClickAttr} ondrop="window.app.overdueDropToday(event)" title="${onTodayClick ? 'Glisser une tâche : la reporter · Clic : tout reporter à aujourd\'hui' : 'Reporter à aujourd\'hui'}">
+      ${todayBadge}
+      <div class="today-zone-default">
+        <span class="overdue-drop-zone-icon">${_DZ_ICONS.today}</span>Aujourd'hui
+      </div>
+      <div class="today-zone-periods">
+        <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'morning')" title="Aujourd'hui — matin">Matin</div>
+        <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'afternoon')" title="Aujourd'hui — après-midi">Après-midi</div>
+        <div class="today-period-btn" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');window.app.overdueDropTodayPeriod(event,'evening')" title="Aujourd'hui — soir">Soir</div>
+      </div>
     </div>
     <div class="overdue-drop-zone" ${_DZ_COMMON} ondrop="window.app.overdueDropTomorrow(event)" title="Reporter à demain">
       <span class="overdue-drop-zone-icon">${_DZ_ICONS.tomorrow}</span>Demain

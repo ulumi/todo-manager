@@ -14266,6 +14266,52 @@ body.view-focus header { display: none; }
 
     &:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
   }
+
+  // Zone Aujourd'hui : bascule icône+libellé ↔ Matin/Après-midi/Soir
+  // pendant tout drag dans l'app (body.is-dragging-task, posé par
+  // app.planDragStart()) — jamais réservé à un seul survol précis, pour
+  // que les 3 cibles soient déjà en place avant que le curseur n'atteigne
+  // la zone (éviter un décalage de mise en page sous le curseur)
+  &--today {
+    .today-zone-periods { display: none; }
+
+    body.is-dragging-task & {
+      .today-zone-default { display: none; }
+      .today-zone-periods { display: flex; }
+    }
+  }
+}
+
+.today-zone-default {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.today-zone-periods {
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.today-period-btn {
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  transition: background .15s cubic-bezier(.25,.46,.45,.94), border-color .15s cubic-bezier(.25,.46,.45,.94), color .15s cubic-bezier(.25,.46,.45,.94);
+
+  &.drag-over {
+    border-style: solid;
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
 }
 
 .overdue-drop-zone-icon {

@@ -4179,6 +4179,14 @@ class TodoApp {
     event.dataTransfer.setData('text/plain', taskId);
     event.dataTransfer.effectAllowed = 'move';
     this._setDragGhost(event, taskId);
+    // Posé ici (pas seulement via le listener global document/dragstart,
+    // voir setupEventListeners) car .review-item-handle appelle
+    // event.stopPropagation() avant planDragStart() — l'événement
+    // n'atteindrait donc jamais document, et la classe ne serait jamais
+    // posée pour un drag démarré depuis le Bilan/bandeau (voir
+    // renderOverdueDropZones() en review.js, qui en dépend pour révéler
+    // Matin/Après-midi/Soir sur la zone Aujourd'hui)
+    document.body.classList.add('is-dragging-task');
   }
 
   planDrop(event, ds) {
@@ -4476,6 +4484,12 @@ class TodoApp {
 
   overdueDropToday(event) {
     this._reviewDrop(event, t => this._postpone(t, DS(today())));
+  }
+
+  // Sous-cible « moment » de la zone Aujourd'hui (révélées pendant tout
+  // drag via body.is-dragging-task — voir renderOverdueDropZones, review.js)
+  overdueDropTodayPeriod(event, period) {
+    this._reviewDrop(event, t => { this._postpone(t, DS(today())); t.dayPeriod = period; });
   }
 
   overdueDropTomorrow(event) {
