@@ -60,20 +60,39 @@ export async function saveBackupToServer(backup) {
   await serverPost('/backup', backup);
 }
 
+// Debounced Supabase push — coalesces rapid successive writes (drag reorder,
+// clicking through several toolbar options, etc.) into a single full-row
+// upsert instead of one per change. Each push re-sends the ENTIRE row
+// (todos + config + avatar) and Supabase Realtime rebroadcasts it whole to
+// every connected tab/device, so pushing on every keystroke/click is a real
+// egress cost, not just a request-count nuisance. Safe to debounce: if the
+// tab closes before the timer fires, `_pendingSync` stays '1' and the next
+// load's startup reconciliation (_applyBackup path in app.js) retries it —
+// no data loss, just a delayed sync.
+const PUSH_DEBOUNCE_MS = 1200;
+let _pushTimer = null;
+
+export function scheduleSupabasePush() {
+  localStorage.setItem('_pendingSync', '1');
+  clearTimeout(_pushTimer);
+  _pushTimer = setTimeout(() => {
+    _pushTimer = null;
+    pushToSupabase(getFullBackup(loadTodos()))
+      .then(() => localStorage.removeItem('_pendingSync'))
+      .catch(() => {});
+  }, PUSH_DEBOUNCE_MS);
+}
+
 export function saveTodos(todos) {
   const json = JSON.stringify(todos);
   localStorage.setItem('todos', json);
   localStorage.setItem('_localWriteTime', Date.now().toString());
-  // Mark as pending until Supabase confirms receipt
-  localStorage.setItem('_pendingSync', '1');
   // Safety backup: last known good state, never touched by sync
   if (todos.length > 0) {
     localStorage.setItem('_todosSafetyBackup', JSON.stringify({ todos, ts: Date.now() }));
   }
   serverPost('/todos', todos);
-  pushToSupabase(getFullBackup(todos))
-    .then(() => localStorage.removeItem('_pendingSync'))
-    .catch(() => {}); // stays pending if push fails — protects local data on next load
+  scheduleSupabasePush();
 }
 
 export function loadTodos() {
@@ -135,6 +154,8 @@ export function getFullBackup(todos) {
 }
 
 export function pushNow() {
+  clearTimeout(_pushTimer); // supersedes any pending debounced push
+  _pushTimer = null;
   const todos = loadTodos();
   localStorage.setItem('_localWriteTime', Date.now().toString());
   localStorage.setItem('_pendingSync', '1');

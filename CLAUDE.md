@@ -164,10 +164,16 @@ Every persistent write must:
 ```
 
 ### Sync flow
-1. **Client → Supabase:** `saveTodos()` / `pushNow()` → `supabase.from('user_data').upsert(...)`
+1. **Client → Supabase:** `saveTodos()` / `_saveConfigChange()` → `scheduleSupabasePush()` (`storage.js`) — **debounced 1.2s**, not immediate: coalesces rapid successive writes (drag reorder, clicking through several toolbar options) into a single full-row upsert. Every push re-sends the **entire row** (todos + config + avatar) and Supabase Realtime rebroadcasts it whole to every connected tab/device — pushing on every keystroke/click is a real **egress** cost (data OUT of Supabase), not just a request-count nuisance; this is what caused a `exceed_egress_quota` 402 (blocking ALL Supabase requests incl. auth) shortly after the Backlog/Inbox columns/sort toolbar shipped (each click called `_saveConfigChange()` → an immediate push, before the debounce existed). Safe to debounce: if the tab closes before the timer fires, `_pendingSync` stays `'1'` and the next load's startup reconciliation (`_applyBackup` path, `app.js`) retries it — no data loss, just delayed sync. `pushNow()` (manual "sync now" / `forcePush()`) stays immediate and cancels any pending debounced timer.
 2. **Supabase → Client:** realtime channel subscription, skip if `_pushedBySession === SESSION_ID`
 3. **Cross-tab:** `initCrossTabSync()` via storage events
 4. **Offline:** Supabase JS SDK handles reconnection; no local IndexedDB cache
+
+### Display name — NOT part of `user_data`, lives in Supabase Auth `user_metadata`
+Unlike everything else above, the display name/"prénom" isn't in the `user_data` row — it's read fresh from the live Supabase Auth session on every load (`auth.js` `_wrap()`, `supaUser.user_metadata.display_name`), with **no local source of truth** otherwise. To survive a degraded/failed Supabase round-trip (offline, quota, token-refresh hiccup) without looking "lost" on refresh: `_wrap()` caches a non-empty name to `localStorage` (`cachedDisplayName_<uid>`) and falls back to that cache when Supabase returns empty; `updateUserProfile(name)` (`auth.js`) writes to that same cache **and** updates the in-memory `_currentUser` *before* attempting the Supabase write, so the current session (and next refresh) show the right name even if the network call itself fails. Its three callers (`saveDisplayName()`, `saveGuestName()`, `openAvatarFromPrompt()` in `app.js`) wrap the call in try/catch — a rejection used to abort silently (and, in the onboarding-prompt callers, leave the prompt permanently stuck open since the cleanup lines never ran).
+
+### Avatar photo size (`avatarEditor.js`)
+Photos are stored as base64 JPEG **inline in the synced `user_data` row** (`SIZE` canvas constant, `toDataURL('image/jpeg', quality)`) — no separate Storage bucket/CDN. Since the whole row re-transfers on every push/broadcast (see Sync flow above), this photo is the single biggest per-push payload contributor for any account with a custom avatar. Kept close to the largest on-screen display size (`.profile-avatar`, 121px) rather than an arbitrary large value — currently 240px @ quality 0.82, still crisp at ~2x pixel density.
 
 ### API auth (server-side)
 - `api/_supabase.js` — shared Supabase **service role** client + `verifyToken()` + `verifyAdmin()`

@@ -7,7 +7,13 @@ import { updatePresenceAvatar } from './presence.js';
 import { pushNow } from './storage.js';
 
 const AVATAR_KEY = 'profileAvatar';
-const SIZE = 400; // compressed canvas size
+// Compressed canvas size — kept close to the largest on-screen display size
+// (.profile-avatar, 121px) rather than an arbitrary large value: this photo
+// is embedded as base64 directly in the synced backup row (no separate
+// storage/CDN), so every unrelated todo/config change re-uploads AND
+// re-broadcasts it in full via Supabase Realtime. 240px is still crisp at
+// ~2x pixel density and meaningfully smaller than the previous 400px.
+const SIZE = 240;
 
 export const FILTERS = [
   { id: 'natural', label: 'Naturel',  css: '',                            canvas: false },
@@ -373,7 +379,7 @@ function _applyCrop(base64) {
       const srcX    = Math.max(0, Math.min(imgW - srcSize, cx - srcSize / 2));
       const srcY    = Math.max(0, Math.min(imgH - srcSize, cy - srcSize / 2));
       ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
     };
     img.src = base64;
   });
@@ -390,7 +396,7 @@ function _compressImage(file, size) {
       const dim = Math.min(img.width, img.height);
       ctx.drawImage(img, (img.width-dim)/2, (img.height-dim)/2, dim, dim, 0, 0, size, size);
       URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL('image/jpeg', 0.92));
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
     };
     img.src = url;
   });
@@ -405,7 +411,7 @@ function _applyCartoonToBase64(base64) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
       _applyCartoon(ctx, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
     };
     img.src = base64;
   });

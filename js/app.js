@@ -13,7 +13,8 @@ import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
   downloadICalFile, getICalBlobURL,
-  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushNow
+  loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushNow,
+  scheduleSupabasePush
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -338,7 +339,7 @@ class TodoApp {
   // and the local config timestamp prevents Supabase from overwriting it on reload.
   _saveConfigChange() {
     localStorage.setItem('_localConfigTime', Date.now().toString());
-    pushToSupabase(getFullBackup(state.todos)).catch(() => {});
+    scheduleSupabasePush(); // debounced — avoid a full-row push per click (see storage.js)
     saveBackupToServer(getFullBackup(state.todos));
   }
 
@@ -5413,7 +5414,11 @@ class TodoApp {
     const input = document.getElementById('profileDisplayName');
     const name  = input?.value?.trim();
     if (!name) return;
-    await updateUserProfile(name);
+    try {
+      await updateUserProfile(name);
+    } catch {
+      this._showToast('Nom enregistré localement — connexion indisponible pour synchroniser');
+    }
     updatePresenceName(name);
     this._updateUserBtn();
     const msg = document.getElementById('profileSaveMsg');
@@ -6867,7 +6872,7 @@ class TodoApp {
   // ── Onboarding step 2 actions ──
   async saveGuestName() {
     const name = document.getElementById('guestNameInput')?.value.trim();
-    if (name) { await updateUserProfile(name); updatePresenceName(name); }
+    if (name) { try { await updateUserProfile(name); } catch {} updatePresenceName(name); }
     localStorage.setItem('guestNameSkipped', '1');
     this._closeGuestNamePrompt();
     this._updateUserBtn();
@@ -6880,7 +6885,7 @@ class TodoApp {
 
   async openAvatarFromPrompt() {
     const name = document.getElementById('guestNameInput')?.value.trim();
-    if (name) { await updateUserProfile(name); updatePresenceName(name); }
+    if (name) { try { await updateUserProfile(name); } catch {} updatePresenceName(name); }
     localStorage.setItem('guestNameSkipped', '1');
     this._closeGuestNamePrompt();
     this._updateUserBtn();

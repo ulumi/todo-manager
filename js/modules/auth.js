@@ -11,12 +11,22 @@ let _onUserChange = null; // callback(user)
 // ── Normalise Supabase user → app-level user object ──────
 // Provides a consistent shape with the fields the rest of the
 // app relies on (uid, email, displayName, isAnonymous).
+//
+// displayName has no source of truth other than Supabase's user_metadata —
+// it's cached locally (keyed by uid) so a degraded/failed Supabase round-trip
+// (offline, quota, token refresh hiccup) doesn't make it look "lost" on the
+// next refresh: we fall back to the last known-good value instead of an
+// empty string.
 function _wrap(supaUser) {
   if (!supaUser) return null;
+  const uid = supaUser.id;
+  let displayName = supaUser.user_metadata?.display_name || supaUser.user_metadata?.full_name || '';
+  if (displayName) localStorage.setItem(`cachedDisplayName_${uid}`, displayName);
+  else displayName = localStorage.getItem(`cachedDisplayName_${uid}`) || '';
   return {
-    uid:          supaUser.id,
+    uid,
     email:        supaUser.email,
-    displayName:  supaUser.user_metadata?.display_name || supaUser.user_metadata?.full_name || '',
+    displayName,
     isAnonymous:  supaUser.is_anonymous ?? (!supaUser.email),
     providerData: supaUser.app_metadata?.providers?.map(p => ({ providerId: p })) || [],
     // Keep the raw Supabase user accessible if needed
@@ -115,12 +125,15 @@ export async function signInWithFacebook() {
 // ── Update profile ────────────────────────────────────────
 export async function updateUserProfile(displayName) {
   if (!_currentUser) return;
+  // Cache + update in-memory user BEFORE the network call — this session
+  // (and the next refresh, via _wrap()'s cache fallback above) shows the
+  // right name even if the Supabase write below fails or times out.
+  localStorage.setItem(`cachedDisplayName_${_currentUser.uid}`, displayName);
+  _currentUser.displayName = displayName;
   const { error } = await supabase.auth.updateUser({
     data: { display_name: displayName },
   });
   if (error) throw error;
-  // Update local cache immediately
-  if (_currentUser) _currentUser.displayName = displayName;
 }
 
 // ── Sign out ──────────────────────────────────────────────
