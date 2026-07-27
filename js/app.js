@@ -910,14 +910,25 @@ class TodoApp {
   // corrige qu'au rechargement, ceci réagit sans reload quand l'onglet est
   // resté ouvert (ordinateur en veille, changement d'appli) et qu'on y
   // revient après minuit : visibilitychange + focus fenêtre, plus un filet
-  // de secours périodique (les deux événements ne sont pas garantis au
-  // réveil d'un ordinateur endormi selon navigateur/OS).
+  // de secours périodique (aucun des deux événements n'est garanti au
+  // réveil d'un ordinateur endormi si l'onglet était déjà celui au premier
+  // plan avant la veille — rien ne « change » de son point de vue, donc pas
+  // de transition à détecter).
+  //
+  // BUG corrigé : le filet de secours tournait sans condition de visibilité
+  // — un onglet resté actif en arrière-plan (écran verrouillé/éteint mais
+  // pas de vraie veille système) consommait le changement de jour tout
+  // seul entre minuit et le réveil de l'utilisateur (le toast s'affichait
+  // ET se refermait tout seul, personne ne le voyait). check() doit donc
+  // vérifier explicitement que la page est visible AVANT de faire quoi que
+  // ce soit — y compris avant de mettre à jour lastSeenDay, sinon le signal
+  // est perdu silencieusement sans jamais avoir été montré.
   _initNewDayWatch() {
     if (!localStorage.getItem('lastSeenDay')) localStorage.setItem('lastSeenDay', DS(today()));
-    const check = () => this._maybeShowNewDayToast();
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    const check = () => { if (document.visibilityState === 'visible') this._maybeShowNewDayToast(); };
+    document.addEventListener('visibilitychange', check);
     window.addEventListener('focus', check);
-    setInterval(check, 5 * 60 * 1000);
+    setInterval(check, 60 * 1000);
   }
 
   _maybeShowNewDayToast() {
