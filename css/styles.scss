@@ -11060,6 +11060,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-item {
+  position:         relative; // ancre .inbox-item-actions en overlay, hors du flux flex
   display:          flex;
   align-items:      center;
   gap:              10px;
@@ -11074,7 +11075,7 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-color: var(--primary);
     box-shadow:   0 2px 8px rgba(0,0,0,.06);
 
-    .inbox-item-actions { max-width: 160px; opacity: 1; }
+    .inbox-item-actions { opacity: 1; pointer-events: auto; }
   }
 
   &.done {
@@ -11109,22 +11110,29 @@ body:has(.bottom-panel:not(.hidden))::before {
   min-width: 0;
 }
 
-// Invisible tant que non survolée → ne doit jamais réserver son espace
-// (sinon en colonnes multiples le titre n'a presque plus de place et
-// retombe en retour à la ligne lettre par lettre). max-width:0 fait office
-// de wrapper replié ; délai « hover intent » 500ms dans la transition de
-// base (jamais écrasé dans :hover) pour ne pas faire clignoter chaque
-// carte au passage rapide de la souris dans une grille.
+// Invisible tant que non survolée → ne doit jamais réserver son espace NI
+// pousser le titre (un simple max-width qui grossit dans le flux flex au
+// survol re-squeeze .inbox-item-body exactement comme l'ancien opacity:0 —
+// juste déclenché par le survol au lieu d'être permanent). Sorti du flux
+// (position:absolute) : le titre garde toujours sa largeur complète, quel
+// que soit le nombre de colonnes ou l'état de survol. Petit fond + ombre
+// pour rester lisible par-dessus le texte qu'il peut recouvrir. Délai
+// « hover intent » 500ms dans la transition de base (jamais écrasé dans
+// :hover) pour ne pas clignoter au passage rapide de la souris.
 .inbox-item-actions {
-  display:     flex;
-  align-items: center;
-  gap:         4px;
-  max-width:   0;
-  overflow:    hidden;
-  opacity:     0;
-  flex-shrink: 0;
-  transition:  max-width .25s cubic-bezier(.25,.46,.45,.94) .5s,
-               opacity   .25s cubic-bezier(.25,.46,.45,.94) .5s;
+  position:      absolute;
+  top:           8px;
+  right:         8px;
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       3px;
+  border-radius: 8px;
+  background:    var(--surface);
+  box-shadow:    0 1px 6px rgba(0,0,0,.12);
+  opacity:       0;
+  pointer-events: none;
+  transition:    opacity .25s cubic-bezier(.25,.46,.45,.94) .5s;
 }
 
 .inbox-assign-today {

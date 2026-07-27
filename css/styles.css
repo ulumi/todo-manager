@@ -11954,6 +11954,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -11969,8 +11970,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 .inbox-item:hover .inbox-item-actions {
-  max-width: 160px;
   opacity: 1;
+  pointer-events: auto;
 }
 .inbox-item.done {
   opacity: 0.55;
@@ -12009,14 +12010,19 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .inbox-item-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   gap: 4px;
-  max-width: 0;
-  overflow: hidden;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   opacity: 0;
-  flex-shrink: 0;
-  transition: max-width 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .inbox-assign-today {
