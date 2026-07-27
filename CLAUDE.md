@@ -175,6 +175,17 @@ Unlike everything else above, the display name/"prénom" isn't in the `user_data
 ### Avatar photo size (`avatarEditor.js`)
 Photos are stored as base64 JPEG **inline in the synced `user_data` row** (`SIZE` canvas constant, `toDataURL('image/jpeg', quality)`) — no separate Storage bucket/CDN. Since the whole row re-transfers on every push/broadcast (see Sync flow above), this photo is the single biggest per-push payload contributor for any account with a custom avatar. Kept close to the largest on-screen display size (`.profile-avatar`, 121px) rather than an arbitrary large value — currently 240px @ quality 0.82, still crisp at ~2x pixel density.
 
+### Resilience when Supabase is unreachable — load-bearing design property, not incidental
+`init()` (`app.js`) renders the app and loads todos from `localStorage` (`loadTodos()`) **synchronously, before `_initSupabase()` is even called** (it's the last statement in `init()`, invoked with no `await`/`.then()`) — core CRUD (view/add/edit/complete tasks, all views) has **no hard dependency on Supabase connectivity**, confirmed by design, not by accident. Keep it that way: never make rendering or `loadTodos()` wait on an auth/network promise.
+
+Everything inside `_initSupabase()` and its downstream helpers (`loadFromSupabase`, `pushToSupabase`, `subscribeToSupabase`, iCal token, GCal push/pull, presence heartbeat/messages) is individually try/catch-guarded and safely no-ops without a session — **except `signInGuest()`**, which throws on failure (`auth.js`) and is called from two places that both now guard it:
+- `_initSupabase()` step 2 (`app.js`) — wrapped in try/catch, so a failed guest sign-in (e.g. Supabase outage) no longer aborts every step after it (realtime subscription, `onUserChange` listener registration, presence, leave-prompt setup) for the rest of the session.
+- `signOut()` (`auth.js`) — the automatic guest re-login after sign-out is wrapped in try/catch, so a failure there no longer hangs `authSignOut()`/`profileDeleteData()`/`leaveDeleteData()` (`app.js`) mid-cleanup (the data-deletion ones are the worst case: localStorage gets wiped *before* the guarded call, so an unguarded throw there used to leave stale UI on screen with no `location.reload()`).
+
+`openUserArea()` (`app.js`, the "Mon compte" click handler) checks `isGuest() || !getCurrentUser()` — not just `isGuest()` — before routing to the login modal vs. the Profile view. `isGuest()` (`_currentUser?.isAnonymous ?? false`) returns `false` both for a real logged-in user *and* for "auth never resolved at all" (`_currentUser === null`), so the plain `isGuest()` check used to route a fully-unauthenticated session (rare outside of a Supabase outage, but real) to the Profile view — a dead end, since `openAuthModal()` was the only reachable path to the login form. `openAuthModal()` itself already handles a null user correctly (falls through to showing the login/register form) — it just needed to be reachable.
+
+`updateUserProfile()` (`auth.js`) throws instead of silently returning when there's no current user, so its callers' success-path UI (`saveDisplayName()`'s "✓ Sauvegardé" message) can't fire for a save that never happened.
+
 ### API auth (server-side)
 - `api/_supabase.js` — shared Supabase **service role** client + `verifyToken()` + `verifyAdmin()`
 - Admin endpoints require `Authorization: Bearer <supabase-access-token>` + UID in `ADMIN_UIDS` env var

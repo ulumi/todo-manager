@@ -124,7 +124,10 @@ export async function signInWithFacebook() {
 
 // ── Update profile ────────────────────────────────────────
 export async function updateUserProfile(displayName) {
-  if (!_currentUser) return;
+  // Throw rather than silently no-op: callers show a success message on the
+  // happy path (e.g. saveDisplayName()'s "✓ Sauvegardé") — a silent return
+  // here would make that message lie (nothing was saved anywhere).
+  if (!_currentUser) throw new Error('updateUserProfile: no current user');
   // Cache + update in-memory user BEFORE the network call — this session
   // (and the next refresh, via _wrap()'s cache fallback above) shows the
   // right name even if the Supabase write below fails or times out.
@@ -139,6 +142,10 @@ export async function updateUserProfile(displayName) {
 // ── Sign out ──────────────────────────────────────────────
 export async function signOut() {
   await supabase.auth.signOut();
-  // Re-sign in as guest automatically so the app is never unauthenticated
-  await signInGuest();
+  // Re-sign in as guest automatically so the app is never unauthenticated —
+  // best-effort: if this fails (offline, Supabase outage), signOut() still
+  // resolves so callers (authSignOut/profileDeleteData/leaveDeleteData in
+  // app.js) can finish their own cleanup (close modal, reload page) instead
+  // of hanging on an unhandled rejection.
+  try { await signInGuest(); } catch (err) { console.warn('[auth] guest re-login after signOut failed:', err.message); }
 }

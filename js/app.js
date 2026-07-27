@@ -6471,20 +6471,30 @@ class TodoApp {
     // 1. Wait for auth to restore the previous session (or get null)
     const user = await initAuth();
 
-    // 2. No session → sign in as guest automatically, then prompt for name
+    // 2. No session → sign in as guest automatically, then prompt for name.
+    // Guarded: signInGuest() throws on failure (e.g. Supabase outage) —
+    // unguarded, that becomes an unhandled rejection that aborts every step
+    // below (realtime subscription, onUserChange listener, presence,
+    // leave-prompt setup) for the rest of the session. Those steps are each
+    // individually safe to run without a user (they no-op internally), so
+    // just log and continue instead of leaving the app half-initialized.
     if (!user) {
-      const guest = await signInGuest();
-      // Defaults for new guests: yellow accent + French
-      if (guest?.isAnonymous && !localStorage.getItem('primaryColor')) {
-        localStorage.setItem('primaryColor', '#f59e0b');
-        this._applyPrimaryColor('#f59e0b');
-      }
-      if (guest?.isAnonymous && !localStorage.getItem('lang')) {
-        state.setLang('fr');
-        this.applyLang();
-      }
-      if (guest?.isAnonymous && !guest.displayName && !localStorage.getItem('guestNameSkipped')) {
-        await this._promptGuestName();
+      try {
+        const guest = await signInGuest();
+        // Defaults for new guests: yellow accent + French
+        if (guest?.isAnonymous && !localStorage.getItem('primaryColor')) {
+          localStorage.setItem('primaryColor', '#f59e0b');
+          this._applyPrimaryColor('#f59e0b');
+        }
+        if (guest?.isAnonymous && !localStorage.getItem('lang')) {
+          state.setLang('fr');
+          this.applyLang();
+        }
+        if (guest?.isAnonymous && !guest.displayName && !localStorage.getItem('guestNameSkipped')) {
+          await this._promptGuestName();
+        }
+      } catch (err) {
+        console.warn('[auth] signInGuest failed — continuing without a session:', err.message);
       }
     }
 
@@ -6821,8 +6831,13 @@ class TodoApp {
       window.location.href = target;
       return;
     }
-    if (isGuest()) this.openAuthModal();
-    else           this.setView('profile');
+    // !getCurrentUser() covers the case where auth never resolved at all
+    // (e.g. Supabase outage) — isGuest() alone returns false there (same as
+    // a real logged-in user, since `_currentUser?.isAnonymous ?? false` is
+    // false for null too), which used to route to the Profile view with no
+    // way back to the login modal for the rest of the session.
+    if (isGuest() || !getCurrentUser()) this.openAuthModal();
+    else                                this.setView('profile');
   }
 
   _leavingAttempted = null;
