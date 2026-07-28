@@ -1,13 +1,11 @@
 // Vercel Cron — GET /api/cron-cleanup-guests
 // Runs daily at 3 h UTC. Cleans up:
 //   1. Anonymous accounts inactive for > 48 h
-//   2. Disabled (banned) accounts older than 7 days
-//   3. Orphan presence/messages for deleted users
+//   2. Orphan presence/messages for deleted users
 
 import { supabase, ADMIN_UIDS } from './_supabase.js';
 
 const FORTY_EIGHT_H = 48 * 60 * 60 * 1000;
-const SEVEN_DAYS    =  7 * 24 * 60 * 60 * 1000;
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') { res.status(405).end(); return; }
@@ -26,7 +24,13 @@ export default async function handler(req, res) {
 
     const staleGuests = users.filter(u => {
       if (ADMIN_UIDS.includes(u.id)) return false;
-      if (!u.is_anonymous && u.email) return false; // not anonymous
+      // Positive proof required: only ever delete accounts Supabase itself
+      // marked anonymous. The previous check ("not anonymous AND has an
+      // email" ⇒ protected) failed open for any real account whose email
+      // field is empty for any reason (OAuth account Supabase didn't
+      // populate, phone auth, migration edge case) — those fell through
+      // to the same 48h-inactivity deletion as actual stale guests.
+      if (u.is_anonymous !== true) return false;
       const lastSignIn = new Date(u.last_sign_in_at || u.created_at).getTime();
       return lastSignIn < now - FORTY_EIGHT_H;
     });
@@ -58,24 +62,14 @@ export default async function handler(req, res) {
       await supabase.from('admin_messages').delete().in('user_id', deletedIds);
     }
 
-    // ── 2. Disabled accounts older than 7 days ───────────
-    const disabledUsers = users.filter(u =>
-      u.banned_until != null &&
-      new Date(u.last_sign_in_at || u.created_at).getTime() < now - SEVEN_DAYS
-    );
+    // NOTE: this used to also auto-delete any banned account inactive for
+    // 7+ days. Removed: admin-user-action.js's "disable" sets a ~100-year
+    // ban as a reversible pause, distinct from its own explicit "delete"
+    // action — silently converting a disable into a permanent deletion
+    // after 7 days undermined that distinction. An admin who wants a
+    // banned account gone should use "delete" directly.
 
-    const disabledIds = [];
-    for (const u of disabledUsers) {
-      await supabase.auth.admin.deleteUser(u.id).catch(() => {});
-      disabledIds.push(u.id);
-    }
-
-    if (disabledIds.length) {
-      await supabase.from('presence').delete().in('user_id', disabledIds);
-      await supabase.from('admin_messages').delete().in('user_id', disabledIds);
-    }
-
-    const summary = { guests: toDelete.length, disabled: disabledUsers.length };
+    const summary = { guests: toDelete.length };
     console.log('[cron-cleanup-guests]', summary);
     res.status(200).json({ ok: true, ...summary });
   } catch (e) {

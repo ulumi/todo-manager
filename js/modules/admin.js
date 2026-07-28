@@ -4,6 +4,7 @@
 
 import * as state from './state.js';
 import { saveTodos, pushNow } from './storage.js';
+import { safeParseJSON } from './utils.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
@@ -369,7 +370,7 @@ export function openAdminModal() {
 export function renderAdminICal() {
   const tz   = document.getElementById('adminIcalTimezone');
   const hour = document.getElementById('adminIcalHour');
-  const filters = JSON.parse(localStorage.getItem('icalFilters') || '{}');
+  const filters = safeParseJSON(localStorage.getItem('icalFilters'), {});
 
   if (tz)   tz.value   = localStorage.getItem('timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (hour) hour.value = localStorage.getItem('icalHour') || '05:00';

@@ -81,7 +81,14 @@ export function setupEventListeners(app) {
     if (visible('leavePromptOverlay'))   { app.closeLeavePrompt();   return; }
     if (visible('avatarEditorOverlay'))  { app.closeAvatarEditor();  return; }
     if (visible('guestNameOverlay'))     { app.skipGuestName();      return; }
+    if (document.getElementById('debugDrawer')?.classList.contains('open')) { app.toggleDebugPanel(); return; }
     if (document.body.classList.contains('view-focus')) { app.minimizeFocus(); return; }
+  });
+
+  // Debug panel — click outside closes it
+  document.addEventListener('click', e => {
+    const drawer = document.getElementById('debugDrawer');
+    if (drawer?.classList.contains('open') && !e.target.closest('#debugPanel')) app.toggleDebugPanel();
   });
 
   // Keyboard shortcuts

@@ -2,6 +2,21 @@
 //  UTILITIES
 // ════════════════════════════════════════════════════════
 
+// A single corrupted localStorage value (crash mid-write, manual tampering)
+// must never throw during boot — that aborts the whole app.js module before
+// render()/setupEventListeners() ever run, leaving a blank, dead page with
+// no visible error. Every JSON.parse(localStorage...) at startup should go
+// through this instead of a bare try/catch.
+export function safeParseJSON(raw, fallback) {
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed === null || parsed === undefined ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+
 export const DS = d => `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
 export const p2 = n => String(n).padStart(2,'0');
 

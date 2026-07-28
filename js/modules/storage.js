@@ -2,12 +2,12 @@
 //  STORAGE (localStorage + optional local API server)
 // ════════════════════════════════════════════════════════
 
-import { DS, today } from './utils.js';
+import { DS, today, safeParseJSON } from './utils.js';
 import { getIdToken } from './auth.js';
 import { pushToSupabase } from './sync.js';
 
 const API = 'http://localhost:3333';
-const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+export const IS_LOCAL = typeof window !== 'undefined' && window.location.hostname === 'localhost';
 
 // Quick health-check: only talk to the local API if it's actually running.
 // Cached for the page lifetime so we probe at most once.
@@ -72,12 +72,28 @@ export async function saveBackupToServer(backup) {
 const PUSH_DEBOUNCE_MS = 1200;
 let _pushTimer = null;
 
+// Soft warning, once per session — the backup grows with total accumulated
+// history (unbounded arrays like completedDates/cancelledDates), and every
+// push resends it in full regardless of how small the actual edit was.
+// 2MB is well under the ~5-10MB localStorage cap, meant as an early signal
+// long before that becomes a real problem, not a hard limit.
+const SIZE_WARN_BYTES = 2 * 1024 * 1024;
+let _sizeWarned = false;
+
 export function scheduleSupabasePush() {
   localStorage.setItem('_pendingSync', '1');
   clearTimeout(_pushTimer);
   _pushTimer = setTimeout(() => {
     _pushTimer = null;
-    pushToSupabase(getFullBackup(loadTodos()))
+    const backup = getFullBackup(loadTodos());
+    if (!_sizeWarned) {
+      const size = JSON.stringify(backup).length;
+      if (size > SIZE_WARN_BYTES) {
+        _sizeWarned = true;
+        console.warn(`[storage] backup is ${(size / 1024 / 1024).toFixed(1)}MB — every push resends this in full; consider pruning old history`);
+      }
+    }
+    pushToSupabase(backup)
       .then(() => localStorage.removeItem('_pendingSync'))
       .catch(() => {});
   }, PUSH_DEBOUNCE_MS);
@@ -85,18 +101,42 @@ export function scheduleSupabasePush() {
 
 export function saveTodos(todos) {
   const json = JSON.stringify(todos);
-  localStorage.setItem('todos', json);
-  localStorage.setItem('_localWriteTime', Date.now().toString());
-  // Safety backup: last known good state, never touched by sync
-  if (todos.length > 0) {
-    localStorage.setItem('_todosSafetyBackup', JSON.stringify({ todos, ts: Date.now() }));
+  try {
+    localStorage.setItem('todos', json);
+    localStorage.setItem('_localWriteTime', Date.now().toString());
+    // Safety backup: last known good state, never touched by sync
+    if (todos.length > 0) {
+      localStorage.setItem('_todosSafetyBackup', JSON.stringify({ todos, ts: Date.now() }));
+    }
+  } catch (err) {
+    // QuotaExceededError (localStorage full, ~5-10MB/origin) or Safari
+    // private browsing (throws on any write). The in-memory state.todos
+    // mutation already happened before saveTodos() was called, so it isn't
+    // lost — but every subsequent action will fail the same way until
+    // something frees up space, silently, unless we surface it. storage.js
+    // has no UI of its own (and importing app.js here would be circular),
+    // so dispatch an event app.js listens for once at boot.
+    console.error('[storage] saveTodos: localStorage write failed —', err.message);
+    window.dispatchEvent(new CustomEvent('storage-write-failed', { detail: { error: err } }));
   }
+  // Still worth attempting even if the local write above failed — the
+  // server/Supabase writes are independent storage, not gated on it.
   serverPost('/todos', todos);
   scheduleSupabasePush();
 }
 
 export function loadTodos() {
-  return JSON.parse(localStorage.getItem('todos') || '[]');
+  const primary = safeParseJSON(localStorage.getItem('todos'), null);
+  if (Array.isArray(primary)) return primary;
+  // "todos" missing or corrupted (crash mid-write, tampering) — recover
+  // from the safety backup written on every saveTodos() call below instead
+  // of silently handing the user an empty list.
+  const backup = safeParseJSON(localStorage.getItem('_todosSafetyBackup'), null);
+  if (backup && Array.isArray(backup.todos) && backup.todos.length > 0) {
+    console.warn('[storage] "todos" was missing/corrupted — recovered from _todosSafetyBackup written', new Date(backup.ts).toISOString());
+    return backup.todos;
+  }
+  return [];
 }
 
 // Sync across tabs: fires when another tab writes to localStorage
@@ -109,13 +149,12 @@ export function initCrossTabSync(onUpdate) {
 }
 
 export function getAppConfig() {
-  const icalFilters = localStorage.getItem('icalFilters');
   return {
     zoom: localStorage.getItem('zoom'),
     lang: localStorage.getItem('lang'),
     timezone: localStorage.getItem('timezone'),
     icalHour: localStorage.getItem('icalHour'),
-    icalFilters: icalFilters ? JSON.parse(icalFilters) : null,
+    icalFilters: safeParseJSON(localStorage.getItem('icalFilters'), null),
     bgPalette: localStorage.getItem('bgPalette'),
     bgColor:   localStorage.getItem('bgColor'),
     autoPostpone: localStorage.getItem('autoPostpone'),
@@ -127,10 +166,10 @@ export function getAppConfig() {
 }
 
 export function getFullBackup(todos) {
-  const raw = key => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; };
+  const raw = key => safeParseJSON(localStorage.getItem(key), null);
   const backup = {
     calendar: todos,
-    _deletions: JSON.parse(localStorage.getItem('_deletions') || '{}'),
+    _deletions: safeParseJSON(localStorage.getItem('_deletions'), {}),
     config: getAppConfig(),
     categories: raw('categories'),
     templates: raw('dayTemplates'),

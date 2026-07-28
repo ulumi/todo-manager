@@ -7,14 +7,14 @@ import { initLowPolyBg, setPalette as _setBgPalette, setBgColor as _setBgColor, 
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
   daysInMonth, firstDayOfMonth, esc,
-  toggleSubtaskCollapsed, expandSubtask
+  toggleSubtaskCollapsed, expandSubtask, safeParseJSON
 } from './modules/utils.js';
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
   exportAllData, exportCalendarOnly, exportConfigOnly, importData,
   downloadICalFile, getICalBlobURL,
   loadFromServer, saveBackupToServer, getFullBackup, initCrossTabSync, pushNow,
-  scheduleSupabasePush
+  scheduleSupabasePush, IS_LOCAL
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
@@ -80,6 +80,7 @@ import {
   signInWithGoogle, signInWithFacebook, getIdToken,
 } from './modules/auth.js';
 import { loadFromSupabase, pushToSupabase, subscribeToSupabase, setupOfflineIndicator, deleteUserData, SESSION_ID, getOrCreateICalToken, disconnectGCal } from './modules/sync.js';
+import { getDebugStatus, renderDebugDrawerHTML } from './modules/debugPanel.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
   openAvatarEditor, closeAvatarEditor, getAvatarHTML,
@@ -92,17 +93,40 @@ import { getOverduePunctual, renderReviewBody } from './modules/review.js';
 // Initialize state
 state.initializeState();
 
+// _deletions ({id: deletedAtTimestamp}) exists purely so a device that was
+// offline when a delete happened doesn't resurrect the item on reconnect
+// (_applyBackup skips any id whose tombstone is newer than its last known
+// edit). Left unbounded it grows forever — pruned here, but deliberately
+// with a generous horizon: a tombstone pruned too early is exactly the
+// resurrection this map exists to prevent, for any device that stayed
+// offline longer than the horizon.
+const DELETION_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
+function _pruneDeletions(dels) {
+  const cutoff = Date.now() - DELETION_HORIZON_MS;
+  const pruned = {};
+  for (const [id, ts] of Object.entries(dels)) {
+    if (ts >= cutoff) pruned[id] = ts;
+  }
+  return pruned;
+}
+
 // Application class
 class TodoApp {
   constructor() {
     window.app = this; // assign early so renderDayView can read recurringOrder/dayOrder on first render
+    // Registered before init() so it's live even for saveTodos() calls that
+    // happen during boot migrations (storage.js dispatches this when a
+    // localStorage write throws — full quota, Safari private browsing).
+    window.addEventListener('storage-write-failed', () => {
+      this._showToast('⚠ Stockage local plein — ce changement n’a pas pu être sauvegardé sur cet appareil');
+    });
     this._sugg = [];
     this.zoomIdx = parseInt(localStorage.getItem('zoom') ?? '1');
     if (isNaN(this.zoomIdx) || this.zoomIdx < 0 || this.zoomIdx > 2) this.zoomIdx = 1;
-    this.dayOrder = JSON.parse(localStorage.getItem('dayOrder') || '{}');
-    this.daySpacer = JSON.parse(localStorage.getItem('daySpacer') || '{}');
-    this.recurringOrder = JSON.parse(localStorage.getItem('recurringOrder') || '{}');
-    this.punctualPeriodOrder = JSON.parse(localStorage.getItem('punctualPeriodOrder') || '{}');
+    this.dayOrder = safeParseJSON(localStorage.getItem('dayOrder'), {});
+    this.daySpacer = safeParseJSON(localStorage.getItem('daySpacer'), {});
+    this.recurringOrder = safeParseJSON(localStorage.getItem('recurringOrder'), {});
+    this.punctualPeriodOrder = safeParseJSON(localStorage.getItem('punctualPeriodOrder'), {});
     this._clickTimer = null;
     this._quickAddInDayMode = false;
     this.init();
@@ -214,9 +238,11 @@ class TodoApp {
     window.addEventListener('popstate', (e) => this._popHistory(e));
     const vl = document.getElementById('versionLabel');
     if (vl) vl.textContent = 'v' + VERSION;
+    this._initDebugPanel();
     setupEventListeners(this);
     initMultiSelect(this);
     this._initNewDayWatch();
+    this._initVersionWatch();
 
     // Register celebrate debug panel (independent of server sync)
     onCelebrateDebug((data) => { this._showCelebrateDebugPanel(data); });
@@ -239,9 +265,16 @@ class TodoApp {
     setupOfflineIndicator();
     initCrossTabSync((key, raw) => {
       switch (key) {
-        case 'todos':
-          try { state.setTodos(JSON.parse(raw)); this.render(); } catch (_) {}
+        case 'todos': {
+          // Blind overwrite (state.setTodos(JSON.parse(raw))) used to let
+          // whichever tab wrote last simply clobber the other tab's
+          // in-memory edit if both fired within the same instant — route
+          // through the same per-item, timestamp-based merge _applyBackup()
+          // already uses for cross-device sync instead of a flat replace.
+          const parsed = safeParseJSON(raw, null);
+          if (Array.isArray(parsed)) this._applyBackup({ calendar: parsed }, { silent: false });
           break;
+        }
         case 'theme':
           document.documentElement.setAttribute('data-theme', raw);
           this.updateThemeBtn();
@@ -498,7 +531,7 @@ class TodoApp {
 
   _saveSearchHistory(query) {
     if (!query) return;
-    let h = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    let h = safeParseJSON(localStorage.getItem('searchHistory'), []);
     h = [query, ...h.filter(x => x !== query)].slice(0, 8);
     localStorage.setItem('searchHistory', JSON.stringify(h));
   }
@@ -931,6 +964,42 @@ class TodoApp {
     document.addEventListener('visibilitychange', check);
     window.addEventListener('focus', check);
     setInterval(check, 60 * 1000);
+  }
+
+  // Le service worker (network-first, sw.js) garantit déjà qu'un rechargement
+  // obtient le code à jour — mais un onglet resté ouvert pendant un déploiement
+  // continue de tourner sur ses modules JS déjà évalués en mémoire, qu'aucun
+  // mécanisme de cache ne peut rafraîchir sans un vrai rechargement. Même
+  // schéma que _initNewDayWatch() (visibilitychange + focus + filet 30 min).
+  _initVersionWatch() {
+    const check = () => { if (document.visibilityState === 'visible') this._checkForNewVersion(); };
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    setInterval(check, 30 * 60 * 1000);
+  }
+
+  async _checkForNewVersion() {
+    if (this._updateToastShown) return;
+    try {
+      const res = await fetch('/js/modules/version.js', { cache: 'no-store' });
+      const text = await res.text();
+      const m = text.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (m && m[1] !== VERSION) this._showUpdateToast(m[1]);
+    } catch {}
+  }
+
+  // Contrairement à .undo-toast (auto-fade), reste affiché tant que
+  // l'utilisateur n'a pas rechargé — pas urgent, pas d'auto-dismiss.
+  _showUpdateToast(newVersion) {
+    this._updateToastShown = true;
+    document.getElementById('updateToast')?.remove();
+    const toast = document.createElement('div');
+    toast.id = 'updateToast';
+    toast.className = 'update-toast';
+    const label = newVersion ? `Nouvelle version disponible (v${esc(newVersion)})` : 'Nouvelle version disponible';
+    toast.innerHTML = `<span>${label}</span><button class="update-toast-btn" onclick="location.reload()">Recharger</button>`;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('update-toast--visible'));
   }
 
   _maybeShowNewDayToast() {
@@ -1628,9 +1697,9 @@ class TodoApp {
   moveModalSubtask(stid, dir) { moveModalSubtask(stid, dir); }
 
   _trackDeletion(id) {
-    const dels = JSON.parse(localStorage.getItem('_deletions') || '{}');
+    const dels = safeParseJSON(localStorage.getItem('_deletions'), {});
     dels[id] = Date.now();
-    localStorage.setItem('_deletions', JSON.stringify(dels));
+    localStorage.setItem('_deletions', JSON.stringify(_pruneDeletions(dels)));
   }
 
   deleteTodo(id, dateStr) {
@@ -1831,6 +1900,32 @@ class TodoApp {
   openEditModal(id, dateStr) {
     openEditModal(id, dateStr, state.todos);
     history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash({ modal: 'edit', id, date: dateStr }));
+  }
+
+  // ── Debug panel (Supabase / localStorage status, near the version label) ──
+  _initDebugPanel() {
+    this._updateDebugPanel();
+    setInterval(() => this._updateDebugPanel(), 3000);
+  }
+
+  _updateDebugPanel() {
+    const { cloudState, localState } = getDebugStatus();
+    const cloud = document.getElementById('debugIconCloud');
+    const local = document.getElementById('debugIconLocal');
+    if (cloud) cloud.setAttribute('class', `debug-icon debug-icon-cloud debug-icon--${cloudState}`);
+    if (local) local.setAttribute('class', `debug-icon debug-icon-local debug-icon--${localState}`);
+    const drawer = document.getElementById('debugDrawer');
+    if (drawer && drawer.classList.contains('open')) drawer.innerHTML = renderDebugDrawerHTML();
+  }
+
+  toggleDebugPanel() {
+    const drawer = document.getElementById('debugDrawer');
+    const trigger = document.getElementById('debugTrigger');
+    if (!drawer) return;
+    const opening = !drawer.classList.contains('open');
+    drawer.classList.toggle('open', opening);
+    if (trigger) trigger.classList.toggle('debug-open', opening);
+    if (opening) drawer.innerHTML = renderDebugDrawerHTML();
   }
 
   _showCelebrateDebugPanel(data) {
@@ -4960,7 +5055,13 @@ class TodoApp {
   _saPrompt    = '';      // persisted prompt between renders
   _saUnchecked = new Set(); // quote texts the user has unchecked
 
+  // /global-quotes only exists on the local dev API server (server.js) —
+  // never ported to api/, so this always silently no-ops in production
+  // today. Guarded explicitly rather than left to fail quietly: the
+  // superadmin UI (_renderSuperadminInner) shows a banner instead of a
+  // false "saved" state when !IS_LOCAL.
   async _loadGlobalQuotes() {
+    if (!IS_LOCAL) return;
     try {
       const token = await getIdToken();
       const res = await fetch('http://localhost:3333/global-quotes', {
@@ -4976,6 +5077,7 @@ class TodoApp {
   async _saveGlobalQuotes(updated) {
     setGlobalQuotes(updated);
     this._saRefresh();
+    if (!IS_LOCAL) { this._showToast('⚠ Citations globales indisponibles en production — non sauvegardé'); return; }
     try {
       const token = await getIdToken();
       await fetch('http://localhost:3333/global-quotes', {
@@ -4988,7 +5090,9 @@ class TodoApp {
   }
 
   _renderSuperadminView() {
-    return `<div class="superadmin-view">${this._renderSuperadminInner()}</div>`;
+    const prodNotice = IS_LOCAL ? '' : `
+      <div class="sa-prod-notice">⚠ Citations globales indisponibles en production — cette section ne fonctionne qu'en local (<code>npm run server</code>). Les modifications ci-dessous ne seront pas sauvegardées.</div>`;
+    return `<div class="superadmin-view">${prodNotice}${this._renderSuperadminInner()}</div>`;
   }
 
   _renderSuperadminInner() {
@@ -5755,7 +5859,7 @@ class TodoApp {
   }
 
   toggleDayTagFilter(tagId) {
-    const excludedTags = JSON.parse(localStorage.getItem('dayTagExcluded') || '[]');
+    const excludedTags = safeParseJSON(localStorage.getItem('dayTagExcluded'), []);
     const idx = excludedTags.indexOf(tagId);
     if (idx >= 0) {
       excludedTags.splice(idx, 1); // re-show
@@ -6595,12 +6699,13 @@ class TodoApp {
     if (backup.calendar) {
       // ── Per-item merge (Option A) ─────────────────────────
       // Merge local deletions with remote deletions
-      const localDels  = JSON.parse(localStorage.getItem('_deletions') || '{}');
+      const localDels  = safeParseJSON(localStorage.getItem('_deletions'), {});
       const remoteDels = backup._deletions || {};
-      const mergedDels = { ...localDels };
+      let mergedDels = { ...localDels };
       for (const [id, ts] of Object.entries(remoteDels)) {
         mergedDels[id] = Math.max(mergedDels[id] || 0, ts);
       }
+      mergedDels = _pruneDeletions(mergedDels);
       localStorage.setItem('_deletions', JSON.stringify(mergedDels));
 
       // Build lookup maps
@@ -7422,8 +7527,29 @@ document.addEventListener('contextmenu', e => {
   _positionCtxMenu(e.clientX + 4, e.clientY);
 });
 
-// Create global app instance
-window.app = new TodoApp();
+// Create global app instance. Last-resort net: every known risky
+// localStorage read at boot now goes through safeParseJSON (never throws),
+// but if something still throws during construction, the alternative is a
+// permanently blank page with no rendered UI, no listeners, and no visible
+// error — offer a way out instead.
+try {
+  window.app = new TodoApp();
+} catch (err) {
+  console.error('[boot] TodoApp() threw during construction:', err);
+  document.body.innerHTML = `
+    <div style="max-width:420px;margin:15vh auto;padding:28px;font-family:-apple-system,sans-serif;text-align:center;">
+      <p style="font-size:15px;line-height:1.5;color:#333;">Une erreur inattendue a empêché le chargement de l'application.</p>
+      <p style="font-size:13px;color:#888;margin:8px 0 20px;">${esc(err?.message || String(err))}</p>
+      <button id="_bootRetry" style="padding:10px 18px;margin:0 6px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;">Réessayer</button>
+      <button id="_bootReset" style="padding:10px 18px;margin:0 6px;border-radius:8px;border:none;background:#c0392b;color:#fff;cursor:pointer;">Réinitialiser les données locales</button>
+    </div>`;
+  document.getElementById('_bootRetry').onclick = () => location.reload();
+  document.getElementById('_bootReset').onclick = () => {
+    if (!confirm('Efface toutes les données stockées sur cet appareil (tâches, préférences). Action irréversible localement — utile seulement si tes données sont aussi sauvegardées ailleurs (Supabase). Continuer ?')) return;
+    localStorage.clear();
+    location.reload();
+  };
+}
 
 // Listen for system theme changes
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {

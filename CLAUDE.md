@@ -54,7 +54,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 |--------|------|
 | `state.js` | Global state variables + setters |
 | `storage.js` | localStorage I/O, Supabase push (`saveTodos()`, `pushNow()`), iCal export, `getFullBackup()` |
-| `sync.js` | Supabase realtime listener, SESSION_ID echo prevention, cross-tab sync |
+| `sync.js` | Supabase realtime listener, SESSION_ID echo prevention, cross-tab sync, `getSupabaseStatus()` (online + last-call-ok, powers `debugPanel.js`) |
 | `supabase.js` | Supabase client init |
 | `auth.js` | Guest (anonymous) / email / Google / OAuth auth via Supabase, upgrade guest→email |
 | `calendar.js` | Recurrence logic, `getTodosForDate()`, `toggleTodo()`, `addTask()`, `isCancelled()`/`cancelTodo()` (toggle annulée/restaurée) |
@@ -72,10 +72,11 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
 | `review.js` | Bilan des « laissés pour compte » : `getOverduePunctual()`, `getFrequentlyPostponed()`, `computeAdherence()` (taux des récurrentes sur N jours écoulés, aujourd'hui exclu), `renderReviewBody()` (corps du modal Bilan), `renderAdherenceRows()` (partagé avec la vue Analyse) ; `computeTimeStats()`/`renderTimeStatsRows()` — moyenne + progression (dernières occurrences vs précédentes, via `durationHistory`) des récurrentes chronométrées en Focus, triées meilleure progression d'abord (partagé avec la vue Analyse) |
 | `presence.js` | Online heartbeat, admin inbox messages, click counter |
 | `avatarEditor.js` | Photo upload + crop + emoji + filters |
-| `utils.js` | Date helpers (`DS`, `parseDS`, `today`, `addDays`), `esc()` |
+| `utils.js` | Date helpers (`DS`, `parseDS`, `today`, `addDays`), `esc()`, `safeParseJSON(raw, fallback)` — every `JSON.parse(localStorage...)` at boot must go through this instead of a bare try/catch (a single corrupted key must never throw and blank the whole app) |
 | `config.js` | Translations EN/FR/ES, `ZOOM_SIZES` |
 | `lowpoly-bg.js` | GSAP animated background, palettes |
 | `version.js` | `VERSION` constant (semver, auto-bumped) |
+| `debugPanel.js` | Panneau de debug ancré au `#versionLabel` (bas de l'écran, `index.html`/`.debug-panel`) : `getDebugStatus()` calcule l'état Supabase (`getSupabaseStatus()` de `sync.js`) et localStorage (nb de tâches, taille Ko, `_pendingSync`) réduits à `cloudState`/`localState` (`'ok'\|'warn'\|'off'`) qui colorent les deux petites icônes SVG trait (`--success`/`--warning`/`--danger`) toujours visibles à côté du numéro de version, tiroir refermé ; `renderDebugDrawerHTML()` construit le détail (Supabase connecté/hors ligne + dernière vérif., compte invité/email, tâches+taille+statut sync, `SESSION_ID`) affiché dans `.debug-drawer` au clic (`app.toggleDebugPanel()`, `app.js`) — fermeture Échap/clic extérieur (`events.js`), icônes ET tiroir ouvert rafraîchis toutes les 3s (`app._initDebugPanel()`/`_updateDebugPanel()`) |
 
 ---
 
@@ -166,8 +167,8 @@ Every persistent write must:
 ### Sync flow
 1. **Client → Supabase:** `saveTodos()` / `_saveConfigChange()` → `scheduleSupabasePush()` (`storage.js`) — **debounced 1.2s**, not immediate: coalesces rapid successive writes (drag reorder, clicking through several toolbar options) into a single full-row upsert. Every push re-sends the **entire row** (todos + config + avatar) and Supabase Realtime rebroadcasts it whole to every connected tab/device — pushing on every keystroke/click is a real **egress** cost (data OUT of Supabase), not just a request-count nuisance; this is what caused a `exceed_egress_quota` 402 (blocking ALL Supabase requests incl. auth) shortly after the Backlog/Inbox columns/sort toolbar shipped (each click called `_saveConfigChange()` → an immediate push, before the debounce existed). Safe to debounce: if the tab closes before the timer fires, `_pendingSync` stays `'1'` and the next load's startup reconciliation (`_applyBackup` path, `app.js`) retries it — no data loss, just delayed sync. `pushNow()` (manual "sync now" / `forcePush()`) stays immediate and cancels any pending debounced timer.
 2. **Supabase → Client:** realtime channel subscription, skip if `_pushedBySession === SESSION_ID`
-3. **Cross-tab:** `initCrossTabSync()` via storage events
-4. **Offline:** Supabase JS SDK handles reconnection; no local IndexedDB cache
+3. **Cross-tab:** `initCrossTabSync()` via storage events — the `'todos'` case routes through `this._applyBackup({ calendar: parsed }, { silent: false })` (same per-item, `updatedAt`-timestamp merge as cross-device Realtime sync), not a blind `state.setTodos(JSON.parse(raw))`. Two tabs editing within the same instant used to let whichever tab's `saveTodos()` landed last in localStorage silently clobber the other's edit; merging instead means both tabs converge to the union (verified: each tab ends up with both edits, no runaway ping-pong since `initCrossTabSync` already no-ops when `e.newValue === e.oldValue`).
+4. **Offline:** Supabase JS SDK handles reconnection; no local IndexedDB cache. `setupOfflineIndicator()` (`sync.js`) checks `navigator.onLine` once at setup, not just on `online`/`offline` transition events — a page loaded while already offline used to show no badge until one full connect/disconnect cycle.
 
 ### Display name — NOT part of `user_data`, lives in Supabase Auth `user_metadata`
 Unlike everything else above, the display name/"prénom" isn't in the `user_data` row — it's read fresh from the live Supabase Auth session on every load (`auth.js` `_wrap()`, `supaUser.user_metadata.display_name`), with **no local source of truth** otherwise. To survive a degraded/failed Supabase round-trip (offline, quota, token-refresh hiccup) without looking "lost" on refresh: `_wrap()` caches a non-empty name to `localStorage` (`cachedDisplayName_<uid>`) and falls back to that cache when Supabase returns empty; `updateUserProfile(name)` (`auth.js`) writes to that same cache **and** updates the in-memory `_currentUser` *before* attempting the Supabase write, so the current session (and next refresh) show the right name even if the network call itself fails. Its three callers (`saveDisplayName()`, `saveGuestName()`, `openAvatarFromPrompt()` in `app.js`) wrap the call in try/catch — a rejection used to abort silently (and, in the onboarding-prompt callers, leave the prompt permanently stuck open since the cleanup lines never ran).
@@ -185,6 +186,23 @@ Everything inside `_initSupabase()` and its downstream helpers (`loadFromSupabas
 `openUserArea()` (`app.js`, the "Mon compte" click handler) checks `isGuest() || !getCurrentUser()` — not just `isGuest()` — before routing to the login modal vs. the Profile view. `isGuest()` (`_currentUser?.isAnonymous ?? false`) returns `false` both for a real logged-in user *and* for "auth never resolved at all" (`_currentUser === null`), so the plain `isGuest()` check used to route a fully-unauthenticated session (rare outside of a Supabase outage, but real) to the Profile view — a dead end, since `openAuthModal()` was the only reachable path to the login form. `openAuthModal()` itself already handles a null user correctly (falls through to showing the login/register form) — it just needed to be reachable.
 
 `updateUserProfile()` (`auth.js`) throws instead of silently returning when there's no current user, so its callers' success-path UI (`saveDisplayName()`'s "✓ Sauvegardé" message) can't fire for a save that never happened.
+
+### Resilience against corrupted/full localStorage
+`safeParseJSON(raw, fallback)` (`utils.js`) — every `JSON.parse(localStorage.getItem(...))` at boot and in hot paths goes through this instead of a bare `JSON.parse(x || '{}')`, so one corrupted value (crash mid-write, manual tampering) can't throw and blank the whole app before `render()`/`setupEventListeners()` ever run.
+
+`saveTodos()` (`storage.js`) writes a parallel `_todosSafetyBackup` (`{ todos, ts }`, untouched by sync) on every save; `loadTodos()` falls back to it if `"todos"` is missing/corrupted, instead of silently handing back an empty list. The `localStorage.setItem()` calls in `saveTodos()` are wrapped in try/catch — a full quota (Safari private browsing throws on any write) no longer aborts the function silently; it dispatches a `storage-write-failed` window event (listened for once in `TodoApp`'s constructor, before `init()`, since boot migrations can also trigger writes) that surfaces a toast. The in-memory `state.todos` mutation already happened before `saveTodos()` is called, so no data is lost — only the local persistence of that one change.
+
+`_pruneDeletions()` (`app.js`, `DELETION_HORIZON_MS` = 365 days) bounds the `_deletions` tombstone map (used to stop an offline device from resurrecting a delete) so it doesn't grow forever — called from `_trackDeletion()` and from the merge path in `_applyBackup()`. `scheduleSupabasePush()` (`storage.js`) also logs a one-time console warning (`SIZE_WARN_BYTES` = 2MB) if the full backup payload gets large, since every push resends it whole (see Sync flow above).
+
+Top-level: `new TodoApp()` (bottom of `app.js`) is wrapped in try/catch — if construction still throws despite the guards above, the alternative is a permanently blank page with no visible error, so it renders a minimal recovery screen instead (Réessayer / Réinitialiser les données locales — the reset path clears `localStorage` and reloads, a destructive action gated behind `confirm()`).
+
+### Detecting a stale tab across deploys (`sw.js`, `app.js`)
+`sw.js` is registered as a classic (non-module) script — it can't `import` `js/modules/version.js`, and browsers only re-check a service worker for updates when **its own bytes** change, not when `app.js`/CSS change. In practice this matters less than it sounds: the fetch handler is network-first for same-origin requests, so the SW's cache is only ever an offline fallback, never actively serving stale content while online — a plain reload already gets fresh code. `CACHE_NAME` (bump manually on structural `LOCAL_ASSETS` changes) exists for the true-offline case, not as a staleness guard.
+
+The real gap — a tab left open across a deploy keeps running its already-evaluated JS modules in memory, which no cache mechanism can refresh — is handled independently in `app.js`: `_initVersionWatch()` (mirrors `_initNewDayWatch()`'s exact pattern: `visibilitychange` + `focus` + a 30 min safety-net interval) calls `_checkForNewVersion()`, which `fetch`es `/js/modules/version.js` with `cache:'no-store'` and regex-matches the `VERSION` string out of the raw text (no import, works from a classic script context) — if it differs from the running `VERSION`, `_showUpdateToast()` shows a persistent (`.update-toast`, no auto-fade, mirrors `.newday-toast`) "Recharger" prompt. `index.html`'s SW registration also listens for `controllerchange` (fires if the SW itself updates mid-session) and calls the same `_showUpdateToast()` with no argument — complementary to the version-poll, not a replacement for it.
+
+### `_loadGlobalQuotes()`/`_saveGlobalQuotes()` (`app.js`) — local dev only
+`/global-quotes` and `/admin/generate-quotes` exist only on the local dev API server (`server.js`), never ported to `api/` — always a no-op in production. Guarded explicitly via the exported `IS_LOCAL` (`storage.js`) rather than left to fail silently: `_loadGlobalQuotes()` returns immediately if `!IS_LOCAL`, `_saveGlobalQuotes()` shows a toast ("indisponible en production") instead of pretending the save worked, and `_renderSuperadminView()` shows a `.sa-prod-notice` banner above the whole tab when `!IS_LOCAL`.
 
 ### API auth (server-side)
 - `api/_supabase.js` — shared Supabase **service role** client + `verifyToken()` + `verifyAdmin()`
@@ -231,6 +249,8 @@ Everything inside `_initSupabase()` and its downstream helpers (`loadFromSupabas
 
 All admin endpoints require Supabase Bearer token + UID in `ADMIN_UIDS` env var. Shared helper: `api/_supabase.js`.
 
+**`cron-cleanup-guests`**: only ever deletes accounts where `is_anonymous === true` (positive proof required) — a prior `!u.is_anonymous && u.email` check protected an account only if it was both provably non-anonymous *and* had an email populated, which failed open for any real account with an empty email field (OAuth accounts Supabase didn't populate, phone auth, migration edge cases); the app's own `auth.js` (`isAnonymous: supaUser.is_anonymous ?? (!supaUser.email)`) already treats "no email" as anonymous elsewhere, confirming that combination happens. Does **not** delete banned accounts anymore — `admin-user-action.js`'s `'disable'` action (`ban_duration: '876000h'`, ~100 years) is meant as a reversible pause, distinct from its own explicit `'delete'` action; the cron silently converting a disable into a permanent deletion after 7 days undermined that distinction. An admin who wants a banned account gone uses `'delete'` directly.
+
 ---
 
 ## Dev workflow
@@ -245,6 +265,8 @@ npm run server    # port 3333
 # Compile SCSS once
 npx sass css/styles.scss css/styles.css --style=expanded
 ```
+
+**`.vercelignore` is load-bearing, not optional.** `vercel --prod` uploads the local working directory as-is — unlike a git-based deploy, being in `.gitignore` does **not** stop a file from being uploaded and served (`outputDirectory: "."` in `vercel.json` serves the whole repo root as static files). This is how a real Firebase Admin service-account credential (`firebase-service-account.json`, gitignored, never committed) ended up publicly downloadable on production alongside `server.js`, `supabase-schema.sql`, and other internal files — nothing told the CLI not to upload them. `.vercelignore` lists every internal/sensitive file explicitly; keep it in sync when adding new local-only scripts, docs, or credentials to the repo root.
 
 ---
 

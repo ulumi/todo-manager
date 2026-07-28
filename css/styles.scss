@@ -8935,6 +8935,50 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight: 700;
 }
 
+// Nouvelle version détectée pendant que l'onglet était ouvert (app._checkForNewVersion)
+// — même langage visuel que .newday-toast, mais pas d'auto-dismiss : reste
+// affiché tant que l'utilisateur n'a pas rechargé, ce n'est jamais urgent.
+.update-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--text);
+  color: var(--bg);
+  padding: 8px 10px 8px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity .2s ease, transform .2s ease;
+
+  &--visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.update-toast-btn {
+  border: none;
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  color: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background .15s;
+
+  &:hover { background: color-mix(in srgb, var(--bg) 38%, transparent); }
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────
 // 24. Priority Selector (Modal)
@@ -9500,35 +9544,124 @@ body:has(.bottom-panel:not(.hidden))::before {
   .category-panel { width: 100vw; }
 }
 
-// ── Version label ──────────────────────────────────────
-#versionLabel {
+// ── Version label / debug panel ────────────────────────
+.debug-panel {
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  display: block;
+  z-index: 350;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.debug-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: fit-content;
   padding: 4px 10px 6px;
+  border: none;
+  background: none;
+  font: inherit;
   font-size: 11px;
   color: var(--text-muted);
   opacity: 0.4;
-  cursor: default;
+  cursor: pointer;
   white-space: nowrap;
   border-radius: 20px;
   transition:
-    transform   0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity     0.2s ease,
     color       0.2s ease,
     background  0.2s ease,
     box-shadow  0.2s ease;
 
-  &:hover {
-    transform: translateX(-50%) scale(1.3);
+  &:hover, &.debug-open {
     opacity:    1;
     color:      var(--primary);
     background: var(--primary-light);
     box-shadow: 0 0 0 1.5px var(--primary);
   }
+}
+
+.debug-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.debug-icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+
+  &.debug-icon--ok   { color: var(--success); }
+  &.debug-icon--warn { color: var(--warning); }
+  &.debug-icon--off  { color: var(--danger); }
+}
+
+.debug-drawer {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  min-width: 230px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(4px) scale(.96);
+  transform-origin: bottom center;
+  transition: opacity .18s ease, transform .18s cubic-bezier(.25,.46,.45,.94);
+
+  &.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.debug-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  padding: 2px 0;
+}
+
+.debug-row-label { color: var(--text-muted); min-width: 58px; }
+.debug-row-value { font-weight: 600; margin-left: auto; text-align: right; }
+
+.debug-row-sub {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 0 0 6px 14px;
+
+  &:last-child { padding-bottom: 0; }
+}
+
+.debug-session {
+  font-family: monospace;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.debug-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-muted);
+
+  &.debug-dot--ok   { background: var(--success); }
+  &.debug-dot--warn { background: var(--warning); }
+  &.debug-dot--off  { background: var(--danger); }
 }
 
 
@@ -11422,6 +11555,20 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size: 12px;
   padding:   4px 8px;
   height:    32px;
+}
+
+// /global-quotes n'existe que sur le serveur de dev local (server.js),
+// jamais porté vers api/ — visible seulement hors localhost.
+.sa-prod-notice {
+  background:    color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border:        1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  color:         var(--text);
+  border-radius: var(--radius);
+  padding:       10px 14px;
+  font-size:     13px;
+  margin-bottom: 16px;
+
+  code { background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
 }
 
 // Superadmin tabs

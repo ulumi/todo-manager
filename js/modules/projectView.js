@@ -2,7 +2,7 @@
 //  CATEGORY VIEW PANEL
 // ════════════════════════════════════════════════════════
 
-import { DS, esc } from './utils.js';
+import { DS, esc, safeParseJSON } from './utils.js';
 import { getCategories, saveCategories, CATEGORY_ICONS, categoryIconSVG } from './admin.js';
 import { isCompleted } from './calendar.js';
 import * as state from './state.js';
@@ -174,8 +174,7 @@ function cvTaskRow(t, isRec, todayDS, idx, total) {
 }
 
 export function getCategoryTaskOrder(categoryId) {
-  const stored = localStorage.getItem('projectTaskOrder');
-  const all = stored ? JSON.parse(stored) : {};
+  const all = safeParseJSON(localStorage.getItem('projectTaskOrder'), {});
   return all[categoryId] || [];
 }
 
@@ -194,8 +193,7 @@ export function setCategoryIcon(categoryId, icon) {
 }
 
 export function saveCategoryTaskOrder(categoryId, order) {
-  const stored = localStorage.getItem('projectTaskOrder');
-  const all = stored ? JSON.parse(stored) : {};
+  const all = safeParseJSON(localStorage.getItem('projectTaskOrder'), {});
   all[categoryId] = order;
   localStorage.setItem('projectTaskOrder', JSON.stringify(all));
 }

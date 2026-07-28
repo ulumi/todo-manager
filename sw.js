@@ -2,7 +2,19 @@
 //  SERVICE WORKER — Full offline support
 // ════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'todo-v3-supabase';
+// Bumped manually, not tied to js/modules/version.js: this file is
+// registered as a classic (non-module) script, so it can't `import` that
+// module, and browsers only re-run install()/re-check for updates when
+// sw.js's OWN bytes change — not when app.js/css change. In practice this
+// matters less than it sounds: the fetch handler below is network-first for
+// same-origin requests, so the cache is only ever an offline fallback, not
+// something actively serving stale content while online. The real gap this
+// used to paper over (a tab left open across a deploy keeps running its
+// already-evaluated JS in memory) is handled by app.js's
+// _initVersionWatch()/_checkForNewVersion() instead — it prompts a reload
+// when the server's VERSION no longer matches what's running, independent
+// of this cache. Bump this string on structural changes to LOCAL_ASSETS.
+const CACHE_NAME = 'todo-v4-supabase';
 
 const LOCAL_ASSETS = [
   '/',

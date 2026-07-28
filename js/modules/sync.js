@@ -8,6 +8,26 @@ import { getCurrentUser } from './auth.js';
 // Unique ID for this browser session — used to detect own echoes.
 export const SESSION_ID = Math.random().toString(36).slice(2, 10);
 
+// ── Connection status tracking (debug panel) ──────────────
+// `_lastOk` mirrors the outcome of the most recent Supabase call — null
+// (unknown, treated as "online") until the first call resolves.
+let _lastOk = null;
+let _lastCheckedAt = 0;
+
+function _markSupabaseOk()   { _lastOk = true;  _lastCheckedAt = Date.now(); }
+function _markSupabaseFail() { _lastOk = false; _lastCheckedAt = Date.now(); }
+
+// Best-known Supabase reachability, powers the debug panel near the version
+// number. Requires both the browser to be online AND the last Supabase call
+// to have succeeded — either one failing means the app is running off
+// localStorage only.
+export function getSupabaseStatus() {
+  return {
+    online: navigator.onLine && _lastOk !== false,
+    lastCheckedAt: _lastCheckedAt,
+  };
+}
+
 // ── Helpers ───────────────────────────────────────────────
 function userId() {
   const user = getCurrentUser();
@@ -28,6 +48,7 @@ export async function loadFromSupabase() {
       .maybeSingle();
 
     if (error) throw error;
+    _markSupabaseOk();
     if (!data) return { _empty: true };
 
     return {
@@ -36,6 +57,7 @@ export async function loadFromSupabase() {
     };
   } catch (err) {
     console.warn('[sync] loadFromSupabase failed:', err.message);
+    _markSupabaseFail();
     return null;
   }
 }
@@ -55,8 +77,10 @@ export async function pushToSupabase(backup) {
         updated_at: new Date().toISOString(),
       });
     if (error) throw error;
+    _markSupabaseOk();
   } catch (err) {
     console.warn('[sync] pushToSupabase failed:', err.message);
+    _markSupabaseFail();
   }
 }
 
@@ -186,7 +210,10 @@ export async function disconnectGCal() {
 // ── Offline / online indicator ────────────────────────────
 export function setupOfflineIndicator() {
   const badge = document.getElementById('offlineBadge');
-  if (!badge) return;
-  window.addEventListener('online',  () => { badge.hidden = true; });
-  window.addEventListener('offline', () => { badge.hidden = false; });
+  // 'online'/'offline' only fire on transitions — a page loaded while
+  // already offline gets neither, so the badge stayed hidden until one
+  // full connect/disconnect cycle happened. Check the actual state once.
+  if (badge) badge.hidden = navigator.onLine;
+  window.addEventListener('online',  () => { if (badge) badge.hidden = true; });
+  window.addEventListener('offline', () => { if (badge) badge.hidden = false; _markSupabaseFail(); });
 }
