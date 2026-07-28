@@ -72,6 +72,13 @@ self.addEventListener('install', event => {
 });
 
 // ── Activate ──────────────────────────────────────────────
+// After claiming clients, push a message to every open tab so app.js's
+// message listener can show the "reload" toast immediately — the same
+// prompt _checkForNewVersion()'s polling shows, just without waiting for
+// the next visibility/focus/30min tick. Still only reaches tabs whose
+// currently-loaded JS has that listener; a tab stuck on JS old enough to
+// predate this mechanism entirely has no code path that could act on it —
+// that one genuinely needs a manual reload once, there's no way around it.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -79,6 +86,8 @@ self.addEventListener('activate', event => {
         keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       ))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window' }))
+      .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_UPDATED' })))
   );
 });
 

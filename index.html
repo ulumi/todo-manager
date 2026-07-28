@@ -1095,6 +1095,11 @@
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.app?._showUpdateToast?.();
     });
+    // Pushed by sw.js's activate handler — reacts immediately instead of
+    // waiting for _checkForNewVersion()'s next visibility/focus/30min poll.
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'SW_UPDATED') window.app?._showUpdateToast?.();
+    });
   }
 </script>
 <script src="js/debug-celebrate.js"></script>
