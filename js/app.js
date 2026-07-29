@@ -645,7 +645,7 @@ class TodoApp {
       const item = e.target.closest('.quick-find-item[draggable]');
       if (!item) return;
       draggedId = item.dataset.id;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', draggedId);
       this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => {
@@ -2120,18 +2120,18 @@ class TodoApp {
     this.render();
   }
 
-  assignInboxToDate(id, dateStr) {
-    this._assignManyToDate(this._dropIds(id), dateStr);
+  assignInboxToDate(id, dateStr, event) {
+    this._assignManyToDate(this._dropIds(id), dateStr, event);
   }
 
-  _assignManyToDate(ids, dateStr) {
+  _assignManyToDate(ids, dateStr, event) {
     const targets = state.todos.filter(t => ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none'));
     if (!targets.length) return;
     snapshot(state.todos);
+    const isCopy = this._isCopyDrag(event);
     targets.forEach(t => {
-      t.date = dateStr;
-      t.backlog = false;
-      t.updatedAt = Date.now();
+      if (isCopy) this._insertClone(t, { date: dateStr, backlog: false });
+      else { t.date = dateStr; t.backlog = false; t.updatedAt = Date.now(); }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -2172,18 +2172,47 @@ class TodoApp {
     if (prefs.sort !== 'manual' || prefs.cols !== '1') return;
     const list = document.getElementById(view === 'backlog' ? 'backlogList' : 'inboxList');
     if (!list) return;
-    let dragEl = null;
+    let dragEl = null, dragOrigId = null, origParent = null, origNext = null;
+    // Copie (Alt/Ctrl/Cmd maintenu) : un placeholder dédié se déplace dans
+    // la liste pendant le survol à la place de l'item réel, qui lui reste
+    // visuellement à sa position d'origine tant que le drop ne confirme pas
+    // une copie — vérifié à CHAQUE dragover (pas figé au dragstart), donc la
+    // touche peut être pressée/relâchée en cours de geste, comme ailleurs.
+    const ghost = document.createElement('div');
+    ghost.className = 'inbox-item inbox-copy-ghost';
+    ghost.textContent = '+ copie';
     list.querySelectorAll('.inbox-item').forEach(item => {
       item.addEventListener('dragstart', () => {
         dragEl = item;
+        dragOrigId = item.dataset.id;
+        origParent = item.parentNode;
+        origNext = item.nextSibling;
         item.classList.add('dragging');
       });
       item.addEventListener('dragend', () => {
         item.classList.remove('dragging');
-        if (!dragEl) return;
-        dragEl = null;
-        const ids = [...list.querySelectorAll('.inbox-item')].map(el => el.dataset.id);
-        saveManualOrder(view, ids);
+        if (!dragOrigId) { ghost.remove(); return; }
+        const isCopy = !!ghost.parentNode;
+        if (isCopy) {
+          const t = state.todos.find(x => x.id === dragOrigId);
+          if (t) {
+            snapshot(state.todos);
+            const clone = this._insertClone(t);
+            // Le placeholder prend l'id du clone : sa position dans le DOM
+            // (celle du drop) devient directement l'ordre final à persister.
+            ghost.dataset.id = clone.id;
+            const ids = [...list.querySelectorAll('.inbox-item')].map(el => el.dataset.id);
+            ghost.remove();
+            saveManualOrder(view, ids);
+            saveTodos(state.todos);
+          } else {
+            ghost.remove();
+          }
+        } else {
+          const ids = [...list.querySelectorAll('.inbox-item')].map(el => el.dataset.id);
+          saveManualOrder(view, ids);
+        }
+        dragEl = null; dragOrigId = null; origParent = null; origNext = null;
         this._saveConfigChange();
         this.render();
       });
@@ -2191,12 +2220,22 @@ class TodoApp {
     list.addEventListener('dragover', e => {
       if (!dragEl) return;
       e.preventDefault();
-      const items = [...list.querySelectorAll('.inbox-item:not(.dragging)')];
+      const isCopy = this._isCopyDrag(e);
+      e.dataTransfer.dropEffect = isCopy ? 'copy' : 'move';
+      if (isCopy) {
+        if (dragEl.parentNode !== origParent || dragEl.nextSibling !== origNext) {
+          origParent.insertBefore(dragEl, origNext);
+        }
+      } else if (ghost.parentNode) {
+        ghost.remove();
+      }
+      const movingEl = isCopy ? ghost : dragEl;
+      const items = [...list.querySelectorAll('.inbox-item:not(.dragging):not(.inbox-copy-ghost)')];
       const after = items.find(el => {
         const r = el.getBoundingClientRect();
         return e.clientY < r.top + r.height / 2;
       });
-      list.insertBefore(dragEl, after || null);
+      list.insertBefore(movingEl, after || null);
     });
   }
 
@@ -3132,17 +3171,21 @@ class TodoApp {
     this.render();
   }
 
-  moveTodoToDate(todoId, newDateStr) {
-    this.moveManyToDate(this._dropIds(todoId), newDateStr);
+  moveTodoToDate(todoId, newDateStr, event) {
+    this.moveManyToDate(this._dropIds(todoId), newDateStr, event);
   }
 
-  moveManyToDate(ids, newDateStr) {
+  moveManyToDate(ids, newDateStr, event) {
+    const isCopy = this._isCopyDrag(event);
     const targets = state.todos.filter(t =>
-      ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none') && t.date !== newDateStr
+      ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none') && (isCopy || t.date !== newDateStr)
     );
     if (!targets.length) return;
     snapshot(state.todos);
-    targets.forEach(t => { t.date = newDateStr; t.updatedAt = Date.now(); });
+    targets.forEach(t => {
+      if (isCopy) this._insertClone(t, { date: newDateStr });
+      else { t.date = newDateStr; t.updatedAt = Date.now(); }
+    });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
     this.render();
@@ -3174,7 +3217,7 @@ class TodoApp {
       draggedId = item.dataset.id;
       draggedDate = item.dataset.date;
       draggedHeight = item.offsetHeight;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', draggedId);
       this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
@@ -3216,13 +3259,14 @@ class TodoApp {
       removePlaceholder();
       if (!draggedId) return;
       const multi = this._dropIds(draggedId).length > 1;
+      const isCopy = this._isCopyDrag(e);
 
       if (dropTargetId) {
         // Reorder within same day or move + reorder to another day
         const targetItem = view.querySelector(`.week-todo-item[data-id="${dropTargetId}"]`);
         const newDate = targetItem?.dataset.date;
-        if (newDate && (multi || newDate !== draggedDate)) {
-          this.moveTodoToDate(draggedId, newDate);
+        if (newDate && (multi || newDate !== draggedDate || isCopy)) {
+          this.moveTodoToDate(draggedId, newDate, e);
         } else if (newDate) {
           this.weekReorder(draggedId, newDate, dropTargetId, dropBefore);
         }
@@ -3231,7 +3275,7 @@ class TodoApp {
         const col = e.target.closest('.week-day-todos');
         if (!col || !col.dataset.date) return;
         const newDate = col.dataset.date;
-        if (multi || newDate !== draggedDate) this.moveTodoToDate(draggedId, newDate);
+        if (multi || newDate !== draggedDate || isCopy) this.moveTodoToDate(draggedId, newDate, e);
       }
     });
   }
@@ -3262,7 +3306,7 @@ class TodoApp {
       if (!item) return;
       draggedId = item.dataset.id;
       draggedDate = item.dataset.date;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', draggedId);
       this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
@@ -3290,7 +3334,7 @@ class TodoApp {
       if (!cell || !draggedId) return;
       const newDate = cell.dataset.date;
       cell.classList.remove('drag-over');
-      if (newDate && (newDate !== draggedDate || this._dropIds(draggedId).length > 1)) this.moveTodoToDate(draggedId, newDate);
+      if (newDate && (newDate !== draggedDate || this._dropIds(draggedId).length > 1 || this._isCopyDrag(e))) this.moveTodoToDate(draggedId, newDate, e);
     });
   }
 
@@ -3303,7 +3347,7 @@ class TodoApp {
       const item = e.target.closest('.todo-item[draggable]');
       if (!item) return;
       draggedId = item.dataset.id;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', draggedId);
       this._setDragGhost(e, draggedId);
       requestAnimationFrame(() => item.classList.add('dragging'));
@@ -3354,7 +3398,7 @@ class TodoApp {
       draggedEl = item;
       draggedGroup = item.dataset.group;
       draggedHeight = item.offsetHeight;
-      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', item.dataset.id);
       // Drag du titre d'un groupe (task-group-header) : emporte tous ses
       // membres (data-ids, posé par todoListHTML() dans render.js) via le
@@ -3573,13 +3617,34 @@ class TodoApp {
       clearItemTarget();
       if (!draggedEl) return;
 
-      const dropIds = this._dropIds(draggedEl.dataset.id);
+      const originalIds = this._dropIds(draggedEl.dataset.id);
+      // Copie (Alt/Ctrl/Cmd maintenu) : les clones prennent la place cible,
+      // les originaux restent intouchés (même dayPeriod/priorité/position).
+      // Résolu paresseusement (une seule fois, snapshot() inclus) au premier
+      // point du handler qui mute réellement quelque chose — cloner plus tôt
+      // risquerait un clone orphelin non sauvegardé sur un chemin qui `return`
+      // avant toute mutation (ex. dropTarget introuvable).
+      let opIds = originalIds;
+      let resolved = false;
+      const resolveIds = () => {
+        if (resolved) return opIds;
+        resolved = true;
+        if (this._isCopyDrag(e)) {
+          snapshot(state.todos);
+          opIds = originalIds.map(id => {
+            const t = state.todos.find(x => x.id === id);
+            return t ? this._insertClone(t).id : id;
+          });
+        }
+        return opIds;
+      };
 
       // Change the item's dayPeriod to match the target section (chrono or period groups)
       const _dsMode = localStorage.getItem('daySort');
       const _pgMode = localStorage.getItem('dayPeriodGroups') !== 'false';
       if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
-        const targets = state.todos.filter(t => dropIds.includes(t.id));
+        const ids = resolveIds();
+        const targets = state.todos.filter(t => ids.includes(t.id));
         if (targets.length) {
           targets.forEach(t => {
             if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
@@ -3590,7 +3655,7 @@ class TodoApp {
         // (l'ordre manuel prime sur l'heure dans le rendu chrono)
         if (dropTarget && dropTarget !== '__heure_empty__' && !dropTarget.startsWith('spacer-')) {
           const targetGroup = dropPeriod === '' ? 'punctual' : `punctual-${dropPeriod}`;
-          this.dropReorder(dropIds, targetGroup, dropTarget, dropBefore);
+          this.dropReorder(ids, targetGroup, dropTarget, dropBefore);
           return; // dropReorder re-render
         }
         this.render();
@@ -3599,16 +3664,18 @@ class TodoApp {
 
       if (!dropTarget) return;
 
+      const ids = resolveIds();
+
       // In priority sort mode, change the item's priority to match the target group
       if (localStorage.getItem('daySort') === 'priority' && dropPriority != null) {
-        const targets = state.todos.filter(t => dropIds.includes(t.id));
+        const targets = state.todos.filter(t => ids.includes(t.id));
         if (targets.length) {
           targets.forEach(t => { t.priority = dropPriority === 'none' ? '' : dropPriority; });
           saveTodos(state.todos);
         }
       }
 
-      this.dropReorder(dropIds, draggedGroup, dropTarget, dropBefore);
+      this.dropReorder(ids, draggedGroup, dropTarget, dropBefore);
     });
   }
 
@@ -3680,7 +3747,7 @@ class TodoApp {
 
     miniWeek.addEventListener('dragover', e => {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = this._isCopyDrag(e) ? 'copy' : 'move';
       const col = e.target.closest('.day-mini-col[data-date]');
       clearHover();
       if (col) col.classList.add('drag-over');
@@ -3697,7 +3764,7 @@ class TodoApp {
       if (!col) return;
       const draggedId = e.dataTransfer.getData('text/plain');
       if (!draggedId) return;
-      this.moveTodoToDate(draggedId, col.dataset.date);
+      this.moveTodoToDate(draggedId, col.dataset.date, e);
     });
   }
 
@@ -4320,7 +4387,7 @@ class TodoApp {
   // Plan drag-drop
   planDragStart(event, taskId) {
     event.dataTransfer.setData('text/plain', taskId);
-    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.effectAllowed = 'copyMove';
     this._setDragGhost(event, taskId);
     // Posé ici (pas seulement via le listener global document/dragstart,
     // voir setupEventListeners) car .review-item-handle appelle
@@ -4337,7 +4404,7 @@ class TodoApp {
     const col = event.currentTarget;
     col.classList.remove('drag-over');
     const taskId = event.dataTransfer.getData('text/plain');
-    if (taskId) this.assignInboxToDate(taskId, ds);
+    if (taskId) this.assignInboxToDate(taskId, ds, event);
   }
 
   initPlanDragDrop() {
@@ -4381,25 +4448,25 @@ class TodoApp {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     const taskId = event.dataTransfer.getData('text/plain');
-    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: false });
+    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: false }, event);
   }
 
   planDropToBacklog(event) {
     event.preventDefault();
     event.currentTarget.classList.remove('drag-over');
     const taskId = event.dataTransfer.getData('text/plain');
-    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: true });
+    if (taskId) this._sendManyTo(this._dropIds(taskId), { date: null, backlog: true }, event);
   }
 
   // Applique { date, backlog } à un lot de tâches (drop multiple ou simple)
-  _sendManyTo(ids, { date, backlog }) {
+  _sendManyTo(ids, { date, backlog }, event) {
     const targets = state.todos.filter(t => ids.includes(t.id) && (!t.recurrence || t.recurrence === 'none'));
     if (!targets.length) return;
     snapshot(state.todos);
+    const isCopy = this._isCopyDrag(event);
     targets.forEach(t => {
-      t.date = date;
-      t.backlog = backlog;
-      t.updatedAt = Date.now();
+      if (isCopy) this._insertClone(t, { date, backlog });
+      else { t.date = date; t.backlog = backlog; t.updatedAt = Date.now(); }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -4612,10 +4679,15 @@ class TodoApp {
     const taskId = event.dataTransfer.getData('text/plain');
     if (!taskId) return;
     const ids = this._dropIds(taskId);
+    const isCopy = this._isCopyDrag(event);
     this._reviewMutate(() => {
       ids.forEach(id => {
         const t = state.todos.find(x => x.id === id);
-        if (t) mutateEach(t);
+        if (!t) return;
+        // Copie : la mutation (postpone/complete/cancel/backlog…) s'applique
+        // au clone, l'original reste intouché — même snapshot() unique que
+        // le reste (_reviewMutate en prend une avant tout ceci).
+        mutateEach(isCopy ? this._insertClone(t) : t);
       });
     });
     if (ids.length > 1) msClear();
@@ -4712,7 +4784,7 @@ class TodoApp {
     const setup = (btn, onDrop) => {
       btn.addEventListener('dragover', e => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        e.dataTransfer.dropEffect = this._isCopyDrag(e) ? 'copy' : 'move';
         btn.classList.add('header-drop-hover');
       });
       btn.addEventListener('dragleave', e => {
@@ -4723,23 +4795,23 @@ class TodoApp {
         btn.classList.remove('header-drop-hover');
         const taskId = e.dataTransfer.getData('text/plain');
         if (!taskId) return;
-        onDrop(taskId);
+        onDrop(taskId, e);
       });
     };
 
-    setup(inboxBtn, id => {
-      this._sendManyTo(this._dropIds(id), { date: null, backlog: false });
+    setup(inboxBtn, (id, e) => {
+      this._sendManyTo(this._dropIds(id), { date: null, backlog: false }, e);
       this._closeSearchView();
     });
 
-    setup(backlogBtn, id => {
-      this._sendManyTo(this._dropIds(id), { date: null, backlog: true });
+    setup(backlogBtn, (id, e) => {
+      this._sendManyTo(this._dropIds(id), { date: null, backlog: true }, e);
       this._closeSearchView();
     });
 
     if (todayBtn) {
-      setup(todayBtn, id => {
-        this._sendManyTo(this._dropIds(id), { date: DS(new Date()), backlog: false });
+      setup(todayBtn, (id, e) => {
+        this._sendManyTo(this._dropIds(id), { date: DS(new Date()), backlog: false }, e);
         this._closeSearchView();
       });
     }
@@ -4784,6 +4856,37 @@ class TodoApp {
   _dropIds(primaryId) {
     const m = this._dragMultiIds;
     return (m && m.length > 1 && m.includes(primaryId)) ? [...m] : [primaryId];
+  }
+
+  // Copie-sur-drag : maintenir Alt/Ctrl/Cmd pendant le lâcher (comme
+  // Finder/Explorer) copie la tâche au lieu de la déplacer — vérifié sur
+  // l'event du drop/dragend (pas figé au dragstart), donc la touche peut
+  // être pressée/relâchée en cours de geste. `event` est optionnel (les
+  // DnD non concernées, ex. file « Ensuite » du Focus, n'en passent pas).
+  _isCopyDrag(event) {
+    return !!(event && (event.altKey || event.ctrlKey || event.metaKey));
+  }
+
+  // Clone identique (mêmes règles que duplicateTodo/duplicateMany : reset
+  // complété + sous-tâches + compteur) inséré juste après l'original SANS
+  // le modifier — pas de snapshot()/saveTodos() ici : à la charge de
+  // l'appelant, pour rester dans la même transaction undo que la mutation
+  // qui suit (date/backlog/moment/priorité…) plutôt que deux entrées
+  // distinctes dans la pile d'annulation pour un seul geste de drag.
+  _insertClone(t, overrides = {}) {
+    // Compteur monotone en plus de Date.now() : un drag de multi-sélection
+    // (ou d'un groupe entier) appelle _insertClone() plusieurs fois dans la
+    // même boucle synchrone, donc dans la même milliseconde — Date.now()
+    // seul collisionnerait (même id pour deux clones distincts).
+    this._cloneSeq = (this._cloneSeq || 0) + 1;
+    const cloneId = (Date.now() + this._cloneSeq).toString();
+    const clone = { ...JSON.parse(JSON.stringify(t)), id: cloneId, completed: false, completedDates: [], updatedAt: parseInt(cloneId) };
+    if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
+    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
+    Object.assign(clone, overrides);
+    const idx = state.todos.findIndex(x => x.id === t.id);
+    state.todos.splice(idx + 1, 0, clone);
+    return clone;
   }
 
   goToDay(ds) {

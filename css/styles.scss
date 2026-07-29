@@ -11225,6 +11225,22 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
+// Placeholder affiché à la position de survol pendant un drag-copie
+// (Alt/Ctrl/Cmd maintenu) dans le réordonnancement manuel Backlog/Inbox —
+// l'item réel reste à sa place (voir .inbox-item.dragging ci-dessus),
+// seul ce marqueur se déplace pour indiquer où la copie atterrira.
+.inbox-copy-ghost {
+  justify-content: center;
+  color:           var(--success);
+  font-size:       13px;
+  font-weight:     600;
+  border-style:    dashed;
+  border-color:    var(--success);
+  background:      color-mix(in srgb, var(--success) 8%, var(--surface));
+  cursor:          copy;
+  pointer-events:  none;
+}
+
 .todo-check {
   width:         18px;
   height:        18px;
