@@ -7619,6 +7619,9 @@ function _renderCtxMenu() {
   // Une récurrente ne peut pas devenir sous-tâche (perte de la récurrence)
   const canAddParent = hasAnchor && (!single.recurrence || single.recurrence === 'none');
   const canAddGroupHeader = hasAnchor && !single.groupId;
+  // Cluster « Grouper » (flyout) : n'existe que si au moins une des actions
+  // de groupement s'applique — sinon le sous-menu serait vide.
+  const canGroupCluster = !group && (canAddGroupHeader || canGroupify || canGroupToTask || canUngroupify);
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
@@ -7638,26 +7641,50 @@ function _renderCtxMenu() {
     ['evening',   '🌙', 'Soir'],
     ['',          '—',  'Sans moment'],
   ];
+  // Sous-menus (« mega menu ») : un cluster d'actions apparentées partage
+  // une seule icône de groupe (span devant le libellé) + un chevron ›,
+  // les items enfants du .ctx-submenu n'ont plus chacun leur propre icône
+  // (contrairement aux actions autonomes ci-dessus/dessous, qui gardent la
+  // leur). Ouverture au survol (CSS :hover) ou au clic sur l'en-tête
+  // (classe .open, posée par le handler ci-dessous — utile au tactile) ;
+  // _layoutSubmenus() bascule .flip-left si ça déborderait l'écran.
+  const addSubmenu = group ? '' : `
+    <div class="ctx-item has-submenu"><span>＋</span> Ajouter<span class="ctx-caret">›</span>
+      <div class="ctx-submenu">
+        <div class="ctx-item" data-action="add-after">Ajouter après</div>
+        <div class="ctx-item" data-action="add-subtask">Ajouter une sous-tâche</div>
+        ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Ajouter une tâche parente</div>` : ''}
+        <div class="ctx-item" data-action="duplicate">Dupliquer</div>
+      </div>
+    </div>`;
+  const groupSubmenu = !canGroupCluster ? '' : `
+    <div class="ctx-item has-submenu"><span>⊞</span> Grouper<span class="ctx-caret">›</span>
+      <div class="ctx-submenu">
+        ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un en-tête de groupe</div>` : ''}
+        ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Voir comme groupe</div>` : ''}
+        ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task">Regrouper en sous-tâches</div>` : ''}
+        ${canUngroupify ? `<div class="ctx-item" data-action="ungroup">Dégrouper</div>` : ''}
+      </div>
+    </div>`;
+  const moveSubmenu = !anyMovable ? '' : `
+    <div class="ctx-item has-submenu"><span>→</span> Déplacer${nb}<span class="ctx-caret">›</span>
+      <div class="ctx-submenu">
+        <div class="ctx-item" data-action="today">Aujourd'hui</div>
+        <div class="ctx-item" data-action="tomorrow">Demain</div>
+        <div class="ctx-item" data-action="inbox">Inbox</div>
+        <div class="ctx-item" data-action="backlog">Backlog</div>
+      </div>
+    </div>`;
   _todoCtxMenu.innerHTML = `
     <div class="ctx-item" data-action="complete"><span>${allDone ? '↺' : '✓'}</span> ${allDone ? 'Décompléter' : 'Compléter'}${nb}</div>
     ${group ? '' : `
     <div class="ctx-item" data-action="focus"><span>▶</span> Focus</div>
-    <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
-    <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
-    <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>
-    ${canAddParent ? `<div class="ctx-item" data-action="add-parent"><span>⤴</span> Ajouter une tâche parente</div>` : ''}
-    ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header"><span>☰</span> Créer un en-tête de groupe</div>` : ''}
-    ${canGroupify ? `<div class="ctx-item" data-action="task-to-group"><span>⊞</span> Voir comme groupe</div>` : ''}
-    ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}
-    ${canUngroupify ? `<div class="ctx-item" data-action="ungroup"><span>⊟</span> Dégrouper</div>` : ''}`}
+    <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>`}
     ${group ? `<div class="ctx-item" data-action="group"><span>⊞</span> Grouper${nb}</div>` : ''}
-    <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
-    ${!anyMovable ? '' : `
-    <div class="ctx-sep"></div>
-    <div class="ctx-item" data-action="today"><span>☀</span> Aujourd'hui${nb}</div>
-    <div class="ctx-item" data-action="tomorrow"><span>→</span> Demain${nb}</div>
-    <div class="ctx-item" data-action="inbox"><span>📥</span> Inbox${nb}</div>
-    <div class="ctx-item" data-action="backlog"><span>🗂</span> Backlog${nb}</div>`}
+    ${group ? `<div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>` : ''}
+    ${addSubmenu}
+    ${groupSubmenu}
+    ${moveSubmenu}
     <div class="ctx-sep"></div>
     <div class="ctx-prio-row">
       <span class="ctx-prio-label">Priorité</span>
@@ -7672,6 +7699,24 @@ function _renderCtxMenu() {
     <div class="ctx-item danger" data-action="delete"><span>×</span> Supprimer${nb}</div>
     ${group ? `<div class="ctx-item" data-action="deselect"><span>✕</span> Désélectionner</div>` : ''}
   `;
+}
+
+// Ajuste chaque .ctx-submenu pour ne jamais déborder l'écran — basculement
+// horizontal (.flip-left) si le survol atteindrait le bord droit, décalage
+// vertical (transform) si le bas déborderait. Un sous-menu en visibility:
+// hidden (pas display:none) garde son layout, donc getBoundingClientRect()
+// est fiable même avant tout survol — pas besoin d'attendre le :hover.
+function _layoutSubmenus() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  _todoCtxMenu.querySelectorAll('.ctx-submenu').forEach(sub => {
+    sub.classList.remove('flip-left');
+    sub.style.transform = '';
+    let r = sub.getBoundingClientRect();
+    if (r.right > vw - 8) sub.classList.add('flip-left');
+    r = sub.getBoundingClientRect();
+    const overflow = r.bottom - (vh - 8);
+    if (overflow > 0) sub.style.transform = `translateY(-${overflow}px)`;
+  });
 }
 
 // Si l'item visé fait partie d'une sélection multiple, le menu agit sur
@@ -7695,6 +7740,7 @@ function _showTodoCtxMenu(anchor, id, ds) {
   _todoCtxMenu.classList.remove('hidden');
   const rect = anchor.getBoundingClientRect();
   _positionCtxMenu(rect.right - _todoCtxMenu.offsetWidth, rect.bottom + 4);
+  _layoutSubmenus();
 }
 
 function _hideTodoCtxMenu() {
@@ -7705,7 +7751,19 @@ function _hideTodoCtxMenu() {
 _todoCtxMenu.addEventListener('click', e => {
   const prioBtn = e.target.closest('.ctx-prio-btn');
   const periodBtn = e.target.closest('.ctx-period-btn');
-  const item = e.target.closest('.ctx-item');
+  // .ctx-item:not(.has-submenu) cible la feuille cliquée — closest() s'arrête
+  // au 1er match, donc un clic dans un .ctx-submenu résout la feuille, pas
+  // l'en-tête ancêtre. Un clic sur l'en-tête lui-même (icône/libellé/chevron,
+  // hors sous-menu) ne matche que groupHeader : bascule .open (utile au
+  // tactile, en plus du survol CSS) sans exécuter d'action ni fermer le menu.
+  const groupHeader = e.target.closest('.ctx-item.has-submenu');
+  const item = e.target.closest('.ctx-item:not(.has-submenu)');
+  if (groupHeader && !item) {
+    const wasOpen = groupHeader.classList.contains('open');
+    _todoCtxMenu.querySelectorAll('.ctx-item.has-submenu.open').forEach(h => h.classList.remove('open'));
+    if (!wasOpen) groupHeader.classList.add('open');
+    return;
+  }
   if ((!item && !prioBtn && !periodBtn) || !_ctxTarget) return;
   const { ids, ds } = _ctxTarget;
   const single = ids[0];
@@ -7750,6 +7808,7 @@ document.addEventListener('contextmenu', e => {
   _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
   _positionCtxMenu(e.clientX + 4, e.clientY);
+  _layoutSubmenus();
 });
 
 // Create global app instance. Last-resort net: every known risky

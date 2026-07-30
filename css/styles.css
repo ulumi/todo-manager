@@ -2570,6 +2570,44 @@ input:checked + .cal-sid-toggle-track::after {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
+.todo-ctx-menu .ctx-item.has-submenu {
+  position: relative;
+  margin-bottom: 3px;
+}
+.todo-ctx-menu .ctx-item.has-submenu .ctx-caret {
+  margin-left: auto;
+  opacity: 0.45;
+  font-size: 12px;
+}
+.todo-ctx-menu .ctx-submenu {
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  margin-left: 4px;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  min-width: 190px;
+  z-index: 1;
+}
+.todo-ctx-menu .ctx-submenu.flip-left {
+  left: auto;
+  right: 100%;
+  margin-left: 0;
+  margin-right: 4px;
+}
+.todo-ctx-menu .ctx-item.has-submenu:hover > .ctx-submenu,
+.todo-ctx-menu .ctx-item.has-submenu.open > .ctx-submenu {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
 .todo-ctx-menu .ctx-sep {
   height: 1px;
   background: var(--border);

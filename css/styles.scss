@@ -2496,6 +2496,50 @@ main {
     &.danger:hover { background: rgba(239,68,68,.1); color: #ef4444; }
   }
 
+  // Cluster d'actions replié en sous-menu (« mega menu ») : une seule icône
+  // pour tout le groupe (le span devant le libellé), les items enfants du
+  // .ctx-submenu n'en portent plus chacun un — juste du texte, cf. markup
+  // dans _renderCtxMenu() (app.js). margin-bottom le distingue visuellement
+  // des actions autonomes voisines (demande explicite : « une marge
+  // inférieure pour distinguer que c'est un groupe »).
+  .ctx-item.has-submenu {
+    position: relative;
+    margin-bottom: 3px;
+
+    .ctx-caret { margin-left: auto; opacity: .45; font-size: 12px; }
+  }
+
+  // Sous-menu : mêmes habits visuels que le menu racine, accolé à droite du
+  // parent. visibility (pas display:none) pour garder son layout — donc
+  // _layoutSubmenus() (app.js) peut mesurer sa position via
+  // getBoundingClientRect() sans attendre un premier survol.
+  .ctx-submenu {
+    position: absolute;
+    top: -4px;
+    left: 100%;
+    margin-left: 4px;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .12s;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.15);
+    min-width: 190px;
+    z-index: 1;
+
+    &.flip-left { left: auto; right: 100%; margin-left: 0; margin-right: 4px; }
+  }
+
+  .ctx-item.has-submenu:hover > .ctx-submenu,
+  .ctx-item.has-submenu.open > .ctx-submenu {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
 
   // Badge « N » sur les actions de groupe (sélection multiple)
