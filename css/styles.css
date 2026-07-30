@@ -2304,6 +2304,22 @@ input:checked + .cal-sid-toggle-track::after {
   letter-spacing: 0.08em;
 }
 
+.ctx-title-input {
+  grid-column: 1/-1;
+  width: 100%;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface2);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  color: var(--text);
+  outline: none;
+}
+.ctx-title-input::placeholder {
+  color: var(--text-muted);
+}
+
 .day-period-select {
   display: flex;
   gap: 8px;

@@ -186,7 +186,14 @@ function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge 
     let header = '';
     if (t.groupId && !seen.has(t.groupId)) {
       const members = items.filter(x => x.groupId === t.groupId);
-      if (members.length > 1) {
+      // Un groupe volontairement créé sur une seule tâche (menu contextuel
+      // « Créer un en-tête de groupe ») n'a qu'un membre AU TOTAL : son
+      // en-tête doit s'afficher, sinon l'action semble sans effet. Distinct
+      // du membre isolé d'un groupe qui en compte plusieurs (déplacé à un
+      // autre jour/moment) : celui-là reste une tâche normale sans en-tête,
+      // d'où le compte sur state.todos et pas seulement sur la liste visible.
+      const totalMembers = state.todos.filter(x => x.groupId === t.groupId).length;
+      if (members.length > 1 || totalMembers === 1) {
         seen.add(t.groupId);
         const ids = members.map(m => m.id).join(',');
         header = `<div class="task-group-header" draggable="true" data-group="${group}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;

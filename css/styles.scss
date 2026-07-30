@@ -2241,6 +2241,25 @@ main {
   letter-spacing: .08em;
 }
 
+// Input inline injecté au-dessus d'un .todo-item par _inlineTitlePrompt()
+// (app.js) : titre d'une tâche parente ou d'un en-tête de groupe. Occupe
+// toute la rangée — .todo-list est en flex column, mais d'autres listes
+// (vue Catégories) rendent les items en grid, d'où grid-column.
+.ctx-title-input {
+  grid-column: 1 / -1;
+  width: 100%;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface2);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  color: var(--text);
+  outline: none;
+
+  &::placeholder { color: var(--text-muted); }
+}
+
 // Modal — period selector buttons
 .day-period-select {
   display: flex;

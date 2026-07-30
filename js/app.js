@@ -1448,6 +1448,109 @@ class TodoApp {
     this.addSubtaskInline(id);
   }
 
+  // Petit input inline injecté juste au-dessus d'un item de tâche pour
+  // saisir un titre (tâche parente, en-tête de groupe) — jamais de prompt()
+  // natif, cf. patterns projet. Patch DOM ciblé : aucun render() tant que
+  // la saisie n'est pas confirmée. Échap ou champ vide annule sans trace.
+  _inlineTitlePrompt(id, placeholder, onConfirm) {
+    const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
+    if (!itemEl || itemEl.previousElementSibling?.classList.contains('ctx-title-input')) return;
+    const input = document.createElement('input');
+    input.className = 'ctx-title-input';
+    input.placeholder = placeholder;
+    input.autocomplete = 'off';
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const title = input.value.trim();
+      input.remove();
+      if (title) onConfirm(title);
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Escape') { done = true; input.remove(); }
+    });
+    input.addEventListener('blur', finish);
+    itemEl.before(input);
+    input.focus();
+  }
+
+  // Menu contextuel « Ajouter une tâche parente » : crée une nouvelle tâche
+  // qui hérite du contexte de la tâche visée (date/backlog, moment, heure,
+  // priorité, tag/projet/intention, groupe) et l'absorbe comme 1re
+  // sous-tâche — inverse exact d'« Ajouter une sous-tâche ». La tâche visée
+  // cesse d'exister comme tâche autonome : le modèle n'a qu'UN niveau
+  // d'imbrication, d'où l'exclusion des récurrentes (la récurrence et
+  // completedDates n'ont pas d'équivalent sur une sous-tâche) et la
+  // confirmation quand elle a déjà des sous-tâches, aplaties à son niveau.
+  addParentTask(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t || (t.recurrence && t.recurrence !== 'none')) return;
+    this._inlineTitlePrompt(id, 'Titre de la tâche parente…', title => {
+      const cur = state.todos.find(x => x.id === id);
+      if (!cur) return;
+      const kids = cur.subtasks || [];
+      if (kids.length && !confirm(`« ${cur.title} » a ${kids.length} sous-tâche(s) : elles passeront au même niveau qu'elle, sous « ${title} ». Continuer ?`)) return;
+      snapshot(state.todos);
+      const pid = Date.now().toString();
+      const parent = {
+        id: pid,
+        title,
+        completed: false,
+        completedDates: [],
+        date: cur.date,
+        subtasks: [
+          { id: cur.id, title: cur.title, completed: !!cur.completed },
+          ...kids.map(s => ({ ...s })),
+        ],
+        updatedAt: parseInt(pid),
+      };
+      if (cur.backlog) parent.backlog = true;
+      if (cur.deadline) parent.deadline = cur.deadline;
+      if (cur.dayPeriod) parent.dayPeriod = cur.dayPeriod;
+      if (cur.startTime) parent.startTime = cur.startTime;
+      if (cur.endTime) parent.endTime = cur.endTime;
+      if (cur.priority) parent.priority = cur.priority;
+      if (cur.categoryIds?.length) parent.categoryIds = [...cur.categoryIds];
+      else if (cur.categoryId) parent.categoryId = cur.categoryId;
+      if (cur.projectIds?.length) parent.projectIds = [...cur.projectIds];
+      else if (cur.projectId) parent.projectId = cur.projectId;
+      if (cur.intentionIds?.length) parent.intentionIds = [...cur.intentionIds];
+      else if (cur.intentionId) parent.intentionId = cur.intentionId;
+      // Le parent prend la place du membre dans un éventuel groupe existant
+      if (cur.groupId) { parent.groupId = cur.groupId; parent.groupTitle = cur.groupTitle; }
+      const idx = state.todos.findIndex(x => x.id === id);
+      // L'id disparaît de state.todos : sans tombstone, un appareil resté
+      // hors ligne le ressusciterait au prochain merge de _applyBackup()
+      this._trackDeletion(cur.id);
+      state.todos.splice(idx, 1, parent);
+      saveTodos(state.todos);
+      this.render();
+    });
+  }
+
+  // Menu contextuel « Créer un en-tête de groupe » : pose un groupId/
+  // groupTitle neuf sur la tâche visée, qui reste une tâche autonome à part
+  // entière (contrairement à « Ajouter une tâche parente » ci-dessus, qui la
+  // fait disparaître en sous-tâche). D'autres tâches rejoignent ce chapeau
+  // ensuite via la multi-sélection → « Grouper », ou en réutilisant le même
+  // groupId. L'en-tête s'affiche dès ce seul membre (cf. todoListHTML).
+  addGroupHeader(id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t || t.groupId) return;
+    this._inlineTitlePrompt(id, 'Nom du groupe…', title => {
+      const cur = state.todos.find(x => x.id === id);
+      if (!cur || cur.groupId) return;
+      snapshot(state.todos);
+      cur.groupId = 'grp-' + Date.now().toString();
+      cur.groupTitle = title;
+      cur.updatedAt = Date.now();
+      saveTodos(state.todos);
+      this.render();
+    });
+  }
+
   toggleSubtasksCollapse(btn, id) {
     const collapsed = toggleSubtaskCollapsed(id);
     const item = btn.closest('.todo-item');
@@ -7501,6 +7604,17 @@ function _renderCtxMenu() {
   const single = !group ? occ[0]?.t : null;
   const canGroupify = !!single && (single.subtasks?.length > 0) && !single.groupId;
   const canUngroupify = !!single && !!single.groupId;
+  // « Regrouper en sous-tâches » exige ≥2 membres (convertGroupToTask sort
+  // sinon sans rien faire) — un groupe d'un seul membre est un état normal
+  // depuis « Créer un en-tête de groupe », l'item serait mort silencieusement
+  const canGroupToTask = canUngroupify && state.todos.filter(x => x.groupId === single.groupId).length > 1;
+  // Les deux actions ci-dessous ouvrent un input inline ancré à l'item dans
+  // le DOM (_inlineTitlePrompt) : ne les proposer que là où cet ancrage
+  // existe (.todo-item), pas depuis une pastille de mois ou la file Focus.
+  const hasAnchor = !!single && !!document.querySelector(`.todo-item[data-id="${single.id}"]`);
+  // Une récurrente ne peut pas devenir sous-tâche (perte de la récurrence)
+  const canAddParent = hasAnchor && (!single.recurrence || single.recurrence === 'none');
+  const canAddGroupHeader = hasAnchor && !single.groupId;
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
@@ -7527,8 +7641,10 @@ function _renderCtxMenu() {
     <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>
     <div class="ctx-item" data-action="add-after"><span>＋</span> Ajouter après</div>
     <div class="ctx-item" data-action="add-subtask"><span>☑</span> Ajouter une sous-tâche</div>
+    ${canAddParent ? `<div class="ctx-item" data-action="add-parent"><span>⤴</span> Ajouter une tâche parente</div>` : ''}
+    ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header"><span>☰</span> Créer un en-tête de groupe</div>` : ''}
     ${canGroupify ? `<div class="ctx-item" data-action="task-to-group"><span>⊞</span> Voir comme groupe</div>` : ''}
-    ${canUngroupify ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}
+    ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task"><span>☑</span> Regrouper en sous-tâches</div>` : ''}
     ${canUngroupify ? `<div class="ctx-item" data-action="ungroup"><span>⊟</span> Dégrouper</div>` : ''}`}
     ${group ? `<div class="ctx-item" data-action="group"><span>⊞</span> Grouper${nb}</div>` : ''}
     <div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>
@@ -7599,6 +7715,8 @@ _todoCtxMenu.addEventListener('click', e => {
   if (action === 'edit')        app.openEditModal(single, ds);
   if (action === 'add-after')   app.addTaskAfter(single, ds);
   if (action === 'add-subtask') app.ctxAddSubtask(single);
+  if (action === 'add-parent')  app.addParentTask(single);
+  if (action === 'group-header') app.addGroupHeader(single);
   if (action === 'task-to-group') app.convertTaskToGroup(single);
   if (action === 'group-to-task') {
     const t = state.todos.find(x => x.id === single);
