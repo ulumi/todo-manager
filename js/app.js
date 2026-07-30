@@ -7592,11 +7592,32 @@ const _todoCtxMenu = document.createElement('div');
 _todoCtxMenu.className = 'todo-ctx-menu hidden';
 document.body.appendChild(_todoCtxMenu);
 
-let _ctxTarget = null; // { ids: [...], ds }
+let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', todoId, stid, ds }
+
+// Menu minimal pour une sous-tâche (clic droit sur .subtask-item) : ses
+// seules actions pertinentes sont celles déjà exposées par les boutons
+// hover de la ligne (case à cocher, ▶ focus, × suppression) — jamais les
+// actions de la tâche PARENTE (Modifier/Grouper/Déplacer/… n'ont pas de
+// sens ici). Sans ce menu dédié, .subtask-item (sans data-id propre)
+// laissait le clic droit remonter à .todo-item ancêtre : « Supprimer »
+// supprimait alors toute la tâche parente au lieu de la seule sous-tâche.
+function _renderSubtaskCtxMenu() {
+  const { todoId, stid } = _ctxTarget;
+  const t = state.todos.find(x => x.id === todoId);
+  const s = t?.subtasks?.find(x => x.id === stid);
+  if (!s) { _todoCtxMenu.innerHTML = ''; return; }
+  _todoCtxMenu.innerHTML = `
+    <div class="ctx-item" data-action="subtask-complete"><span>${s.completed ? '↺' : '✓'}</span> ${s.completed ? 'Décompléter' : 'Compléter'}</div>
+    <div class="ctx-item" data-action="subtask-focus"><span>▶</span> Focus</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" data-action="subtask-delete"><span>×</span> Supprimer</div>
+  `;
+}
 
 // Contenu dynamique selon la cible : groupe (N > 1) ou item seul,
 // état complété, présence de tâches déplaçables (non récurrentes)
 function _renderCtxMenu() {
+  if (_ctxTarget.kind === 'subtask') { _renderSubtaskCtxMenu(); return; }
   const { ids } = _ctxTarget;
   const group = ids.length > 1;
   const occ = window.app._resolveOccurrences(ids);
@@ -7735,7 +7756,7 @@ function _positionCtxMenu(x, y) {
 }
 
 function _showTodoCtxMenu(anchor, id, ds) {
-  _ctxTarget = { ids: _ctxIdsFor(id), ds };
+  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(id), ds };
   _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
   const rect = anchor.getBoundingClientRect();
@@ -7749,6 +7770,17 @@ function _hideTodoCtxMenu() {
 }
 
 _todoCtxMenu.addEventListener('click', e => {
+  if (_ctxTarget?.kind === 'subtask') {
+    const item = e.target.closest('.ctx-item');
+    if (!item) return;
+    const { todoId, stid, ds } = _ctxTarget;
+    _hideTodoCtxMenu();
+    const action = item.dataset.action;
+    if (action === 'subtask-complete') window.app.toggleSubtask(todoId, stid, ds);
+    if (action === 'subtask-focus')    window.app.focusStartOn(todoId, ds);
+    if (action === 'subtask-delete')   window.app.deleteSubtask(todoId, stid);
+    return;
+  }
   const prioBtn = e.target.closest('.ctx-prio-btn');
   const periodBtn = e.target.closest('.ctx-period-btn');
   // .ctx-item:not(.has-submenu) cible la feuille cliquée — closest() s'arrête
@@ -7801,10 +7833,22 @@ document.addEventListener('click', e => {
 });
 
 document.addEventListener('contextmenu', e => {
+  // Vérifié AVANT MS_SELECTABLE : .subtask-item est imbriqué dans .todo-item,
+  // qui matcherait sinon via closest() en remontant l'arbre — routant par
+  // erreur le clic droit vers le menu de la tâche PARENTE (cf. _renderSubtaskCtxMenu).
+  const subEl = e.target.closest('.subtask-item');
+  if (subEl) {
+    e.preventDefault();
+    _ctxTarget = { kind: 'subtask', todoId: subEl.dataset.todoId, stid: subEl.dataset.stid, ds: subEl.dataset.ds };
+    _renderCtxMenu();
+    _todoCtxMenu.classList.remove('hidden');
+    _positionCtxMenu(e.clientX + 4, e.clientY);
+    return;
+  }
   const item = e.target.closest(MS_SELECTABLE);
   if (!item || !item.dataset.id) return;
   e.preventDefault();
-  _ctxTarget = { ids: _ctxIdsFor(item.dataset.id), ds: item.getAttribute('data-date') };
+  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(item.dataset.id), ds: item.getAttribute('data-date') };
   _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
   _positionCtxMenu(e.clientX + 4, e.clientY);

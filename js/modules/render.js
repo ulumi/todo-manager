@@ -27,7 +27,7 @@ const _subtaskChevronSVG = (collapsed) => `<svg class="subtask-toggle-chevron${c
 // (pas de render() complet) quand une tâche sans sous-tâche en reçoit sa 1re
 export function subtaskListHTML(subtasks, todoId, ds) {
   const items = (subtasks || []).map(s => `
-    <div class="subtask-item${s.completed ? ' done' : ''}">
+    <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}">
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}')"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}')">${esc(s.title)}</span>
       <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}')" title="Focus sur cette tâche">
