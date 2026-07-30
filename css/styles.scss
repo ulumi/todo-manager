@@ -14327,31 +14327,27 @@ body.view-focus header { display: none; }
   max-width: 100%;
   transition: background .15s cubic-bezier(.25,.46,.45,.94), opacity .15s cubic-bezier(.25,.46,.45,.94);
 
+  // Toute la ligne est draggable (voir _itemRow(), review.js) — pattern
+  // robuste comme .todo-item/.inbox-item. Curseur « grab » sur la ligne.
+  cursor: grab;
   &:hover { background: var(--surface2); }
   &.dragging { opacity: .4; }
+  &:active { cursor: grabbing; }
 }
 
-// Seul point de départ du drag (voir _itemRow(), review.js) — le reste de
-// la ligne n'est plus draggable, pour laisser le clic/la sélection libres.
-// Zone cliquable élargie via padding + margin négative égale (la boîte
-// visible — le SVG 10×16 — ne bouge pas, gap/layout de .review-item non
-// plus affecté) : à opacity .35 sur une cible de 10×16 sans marge, la
-// prise réelle à la souris était trop précise pour être fiable (rapporté
-// par Hugues : impossible d'attraper la tâche depuis le Bilan).
+// Grip décoratif seulement (affordance visuelle) — plus le point de départ
+// du drag ; pointer-events:none pour qu'il ne capte jamais le geste (c'est
+// la ligne entière qui porte draggable + le curseur grab).
 .review-item-handle {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 6px;
-  margin: -8px 0 -8px -6px;
+  pointer-events: none;
   color: var(--text-muted);
-  opacity: .45;
-  cursor: grab;
+  opacity: .35;
   transition: opacity .15s cubic-bezier(.25,.46,.45,.94);
 
-  .review-item:hover & { opacity: .85; }
-  &:active { cursor: grabbing; }
+  .review-item:hover & { opacity: .8; }
 }
 
 .review-item-main {

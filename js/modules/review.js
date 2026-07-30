@@ -113,23 +113,30 @@ export function getBacklogPastDeadline(todos) {
     .sort((a, b) => a.deadline.localeCompare(b.deadline));
 }
 
-// Petit handle dédié (grip à 6 points) : seul point de départ du drag, pour
-// ne pas rendre toute la ligne « draggable » (le clic/la sélection restent
-// libres ailleurs sur la ligne). draggable="true" est sur le handle, mais
-// dragstart lit '${t.id}' par closure donc le payload est correct quel que
-// soit l'élément qui a initié le drag ; .closest('.review-item') porte la
-// classe .dragging pour que toute la ligne s'estompe, pas juste le handle
+// Grip à 6 points : purement décoratif désormais (affordance « ça se
+// glisse »), pas le point de départ du drag. `pointer-events:none` en CSS
+// pour qu'il ne « vole » jamais le geste — c'est la LIGNE ENTIÈRE qui est
+// draggable (voir _itemRow ci-dessous).
 const _DRAG_HANDLE_SVG = `<svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="2.5" r="1.4"/><circle cx="7.5" cy="2.5" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/></svg>`;
 
 // data-id + data-date : sélectionnable (MS_SELECTABLE) et clic droit (menu
-// contextuel, résolu via data-date par _resolveOccurrences()) — aucun
-// bouton sur la ligne elle-même, uniquement le titre + le handle de drag
+// contextuel, résolu via data-date par _resolveOccurrences()).
+//
+// draggable="true" sur la LIGNE ENTIÈRE (pas seulement le petit grip SVG) —
+// c'est le pattern robuste utilisé partout ailleurs dans l'app (.todo-item,
+// .inbox-item, cellules semaine/mois). L'ancien handle-grip (un <span>
+// draggable dont le seul contenu était un <svg>) était fragile à saisir dans
+// Chrome : le drag démarrait mal / pas du tout selon où on cliquait dans le
+// glyphe, d'où « je grab mais rien ne se passe ». Une ligne <div> pleine se
+// saisit de façon fiable. Un clic simple (sans mouvement) ne déclenche pas de
+// drag, donc la sélection/clic droit restent libres, comme sur .todo-item.
 function _itemRow(t) {
   const prioDot = t.priority ? `<span class="review-prio-dot prio-${t.priority}"></span>` : '';
-  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}>
-    <span class="review-item-handle" draggable="true" title="Glisser vers une zone d'action"
-      ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.closest('.review-item').classList.add('dragging')"
-      ondragend="this.closest('.review-item').classList.remove('dragging')">${_DRAG_HANDLE_SVG}</span>
+  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}
+    draggable="true" title="Glisser vers une zone d'action"
+    ondragstart="window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
+    ondragend="this.classList.remove('dragging')">
+    <span class="review-item-handle" aria-hidden="true">${_DRAG_HANDLE_SVG}</span>
     <div class="review-item-main">
       ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${ageBadge(t)}${deadlineBadge(t)}
     </div>

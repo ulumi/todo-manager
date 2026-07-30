@@ -15365,6 +15365,7 @@ body.view-focus header {
   width: fit-content;
   max-width: 100%;
   transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  cursor: grab;
 }
 .review-item:hover {
   background: var(--surface2);
@@ -15372,24 +15373,21 @@ body.view-focus header {
 .review-item.dragging {
   opacity: 0.4;
 }
+.review-item:active {
+  cursor: grabbing;
+}
 
 .review-item-handle {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 6px;
-  margin: -8px 0 -8px -6px;
+  pointer-events: none;
   color: var(--text-muted);
-  opacity: 0.45;
-  cursor: grab;
+  opacity: 0.35;
   transition: opacity 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .review-item:hover .review-item-handle {
-  opacity: 0.85;
-}
-.review-item-handle:active {
-  cursor: grabbing;
+  opacity: 0.8;
 }
 
 .review-item-main {
