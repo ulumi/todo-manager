@@ -290,12 +290,15 @@ export function editModalSubtask(el, stid) {
     el.contentEditable = 'false';
     const newTitle = el.textContent.trim();
     if (newTitle) { s.title = newTitle; _scheduleDraftSave(); _persistSubtasksIfEditing(); }
-    else el.textContent = esc(s.title);
+    // Jamais esc() sur textContent : il échappe déjà seul, donc esc() y
+    // écrirait « &gt; » comme texte VISIBLE, relu tel quel dans s.title à la
+    // sauvegarde suivante — une couche de plus à chaque cycle d'édition
+    else el.textContent = s.title;
   };
   el.addEventListener('blur', save, { once: true });
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-    if (e.key === 'Escape') { el.textContent = esc(s.title); el.contentEditable = 'false'; }
+    if (e.key === 'Escape') { el.textContent = s.title; el.contentEditable = 'false'; }
   }, { once: true });
 }
 

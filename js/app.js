@@ -1646,13 +1646,17 @@ class TodoApp {
         t.updatedAt = Date.now();
         saveTodos(state.todos);
       } else {
-        el.textContent = esc(s.title);
+        // Jamais esc() ici : textContent échappe déjà de lui-même, donc
+        // esc() y écrirait « &gt; » comme texte VISIBLE, que la sauvegarde
+        // suivante relirait tel quel dans s.title — puis esc() au rendu en
+        // rajouterait une couche à chaque cycle (&amp;gt;, &amp;amp;gt;…)
+        el.textContent = s.title;
       }
     };
     el.addEventListener('blur', save, { once: true });
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-      if (e.key === 'Escape') { el.textContent = esc(s.title); el.contentEditable = 'false'; }
+      if (e.key === 'Escape') { el.textContent = s.title; el.contentEditable = 'false'; }
     }, { once: true });
   }
 
