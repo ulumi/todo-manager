@@ -14332,17 +14332,25 @@ body.view-focus header { display: none; }
 }
 
 // Seul point de départ du drag (voir _itemRow(), review.js) — le reste de
-// la ligne n'est plus draggable, pour laisser le clic/la sélection libres
+// la ligne n'est plus draggable, pour laisser le clic/la sélection libres.
+// Zone cliquable élargie via padding + margin négative égale (la boîte
+// visible — le SVG 10×16 — ne bouge pas, gap/layout de .review-item non
+// plus affecté) : à opacity .35 sur une cible de 10×16 sans marge, la
+// prise réelle à la souris était trop précise pour être fiable (rapporté
+// par Hugues : impossible d'attraper la tâche depuis le Bilan).
 .review-item-handle {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  margin: -8px 0 -8px -6px;
   color: var(--text-muted);
-  opacity: .35;
+  opacity: .45;
   cursor: grab;
   transition: opacity .15s cubic-bezier(.25,.46,.45,.94);
 
-  .review-item:hover & { opacity: .8; }
+  .review-item:hover & { opacity: .85; }
   &:active { cursor: grabbing; }
 }
 
