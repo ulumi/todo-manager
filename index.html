@@ -924,16 +924,18 @@
       <div class="auth-chat-bubble" id="authFormBubble">Connecte-toi pour retrouver tes tâches sur tous tes appareils.</div>
 
       <!-- Email form -->
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input class="form-input" type="email" id="authEmail" placeholder="vous@exemple.com" autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mot de passe</label>
-        <input class="form-input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
-      </div>
-      <div class="auth-error hidden" id="authError"></div>
-      <button class="btn btn-primary" style="width:100%;margin-top:8px" id="authSubmitBtn" onclick="window.app.authSubmit()">Se connecter</button>
+      <form autocomplete="off" onsubmit="return false">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="authEmail" placeholder="vous@exemple.com" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Mot de passe</label>
+          <input class="form-input" type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="auth-error hidden" id="authError"></div>
+        <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" id="authSubmitBtn" onclick="window.app.authSubmit()">Se connecter</button>
+      </form>
       <div class="auth-switch">
         <span id="authSwitchText">Pas encore de compte ?</span>
         <button class="btn-link" id="authSwitchBtn" onclick="window.app.authToggleMode()">Créer un compte</button>
@@ -973,16 +975,18 @@
       Continuer avec Facebook
     </button>
     <div class="auth-divider"><span>ou</span></div>
-    <div class="form-group">
-      <label class="form-label">Email</label>
-      <input class="form-input" type="email" id="upgradeEmail" autocomplete="off" placeholder="vous@exemple.com">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Mot de passe</label>
-      <input class="form-input" type="password" id="upgradePassword" placeholder="••••••••" autocomplete="new-password">
-    </div>
-    <div class="auth-error hidden" id="upgradeError"></div>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window.app.upgradeSubmit()">Créer mon compte avec email</button>
+    <form autocomplete="off" onsubmit="return false">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" type="email" id="upgradeEmail" autocomplete="off" placeholder="vous@exemple.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input class="form-input" type="password" id="upgradePassword" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="auth-error hidden" id="upgradeError"></div>
+      <button type="button" class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window.app.upgradeSubmit()">Créer mon compte avec email</button>
+    </form>
     <button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="window.app.upgradeDismiss()">Non merci, continuer sans compte</button>
   </div>
 </div>
