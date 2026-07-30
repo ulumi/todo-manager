@@ -15446,6 +15446,11 @@ body.view-focus header {
   font-variant-numeric: tabular-nums;
 }
 
+#reviewModalOverlay,
+#reviewModalOverlay .modal {
+  backdrop-filter: none;
+}
+
 .overdue-drop-zones {
   display: flex;
   flex-wrap: wrap;

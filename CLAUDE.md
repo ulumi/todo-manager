@@ -218,6 +218,7 @@ The real gap — a tab left open across a deploy keeps running its already-evalu
 - **Dark mode:** `[data-theme="dark"]` selector
 - **CSS variables:** `--primary`, `--bg`, `--surface`, `--surface2`, `--text`, `--text-muted`, `--border`, `--shadow`, `--radius`, `--success`, `--warning`, `--danger`
 - **Todo items layout:** `display: flex; align-items: center` — NEVER use `display: grid` on `.todo-item`
+- **⚠ `filter`/`backdrop-filter` casse les cibles de drop natives** (bug Chromium) : une `drop target` (élément avec `ondragover`/`ondrop`) ne reçoit **jamais** `dragover`/`drop` si un de ses **ancêtres** a `filter`, `backdrop-filter`, `transform` ou `will-change`. La source du drag n'est PAS affectée — le drag démarre normalement, mais le drop est silencieusement avalé (symptôme : « je grab mais rien ne se passe au lâcher »). Repéré sur les zones `.overdue-drop-zone` du **modal Bilan** : elles marchaient dans le bandeau `.past-due-banner` de la vue jour (aucun ancêtre filtré) mais pas dans le modal, dont `.modal-overlay` (blur 12px) + `.modal` (blur 20px) sont des ancêtres — corrigé par `#reviewModalOverlay, #reviewModalOverlay .modal { backdrop-filter: none }` (le dim `rgba(0,0,0,.5)` de l'overlay suffit à lire comme un modal). **Toute nouvelle zone de drop doit vérifier qu'aucun ancêtre n'est filtré.** (Playwright ne peut PAS piloter un drag natif HTML5 jusqu'au drop — la boucle de drag OS avale ses `mouse.move` ; vérifier plutôt qu'il n'y a aucun ancêtre filtré via `getComputedStyle`, pas en simulant le drop.)
 
 ---
 

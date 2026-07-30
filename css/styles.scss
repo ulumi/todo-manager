@@ -14406,6 +14406,23 @@ body.view-focus header { display: none; }
   font-variant-numeric: tabular-nums;
 }
 
+// ⚠ Bug Chromium load-bearing : une cible de dépôt (drop target) ne reçoit
+// JAMAIS dragover/drop si un de ses ancêtres a filter/backdrop-filter. Les
+// zones .overdue-drop-zone du Bilan sont des descendantes de #reviewModalOverlay
+// (.modal-overlay, backdrop-filter blur(12px)) → .modal (blur(20px)) : le drag
+// DÉMARRAIT bien (la source n'est pas affectée par ce bug), mais le drop était
+// silencieusement avalé — d'où « je grab mais rien ne se passe ». Les MÊMES
+// zones/handlers dans le bandeau .past-due-banner de la vue jour marchent car
+// aucun ancêtre n'y est filtré. On retire donc le flou pour CE modal seulement
+// (les autres modals gardent leur frosted glass) ; le fond reste bien assombri
+// via background rgba(0,0,0,.5) sur l'overlay + .modal opaque (var(--surface)),
+// donc la perte visuelle est quasi nulle. NE PAS réintroduire de backdrop-filter
+// (ni filter/transform/will-change) sur un ancêtre de ces zones.
+#reviewModalOverlay,
+#reviewModalOverlay .modal {
+  backdrop-filter: none;
+}
+
 // Grosses zones de dépôt (renderOverdueDropZones, review.js) : on drague
 // une ligne .review-item dessus pour appliquer l'action, plutôt que des
 // boutons sur chaque ligne
