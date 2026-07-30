@@ -1185,11 +1185,14 @@ class TodoApp {
     const todo = state.todos.find(x => x.id === id);
     const wasCompleted = isCompleted(todo, d);
 
-    // Warn if completing a todo that has incomplete subtasks
+    // Warn if completing a todo that has incomplete subtasks — compte
+    // récursif (sous-sous-tâches incluses), sinon compléter une tâche
+    // ignorerait silencieusement des enfants non faits nichés un niveau
+    // plus bas.
     if (!wasCompleted && todo?.subtasks?.length) {
-      const incomplete = todo.subtasks.filter(s => !s.completed);
-      if (incomplete.length) {
-        this._showSubtaskWarning(id, d, incomplete.length);
+      const incomplete = this._countIncompleteSubtasks(todo.subtasks);
+      if (incomplete) {
+        this._showSubtaskWarning(id, d, incomplete);
         return;
       }
     }
@@ -1560,9 +1563,30 @@ class TodoApp {
     btn.title = collapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches';
   }
 
-  toggleSubtask(todoId, stid, ds) {
+  // Résout une (sous-)sous-tâche : parentStid absent → cherche dans
+  // t.subtasks (profondeur 1) ; présent → cherche dans les enfants de CE
+  // membre (profondeur 2, la seule autorisée — décision produit : un seul
+  // niveau d'imbrication supplémentaire, jamais de 3e niveau).
+  _findSubtask(t, stid, parentStid) {
+    if (!t) return null;
+    if (parentStid) return t.subtasks?.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid) || null;
+    return t.subtasks?.find(x => x.id === stid) || null;
+  }
+
+  // Compte récursif des (sous-)sous-tâches non faites — utilisé par
+  // l'avertissement de complétion ci-dessus.
+  _countIncompleteSubtasks(subtasks) {
+    let n = 0;
+    (subtasks || []).forEach(s => {
+      if (!s.completed) n++;
+      if (s.subtasks?.length) n += this._countIncompleteSubtasks(s.subtasks);
+    });
+    return n;
+  }
+
+  toggleSubtask(todoId, stid, ds, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    const s = t?.subtasks?.find(x => x.id === stid);
+    const s = this._findSubtask(t, stid, parentStid);
     if (!s) return;
     snapshot(state.todos);
     s.completed = !s.completed;
@@ -1571,39 +1595,53 @@ class TodoApp {
     this.render();
   }
 
-  deleteSubtask(todoId, stid) {
+  deleteSubtask(todoId, stid, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
     if (!t?.subtasks) return;
     snapshot(state.todos);
-    t.subtasks = t.subtasks.filter(x => x.id !== stid);
+    if (parentStid) {
+      const p = t.subtasks.find(x => x.id === parentStid);
+      if (p?.subtasks) p.subtasks = p.subtasks.filter(x => x.id !== stid);
+    } else {
+      t.subtasks = t.subtasks.filter(x => x.id !== stid);
+    }
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
   }
 
-  addSubtaskInline(todoId) {
-    const list = document.querySelector(`[data-id="${todoId}"] .subtask-list`);
+  addSubtaskInline(todoId, parentStid) {
+    const list = parentStid
+      ? document.querySelector(`.subtask-list[data-parent-stid="${parentStid}"]`)
+      : document.querySelector(`[data-id="${todoId}"] .subtask-list`);
     if (!list) return;
-    const addBtn = list.querySelector('.subtask-add-mini');
+    // :scope > … cible le bouton de CE niveau — sans ça, une liste racine
+    // dont une sous-tâche a déjà des enfants aurait trouvé le mini-bouton
+    // de la liste IMBRIQUÉE en premier (1er match en ordre document), pas
+    // le sien propre.
+    const addBtn = list.querySelector(':scope > .subtask-add-mini-slot > .subtask-add-mini');
     if (!addBtn) return;
     const input = document.createElement('input');
     input.className = 'subtask-new-input';
     input.placeholder = 'Nouvelle sous-tâche…';
     input.autocomplete = 'off';
     let saved = false;
-    // Liste injectée par ctxAddSubtask() pour une tâche sans sous-tâche :
-    // si l'ajout est annulé sans rien créer, retirer le bloc entièrement
-    // plutôt que de laisser un bouton d'ajout vide traîner sur l'item
+    // Liste injectée par ctxAddSubtask()/ctxAddNestedSubtask() pour un
+    // parent sans enfant : si l'ajout est annulé sans rien créer, retirer
+    // le bloc — mais SEULEMENT ce niveau (list.remove()) pour une liste
+    // imbriquée : remonter à .closest('.subtask-collapse') retirerait TOUTES
+    // les sous-tâches du niveau racine, pas seulement cette liste-ci.
     const cancel = () => {
-      if (!list.querySelector('.subtask-item')) (list.closest('.subtask-collapse') || list).remove();
-      else addBtn.style.display = '';
+      if (list.querySelector(':scope > .subtask-item')) { addBtn.style.display = ''; return; }
+      if (parentStid) list.remove();
+      else (list.closest('.subtask-collapse') || list).remove();
     };
     const confirm = () => {
       if (saved) return;
       saved = true;
       const title = input.value.trim();
       input.remove();
-      if (title) { addBtn.style.display = ''; this._saveNewSubtask(todoId, title); }
+      if (title) { addBtn.style.display = ''; this._saveNewSubtask(todoId, title, parentStid); }
       else cancel();
     };
     input.addEventListener('keydown', e => {
@@ -1616,20 +1654,41 @@ class TodoApp {
     input.focus();
   }
 
-  _saveNewSubtask(todoId, title) {
+  // Menu contextuel (sous-tâche) « Ajouter une sous-tâche » : même patch
+  // ciblé que ctxAddSubtask, un niveau plus profond — injecte la liste
+  // imbriquée si elle n'existe pas encore. Masqué au menu (cf.
+  // _renderSubtaskCtxMenu) si la cible du clic droit est déjà elle-même
+  // une sous-sous-tâche, donc jamais appelé avec un parentStid invalide.
+  ctxAddNestedSubtask(todoId, parentStid, ds) {
+    const rowEl = document.querySelector(`.subtask-item[data-stid="${parentStid}"]:not([data-parent-stid])`);
+    if (!rowEl) return;
+    if (!document.querySelector(`.subtask-list[data-parent-stid="${parentStid}"]`)) {
+      rowEl.insertAdjacentHTML('afterend', subtaskListHTML([], todoId, ds, parentStid));
+    }
+    this.addSubtaskInline(todoId, parentStid);
+  }
+
+  _saveNewSubtask(todoId, title, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
     if (!t) return;
     snapshot(state.todos);
-    if (!t.subtasks) t.subtasks = [];
-    t.subtasks.push({ id: Date.now().toString(), title, completed: false });
+    if (parentStid) {
+      const p = t.subtasks?.find(x => x.id === parentStid);
+      if (!p) return;
+      if (!p.subtasks) p.subtasks = [];
+      p.subtasks.push({ id: Date.now().toString(), title, completed: false });
+    } else {
+      if (!t.subtasks) t.subtasks = [];
+      t.subtasks.push({ id: Date.now().toString(), title, completed: false });
+    }
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
   }
 
-  editSubtaskTitle(el, todoId, stid) {
+  editSubtaskTitle(el, todoId, stid, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    const s = t?.subtasks?.find(x => x.id === stid);
+    const s = this._findSubtask(t, stid, parentStid);
     if (!s) return;
     el.contentEditable = 'true';
     el.focus();
@@ -1684,6 +1743,11 @@ class TodoApp {
         groupTitle: t.title,
         updatedAt: base + i + 1,
       };
+      // Les enfants d'une sous-tâche (sous-sous-tâche, un seul niveau
+      // permis) deviennent tels quels les sous-tâches de la nouvelle tâche
+      // indépendante — profondeur inchangée par rapport à s, jamais un
+      // niveau de trop.
+      if (s.subtasks?.length) child.subtasks = JSON.parse(JSON.stringify(s.subtasks));
       if (t.dayPeriod) child.dayPeriod = t.dayPeriod;
       if (t.priority) child.priority = t.priority;
       if (t.categoryIds?.length) child.categoryIds = [...t.categoryIds];
@@ -1716,7 +1780,18 @@ class TodoApp {
       date: first.date,
       completed: false,
       completedDates: [],
-      subtasks: members.map(m => ({ id: m.id, title: m.title, completed: !!m.completed })),
+      // Les propres sous-tâches de chaque membre (m.subtasks) deviennent
+      // depth 1 sous la nouvelle tâche — mais si CES sous-tâches avaient
+      // elles-mêmes des enfants, les garder créerait un 3e niveau (m était
+      // une tâche autonome, m.subtasks était donc déjà son propre niveau 1) :
+      // on aplatit cette éventuelle profondeur supplémentaire pour ne
+      // jamais dépasser le seul niveau d'imbrication permis.
+      subtasks: members.map(m => ({
+        id: m.id,
+        title: m.title,
+        completed: !!m.completed,
+        ...(m.subtasks?.length ? { subtasks: m.subtasks.map(s => ({ id: s.id, title: s.title, completed: !!s.completed })) } : {}),
+      })),
       updatedAt: Date.now(),
     };
     if (first.dayPeriod) parent.dayPeriod = first.dayPeriod;
@@ -1797,11 +1872,11 @@ class TodoApp {
   }
 
   // ── Modal subtask delegates (called via window.app from modal HTML) ────────
-  toggleModalSubtask(stid)    { toggleModalSubtask(stid); }
-  removeModalSubtask(stid)    { removeModalSubtask(stid); }
-  addModalSubtaskInline()     { addModalSubtaskInline(); }
-  editModalSubtask(el, stid)  { editModalSubtask(el, stid); }
-  moveModalSubtask(stid, dir) { moveModalSubtask(stid, dir); }
+  toggleModalSubtask(stid, parentStid)    { toggleModalSubtask(stid, parentStid); }
+  removeModalSubtask(stid, parentStid)    { removeModalSubtask(stid, parentStid); }
+  addModalSubtaskInline(parentStid)       { addModalSubtaskInline(parentStid); }
+  editModalSubtask(el, stid, parentStid)  { editModalSubtask(el, stid, parentStid); }
+  moveModalSubtask(stid, dir, parentStid) { moveModalSubtask(stid, dir, parentStid); }
 
   _trackDeletion(id) {
     const dels = safeParseJSON(localStorage.getItem('_deletions'), {});
@@ -2581,7 +2656,7 @@ class TodoApp {
       clone.date = ds;
     }
     if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
-    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
+    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false, ...(s.subtasks?.length ? { subtasks: s.subtasks.map(ss => ({ ...ss, completed: false })) } : {}) }));
     const idx = state.todos.findIndex(x => x.id === id);
     state.todos.splice(idx + 1, 0, clone);
     saveTodos(state.todos);
@@ -2694,7 +2769,7 @@ class TodoApp {
         clone.date = ds;
       }
       if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
-      if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
+      if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false, ...(s.subtasks?.length ? { subtasks: s.subtasks.map(ss => ({ ...ss, completed: false })) } : {}) }));
       const idx = state.todos.findIndex(x => x.id === t.id);
       state.todos.splice(idx + 1, 0, clone);
     });
@@ -4989,7 +5064,7 @@ class TodoApp {
     const cloneId = (Date.now() + this._cloneSeq).toString();
     const clone = { ...JSON.parse(JSON.stringify(t)), id: cloneId, completed: false, completedDates: [], updatedAt: parseInt(cloneId) };
     if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
-    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false }));
+    if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false, ...(s.subtasks?.length ? { subtasks: s.subtasks.map(ss => ({ ...ss, completed: false })) } : {}) }));
     Object.assign(clone, overrides);
     const idx = state.todos.findIndex(x => x.id === t.id);
     state.todos.splice(idx + 1, 0, clone);
@@ -7592,23 +7667,27 @@ const _todoCtxMenu = document.createElement('div');
 _todoCtxMenu.className = 'todo-ctx-menu hidden';
 document.body.appendChild(_todoCtxMenu);
 
-let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', todoId, stid, ds }
+let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', todoId, stid, ds, parentStid }
 
-// Menu minimal pour une sous-tâche (clic droit sur .subtask-item) : ses
-// seules actions pertinentes sont celles déjà exposées par les boutons
+// Menu minimal pour une (sous-)sous-tâche (clic droit sur .subtask-item) :
+// ses seules actions pertinentes sont celles déjà exposées par les boutons
 // hover de la ligne (case à cocher, ▶ focus, × suppression) — jamais les
 // actions de la tâche PARENTE (Modifier/Grouper/Déplacer/… n'ont pas de
 // sens ici). Sans ce menu dédié, .subtask-item (sans data-id propre)
 // laissait le clic droit remonter à .todo-item ancêtre : « Supprimer »
 // supprimait alors toute la tâche parente au lieu de la seule sous-tâche.
+// « Ajouter une sous-tâche » n'apparaît que si la cible est elle-même de
+// profondeur 1 (parentStid absent) — une sous-sous-tâche ne peut pas avoir
+// d'enfant (décision produit : un seul niveau d'imbrication de plus).
 function _renderSubtaskCtxMenu() {
-  const { todoId, stid } = _ctxTarget;
+  const { todoId, stid, parentStid } = _ctxTarget;
   const t = state.todos.find(x => x.id === todoId);
-  const s = t?.subtasks?.find(x => x.id === stid);
+  const s = window.app._findSubtask(t, stid, parentStid);
   if (!s) { _todoCtxMenu.innerHTML = ''; return; }
   _todoCtxMenu.innerHTML = `
     <div class="ctx-item" data-action="subtask-complete"><span>${s.completed ? '↺' : '✓'}</span> ${s.completed ? 'Décompléter' : 'Compléter'}</div>
     <div class="ctx-item" data-action="subtask-focus"><span>▶</span> Focus</div>
+    ${!parentStid ? `<div class="ctx-item" data-action="subtask-add-nested"><span>☑</span> Ajouter une sous-tâche</div>` : ''}
     <div class="ctx-sep"></div>
     <div class="ctx-item danger" data-action="subtask-delete"><span>×</span> Supprimer</div>
   `;
@@ -7773,12 +7852,13 @@ _todoCtxMenu.addEventListener('click', e => {
   if (_ctxTarget?.kind === 'subtask') {
     const item = e.target.closest('.ctx-item');
     if (!item) return;
-    const { todoId, stid, ds } = _ctxTarget;
+    const { todoId, stid, ds, parentStid } = _ctxTarget;
     _hideTodoCtxMenu();
     const action = item.dataset.action;
-    if (action === 'subtask-complete') window.app.toggleSubtask(todoId, stid, ds);
-    if (action === 'subtask-focus')    window.app.focusStartOn(todoId, ds);
-    if (action === 'subtask-delete')   window.app.deleteSubtask(todoId, stid);
+    if (action === 'subtask-complete')   window.app.toggleSubtask(todoId, stid, ds, parentStid);
+    if (action === 'subtask-focus')      window.app.focusStartOn(todoId, ds);
+    if (action === 'subtask-add-nested') window.app.ctxAddNestedSubtask(todoId, stid, ds);
+    if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, parentStid);
     return;
   }
   const prioBtn = e.target.closest('.ctx-prio-btn');
@@ -7839,7 +7919,7 @@ document.addEventListener('contextmenu', e => {
   const subEl = e.target.closest('.subtask-item');
   if (subEl) {
     e.preventDefault();
-    _ctxTarget = { kind: 'subtask', todoId: subEl.dataset.todoId, stid: subEl.dataset.stid, ds: subEl.dataset.ds };
+    _ctxTarget = { kind: 'subtask', todoId: subEl.dataset.todoId, stid: subEl.dataset.stid, ds: subEl.dataset.ds, parentStid: subEl.dataset.parentStid || null };
     _renderCtxMenu();
     _todoCtxMenu.classList.remove('hidden');
     _positionCtxMenu(e.clientX + 4, e.clientY);

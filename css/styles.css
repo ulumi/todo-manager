@@ -2775,6 +2775,10 @@ input:checked + .cal-sid-toggle-track::after {
 .subtask-list.two-col .subtask-item {
   margin-bottom: 5px;
 }
+.subtask-list.subtask-list--nested {
+  margin: 4px 0 4px 24px;
+  break-inside: avoid;
+}
 
 .subtask-item {
   display: flex;
@@ -3039,8 +3043,25 @@ input:checked + .cal-sid-toggle-track::after {
 .modal-subtask-item:hover {
   background: var(--surface2);
 }
-.modal-subtask-item:hover .subtask-del {
+.modal-subtask-item:hover .subtask-del, .modal-subtask-item:hover .subtask-add-nested-btn {
   opacity: 1;
+}
+.modal-subtask-item .subtask-add-nested-btn {
+  flex-shrink: 0;
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.modal-subtask-item .subtask-add-nested-btn:hover {
+  color: var(--primary);
+  background: var(--surface2);
 }
 .modal-subtask-item .subtask-check {
   flex-shrink: 0;
@@ -3114,6 +3135,10 @@ input:checked + .cal-sid-toggle-track::after {
 #modalSubtaskSection .subtask-add-btn {
   opacity: 1;
   margin-top: 4px;
+}
+
+.modal-subtask-nested {
+  margin: 2px 0 4px 28px;
 }
 
 .todo-check {

@@ -224,21 +224,45 @@ function _persistSubtasksIfEditing() {
   _subtasksDirty = true;
 }
 
+// Résout une (sous-)sous-tâche : mêmes règles que app._findSubtask —
+// parentStid absent → profondeur 1 ; présent → profondeur 2 (la seule
+// permise, un seul niveau d'imbrication supplémentaire).
+function _findModalSubtask(stid, parentStid) {
+  if (parentStid) return _modalSubtasks.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid) || null;
+  return _modalSubtasks.find(x => x.id === stid) || null;
+}
+
+// Rendu récursif (un seul niveau de plus, jamais davantage) : chaque ligne
+// de profondeur 1 peut porter, juste après elle, la liste imbriquée de ses
+// propres sous-tâches — repliée dans un conteneur indenté distinct
+// (.modal-subtask-nested), jamais de 3e niveau (le bouton « + » d'ajout
+// imbriqué n'apparaît que sur les lignes de profondeur 1, cf. plus bas).
+function _subtaskRowsHTML(list, parentStid) {
+  const len = list.length;
+  return list.map((s, i) => {
+    const args = parentStid ? `,'${parentStid}'` : '';
+    const nested = !parentStid && s.subtasks?.length
+      ? `<div class="modal-subtask-nested">${_subtaskRowsHTML(s.subtasks, s.id)}</div>`
+      : '';
+    return `
+    <div class="modal-subtask-item${s.completed ? ' done' : ''}" data-stid="${s.id}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
+      <div class="subtask-reorder">
+        <button class="subtask-move-btn${i === 0 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',-1${args})" title="Monter"${i === 0 ? ' disabled' : ''}>&#8593;</button>
+        <button class="subtask-move-btn${i === len - 1 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',1${args})" title="Descendre"${i === len - 1 ? ' disabled' : ''}>&#8595;</button>
+      </div>
+      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}'${args})"></div>
+      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}'${args})">${esc(s.title)}</span>
+      ${!parentStid ? `<button class="subtask-add-nested-btn" onclick="window.app.addModalSubtaskInline('${s.id}')" title="Ajouter une sous-tâche">+</button>` : ''}
+      <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}'${args})">×</button>
+    </div>${nested}`;
+  }).join('');
+}
+
 function _renderModalSubtasks() {
   const el = document.getElementById('modalSubtaskList');
   if (!el) return;
-  const len = _modalSubtasks.length;
-  el.innerHTML = _modalSubtasks.map((s, i) => `
-    <div class="modal-subtask-item${s.completed ? ' done' : ''}" data-stid="${s.id}">
-      <div class="subtask-reorder">
-        <button class="subtask-move-btn${i === 0 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',-1)" title="Monter"${i === 0 ? ' disabled' : ''}>&#8593;</button>
-        <button class="subtask-move-btn${i === len - 1 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',1)" title="Descendre"${i === len - 1 ? ' disabled' : ''}>&#8595;</button>
-      </div>
-      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}')"></div>
-      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}')">${esc(s.title)}</span>
-      <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}')">×</button>
-    </div>`).join('')
-  + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
+  el.innerHTML = _subtaskRowsHTML(_modalSubtasks, null)
+    + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
 }
 
 export function populateModalSubtasks(subtasks) {
@@ -247,38 +271,53 @@ export function populateModalSubtasks(subtasks) {
   _renderModalSubtasks();
 }
 
-export function toggleModalSubtask(stid) {
-  const s = _modalSubtasks.find(x => x.id === stid);
+export function toggleModalSubtask(stid, parentStid) {
+  const s = _findModalSubtask(stid, parentStid);
   if (s) { s.completed = !s.completed; _renderModalSubtasks(); _scheduleDraftSave(); _persistSubtasksIfEditing(); }
 }
 
-export function removeModalSubtask(stid) {
-  _modalSubtasks = _modalSubtasks.filter(x => x.id !== stid);
+export function removeModalSubtask(stid, parentStid) {
+  if (parentStid) {
+    const p = _modalSubtasks.find(x => x.id === parentStid);
+    if (p?.subtasks) p.subtasks = p.subtasks.filter(x => x.id !== stid);
+  } else {
+    _modalSubtasks = _modalSubtasks.filter(x => x.id !== stid);
+  }
   _renderModalSubtasks();
   _scheduleDraftSave();
   _persistSubtasksIfEditing();
 }
 
-export function addModalSubtask(title) {
-  _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
+export function addModalSubtask(title, parentStid) {
+  const item = { id: Date.now().toString(), title, completed: false };
+  if (parentStid) {
+    const p = _modalSubtasks.find(x => x.id === parentStid);
+    if (!p) return;
+    if (!p.subtasks) p.subtasks = [];
+    p.subtasks.push(item);
+  } else {
+    _modalSubtasks.push(item);
+  }
   _renderModalSubtasks();
   _scheduleDraftSave();
   _persistSubtasksIfEditing();
 }
 
-export function moveModalSubtask(stid, dir) {
-  const idx = _modalSubtasks.findIndex(x => x.id === stid);
+export function moveModalSubtask(stid, dir, parentStid) {
+  const arr = parentStid ? _modalSubtasks.find(x => x.id === parentStid)?.subtasks : _modalSubtasks;
+  if (!arr) return;
+  const idx = arr.findIndex(x => x.id === stid);
   if (idx < 0) return;
   const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= _modalSubtasks.length) return;
-  [_modalSubtasks[idx], _modalSubtasks[newIdx]] = [_modalSubtasks[newIdx], _modalSubtasks[idx]];
+  if (newIdx < 0 || newIdx >= arr.length) return;
+  [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
   _renderModalSubtasks();
   _scheduleDraftSave();
   _persistSubtasksIfEditing();
 }
 
-export function editModalSubtask(el, stid) {
-  const s = _modalSubtasks.find(x => x.id === stid);
+export function editModalSubtask(el, stid, parentStid) {
+  const s = _findModalSubtask(stid, parentStid);
   if (!s) return;
   el.contentEditable = 'true';
   el.focus();
@@ -302,23 +341,43 @@ export function editModalSubtask(el, stid) {
   }, { once: true });
 }
 
-export function addModalSubtaskInline() {
+// parentStid absent : comportement inchangé (input avant le bouton
+// persistant .subtask-add-btn). parentStid présent : l'input s'ouvre juste
+// après la ligne de la sous-tâche visée, dans son conteneur imbriqué
+// (.modal-subtask-nested — créé à la volée s'il n'existe pas encore, pour
+// garder l'indentation dès la 1re saisie plutôt qu'un flash non-indenté).
+export function addModalSubtaskInline(parentStid) {
   const list = document.getElementById('modalSubtaskList');
   if (!list) return;
-  const addBtn = list.querySelector('.subtask-add-btn');
-  if (!addBtn) return;
   const input = document.createElement('input');
   input.className = 'subtask-new-input';
   input.placeholder = 'Nouvelle sous-tâche…';
   input.autocomplete = 'off';
+  let addBtn = null;
+  if (parentStid) {
+    const rowEl = list.querySelector(`.modal-subtask-item[data-stid="${parentStid}"]`);
+    if (!rowEl) return;
+    let nestedEl = rowEl.nextElementSibling?.classList.contains('modal-subtask-nested') ? rowEl.nextElementSibling : null;
+    if (!nestedEl) {
+      nestedEl = document.createElement('div');
+      nestedEl.className = 'modal-subtask-nested';
+      rowEl.insertAdjacentElement('afterend', nestedEl);
+    }
+    nestedEl.appendChild(input);
+  } else {
+    addBtn = list.querySelector(':scope > .subtask-add-btn');
+    if (!addBtn) return;
+    addBtn.style.display = 'none';
+    list.insertBefore(input, addBtn);
+  }
   let done = false;
   const finish = () => {
     if (done) return;
     done = true;
     const title = input.value.trim();
     input.remove();
-    addBtn.style.display = '';
-    if (title) { addModalSubtask(title); }
+    if (addBtn) addBtn.style.display = '';
+    if (title) addModalSubtask(title, parentStid);
   };
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -326,18 +385,15 @@ export function addModalSubtaskInline() {
       const title = input.value.trim();
       if (!title) return;
       done = true; // prevent blur from firing finish()
-      _modalSubtasks.push({ id: Date.now().toString(), title, completed: false });
-      _renderModalSubtasks();
-      _scheduleDraftSave();
-      _persistSubtasksIfEditing();
-      // Re-open inline input immediately for the next subtask
-      addModalSubtaskInline();
+      addModalSubtask(title, parentStid);
+      // Re-open inline input immediately for the next subtask — le DOM
+      // vient d'être régénéré par addModalSubtask() (y compris le conteneur
+      // imbriqué tout juste créé), donc cible à nouveau le même parent
+      addModalSubtaskInline(parentStid);
     }
-    if (e.key === 'Escape') { done = true; input.remove(); addBtn.style.display = ''; }
+    if (e.key === 'Escape') { done = true; input.remove(); if (addBtn) addBtn.style.display = ''; }
   });
   input.addEventListener('blur', finish);
-  addBtn.style.display = 'none';
-  list.appendChild(input);
   input.focus();
 }
 

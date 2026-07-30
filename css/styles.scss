@@ -2704,6 +2704,17 @@ main {
 
     .subtask-item { margin-bottom: 5px; }
   }
+
+  // Sous-sous-tâche (un niveau de plus, jamais davantage — décision
+  // produit) : même habillage que .subtask-list mais indentée sous la
+  // ligne de sa sous-tâche parente ; jamais deux colonnes ici (peu d'items
+  // attendus à ce niveau — la bascule ne s'applique qu'à la liste racine,
+  // cf. subtaskListHTML). break-inside:avoid au cas où la liste racine
+  // parente serait elle-même en deux colonnes.
+  &.subtask-list--nested {
+    margin: 4px 0 4px 24px;
+    break-inside: avoid;
+  }
 }
 
 // Items à bordure propre (pas un style checklist compact) — chacun se
@@ -2988,7 +2999,27 @@ main {
 
   &:hover {
     background: var(--surface2);
-    .subtask-del { opacity: 1; }
+    .subtask-del, .subtask-add-nested-btn { opacity: 1; }
+  }
+
+  // Bouton d'ajout d'une sous-sous-tâche — même gabarit que .subtask-del,
+  // couleur primary au survol pour se distinguer de l'action destructive.
+  // N'apparaît que sur les lignes de profondeur 1 (cf. _subtaskRowsHTML,
+  // modal.js) : une sous-sous-tâche ne peut pas elle-même avoir d'enfant.
+  .subtask-add-nested-btn {
+    flex-shrink: 0;
+    opacity: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 3px;
+    border-radius: 3px;
+    transition: opacity .15s, color .15s, background .15s;
+
+    &:hover { color: var(--primary); background: var(--surface2); }
   }
 
   .subtask-check {
@@ -3063,6 +3094,13 @@ main {
 
 #modalSubtaskSection {
   .subtask-add-btn { opacity: 1; margin-top: 4px; }
+}
+
+// Sous-sous-tâches (modal d'édition) — un seul niveau de plus, jamais
+// davantage (décision produit), même profondeur que .subtask-list--nested
+// en vue jour : indentées sous la ligne de leur sous-tâche parente.
+.modal-subtask-nested {
+  margin: 2px 0 4px 28px;
 }
 
 

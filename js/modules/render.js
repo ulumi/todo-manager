@@ -23,24 +23,36 @@ const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="cu
 
 const _subtaskChevronSVG = (collapsed) => `<svg class="subtask-toggle-chevron${collapsed ? ' collapsed' : ''}" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
 
-// Exportée : app.ctxAddSubtask() injecte ce même bloc par patch DOM ciblé
-// (pas de render() complet) quand une tâche sans sous-tâche en reçoit sa 1re
-export function subtaskListHTML(subtasks, todoId, ds) {
-  const items = (subtasks || []).map(s => `
-    <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}">
-      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}')"></div>
-      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}')">${esc(s.title)}</span>
+// Exportée : app.ctxAddSubtask()/ctxAddNestedSubtask() injectent ce même
+// bloc par patch DOM ciblé (pas de render() complet) quand une tâche ou une
+// sous-tâche sans enfant en reçoit son premier. parentStid non-null = on
+// rend le niveau sous-sous-tâche POUR cette sous-tâche précise — jamais plus
+// profond (décision produit : un seul niveau d'imbrication supplémentaire),
+// d'où `!parentStid` qui garde la récursion à un seul cran ci-dessous.
+export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
+  const items = (subtasks || []).map(s => {
+    const args = parentStid ? `,'${parentStid}'` : '';
+    const child = !parentStid && s.subtasks?.length
+      ? subtaskListHTML(s.subtasks, todoId, ds, s.id)
+      : '';
+    return `
+    <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
+      <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
+      <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
       <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}')" title="Focus sur cette tâche">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
       </button>
-      <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}')">×</button>
-    </div>`).join('');
-  // Au-delà de 2 sous-tâches, bascule en deux colonnes (CSS multi-colonnes fluide)
-  const twoCol = (subtasks || []).length > 2;
-  return `<div class="subtask-list${twoCol ? ' two-col' : ''}">
+      <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>
+    </div>${child}`;
+  }).join('');
+  // Au-delà de 2 sous-tâches, bascule en deux colonnes (CSS multi-colonnes
+  // fluide) — jamais au niveau sous-sous-tâche (peu d'items attendus, et la
+  // bascule ne concerne que la liste racine)
+  const twoCol = !parentStid && (subtasks || []).length > 2;
+  return `<div class="subtask-list${twoCol ? ' two-col' : ''}${parentStid ? ' subtask-list--nested' : ''}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
     ${items}
     <span class="subtask-add-mini-slot">
-      <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}')" title="Ajouter une sous-tâche">＋</button>
+      <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}'${parentStid ? `,'${parentStid}'` : ''})" title="Ajouter une sous-tâche">＋</button>
     </span>
   </div>`;
 }
