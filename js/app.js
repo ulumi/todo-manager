@@ -1610,6 +1610,62 @@ class TodoApp {
     this.render();
   }
 
+  // Menu contextuel (sous-tâche) « Sortir du groupe » : retire CETTE seule
+  // (sous-)sous-tâche de sa liste et la fait redevenir une tâche indépendante
+  // à part entière, sans toucher aux autres membres — contrairement à
+  // convertTaskToGroup() qui convertit TOUTE la liste d'un coup. Hérite du
+  // contexte de la tâche RACINE t (date/backlog/deadline, moment, heures,
+  // priorité, tag/projet/intention — mêmes champs que addParentTask() /
+  // convertTaskToGroup()), jamais celui du membre parent : une sous-tâche
+  // parente est un simple item de checklist, elle n'a pas ces champs.
+  // Fonctionne à n'importe quelle profondeur : extraire une sous-sous-tâche
+  // saute directement au statut de tâche indépendante.
+  extractSubtask(todoId, stid, parentStid) {
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t) return;
+    const s = parentStid
+      ? t.subtasks?.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid)
+      : t.subtasks?.find(x => x.id === stid);
+    if (!s) return;
+    snapshot(state.todos);
+    if (parentStid) {
+      const p = t.subtasks.find(x => x.id === parentStid);
+      p.subtasks = p.subtasks.filter(x => x.id !== stid);
+    } else {
+      t.subtasks = t.subtasks.filter(x => x.id !== stid);
+    }
+    const nid = Date.now().toString();
+    const extracted = {
+      id: nid,
+      title: s.title,
+      completed: s.completed,
+      completedDates: [],
+      date: t.date,
+      updatedAt: parseInt(nid),
+    };
+    // Ses propres enfants (sous-sous-tâche extraite depuis la profondeur 1)
+    // deviennent les subtasks de la nouvelle tâche indépendante — même
+    // profondeur relative, jamais un niveau de trop.
+    if (s.subtasks?.length) extracted.subtasks = JSON.parse(JSON.stringify(s.subtasks));
+    if (t.backlog) extracted.backlog = true;
+    if (t.deadline) extracted.deadline = t.deadline;
+    if (t.dayPeriod) extracted.dayPeriod = t.dayPeriod;
+    if (t.startTime) extracted.startTime = t.startTime;
+    if (t.endTime) extracted.endTime = t.endTime;
+    if (t.priority) extracted.priority = t.priority;
+    if (t.categoryIds?.length) extracted.categoryIds = [...t.categoryIds];
+    else if (t.categoryId) extracted.categoryId = t.categoryId;
+    if (t.projectIds?.length) extracted.projectIds = [...t.projectIds];
+    else if (t.projectId) extracted.projectId = t.projectId;
+    if (t.intentionIds?.length) extracted.intentionIds = [...t.intentionIds];
+    else if (t.intentionId) extracted.intentionId = t.intentionId;
+    t.updatedAt = Date.now();
+    const idx = state.todos.findIndex(x => x.id === todoId);
+    state.todos.splice(idx + 1, 0, extracted);
+    saveTodos(state.todos);
+    this.render();
+  }
+
   addSubtaskInline(todoId, parentStid) {
     const list = parentStid
       ? document.querySelector(`.subtask-list[data-parent-stid="${parentStid}"]`)
@@ -7679,6 +7735,9 @@ let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', 
 // « Ajouter une sous-tâche » n'apparaît que si la cible est elle-même de
 // profondeur 1 (parentStid absent) — une sous-sous-tâche ne peut pas avoir
 // d'enfant (décision produit : un seul niveau d'imbrication de plus).
+// « Sortir du groupe » (app.extractSubtask), elle, s'applique à N'IMPORTE
+// QUELLE profondeur : extraire une sous-sous-tâche saute directement au
+// statut de tâche indépendante, sans étape intermédiaire.
 function _renderSubtaskCtxMenu() {
   const { todoId, stid, parentStid } = _ctxTarget;
   const t = state.todos.find(x => x.id === todoId);
@@ -7688,6 +7747,7 @@ function _renderSubtaskCtxMenu() {
     <div class="ctx-item" data-action="subtask-complete"><span>${s.completed ? '↺' : '✓'}</span> ${s.completed ? 'Décompléter' : 'Compléter'}</div>
     <div class="ctx-item" data-action="subtask-focus"><span>▶</span> Focus</div>
     ${!parentStid ? `<div class="ctx-item" data-action="subtask-add-nested"><span>☑</span> Ajouter une sous-tâche</div>` : ''}
+    <div class="ctx-item" data-action="subtask-extract"><span>⤴</span> Sortir du groupe</div>
     <div class="ctx-sep"></div>
     <div class="ctx-item danger" data-action="subtask-delete"><span>×</span> Supprimer</div>
   `;
@@ -7858,6 +7918,7 @@ _todoCtxMenu.addEventListener('click', e => {
     if (action === 'subtask-complete')   window.app.toggleSubtask(todoId, stid, ds, parentStid);
     if (action === 'subtask-focus')      window.app.focusStartOn(todoId, ds);
     if (action === 'subtask-add-nested') window.app.ctxAddNestedSubtask(todoId, stid, ds);
+    if (action === 'subtask-extract')    window.app.extractSubtask(todoId, stid, parentStid);
     if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, parentStid);
     return;
   }
