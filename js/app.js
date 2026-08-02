@@ -36,7 +36,7 @@ import {
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask,
-  consumeModalSubtasksDirty, maybeInviteDurationEstimate
+  consumeModalSubtasksDirty
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -2650,7 +2650,6 @@ class TodoApp {
   guidedAddCategory() { guidedAddCategory(); }
 
   saveTask() {
-    if (!state.editingId && maybeInviteDurationEstimate()) return;
     const before = JSON.parse(JSON.stringify(state.todos));
     const hadError = saveTaskLogic(state.todos);
     if (!hadError) {

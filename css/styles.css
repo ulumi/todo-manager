@@ -11876,34 +11876,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   opacity: 1;
 }
 
-.duration-invite-hint {
-  height: 0;
-  overflow: hidden;
-  opacity: 0;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 18px;
-  color: var(--primary);
-  transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, margin-bottom 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.duration-invite-hint.show {
-  height: 18px;
-  opacity: 1;
-  margin-bottom: 6px;
-}
-
-.duration-stepper--invite {
-  animation: duration-invite-pulse 1.6s ease;
-}
-
-@keyframes duration-invite-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent);
-  }
-  25% {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
-  }
-}
 .timing-flex {
   display: flex;
   align-items: center;
