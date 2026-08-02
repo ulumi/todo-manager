@@ -426,21 +426,21 @@
           <div class="tag-picker" id="taskCategoryTags"></div>
           <div class="tag-picker-add" id="newCatRow" style="display:none">
             <input class="form-input tag-picker-input" id="newCatInput" autocomplete="off" placeholder="Nouvelle catégorie..."
-              onkeydown="if(event.key==='Enter')window.app.addCategoryInline();if(event.key==='Escape')this.parentElement.style.display='none'">
+              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addCategoryInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
           </div>
         </div>
         <div class="tag-tab-panel" data-tab="projects" style="display:none">
           <div class="tag-picker" id="taskProjectTags"></div>
           <div class="tag-picker-add" id="newProjectRow" style="display:none">
             <input class="form-input tag-picker-input" id="newProjectInput" autocomplete="off" placeholder="Nouveau projet..."
-              onkeydown="if(event.key==='Enter')window.app.addProjectInline();if(event.key==='Escape')this.parentElement.style.display='none'">
+              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addProjectInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
           </div>
         </div>
         <div class="tag-tab-panel" data-tab="intentions" style="display:none">
           <div class="tag-picker" id="taskIntentionTags"></div>
           <div class="tag-picker-add" id="newIntentionRow" style="display:none">
             <input class="form-input tag-picker-input" id="newIntentionInput" autocomplete="off" placeholder="Nouvelle intention..."
-              onkeydown="if(event.key==='Enter')window.app.addIntentionInline();if(event.key==='Escape')this.parentElement.style.display='none'">
+              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addIntentionInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
           </div>
         </div>
 

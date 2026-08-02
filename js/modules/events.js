@@ -37,11 +37,6 @@ export function setupEventListeners(app) {
     o.addEventListener('click', () => app.selectPriority(o.dataset.priority));
   });
 
-  // Task title keyboard
-  document.getElementById('taskTitle').addEventListener('keydown', e => {
-    if (e.key==='Enter') app.saveTask();
-  });
-
   // Quick add
   const quickAddInput = document.getElementById('quickAddInput');
   if (quickAddInput) {

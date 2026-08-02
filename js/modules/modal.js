@@ -122,7 +122,11 @@ document.addEventListener('input', e => {
 document.addEventListener('keydown', e => {
   const display = e.target.closest('.duration-stepper .dur-display');
   if (!display) return;
-  if (e.key === 'Enter') { e.preventDefault(); display.blur(); }
+  // Enter committe la valeur (blur → _commitDurationDisplay) PUIS sauve —
+  // le champ caché n'est mis à jour qu'au blur, jamais en live sur le input,
+  // donc l'ordre blur-avant-saveTask est nécessaire pour ne pas sauver une
+  // valeur périmée.
+  if (e.key === 'Enter') { e.preventDefault(); display.blur(); window.app?.saveTask(); }
   else if (e.key === 'Escape') { e.preventDefault(); display._cancel = true; display.blur(); }
 });
 
@@ -131,6 +135,31 @@ document.addEventListener('focusout', e => {
   if (!display) return;
   if (display._cancel) { display._cancel = false; _syncDurationStepper(display.closest('.duration-stepper').dataset.target); return; }
   _commitDurationDisplay(display);
+});
+
+// ─── Enter = sauver depuis n'importe quel champ ; Option/Alt+Tab = aller
+// directement à la durée estimée ───────────────────────────────────────────
+// Exclusions : textarea (notes multi-lignes, même convention que le mode
+// guidé ci-dessous), bouton/lien (Entrée doit activer CE bouton, pas sauver),
+// et tout champ qui a déjà géré lui-même Entrée via e.preventDefault()
+// (sous-tâche inline, édition de titre de sous-tâche, création inline de tag,
+// combobox de titre avec suggestion active).
+document.addEventListener('keydown', e => {
+  const main = document.querySelector('.modal-main');
+  if (!main || !main.contains(e.target)) return;
+
+  if (e.altKey && e.key === 'Tab') {
+    e.preventDefault();
+    document.querySelector('.duration-stepper[data-target="taskDurationEstimated"] .dur-display')?.focus();
+    return;
+  }
+
+  if (e.key === 'Enter' && !e.shiftKey && !e.defaultPrevented) {
+    const tag = e.target.tagName;
+    if (tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'A') return;
+    e.preventDefault();
+    document.getElementById('saveTask')?.click();
+  }
 });
 
 // Invitation à saisir une durée estimée : au premier essai de sauvegarde
