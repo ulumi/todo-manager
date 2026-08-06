@@ -1435,6 +1435,17 @@ main {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  border-radius: 8px;
+  transition: background .12s;
+
+  // Cible de drop pour une tâche non accomplie déposée depuis le Bilan/le
+  // bandeau (.review-item, hors de .day-columns) — "ramener à aujourd'hui,
+  // sans moment" (cf. initDayDragDrop(), app.js)
+  &.drop-target {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+
+    .day-col-title { color: var(--primary); }
+  }
 }
 
 .day-col-title {

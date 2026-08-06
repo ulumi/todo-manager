@@ -1497,6 +1497,14 @@ input:checked + .cal-sid-toggle-track::after {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  border-radius: 8px;
+  transition: background 0.12s;
+}
+.day-col-title-row.drop-target {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.day-col-title-row.drop-target .day-col-title {
+  color: var(--primary);
 }
 
 .day-col-title {

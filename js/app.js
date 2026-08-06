@@ -3646,6 +3646,14 @@ class TodoApp {
       if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
       if (activeHeureLabel) { activeHeureLabel.classList.remove('drop-target'); activeHeureLabel = null; }
     };
+    // Drag EXTERNE (une tâche non accomplie du Bilan/bandeau .review-item,
+    // via planDragStart) : son dragstart ne bubble jamais jusqu'ici (le
+    // .review-item vit hors de .day-columns), donc draggedEl reste null tout
+    // le temps du survol/drop — cf. les 2 branches "!draggedEl" plus bas.
+    let activeExternalTarget = null;
+    const clearExternalTarget = () => {
+      if (activeExternalTarget) { activeExternalTarget.classList.remove('drop-target'); activeExternalTarget = null; }
+    };
     const removePlaceholder = () => {
       placeholder.style.height = '0px';
       placeholder.classList.remove('visible');
@@ -3696,7 +3704,21 @@ class TodoApp {
 
     container.addEventListener('dragover', e => {
       e.preventDefault();
-      if (!draggedEl) return;
+      if (!draggedEl) {
+        // Drag externe — seulement sur la vue d'AUJOURD'HUI (même condition
+        // que le titre "Aujourd'hui", isToday, qui sert de 2e cible ici) :
+        // survol d'un moment (Matin/Après-midi/Soir) → highlight son label ;
+        // sinon survol du titre "Aujourd'hui" → highlight toute la ligne
+        if (DS(state.navDate) !== DS(today())) { clearExternalTarget(); return; }
+        const heureSection = e.target.closest('.day-heure-section[data-period]');
+        const titleRow = !heureSection && e.target.closest('.day-col-title-row');
+        const next = (heureSection && (heureSection.querySelector('.day-heure-label') || heureSection)) || titleRow || null;
+        if (next !== activeExternalTarget) {
+          clearExternalTarget();
+          if (next) { activeExternalTarget = next; next.classList.add('drop-target'); }
+        }
+        return;
+      }
       // Survol du placeholder lui-même (la liste vient de glisser sous le
       // curseur, ex. insertion avant le 1er item) → garder la cible actuelle,
       // sinon la branche « bas de colonne » renvoie le drop en fin de liste
@@ -3875,14 +3897,27 @@ class TodoApp {
     });
 
     container.addEventListener('dragleave', e => {
-      if (!container.contains(e.relatedTarget)) { removePlaceholder(); clearItemTarget(); }
+      if (!container.contains(e.relatedTarget)) { removePlaceholder(); clearItemTarget(); clearExternalTarget(); }
     });
 
     container.addEventListener('drop', e => {
       e.preventDefault();
       removePlaceholder();
       clearItemTarget();
-      if (!draggedEl) return;
+      if (!draggedEl) {
+        clearExternalTarget();
+        if (DS(state.navDate) !== DS(today())) return;
+        const taskId = e.dataTransfer.getData('text/plain');
+        // Garde-fou : un drag de section de tag (initTagSectionDragDrop)
+        // laisse lui aussi draggedEl à null ici (son dragstart ne matche pas
+        // draggableSel) et pose lui aussi du text/plain — mais un tagId, pas
+        // un id de tâche. On ne mute que si l'id correspond à une vraie tâche.
+        if (!taskId || !state.todos.some(t => t.id === taskId)) return;
+        const heureSection = e.target.closest('.day-heure-section[data-period]');
+        if (heureSection) { this.overdueDropTodayPeriod(e, heureSection.dataset.period); return; }
+        if (e.target.closest('.day-col-title-row')) { this.overdueDropToday(e); return; }
+        return;
+      }
 
       const originalIds = this._dropIds(draggedEl.dataset.id);
       // Copie (Alt/Ctrl/Cmd maintenu) : les clones prennent la place cible,
@@ -4862,6 +4897,12 @@ class TodoApp {
     }
     t.date = newDateStr;
     t.backlog = false;
+    // Un report générique (pas de moment ciblé) ne doit jamais laisser
+    // traîner un dayPeriod d'une planification précédente — sinon la tâche
+    // réapparaît sous "Soir" alors qu'on l'a justement reportée SANS moment.
+    // overdueDropTodayPeriod() repose là-dessus : il repose t.dayPeriod
+    // juste après avoir appelé _postpone(), donc rien ne change pour lui.
+    delete t.dayPeriod;
     t.updatedAt = Date.now();
   }
 
@@ -5092,6 +5133,12 @@ class TodoApp {
       document.addEventListener('dragend', () => {
         document.body.classList.remove('is-dragging-task');
         document.querySelectorAll('.header-drop-hover').forEach(el => el.classList.remove('header-drop-hover'));
+        // Filet de sécurité pour le highlight des cibles externes de
+        // initDayDragDrop() (Matin/Après-midi/Soir/titre "Aujourd'hui") :
+        // leur dragend ne bubble pas jusqu'à .day-columns (source hors de ce
+        // conteneur), donc son propre nettoyage ne se déclenche jamais pour
+        // elles — utile si le drag est annulé (Échap) pendant leur survol.
+        document.querySelectorAll('.day-heure-label.drop-target, .day-col-title-row.drop-target').forEach(el => el.classList.remove('drop-target'));
       });
     }
   }
