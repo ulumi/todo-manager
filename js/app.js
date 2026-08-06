@@ -2154,6 +2154,36 @@ class TodoApp {
     if (local) local.setAttribute('class', `debug-icon debug-icon-local debug-icon--${localState}`);
     const drawer = document.getElementById('debugDrawer');
     if (drawer && drawer.classList.contains('open')) drawer.innerHTML = renderDebugDrawerHTML();
+
+    // Glanceable connection dots in the header (logo avatar + mobile user
+    // button) — same cloudState the debug drawer already computes, just
+    // surfaced where it's actually visible instead of buried in a drawer.
+    const dotLogo   = document.getElementById('connDot');
+    const dotMobile = document.getElementById('connDotMobile');
+    if (dotLogo)   dotLogo.className   = `conn-dot conn-dot--${cloudState}`;
+    if (dotMobile) dotMobile.className = `conn-dot conn-dot--${cloudState}`;
+    const statusLabel = cloudState === 'ok' ? 'Connecté' : cloudState === 'warn' ? 'Synchro en attente' : 'Hors ligne';
+    const title = document.querySelector('.app-title');
+    if (title) title.title = `Mon compte — ${statusLabel}`;
+
+    this._renderHmAccount(cloudState);
+  }
+
+  // Hamburger menu "Compte" row — status dot + label always current, plus a
+  // one-click "Se déconnecter" item (only shown for a real logged-in user;
+  // signing out of a guest session doesn't make sense).
+  _renderHmAccount(cloudState) {
+    const label     = document.getElementById('hmAccountLabel');
+    const dot       = document.getElementById('hmAccountDot');
+    const signOutEl = document.getElementById('hmSignOutItem');
+    if (!label) return;
+    if (!cloudState) cloudState = getDebugStatus().cloudState;
+    const user  = getCurrentUser();
+    const guest = isGuest() || !user;
+    const uname = user ? (user.displayName || (!guest ? user.email?.split('@')[0] : '') || '') : '';
+    label.textContent = guest ? 'Invité — se connecter' : (uname || user.email || 'Mon compte');
+    if (dot) dot.className = `debug-dot debug-dot--${cloudState}`;
+    if (signOutEl) signOutEl.classList.toggle('hidden', guest);
   }
 
   toggleDebugPanel() {
@@ -6862,6 +6892,7 @@ class TodoApp {
 
   openHamburger() {
     this._hamburgerOpen = true;
+    this._renderHmAccount();
     const btn = document.getElementById('hamburgerBtn');
     const menu = document.getElementById('hamburgerMenu');
     const overlay = document.getElementById('hamburgerOverlay');
@@ -7174,6 +7205,7 @@ class TodoApp {
     const fullTitle = uname ? `2FŨKOI, ${uname}` : '2FŨKOI';
     document.title = fullTitle;
     this._animateLogoText(fullTitle);
+    this._renderHmAccount();
 
     if (btn) {
       btn.classList.toggle('authenticated', !!user && !guest);

@@ -155,6 +155,35 @@ header {
   flex-shrink: 0;
 }
 
+.logo-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+// Small colored dot overlaid on the logo avatar / mobile user button —
+// glanceable Supabase connection state without opening anything (mirrors
+// .debug-dot colors: ok = --success, warn = --warning, off = --danger).
+// Lives on a plain wrapper, never on .logo-avatar itself, because the
+// avatar variant clips its content to a centered circle (clip-path) that
+// would cut a corner-positioned dot off entirely.
+.conn-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--text-muted);
+  z-index: 3;
+  transition: background-color .2s ease;
+
+  &--ok   { background: var(--success); }
+  &--warn { background: var(--warning); }
+  &--off  { background: var(--danger); }
+}
+
 .logo-avatar {
   display: flex;
   align-items: center;
@@ -7118,6 +7147,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 
   &:active { transform: scale(.97); }
+
+  &.hidden { display: none; }
 }
 
 .hm-icon {
@@ -7145,6 +7176,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .hm-item-label { flex: 1; line-height: 1.2; }
+
+.hm-item--signout {
+  color: var(--danger);
+
+  &:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+  &::before { background: var(--danger); }
+}
 
 @keyframes hm-svg-trace {
   0%   { stroke-dashoffset: 500; }
@@ -8799,7 +8837,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .settings-btn-wrap   { display: none; }
   .playground-link     { display: none; }
   .lang-select         { display: none; }
-  .user-btn            { order: 6; }
+  .user-btn-wrap       { order: 6; }
   #hamburgerBtn        { order: 7; margin-left: auto; }
   .add-btn             { display: none; }
   .zoom-group          { display: none; }
@@ -9820,9 +9858,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // User button (header) — visible only on mobile where .app-title is hidden
-.user-btn {
+.user-btn-wrap {
+  position: relative;
+  display:  inline-flex;
   @media (min-width: 421px) { display: none !important; }
+}
 
+.user-btn {
   display:         flex;
   align-items:     center;
   justify-content: center;

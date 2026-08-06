@@ -121,6 +121,34 @@ header.scrolled {
   flex-shrink: 0;
 }
 
+.logo-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.conn-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--text-muted);
+  z-index: 3;
+  transition: background-color 0.2s ease;
+}
+.conn-dot--ok {
+  background: var(--success);
+}
+.conn-dot--warn {
+  background: var(--warning);
+}
+.conn-dot--off {
+  background: var(--danger);
+}
+
 .logo-avatar {
   display: flex;
   align-items: center;
@@ -7464,6 +7492,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 .hm-item:active {
   transform: scale(0.97);
 }
+.hm-item.hidden {
+  display: none;
+}
 
 .hm-icon {
   width: 32px;
@@ -7490,6 +7521,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 .hm-item-label {
   flex: 1;
   line-height: 1.2;
+}
+
+.hm-item--signout {
+  color: var(--danger);
+}
+.hm-item--signout:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.hm-item--signout::before {
+  background: var(--danger);
 }
 
 @keyframes hm-svg-trace {
@@ -9416,7 +9458,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   .lang-select {
     display: none;
   }
-  .user-btn {
+  .user-btn-wrap {
     order: 6;
   }
   #hamburgerBtn {
@@ -10631,11 +10673,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-color: var(--primary);
 }
 
+.user-btn-wrap {
+  position: relative;
+  display: inline-flex;
+}
 @media (min-width: 421px) {
-  .user-btn {
+  .user-btn-wrap {
     display: none !important;
   }
 }
+
 .user-btn {
   display: flex;
   align-items: center;
