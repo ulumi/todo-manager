@@ -1330,6 +1330,15 @@ class TodoApp {
   // flottant est ajouté dans .todo-content faute d'endroit où s'insérer.
   showEstimateHoverEdit(itemEl) {
     if (!itemEl.isConnected) return;
+    // Le timer de 2s (setupTodoItemHoverAnimations) tourne depuis l'entrée
+    // du survol, indépendamment de ce qui se passe ensuite dans l'item — si
+    // l'utilisateur est déjà en train de taper ailleurs dans cet item (ex.
+    // nouvelle sous-tâche via le bouton +), voler le focus interromprait sa
+    // saisie. Même garde que le listener keydown global (ligne ~8135).
+    const activeEl = document.activeElement;
+    if (itemEl.contains(activeEl) && (activeEl?.getAttribute('contenteditable') === 'true' || activeEl?.tagName === 'INPUT' || activeEl?.tagName === 'TEXTAREA')) {
+      return;
+    }
     const id = itemEl.dataset.id;
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
