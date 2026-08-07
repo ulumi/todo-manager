@@ -7,7 +7,7 @@
 // ════════════════════════════════════════════════════════
 
 import * as state from './state.js';
-import { DS, today, esc } from './utils.js';
+import { DS, today, esc, effectiveEstimate } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
 import { getCategories } from './admin.js';
 import { saveTodos } from './storage.js';
@@ -100,6 +100,21 @@ function _nowHM() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+// Minutes restantes dans la file (bandeau du haut). Une fois les sous-tâches
+// aplaties dans `queue` (voir getFocusQueue), sommer effectiveEstimate() sur
+// CHAQUE ligne double-compterait le temps d'un parent sans estimation propre
+// (sa somme ET celle de chacun de ses enfants comptées séparément) — carve-out :
+// une ligne de sous-tâche peut recurser dans SES propres enfants (profondeur 2),
+// mais une ligne de tâche dont des enfants sont déjà présents dans la file
+// reste sur sa valeur brute (0 si absente), pour ne pas compter deux fois.
+function _remainMinutes(queue) {
+  return queue.reduce((s, t) => {
+    if (t.id.includes('::')) return s + effectiveEstimate(t);
+    const hasQueuedChildren = (t.subtasks || []).some(sub => !sub.completed);
+    return s + (hasQueuedChildren ? (parseInt(t.durationEstimated) || 0) : effectiveEstimate(t));
+  }, 0);
+}
+
 // ── File du jour ─────────────────────────────────────────
 // Ordre : moments d'abord (sans moment → matin → après-midi → soir),
 // et au sein d'un moment l'ordre manuel de la vue jour (dayOrder /
@@ -183,7 +198,69 @@ export function getFocusQueue(app) {
     queue = [...queue].sort((a, b) => moment(a) - moment(b));
   }
 
-  return queue;
+  // Aplatit les sous-tâches (profondeur 1) incomplètes juste après leur
+  // parent — items de file indépendants, chacun avec son propre chrono.
+  // 2e passe : une tâche déjà complétée AUJOURD'HUI (donc absente de `items`
+  // ci-dessus) mais avec des sous-tâches encore incomplètes reste quand même
+  // source de lignes de file, sinon ce reste de travail devient injoignable
+  // dès que le parent est coché.
+  const withSubs = [];
+  for (const t of queue) {
+    withSubs.push(t);
+    for (const s of (t.subtasks || [])) if (!s.completed) withSubs.push(toFocusItem({ kind: 'subtask', t, s }));
+  }
+  const doneParents = getTodosForDate(d, state.todos)
+    .filter(t => isCompleted(t, d) && !isCancelled(t, d) && (t.subtasks || []).some(s => !s.completed));
+  for (const t of doneParents) for (const s of (t.subtasks || [])) if (!s.completed) withSubs.push(toFocusItem({ kind: 'subtask', t, s }));
+
+  return withSubs;
+}
+
+// ── Ciblage d'une sous-tâche comme item de file indépendant ──────────────
+// Id composé "todoId::stid" (profondeur 1 seulement — jamais une
+// sous-sous-tâche, qui reste une simple checklist sous l'item courant).
+// Tous les ids réels sont des Date.now().toString() (chiffres purs), donc
+// '::' ne peut jamais entrer en collision.
+export function focusSubtaskId(todoId, stid) { return `${todoId}::${stid}`; }
+
+// BRUT — objets réels et mutables, pour tout code qui doit ÉCRIRE puis
+// persister via saveTodos(state.todos). `t` est toujours le todo de premier
+// niveau (le parent, pour les deux natures) ; `s` est la sous-tâche ou null.
+export function resolveFocusRef(id) {
+  const sep = id.indexOf('::');
+  if (sep === -1) {
+    const t = state.todos.find(x => x.id === id);
+    return t ? { kind: 'todo', t, s: null } : null;
+  }
+  const todoId = id.slice(0, sep), stid = id.slice(sep + 2);
+  const t = state.todos.find(x => x.id === todoId);
+  const s = t?.subtasks?.find(x => x.id === stid);
+  return (t && s) ? { kind: 'subtask', t, s } : null;
+}
+
+// NORMALISÉ — vue en lecture seule, mêmes noms de champs qu'une Tâche (pour
+// que tout le code de rendu/visuels existant continue de fonctionner sans
+// modification). kind='todo' : renvoie `t` LUI-MÊME (même référence, zéro
+// changement de comportement pour le chemin tâche-de-premier-niveau).
+// Volontairement AUCUN champ `recurrence`/`cancelled`/`completedDates`/
+// `cancelledDates` — isCompleted()/isCancelled() (calendar.js) branchent sur
+// `todo.recurrence && todo.recurrence !== 'none'` ; absent = traité comme
+// non récurrent = lit directement `completed`/`cancelled`, qu'on recopie
+// bien. Résultat : tous les appels existants à isCompleted(current,...)/
+// isCancelled(current,...) continuent de fonctionner sans modification pour
+// un item courant de type sous-tâche — pas besoin d'un helper séparé.
+function toFocusItem(ref) {
+  if (ref.kind === 'todo') return ref.t;
+  const { t, s } = ref;
+  return {
+    id: focusSubtaskId(t.id, s.id), title: s.title, completed: s.completed,
+    durationEstimated: s.durationEstimated, durationReal: s.durationReal,
+    durationHistory: s.durationHistory, focusTimeSpent: s.focusTimeSpent,
+    focusTimeSpentDate: s.focusTimeSpentDate, subtasks: s.subtasks,
+    priority: t.priority, dayPeriod: t.dayPeriod, startTime: null, endTime: null,
+    categoryIds: t.categoryIds, categoryId: t.categoryId,
+    counterEnabled: false, description: null,
+  };
 }
 
 // ── Tâche courante / ordre de navigation (flèches ← →) ───
@@ -192,9 +269,13 @@ export function getFocusQueue(app) {
 // _order grossit quand une tâche apparaît dans la file vivante (relance,
 // backlog, nouvelle occurrence) et ne rétrécit que si une tâche a vraiment
 // quitté la journée (supprimée, reportée à demain) — jamais parce qu'elle a
-// été complétée, pour rester atteignable via ←.
+// été complétée, pour rester atteignable via ←. Admet aussi les ids composés
+// de sous-tâche (profondeur 1) de today's todos — sinon ils seraient purgés
+// dès le prochain appel, cassant ← → dans l'instant.
 function _ensureOrder(app) {
-  const validToday = new Set(getTodosForDate(today(), state.todos).map(t => t.id));
+  const todays = getTodosForDate(today(), state.todos);
+  const validToday = new Set(todays.map(t => t.id));
+  for (const t of todays) for (const s of (t.subtasks || [])) validToday.add(focusSubtaskId(t.id, s.id));
   _order = _order.filter(id => validToday.has(id));
   for (const t of getFocusQueue(app)) if (!_order.includes(t.id)) _order.push(t.id);
 }
@@ -204,15 +285,15 @@ export function getFocusOrder(app) {
   return _order;
 }
 
-// Tâche actuellement affichée en Focus — à appeler partout où l'ancien code
-// lisait `getFocusQueue(app)[0]` comme « la tâche courante ». Résout
-// directement dans state.todos (pas via la file filtrée) pour qu'une tâche
-// tout juste complétée reste affichable.
+// Tâche (ou sous-tâche) actuellement affichée en Focus — à appeler partout
+// où l'ancien code lisait `getFocusQueue(app)[0]` comme « la tâche
+// courante ». Résout directement via resolveFocusRef (pas via la file
+// filtrée) pour qu'un item tout juste complété reste affichable.
 export function getCurrentFocusTask(app) {
   _ensureOrder(app);
   if (_currentId) {
-    const t = state.todos.find(x => x.id === _currentId);
-    if (t && _order.includes(_currentId)) return t;
+    const ref = resolveFocusRef(_currentId);
+    if (ref && _order.includes(_currentId)) return toFocusItem(ref);
   }
   const queue = getFocusQueue(app);
   _currentId = queue[0]?.id ?? null;
@@ -229,16 +310,20 @@ export function getCurrentFocusTask(app) {
 // sauvegarde ici avant d'écraser son état.
 // Pour une tâche RÉCURRENTE, ce temps ne doit reprendre que s'il vient de
 // l'occurrence d'AUJOURD'HUI (t.focusTimeSpentDate) — sinon un reste non
-// terminé hier resterait affecté à la nouvelle occurrence du jour.
+// terminé hier resterait affecté à la nouvelle occurrence du jour. Pour une
+// sous-tâche, mêmes champs mais portés par `s` — la récurrence testée reste
+// toujours celle du parent de premier niveau (`ref.t`), une sous-tâche
+// n'ayant pas de récurrence propre.
 export function getTimerState(taskId) {
   let ts = null;
   try { ts = JSON.parse(localStorage.getItem('focusTimer')); } catch { /* corrompu */ }
   if (!ts || ts.taskId !== taskId) {
     if (ts) _flushProgress(ts.taskId, ts);
-    const t = state.todos.find(x => x.id === taskId);
-    const isRec = t?.recurrence && t.recurrence !== 'none';
-    const sameDayProgress = !isRec || t?.focusTimeSpentDate === DS(today());
-    const resume = sameDayProgress ? Math.max(0, Math.round(t?.focusTimeSpent || 0)) : 0;
+    const ref = resolveFocusRef(taskId);
+    const own = ref ? (ref.s || ref.t) : null;
+    const isRec = ref?.t?.recurrence && ref.t.recurrence !== 'none';
+    const sameDayProgress = !isRec || own?.focusTimeSpentDate === DS(today());
+    const resume = sameDayProgress ? Math.max(0, Math.round(own?.focusTimeSpent || 0)) : 0;
     ts = { taskId, startedAt: Date.now(), accum: resume, paused: false };
     localStorage.setItem('focusTimer', JSON.stringify(ts));
   }
@@ -249,11 +334,12 @@ function _flushProgress(taskId, ts) {
   if (!ts || ts.taskId !== taskId) return;
   const sec = elapsedSeconds(ts);
   if (sec < 5) return; // micro-session : rien à sauvegarder
-  const t = state.todos.find(x => x.id === taskId);
-  if (!t) return;
-  t.focusTimeSpent = Math.round(sec);
-  t.focusTimeSpentDate = DS(today());
-  t.updatedAt = Date.now();
+  const ref = resolveFocusRef(taskId);
+  if (!ref) return;
+  const own = ref.s || ref.t;
+  own.focusTimeSpent = Math.round(sec);
+  own.focusTimeSpentDate = DS(today());
+  ref.t.updatedAt = Date.now(); // toujours le parent — même convention que toggleSubtask()
   saveTodos(state.todos);
 }
 
@@ -418,7 +504,7 @@ export function renderFocusView(app) {
   const todayAll = getTodosForDate(d, state.todos);
   const doneCount = todayAll.filter(t => isCompleted(t, d)).length;
   const total = todayAll.length;
-  const remainMin = queue.reduce((s, t) => s + (parseInt(t.durationEstimated) || 0), 0);
+  const remainMin = _remainMinutes(queue);
   const remainLabel = remainMin > 0
     ? ` · ~${remainMin >= 60 ? `${Math.floor(remainMin / 60)}h${String(remainMin % 60).padStart(2, '0')}` : `${remainMin} min`} restantes`
     : '';
@@ -454,7 +540,7 @@ export function renderFocusView(app) {
     </div>`;
   }
 
-  const est = parseInt(current.durationEstimated) || 0;
+  const est = effectiveEstimate(current);
   const isRec = current.recurrence && current.recurrence !== 'none';
   // Tâche affichée mais complétée/annulée : chrono figé, jamais getTimerState()
   // (qui créerait sinon un timer vivant sur une tâche « faite »), pas de
@@ -529,17 +615,25 @@ export function renderFocusView(app) {
 
   let queueRows = '', lastGroup = null;
   next.forEach(t => {
-    const g = groupOf(t);
+    // Une ligne de sous-tâche ne porte ni ne déclenche jamais son propre
+    // groupe — elle suit simplement celui déjà en cours (juste après son
+    // parent). Sans cette garde, l'objet normalisé d'une sous-tâche (sans
+    // `recurrence`) serait toujours classé « Ponctuelles » en tri Type même
+    // si son vrai parent est récurrent, insérant un en-tête parasite entre
+    // une tâche récurrente et ses propres sous-tâches.
+    const isSub = t.id.includes('::');
+    const g = isSub ? null : groupOf(t);
     if (g && g.key !== lastGroup) {
-      const n = next.filter(x => groupOf(x).key === g.key).length;
+      const n = next.filter(x => !x.id.includes('::') && groupOf(x)?.key === g.key).length;
       queueRows += `<div class="focus-queue-group">${g.label}<span class="focus-queue-group-n">${n}</span></div>`;
       lastGroup = g.key;
     }
     queueRows += `
-        <div class="focus-queue-item${t.priority ? ` prio-${t.priority}` : ''}"${canDrag ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" data-group="${g ? g.key : 'none'}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag ? ' · Glisser : réordonner' : ''} · Clic droit : actions">
-          ${canDrag ? _grip : ''}
+        <div class="focus-queue-item${isSub ? ' focus-queue-item--subtask' : ''}${t.priority ? ` prio-${t.priority}` : ''}"${canDrag && !isSub ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" data-group="${g ? g.key : 'none'}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag && !isSub ? ' · Glisser : réordonner' : ''}${isSub ? '' : ' · Clic droit : actions'}">
+          ${canDrag && !isSub ? _grip : ''}
           <span class="focus-queue-text">${esc(t.title)}</span>
-          ${t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
+          ${isSub && effectiveEstimate(t) ? `<span class="focus-queue-est">${effectiveEstimate(t)} min</span>` : ''}
+          ${!isSub && t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (!isSub && t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
         </div>`;
   });
 
@@ -585,7 +679,7 @@ export function renderFocusView(app) {
     <div class="focus-fill${fillDanger0 ? ' danger-zone' : ''}" id="focusFill" style="height:${fillHeight0}%"></div>
     ${topbar}
     <div class="focus-alert hidden" id="focusAlert"></div>
-    <div class="focus-stage focus-current-item${isCurrentDone ? ' focus-current-done' : ''}" data-id="${current.id}" data-date="${DS(d)}" title="Clic droit : actions">
+    <div class="focus-stage focus-current-item${isCurrentDone ? ' focus-current-done' : ''}" data-id="${current.id}" data-date="${DS(d)}"${current.id.includes('::') ? '' : ' title="Clic droit : actions"'}>
       <div class="focus-main">
         <div class="focus-now" id="focusNow">${_nowHM()}</div>
         <div class="focus-timer-row">
@@ -604,7 +698,7 @@ export function renderFocusView(app) {
         ${actBtn(`focus-action--primary${isCurrentDone ? ' done' : ''}`, 'window.app.focusComplete()', null, ICON.check, isCurrentDone ? 'Décompléter' : 'Terminer', 'Entrée')}
         ${!isCurrentDone ? actBtn('', 'window.app.focusPauseResume()', 'focusPauseBtn', ts.paused ? ICON.play : ICON.pause, ts.paused ? 'Reprendre' : 'Pause', 'Espace') : ''}
         ${!isCurrentDone && queue.length > 1 ? actBtn('', 'window.app.focusSkip()', null, ICON.skip, 'Passer', 'S') : ''}
-        ${!isCurrentDone && !isRec ? actBtn('', 'window.app.focusTomorrow()', null, ICON.tomorrow, 'Demain', 'D') : ''}
+        ${!isCurrentDone && !isRec && !current.id.includes('::') ? actBtn('', 'window.app.focusTomorrow()', null, ICON.tomorrow, 'Demain', 'D') : ''}
         ${actBtn('', 'window.app.focusNext()', null, ICON.next, 'Suivante', '→', nextDisabled)}
       </div>
     </div>
@@ -624,7 +718,7 @@ export function toggleTimerMode() {
 }
 
 function _timerDisplayText(current, sec) {
-  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const est = effectiveEstimate(current) * 60;
   if (est > 0 && getTimerMode() === 'countdown') {
     return sec <= est ? `−${fmtElapsed(est - sec)}` : `+${fmtElapsed(sec - est)}`;
   }
@@ -632,7 +726,7 @@ function _timerDisplayText(current, sec) {
 }
 
 function _timerTitle(current) {
-  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const est = effectiveEstimate(current) * 60;
   return (est > 0 && getTimerMode() === 'countdown') ? 'Temps restant avant l\'estimation' : 'Temps écoulé sur cette tâche';
 }
 
@@ -676,7 +770,7 @@ function _estimateLabelRowHTML() {
 // courante, sans toucher au chrono lui-même. Partagé entre le tick 1 s et
 // applyFocusEstimate() (saisie inline d'une estimation en cours de tâche).
 function _applyEstimateVisuals(current) {
-  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const est = effectiveEstimate(current) * 60;
   const fill = document.getElementById('focusFill');
   if (est <= 0 || !fill) return;
   const ts = getTimerState(current.id);
@@ -712,7 +806,7 @@ export function applyFocusEstimate(app) {
   if (progLabel) {
     const todayAll = getTodosForDate(today(), state.todos);
     const doneCount = todayAll.filter(t => isCompleted(t, today())).length;
-    const remainMin = queue.reduce((s, t) => s + (parseInt(t.durationEstimated) || 0), 0);
+    const remainMin = _remainMinutes(queue);
     const remainLabel = remainMin > 0
       ? ` · ~${remainMin >= 60 ? `${Math.floor(remainMin / 60)}h${String(remainMin % 60).padStart(2, '0')}` : `${remainMin} min`} restantes`
       : '';
@@ -816,7 +910,7 @@ export function renderFocusPip(app) {
   // Tâche affichée mais complétée : chrono figé (durationReal), jamais
   // getTimerState() — sinon un timer live repartirait sur une tâche « faite ».
   const sec = isDone ? (current.durationReal || 0) * 60 : elapsedSeconds(getTimerState(current.id));
-  const est = (parseInt(current.durationEstimated) || 0) * 60;
+  const est = effectiveEstimate(current) * 60;
   const ratio = est > 0 ? sec / est : 0;
   const zone = isDone ? '' : est <= 0 ? '' : ratio >= DANGER_RATIO ? ' zone-danger' : ratio >= WARNING_RATIO ? ' zone-warning' : ' zone-success';
   const paused = !isDone && getTimerState(current.id).paused;

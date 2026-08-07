@@ -40,7 +40,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
       <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
-      <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}')" title="Focus sur cette tâche">
+      <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
       </button>
       <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>

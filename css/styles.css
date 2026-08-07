@@ -15312,6 +15312,21 @@ body.view-focus header {
   color: var(--text-muted);
   flex-shrink: 0;
 }
+.focus-queue .focus-queue-item .focus-queue-est {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.focus-queue .focus-queue-item--subtask {
+  margin-left: 24px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 400;
+  background: transparent;
+  border-style: dashed;
+}
 
 .focus-stage--done .focus-done-emoji {
   font-size: 72px;

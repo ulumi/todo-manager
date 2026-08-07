@@ -14309,6 +14309,26 @@ body.view-focus header { display: none; }
       color: var(--text-muted);
       flex-shrink: 0;
     }
+
+    .focus-queue-est {
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    // Sous-tâche ciblée directement comme item de file (profondeur 1) —
+    // toujours juste après sa tâche parente, jamais draggable/menu contextuel
+    // en v1 (voir CLAUDE.md, section Focus).
+    &--subtask {
+      margin-left: 24px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 400;
+      background: transparent;
+      border-style: dashed;
+    }
   }
 }
 

@@ -72,6 +72,7 @@ import {
   toggleTimerMode, applyTimerMode,
   renderFocusPip, removeFocusPip,
   getBreakTargetMinutes, setBreakTargetMinutes, startEditBreakTarget, applyFocusBreakTarget,
+  resolveFocusRef, focusSubtaskId,
 } from './modules/focus.js';
 import { getListPrefs, saveListPrefs, saveManualOrder } from './modules/backlogInboxView.js';
 import {
@@ -3185,7 +3186,15 @@ class TodoApp {
   focusComplete() {
     const t = getCurrentFocusTask(this);
     if (!t) return;
-    const wasCompleted = isCompleted(t, today());
+    // Sous-tâche courante : mêmes stats (durationReal/durationHistory/
+    // focusTimeSpent) mais portées par la sous-tâche elle-même, pas le
+    // parent — et bascule via s.completed plutôt que toggleTodo(). own est
+    // l'objet RÉEL (dans state.todos) contrairement à `t` qui, pour une
+    // sous-tâche, est une vue normalisée en lecture seule (getCurrentFocusTask).
+    const ref = resolveFocusRef(t.id);
+    if (!ref) return;
+    const own = ref.s || ref.t;
+    const wasCompleted = ref.kind === 'subtask' ? !!own.completed : isCompleted(ref.t, today());
     const sec = elapsedSeconds(getTimerState(t.id));
     snapshot(state.todos);
     // Durée réelle = temps passé sur la tâche en mode focus (minutes).
@@ -3193,13 +3202,14 @@ class TodoApp {
     // comparer une occurrence aux précédentes dans la vue Analyse.
     if (!wasCompleted && sec >= 30) {
       const minutes = Math.max(1, Math.round(sec / 60));
-      t.durationReal = minutes;
-      if (!Array.isArray(t.durationHistory)) t.durationHistory = [];
-      t.durationHistory.push({ date: DS(today()), minutes });
-      if (t.durationHistory.length > 30) t.durationHistory = t.durationHistory.slice(-30);
+      own.durationReal = minutes;
+      if (!Array.isArray(own.durationHistory)) own.durationHistory = [];
+      own.durationHistory.push({ date: DS(today()), minutes });
+      if (own.durationHistory.length > 30) own.durationHistory = own.durationHistory.slice(-30);
     }
-    if (!wasCompleted) { delete t.focusTimeSpent; delete t.focusTimeSpentDate; } // occurrence complétée : plus de progression à reprendre
-    toggleTodo(t.id, today(), state.todos);
+    if (!wasCompleted) { delete own.focusTimeSpent; delete own.focusTimeSpentDate; } // occurrence complétée : plus de progression à reprendre
+    if (ref.kind === 'subtask') { own.completed = !own.completed; ref.t.updatedAt = Date.now(); }
+    else toggleTodo(ref.t.id, today(), state.todos);
     saveTodos(state.todos);
     clearTimerState();
     if (!wasCompleted) {
@@ -3226,11 +3236,12 @@ class TodoApp {
   focusSetEstimate(id, val) {
     const minutes = parseInt(val, 10);
     if (!minutes || minutes <= 0) return;
-    const t = state.todos.find(x => x.id === id);
-    if (!t) return;
+    const ref = resolveFocusRef(id);
+    if (!ref) return;
+    const own = ref.s || ref.t;
     snapshot(state.todos);
-    t.durationEstimated = minutes;
-    t.updatedAt = Date.now();
+    own.durationEstimated = minutes;
+    ref.t.updatedAt = Date.now();
     saveTodos(state.todos);
     applyFocusEstimate(this);
   }
@@ -3259,9 +3270,11 @@ class TodoApp {
     const current = getCurrentFocusTask(this);
     if (!current || current.id !== id || isCompleted(current, today()) || isCancelled(current, today())) return;
     resetTimer(getTimerState(id));
-    if (current.focusTimeSpent) {
-      delete current.focusTimeSpent;
-      delete current.focusTimeSpentDate;
+    const ref = resolveFocusRef(id);
+    const own = ref?.s || ref?.t;
+    if (own?.focusTimeSpent) {
+      delete own.focusTimeSpent;
+      delete own.focusTimeSpentDate;
       saveTodos(state.todos);
     }
     applyFocusEstimate(this);
@@ -3293,7 +3306,8 @@ class TodoApp {
 
   focusTomorrow() {
     const t = getCurrentFocusTask(this);
-    if (!t || isCompleted(t, today()) || isCancelled(t, today()) || (t.recurrence && t.recurrence !== 'none')) return;
+    // Une sous-tâche n'a pas de date propre à reporter à demain.
+    if (!t || isCompleted(t, today()) || isCancelled(t, today()) || (t.recurrence && t.recurrence !== 'none') || t.id.includes('::')) return;
     saveFocusProgress(this);
     clearTimerState();
     const rest = getFocusQueue(this).filter(x => x.id !== t.id); // avant que _sendManyTo ne change t.date
@@ -3403,8 +3417,17 @@ class TodoApp {
     this.render();
   }
 
+  // todoId composé ("todoId::parentStid") quand la tâche courante en Focus
+  // est elle-même une sous-tâche de profondeur 1 : ses propres enfants
+  // (profondeur 2) restent une simple checklist, gérée via le paramètre
+  // parentStid déjà supporté par toggleSubtask().
   focusToggleSubtask(todoId, stid) {
-    this.toggleSubtask(todoId, stid, DS(today()));
+    if (todoId.includes('::')) {
+      const [realTodoId, parentStid] = todoId.split('::');
+      this.toggleSubtask(realTodoId, stid, DS(today()), parentStid);
+    } else {
+      this.toggleSubtask(todoId, stid, DS(today()));
+    }
   }
 
   // Ajout de sous-tâche depuis le mode Focus — même mécanique que
@@ -3427,7 +3450,15 @@ class TodoApp {
       const title = input.value.trim();
       input.remove();
       addBtn.style.display = '';
-      if (title) this._saveNewSubtask(todoId, title);
+      if (title) {
+        // Même id composé que focusToggleSubtask() ci-dessus.
+        if (todoId.includes('::')) {
+          const [realTodoId, parentStid] = todoId.split('::');
+          this._saveNewSubtask(realTodoId, title, parentStid);
+        } else {
+          this._saveNewSubtask(todoId, title);
+        }
+      }
     };
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); confirm(); }
@@ -3460,16 +3491,22 @@ class TodoApp {
 
   // Double-clic sur une tâche → session Focus démarrée sur cette tâche.
   // La file Focus ne couvre que la journée : si la tâche n'a pas
-  // d'occurrence aujourd'hui, on retombe sur l'édition.
-  focusStartOn(id, ds) {
+  // d'occurrence aujourd'hui, on retombe sur l'édition. `stid` optionnel
+  // (profondeur 1 seulement) cible directement une sous-tâche comme item de
+  // file indépendant — la tâche parente doit elle-même être focusable (pas
+  // déjà complétée/annulée aujourd'hui), sinon une sous-tâche d'une tâche
+  // annulée deviendrait « courante » avec un chrono vivant.
+  focusStartOn(id, ds, stid) {
     const d = today();
-    const focusable = getTodosForDate(d, state.todos)
-      .some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
-    if (!focusable) { this.openEditModal(id, ds); return; }
+    const targetId = stid ? focusSubtaskId(id, stid) : id;
+    const focusable = stid
+      ? !!(getTodosForDate(d, state.todos).find(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d))?.subtasks?.find(s => s.id === stid && !s.completed))
+      : getTodosForDate(d, state.todos).some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
+    if (!focusable) { if (!stid) this.openEditModal(id, ds); return; }
     // Déjà en focus (plein écran ou réduit) sur une autre tâche : sauvegarde
     // sa progression avant de basculer
-    if ((state.view === 'focus' || this._focusMinimized) && id !== getCurrentFocusTask(this)?.id) saveFocusProgress(this);
-    focusSetCurrent(id);
+    if ((state.view === 'focus' || this._focusMinimized) && targetId !== getCurrentFocusTask(this)?.id) saveFocusProgress(this);
+    focusSetCurrent(targetId);
     clearTimerState();
     if (state.view === 'focus') this.render();
     else this.enterFocus();
@@ -8118,7 +8155,7 @@ _todoCtxMenu.addEventListener('click', e => {
     _hideTodoCtxMenu();
     const action = item.dataset.action;
     if (action === 'subtask-complete')   window.app.toggleSubtask(todoId, stid, ds, parentStid);
-    if (action === 'subtask-focus')      window.app.focusStartOn(todoId, ds);
+    if (action === 'subtask-focus')      window.app.focusStartOn(todoId, ds, parentStid || stid);
     if (action === 'subtask-add-nested') window.app.ctxAddNestedSubtask(todoId, stid, ds);
     if (action === 'subtask-extract')    window.app.extractSubtask(todoId, stid, parentStid);
     if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, parentStid);
@@ -8190,6 +8227,11 @@ document.addEventListener('contextmenu', e => {
   }
   const item = e.target.closest(MS_SELECTABLE);
   if (!item || !item.dataset.id) return;
+  // Ligne de file Focus (.focus-queue-item) ou item courant
+  // (.focus-current-item) représentant une sous-tâche (id composé
+  // "todoId::stid") : pas de menu contextuel en v1 — le menu générique
+  // "tâche" suppose des ids simples résolvables dans state.todos.
+  if (item.dataset.id.includes('::')) { e.preventDefault(); return; }
   e.preventDefault();
   _ctxTarget = { kind: 'task', ids: _ctxIdsFor(item.dataset.id), ds: item.getAttribute('data-date') };
   _renderCtxMenu();

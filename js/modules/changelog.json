@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2465",
+    "date": "2026-08-07",
+    "message": "feat(focus): le mode Focus peut cibler une sous-tâche directement — chrono, estimation et complétion propres, sa propre ligne dans la file « Ensuite »"
+  },
+  {
     "version": "0.4.2451",
     "date": "2026-08-07",
     "message": "feat(sous-tâches): estimation de temps sur les sous-tâches (modal + vue jour) — la tâche parente sans estimation propre affiche automatiquement la somme de ses sous-tâches"
