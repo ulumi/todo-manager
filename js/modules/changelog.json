@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2438",
+    "date": "2026-08-06",
+    "message": "test: vérification de l'affichage des notes de changelog dans le toast de mise à jour"
+  },
+  {
     "version": "0.4.2437",
     "date": "2026-08-06",
     "message": "feat(update-toast): le toast de nouvelle version affiche les commentaires de commit depuis la dernière version chargée"
