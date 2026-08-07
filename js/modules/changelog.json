@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2477",
+    "date": "2026-08-07",
+    "message": "feat(clavier): Alt+Entrée sauve une nouvelle tâche ou sous-tâche et bascule directement en mode Focus dessus"
+  },
+  {
     "version": "0.4.2473",
     "date": "2026-08-07",
     "message": "fix(focus): un rechargement de page ne perd plus le fil de la tâche/sous-tâche en cours, et le chrono revient toujours en pause plutôt que de repartir tout seul"

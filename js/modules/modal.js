@@ -125,8 +125,9 @@ document.addEventListener('keydown', e => {
   // Enter committe la valeur (blur → _commitDurationDisplay) PUIS sauve —
   // le champ caché n'est mis à jour qu'au blur, jamais en live sur le input,
   // donc l'ordre blur-avant-saveTask est nécessaire pour ne pas sauver une
-  // valeur périmée.
-  if (e.key === 'Enter') { e.preventDefault(); display.blur(); window.app?.saveTask(); }
+  // valeur périmée. Alt+Entrée : même raccourci « sauver + Focus » que
+  // partout ailleurs dans ce modal.
+  if (e.key === 'Enter') { e.preventDefault(); display.blur(); window.app?.saveTask(e.altKey); }
   else if (e.key === 'Escape') { e.preventDefault(); display._cancel = true; display.blur(); }
 });
 
@@ -138,7 +139,8 @@ document.addEventListener('focusout', e => {
 });
 
 // ─── Enter = sauver depuis n'importe quel champ ; Option/Alt+Tab = aller
-// directement à la durée estimée ───────────────────────────────────────────
+// directement à la durée estimée ; Option/Alt+Entrée = sauver PUIS basculer
+// en mode Focus sur cette tâche (raccourci création rapide) ────────────────
 // Exclusions : textarea (notes multi-lignes, même convention que le mode
 // guidé ci-dessous), bouton/lien (Entrée doit activer CE bouton, pas sauver),
 // et tout champ qui a déjà géré lui-même Entrée via e.preventDefault()
@@ -158,7 +160,8 @@ document.addEventListener('keydown', e => {
     const tag = e.target.tagName;
     if (tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'A') return;
     e.preventDefault();
-    document.getElementById('saveTask')?.click();
+    if (e.altKey) window.app?.saveTask(true);
+    else document.getElementById('saveTask')?.click();
   }
 });
 
@@ -293,7 +296,7 @@ export function addModalSubtask(title, parentStid) {
   const item = { id: Date.now().toString(), title, completed: false };
   if (parentStid) {
     const p = _modalSubtasks.find(x => x.id === parentStid);
-    if (!p) return;
+    if (!p) return null;
     if (!p.subtasks) p.subtasks = [];
     p.subtasks.push(item);
   } else {
@@ -302,6 +305,7 @@ export function addModalSubtask(title, parentStid) {
   _renderModalSubtasks();
   _scheduleDraftSave();
   _persistSubtasksIfEditing();
+  return item;
 }
 
 export function moveModalSubtask(stid, dir, parentStid) {
@@ -445,7 +449,19 @@ export function addModalSubtaskInline(parentStid) {
       const title = input.value.trim();
       if (!title) return;
       done = true; // prevent blur from firing finish()
-      addModalSubtask(title, parentStid);
+      const created = addModalSubtask(title, parentStid);
+      // Alt+Entrée : sauver la sous-tâche PUIS basculer en mode Focus dessus
+      // — seulement possible si la tâche parente existe déjà réellement
+      // (state.editingId, cf. _persistSubtasksIfEditing) et que ce n'est pas
+      // une sous-sous-tâche (Focus ne cible jamais la profondeur 2). Ferme
+      // le modal en premier pour ne pas laisser son overlay par-dessus le
+      // plein écran Focus.
+      if (e.altKey && !parentStid && state.editingId && created) {
+        const parentId = state.editingId;
+        closeModal();
+        window.app?.focusStartOn(parentId, DS(today()), created.id, { fallbackToEdit: false });
+        return;
+      }
       // Re-open inline input immediately for the next subtask — le DOM
       // vient d'être régénéré par addModalSubtask() (y compris le conteneur
       // imbriqué tout juste créé), donc cible à nouveau le même parent

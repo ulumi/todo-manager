@@ -1770,21 +1770,25 @@ class TodoApp {
     // chaque fois. false (blur, ex. clic ailleurs) ne rouvre jamais : sinon
     // le nouvel input reprendrait le focus juste après le clic qui visait
     // à en sortir, rendant la liste impossible à quitter autrement qu'Échap.
-    const confirm = (reopen = false) => {
+    // andFocus=true (Alt+Entrée) : au lieu d'enchaîner, bascule directement
+    // en mode Focus sur la sous-tâche tout juste créée (profondeur 1
+    // seulement — le Focus ne cible jamais une sous-sous-tâche, cf. focus.js).
+    const confirm = (reopen = false, andFocus = false) => {
       if (saved) return;
       saved = true;
       const title = input.value.trim();
       input.remove();
       if (title) {
         addBtn.style.display = '';
-        this._saveNewSubtask(todoId, title, parentStid);
-        if (reopen) this.addSubtaskInline(todoId, parentStid);
+        const newSub = this._saveNewSubtask(todoId, title, parentStid);
+        if (andFocus && newSub && !parentStid) this.focusStartOn(todoId, DS(today()), newSub.id, { fallbackToEdit: false });
+        else if (reopen) this.addSubtaskInline(todoId, parentStid);
       } else {
         cancel();
       }
     };
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); confirm(true); }
+      if (e.key === 'Enter') { e.preventDefault(); confirm(!e.altKey, e.altKey); }
       if (e.key === 'Escape') { saved = true; input.remove(); cancel(); }
     });
     input.addEventListener('blur', () => confirm(false));
@@ -1809,20 +1813,22 @@ class TodoApp {
 
   _saveNewSubtask(todoId, title, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    if (!t) return;
+    if (!t) return null;
     snapshot(state.todos);
+    const newSub = { id: Date.now().toString(), title, completed: false };
     if (parentStid) {
       const p = t.subtasks?.find(x => x.id === parentStid);
-      if (!p) return;
+      if (!p) return null;
       if (!p.subtasks) p.subtasks = [];
-      p.subtasks.push({ id: Date.now().toString(), title, completed: false });
+      p.subtasks.push(newSub);
     } else {
       if (!t.subtasks) t.subtasks = [];
-      t.subtasks.push({ id: Date.now().toString(), title, completed: false });
+      t.subtasks.push(newSub);
     }
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
+    return newSub;
   }
 
   editSubtaskTitle(el, todoId, stid, parentStid) {
@@ -2819,10 +2825,16 @@ class TodoApp {
   guidedToggleNewCat() { guidedToggleNewCat(); }
   guidedAddCategory() { guidedAddCategory(); }
 
-  saveTask() {
+  // andFocus (raccourci Alt+Entrée) : sauve puis bascule directement en mode
+  // Focus sur la tâche (nouvelle ou éditée) — id capturé avant closeModal()
+  // qui remet state.editingId à null. fallbackToEdit:false pour ne jamais
+  // rouvrir le modal qu'on vient de fermer si la tâche n'a pas d'occurrence
+  // aujourd'hui (ex. créée dans le backlog/inbox ou datée dans le futur).
+  saveTask(andFocus = false) {
     const before = JSON.parse(JSON.stringify(state.todos));
     const hadError = saveTaskLogic(state.todos);
     if (!hadError) {
+      const newId = state.editingId || state.todos[state.todos.length - 1].id;
       if (state.insertAfterId && !state.editingId) {
         const newTask = state.todos[state.todos.length - 1];
         const refIdx = state.todos.findIndex(x => x.id === state.insertAfterId);
@@ -2838,6 +2850,7 @@ class TodoApp {
       history.replaceState({ view: state.view, nav: DS(state.navDate) }, '', this._buildHash());
       this.render();
       this._refreshCategoryPanel();
+      if (andFocus) this.focusStartOn(newId, DS(today()), null, { fallbackToEdit: false });
     }
   }
 
@@ -3468,7 +3481,11 @@ class TodoApp {
     input.placeholder = 'Nouvelle sous-tâche…';
     input.autocomplete = 'off';
     let saved = false;
-    const confirm = () => {
+    // andFocus=true (Alt+Entrée) : bascule le Focus courant sur la sous-tâche
+    // tout juste créée au lieu de rester sur la tâche/sous-tâche affichée —
+    // seulement quand la cible est une tâche de premier niveau (parentStid
+    // absent), une sous-sous-tâche n'étant jamais un item de file indépendant.
+    const confirm = (andFocus = false) => {
       if (saved) return;
       saved = true;
       const title = input.value.trim();
@@ -3476,16 +3493,15 @@ class TodoApp {
       addBtn.style.display = '';
       if (title) {
         // Même id composé que focusToggleSubtask() ci-dessus.
-        if (todoId.includes('::')) {
-          const [realTodoId, parentStid] = todoId.split('::');
-          this._saveNewSubtask(realTodoId, title, parentStid);
-        } else {
-          this._saveNewSubtask(todoId, title);
-        }
+        const isSub = todoId.includes('::');
+        const realTodoId = isSub ? todoId.split('::')[0] : todoId;
+        const parentStid = isSub ? todoId.split('::')[1] : undefined;
+        const newSub = this._saveNewSubtask(realTodoId, title, parentStid);
+        if (andFocus && newSub && !parentStid) this.focusStartOn(realTodoId, DS(today()), newSub.id, { fallbackToEdit: false });
       }
     };
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Enter') { e.preventDefault(); confirm(e.altKey); }
       if (e.key === 'Escape') { saved = true; input.remove(); addBtn.style.display = ''; }
     });
     input.addEventListener('blur', confirm);
@@ -3519,14 +3535,17 @@ class TodoApp {
   // (profondeur 1 seulement) cible directement une sous-tâche comme item de
   // file indépendant — la tâche parente doit elle-même être focusable (pas
   // déjà complétée/annulée aujourd'hui), sinon une sous-tâche d'une tâche
-  // annulée deviendrait « courante » avec un chrono vivant.
-  focusStartOn(id, ds, stid) {
+  // annulée deviendrait « courante » avec un chrono vivant. `opts.fallbackToEdit`
+  // (défaut true) désactive le repli vers l'édition quand la cible n'est pas
+  // focusable — utilisé par le raccourci Alt+Entrée (création tâche/sous-tâche
+  // → focus direct) pour ne jamais rouvrir un modal qu'on vient de fermer.
+  focusStartOn(id, ds, stid, opts = {}) {
     const d = today();
     const targetId = stid ? focusSubtaskId(id, stid) : id;
     const focusable = stid
       ? !!(getTodosForDate(d, state.todos).find(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d))?.subtasks?.find(s => s.id === stid && !s.completed))
       : getTodosForDate(d, state.todos).some(t => t.id === id && !isCompleted(t, d) && !isCancelled(t, d));
-    if (!focusable) { if (!stid) this.openEditModal(id, ds); return; }
+    if (!focusable) { if (!stid && opts.fallbackToEdit !== false) this.openEditModal(id, ds); return; }
     // Déjà en focus (plein écran ou réduit) sur une autre tâche : sauvegarde
     // sa progression avant de basculer
     if ((state.view === 'focus' || this._focusMinimized) && targetId !== getCurrentFocusTask(this)?.id) saveFocusProgress(this);
