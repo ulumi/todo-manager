@@ -9799,11 +9799,19 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight: 700;
 }
 
-.update-toast {
+.update-toast-stack {
   position: fixed;
   bottom: 32px;
   left: 50%;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.update-toast {
   display: flex;
   flex-direction: column;
   background: var(--text);
@@ -9814,13 +9822,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   opacity: 0;
   pointer-events: none;
-  z-index: 9999;
   max-width: min(90vw, 380px);
+  transform: translateY(8px);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .update-toast--visible {
   opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
   pointer-events: auto;
 }
 
@@ -9832,6 +9840,14 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 .update-toast-main span {
   white-space: normal;
+}
+
+.update-toast-time {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.65;
+  flex-shrink: 0;
 }
 
 .update-toast-notes {

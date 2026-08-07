@@ -9085,14 +9085,28 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-weight: 700;
 }
 
-// Nouvelle version détectée pendant que l'onglet était ouvert (app._checkForNewVersion)
-// — même langage visuel que .newday-toast, mais pas d'auto-dismiss : reste
-// affiché tant que l'utilisateur n'a pas rechargé, ce n'est jamais urgent.
-.update-toast {
+// Nouvelle(s) version(s) détectée(s) pendant que l'onglet était ouvert
+// (app._checkForNewVersion) — même langage visuel que .newday-toast, mais
+// pas d'auto-dismiss : chaque toast reste affiché tant que l'utilisateur n'a
+// pas rechargé, ce n'est jamais urgent. Toasts indépendants les uns des
+// autres (jamais fusionnés) : #updateToastStack porte le positionnement fixe
+// + l'empilement, ancré en bas comme l'était l'ancien toast unique — le plus
+// récent (ajouté en dernier dans le DOM) reste près de l'ancre, les plus
+// anciens sont repoussés vers le haut au fur et à mesure (comportement
+// naturel d'un flex à hauteur automatique, pas besoin de column-reverse).
+.update-toast-stack {
   position: fixed;
   bottom: 32px;
   left: 50%;
-  transform: translateX(-50%) translateY(8px);
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.update-toast {
   display: flex;
   flex-direction: column;
   background: var(--text);
@@ -9103,13 +9117,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   opacity: 0;
   pointer-events: none;
-  z-index: 9999;
   max-width: min(90vw, 380px);
+  transform: translateY(8px);
   transition: opacity .2s ease, transform .2s ease;
 
   &--visible {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
     pointer-events: auto;
   }
 }
@@ -9123,6 +9137,17 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Le titre + le numéro de version ne doivent jamais être coupés — texte
   // libre de passer à la ligne plutôt qu'une troncature en ellipse.
   span { white-space: normal; }
+}
+
+// Heure d'apparition de CE toast précis (chacun garde la sienne, les toasts
+// étant indépendants) — chiffres alignés (tabular-nums), même convention que
+// .focus-queue-time/.timestat-total.
+.update-toast-time {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  opacity: .65;
+  flex-shrink: 0;
 }
 
 // Détail des commentaires de commit depuis la version actuellement chargée —

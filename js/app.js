@@ -984,45 +984,64 @@ class TodoApp {
   }
 
   // Pas de garde "déjà montré une fois" — un onglet resté ouvert pendant
-  // plusieurs déploiements successifs doit voir le toast se mettre à jour à
-  // chaque nouvelle version détectée (numéro + liste de commentaires), pas
-  // rester figé sur la toute première annonce. On ne re-déclenche que si la
-  // version distante a réellement changé depuis la dernière annonce, pour ne
-  // pas re-remplacer le toast à chaque poll de 60s sans rien de neuf.
+  // plusieurs déploiements successifs doit voir un nouveau toast apparaître à
+  // chaque nouvelle version détectée, pas rester figé sur la toute première
+  // annonce. On ne re-déclenche que si la version distante a réellement
+  // changé depuis la dernière annonce, pour ne pas empiler un toast à chaque
+  // poll de 60s sans rien de neuf.
   async _checkForNewVersion() {
     try {
       const res = await fetch('/js/modules/version.js', { cache: 'no-store' });
       const text = await res.text();
       const m = text.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
       if (!m || m[1] === VERSION || m[1] === this._announcedVersion) return;
-      const notes = await this._fetchChangelogNotes();
+      // Depuis la dernière annonce (pas depuis VERSION à chaque fois) : les
+      // toasts sont désormais indépendants les uns des autres, donc chacun ne
+      // doit montrer que ce qui est nouveau DEPUIS le précédent, jamais un
+      // rappel de notes déjà affichées sur un toast antérieur toujours visible.
+      const since = this._announcedVersion || VERSION;
+      const notes = await this._fetchChangelogNotes(since);
       this._announcedVersion = m[1];
       this._showUpdateToast(m[1], notes);
     } catch {}
   }
 
   // Entrées écrites à chaque `cmt`/`dpl` (voir CLAUDE.md) — une par commit,
-  // { version, date, message }, la plus récente en premier. On ne montre que
-  // celles postérieures à la version actuellement chargée dans cet onglet.
-  async _fetchChangelogNotes() {
+  // { version, date, message }, la plus récente en premier. Ne montre que
+  // celles postérieures à `sinceVersion`.
+  async _fetchChangelogNotes(sinceVersion) {
     try {
       const res = await fetch('/js/modules/changelog.json', { cache: 'no-store' });
       const list = await res.json();
-      const idx = list.findIndex(e => e.version === VERSION);
+      const idx = list.findIndex(e => e.version === sinceVersion);
       return idx === -1 ? list.slice(0, 5) : list.slice(0, idx);
     } catch { return []; }
   }
 
-  // Contrairement à .undo-toast (auto-fade), reste affiché tant que
-  // l'utilisateur n'a pas rechargé — pas urgent, pas d'auto-dismiss.
+  // Chaque nouvelle version détectée crée son propre toast, indépendant des
+  // précédents (jamais remplacé/fusionné) — empilés dans #updateToastStack,
+  // ancré en bas comme l'était l'ancien toast unique. Container à hauteur
+  // automatique + toasts ajoutés en fin de DOM : le plus récent reste près de
+  // l'ancre (comportement naturel du flex, pas besoin de column-reverse), les
+  // plus anciens sont repoussés vers le haut au fur et à mesure. Chacun garde
+  // son propre numéro de version, son heure d'apparition et son état
+  // déplié/replié — contrairement à .undo-toast (auto-fade), aucun ne
+  // disparaît tout seul (jusqu'au rechargement).
   _showUpdateToast(newVersion, notes = []) {
-    document.getElementById('updateToast')?.remove();
+    let stack = document.getElementById('updateToastStack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'updateToastStack';
+      stack.className = 'update-toast-stack';
+      document.body.appendChild(stack);
+    }
     const toast = document.createElement('div');
-    toast.id = 'updateToast';
     toast.className = notes.length ? 'update-toast expanded' : 'update-toast';
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     const label = newVersion ? `Nouvelle version disponible (v${esc(newVersion)})` : 'Nouvelle version disponible';
     const toggleBtn = notes.length ? `
-      <button class="update-toast-notes-btn" onclick="window.app.toggleUpdateToastNotes()" aria-label="Voir les changements">
+      <button class="update-toast-notes-btn" onclick="window.app.toggleUpdateToastNotes(this)" aria-label="Voir les changements">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>` : '';
     const notesHTML = notes.length ? `
@@ -1034,16 +1053,17 @@ class TodoApp {
     toast.innerHTML = `
       <div class="update-toast-main">
         <span>${label}</span>
+        <span class="update-toast-time" title="Heure de détection">${time}</span>
         ${toggleBtn}
         <button class="update-toast-btn" onclick="location.reload()">Recharger</button>
       </div>
       ${notesHTML}`;
-    document.body.appendChild(toast);
+    stack.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('update-toast--visible'));
   }
 
-  toggleUpdateToastNotes() {
-    document.getElementById('updateToast')?.classList.toggle('expanded');
+  toggleUpdateToastNotes(btn) {
+    btn.closest('.update-toast')?.classList.toggle('expanded');
   }
 
   _maybeShowNewDayToast() {

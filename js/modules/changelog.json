@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2471",
+    "date": "2026-08-07",
+    "message": "feat(update-toast): toasts de mise à jour indépendants et empilés — chacun garde son propre numéro de version et affiche son heure exacte d'apparition"
+  },
+  {
     "version": "0.4.2470",
     "date": "2026-08-07",
     "message": "test: reprise — 2e palier, le toast aurait dû se mettre à jour tout seul depuis le 1er palier"
