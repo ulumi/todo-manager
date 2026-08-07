@@ -11570,6 +11570,45 @@ body:has(.bottom-panel:not(.hidden))::before {
   &:focus { outline: none; }
 }
 
+// Estimation d'une sous-tâche (s.durationEstimated) — même habillage que
+// .backlog-deadline-badge (pastille fantôme en pointillés si vide, édition
+// en place au clic). Utilisée à la fois en vue jour (.subtask-item) et dans
+// le modal (.modal-subtask-item).
+.subtask-estimate-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background .15s, color .15s, border-color .15s;
+
+  &:hover { border-color: var(--primary); color: var(--text); }
+
+  &.ghost {
+    background: transparent;
+    border-style: dashed;
+  }
+}
+
+.subtask-estimate-input {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  padding: 0;
+  width: 48px;
+
+  &:focus { outline: none; }
+}
+
 
 // ─── 26. Plan View ────────────────────────────────────────────────────────────
 

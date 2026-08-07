@@ -2,7 +2,7 @@
 //  RENDERING FUNCTIONS
 // ════════════════════════════════════════════════════════
 
-import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed } from './utils.js';
+import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed, effectiveEstimate } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
@@ -39,6 +39,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
     <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
+      <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
       <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}')" title="Focus sur cette tâche">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
       </button>
@@ -124,7 +125,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   // précédent) + estimation — vue jour uniquement
   const focusTimeBadge = (() => {
     if (!dayView) return '';
-    const est = todo.durationEstimated || null;
+    const est = effectiveEstimate(todo) || null;
     // Récurrente : un focusTimeSpent d'une occurrence passée ne doit pas
     // s'afficher sur celle d'aujourd'hui — voir focusTimeSpentDate (focus.js)
     const sameDayProgress = !isRec || todo.focusTimeSpentDate === ds;

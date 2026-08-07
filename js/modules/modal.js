@@ -2,7 +2,7 @@
 //  MODAL MANAGEMENT
 // ════════════════════════════════════════════════════════
 
-import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth } from './utils.js';
+import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate } from './utils.js';
 import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
@@ -252,6 +252,7 @@ function _subtaskRowsHTML(list, parentStid) {
       </div>
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}'${args})">${esc(s.title)}</span>
+      <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="window.app.editModalSubtaskEstimate(this,'${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
       ${!parentStid ? `<button class="subtask-add-nested-btn" onclick="window.app.addModalSubtaskInline('${s.id}')" title="Ajouter une sous-tâche">+</button>` : ''}
       <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}'${args})">×</button>
     </div>${nested}`;
@@ -353,6 +354,51 @@ export function editModalSubtask(el, stid, parentStid) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
     if (e.key === 'Escape') { el.textContent = s.title; el.contentEditable = 'false'; }
   });
+}
+
+// Estimation d'une sous-tâche (s.durationEstimated, optionnelle) — même
+// pattern d'input en place que editModalSubtask() ci-dessus, mais un nombre.
+// Préremplit avec la valeur BRUTE uniquement (jamais effectiveEstimate()/la
+// somme calculée, sinon éditer sans rien changer figerait silencieusement
+// la somme comme valeur explicite).
+export function editModalSubtaskEstimate(badgeEl, stid, parentStid) {
+  const s = _findModalSubtask(stid, parentStid);
+  if (!s || badgeEl.querySelector('input')) return;
+  const prevHTML = badgeEl.innerHTML;
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '1';
+  input.step = '1';
+  input.inputMode = 'numeric';
+  input.className = 'subtask-estimate-input';
+  if (s.durationEstimated) input.value = s.durationEstimated;
+  input.addEventListener('click', e => e.stopPropagation());
+  input.addEventListener('mousedown', e => e.stopPropagation());
+  let settled = false;
+  const restore = () => { badgeEl.innerHTML = prevHTML; };
+  const confirm = () => {
+    if (settled) return;
+    settled = true;
+    const raw = input.value.trim();
+    const val = raw ? parseInt(raw, 10) : null;
+    if (val !== (s.durationEstimated || null) && (val === null || val > 0)) {
+      if (val) s.durationEstimated = val; else delete s.durationEstimated;
+      _renderModalSubtasks();
+      _scheduleDraftSave();
+      _persistSubtasksIfEditing();
+    } else {
+      restore();
+    }
+  };
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+    if (e.key === 'Escape') { settled = true; restore(); }
+  });
+  input.addEventListener('blur', confirm);
+  badgeEl.innerHTML = '';
+  badgeEl.appendChild(input);
+  input.focus();
+  input.select();
 }
 
 // parentStid absent : comportement inchangé (input avant le bouton

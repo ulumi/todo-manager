@@ -132,7 +132,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   deadline?: string,                 // YYYY-MM-DD — échéance optionnelle d'un item de backlog (t.backlog), distincte de date/startDate qu'un item de backlog n'a pas
   cancelled?: boolean,               // annulée (ponctuelle) — visible barrée, hors compteurs
   cancelledDates?: [],               // occurrences annulées (récurrentes), parallèle à completedDates
-  subtasks?: [{ id, title, completed, subtasks?: [{ id, title, completed }] }],  // checklist dans le modal d'édition — un seul niveau d'imbrication supplémentaire permis (sous-sous-tâche), jamais plus
+  subtasks?: [{ id, title, completed, durationEstimated?, subtasks?: [{ id, title, completed, durationEstimated? }] }],  // checklist dans le modal d'édition — un seul niveau d'imbrication supplémentaire permis (sous-sous-tâche), jamais plus. durationEstimated? (minutes) éditable en place (badge fantôme, modal + vue jour, `app.editSubtaskEstimate`/`editModalSubtaskEstimate`) sur les deux profondeurs — utils.js `effectiveEstimate(node)` calcule l'estimation EFFECTIVE (propre valeur sinon somme récursive des enfants) : alimente le badge `.todo-focustime-badge` d'une tâche parente sans estimation propre, jamais les points de RÉGLAGE (préremplissage d'un input toujours basé sur la valeur brute, jamais la somme calculée)
   groupId?: string,                  // groupement ad hoc (« commissions ») — tâches indépendantes reliées par le même id, pas de collection séparée (cf. Groupement de tâches ci-dessous)
   groupTitle?: string,               // titre affiché dans l'en-tête du groupe, dénormalisé sur chaque membre
 }

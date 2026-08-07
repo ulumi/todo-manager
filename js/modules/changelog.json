@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2451",
+    "date": "2026-08-07",
+    "message": "feat(sous-tâches): estimation de temps sur les sous-tâches (modal + vue jour) — la tâche parente sans estimation propre affiche automatiquement la somme de ses sous-tâches"
+  },
+  {
     "version": "0.4.2443",
     "date": "2026-08-07",
     "message": "fix(sous-tâches): Entrée pendant l'édition d'un titre de sous-tâche sauve toujours (avant : la 1re frappe désarmait le raccourci, Entrée finissait par fermer le modal ou insérer un saut de ligne) ; Shift+Entrée insère explicitement un saut de ligne"

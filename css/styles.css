@@ -12452,6 +12452,43 @@ body:has(.bottom-panel:not(.hidden))::before {
   outline: none;
 }
 
+.subtask-estimate-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.subtask-estimate-badge:hover {
+  border-color: var(--primary);
+  color: var(--text);
+}
+.subtask-estimate-badge.ghost {
+  background: transparent;
+  border-style: dashed;
+}
+
+.subtask-estimate-input {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  padding: 0;
+  width: 48px;
+}
+.subtask-estimate-input:focus {
+  outline: none;
+}
+
 .view-inbox .nav-group,
 .view-backlog .nav-group,
 .view-plan .nav-group,

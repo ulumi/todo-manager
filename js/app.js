@@ -36,6 +36,7 @@ import {
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask,
+  editModalSubtaskEstimate,
   consumeModalSubtasksDirty
 } from './modules/modal.js';
 import {
@@ -1841,6 +1842,53 @@ class TodoApp {
     });
   }
 
+  // Estimation d'une sous-tâche (s.durationEstimated, optionnelle) : édition
+  // en place, même pattern qu'editBacklogDeadline — le badge devient un
+  // <input type=number>. Préremplit avec la valeur BRUTE uniquement (jamais
+  // effectiveEstimate()/la somme calculée, sinon éditer sans rien changer
+  // figerait silencieusement la somme comme valeur explicite du parent).
+  editSubtaskEstimate(badgeEl, todoId, stid, parentStid) {
+    const t = state.todos.find(x => x.id === todoId);
+    const s = this._findSubtask(t, stid, parentStid);
+    if (!s || badgeEl.querySelector('input')) return;
+    const prevHTML = badgeEl.innerHTML;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.min = '1';
+    input.step = '1';
+    input.inputMode = 'numeric';
+    input.className = 'subtask-estimate-input';
+    if (s.durationEstimated) input.value = s.durationEstimated;
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('mousedown', e => e.stopPropagation());
+    let settled = false;
+    const restore = () => { badgeEl.innerHTML = prevHTML; };
+    const confirm = () => {
+      if (settled) return;
+      settled = true;
+      const raw = input.value.trim();
+      const val = raw ? parseInt(raw, 10) : null;
+      if (val !== (s.durationEstimated || null) && (val === null || val > 0)) {
+        snapshot(state.todos);
+        if (val) s.durationEstimated = val; else delete s.durationEstimated;
+        t.updatedAt = Date.now();
+        saveTodos(state.todos);
+        this.render();
+      } else {
+        restore();
+      }
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Escape') { settled = true; restore(); }
+    });
+    input.addEventListener('blur', confirm);
+    badgeEl.innerHTML = '';
+    badgeEl.appendChild(input);
+    input.focus();
+    input.select();
+  }
+
   // ── Task grouping — commissions-style : tâche+sous-tâches ⇄ groupe de
   // tâches indépendantes reliées par groupId/groupTitle (pas de collection
   // séparée, juste une étiquette partagée — cf. CLAUDE.md) ────────────────
@@ -1999,6 +2047,7 @@ class TodoApp {
   addModalSubtaskInline(parentStid)       { addModalSubtaskInline(parentStid); }
   editModalSubtask(el, stid, parentStid)  { editModalSubtask(el, stid, parentStid); }
   moveModalSubtask(stid, dir, parentStid) { moveModalSubtask(stid, dir, parentStid); }
+  editModalSubtaskEstimate(badgeEl, stid, parentStid) { editModalSubtaskEstimate(badgeEl, stid, parentStid); }
 
   _trackDeletion(id) {
     const dels = safeParseJSON(localStorage.getItem('_deletions'), {});

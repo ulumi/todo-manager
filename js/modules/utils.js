@@ -83,3 +83,15 @@ export function expandSubtask(todoId) {
   ids = ids.filter(x => x !== todoId);
   localStorage.setItem(SUBTASK_COLLAPSED_KEY, JSON.stringify(ids));
 }
+
+// Estimation effective d'une tâche/sous-tâche : sa propre valeur si définie,
+// sinon la somme récursive des estimations de ses enfants (0 si rien nulle
+// part). Ne remplace JAMAIS le champ brut aux points de RÉGLAGE (préremplissage
+// d'un input, comparaison avant écriture) — seulement aux points d'AFFICHAGE/
+// CALCUL (badge, chrono Focus) : éditer doit toujours poser une valeur
+// explicite qui prime, jamais figer silencieusement la somme calculée.
+export function effectiveEstimate(node) {
+  if (node.durationEstimated) return node.durationEstimated;
+  if (!node.subtasks?.length) return 0;
+  return node.subtasks.reduce((s, c) => s + effectiveEstimate(c), 0) || 0;
+}
