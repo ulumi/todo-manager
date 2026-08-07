@@ -970,12 +970,15 @@ class TodoApp {
   // obtient le code à jour — mais un onglet resté ouvert pendant un déploiement
   // continue de tourner sur ses modules JS déjà évalués en mémoire, qu'aucun
   // mécanisme de cache ne peut rafraîchir sans un vrai rechargement. Même
-  // schéma que _initNewDayWatch() (visibilitychange + focus + filet 30 min).
+  // schéma que _initNewDayWatch() (visibilitychange + focus + filet 60s) —
+  // aligné sur le même filet, pas 30 min : un onglet resté actif en continu
+  // (jamais de blur/focus) doit détecter un déploiement sans attendre, et le
+  // coût (deux petits fichiers statiques via cache:'no-store') est négligeable.
   _initVersionWatch() {
     const check = () => { if (document.visibilityState === 'visible') this._checkForNewVersion(); };
     document.addEventListener('visibilitychange', check);
     window.addEventListener('focus', check);
-    setInterval(check, 30 * 60 * 1000);
+    setInterval(check, 60 * 1000);
   }
 
   async _checkForNewVersion() {
@@ -1010,7 +1013,7 @@ class TodoApp {
     document.getElementById('updateToast')?.remove();
     const toast = document.createElement('div');
     toast.id = 'updateToast';
-    toast.className = 'update-toast';
+    toast.className = notes.length ? 'update-toast expanded' : 'update-toast';
     const label = newVersion ? `Nouvelle version disponible (v${esc(newVersion)})` : 'Nouvelle version disponible';
     const toggleBtn = notes.length ? `
       <button class="update-toast-notes-btn" onclick="window.app.toggleUpdateToastNotes()" aria-label="Voir les changements">

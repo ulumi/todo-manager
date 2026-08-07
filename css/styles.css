@@ -9831,9 +9831,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding: 8px 10px 8px 18px;
 }
 .update-toast-main span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .update-toast-notes {
