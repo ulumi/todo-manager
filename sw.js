@@ -14,7 +14,7 @@
 // _initVersionWatch()/_checkForNewVersion() instead — it prompts a reload
 // when the server's VERSION no longer matches what's running, independent
 // of this cache. Bump this string on structural changes to LOCAL_ASSETS.
-const CACHE_NAME = 'todo-v4-supabase';
+const CACHE_NAME = 'todo-v5-changelog';
 
 const LOCAL_ASSETS = [
   '/',
@@ -38,6 +38,7 @@ const LOCAL_ASSETS = [
   '/js/modules/sync.js',
   '/js/modules/storage.js',
   '/js/modules/version.js',
+  '/js/modules/changelog.json',
 ];
 
 const CDN_ASSETS = [

@@ -1,0 +1,12 @@
+[
+  {
+    "version": "0.4.2437",
+    "date": "2026-08-06",
+    "message": "feat(update-toast): le toast de nouvelle version affiche les commentaires de commit depuis la dernière version chargée"
+  },
+  {
+    "version": "0.4.2436",
+    "date": "2026-08-06",
+    "message": "feat(day): Entrée sur une nouvelle sous-tâche enchaîne directement sur la suivante"
+  }
+]

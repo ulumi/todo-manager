@@ -9805,11 +9805,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   left: 50%;
   transform: translateX(-50%) translateY(8px);
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
   background: var(--text);
   color: var(--bg);
-  padding: 8px 10px 8px 18px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
@@ -9817,12 +9815,85 @@ body:has(.bottom-panel:not(.hidden))::before {
   opacity: 0;
   pointer-events: none;
   z-index: 9999;
+  max-width: min(90vw, 380px);
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 .update-toast--visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
   pointer-events: auto;
+}
+
+.update-toast-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 18px;
+}
+.update-toast-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.update-toast-notes {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.update-toast.expanded .update-toast-notes {
+  grid-template-rows: 1fr;
+}
+
+.update-toast-notes-inner {
+  overflow: hidden;
+}
+.update-toast-notes-inner ul {
+  margin: 0;
+  padding: 0 18px 10px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.update-toast-notes-inner li {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  opacity: 0.85;
+  padding-left: 12px;
+  position: relative;
+}
+.update-toast-notes-inner li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.update-toast-notes-btn {
+  border: none;
+  background: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.update-toast-notes-btn:hover {
+  opacity: 1;
+}
+.update-toast.expanded .update-toast-notes-btn {
+  transform: rotate(180deg);
 }
 
 .update-toast-btn {
@@ -9834,6 +9905,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding: 5px 12px;
   border-radius: 14px;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.15s;
 }
 .update-toast-btn:hover {

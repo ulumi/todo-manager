@@ -984,22 +984,57 @@ class TodoApp {
       const res = await fetch('/js/modules/version.js', { cache: 'no-store' });
       const text = await res.text();
       const m = text.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
-      if (m && m[1] !== VERSION) this._showUpdateToast(m[1]);
+      if (m && m[1] !== VERSION) {
+        const notes = await this._fetchChangelogNotes();
+        this._showUpdateToast(m[1], notes);
+      }
     } catch {}
+  }
+
+  // Entrées écrites à chaque `cmt`/`dpl` (voir CLAUDE.md) — une par commit,
+  // { version, date, message }, la plus récente en premier. On ne montre que
+  // celles postérieures à la version actuellement chargée dans cet onglet.
+  async _fetchChangelogNotes() {
+    try {
+      const res = await fetch('/js/modules/changelog.json', { cache: 'no-store' });
+      const list = await res.json();
+      const idx = list.findIndex(e => e.version === VERSION);
+      return idx === -1 ? list.slice(0, 5) : list.slice(0, idx);
+    } catch { return []; }
   }
 
   // Contrairement à .undo-toast (auto-fade), reste affiché tant que
   // l'utilisateur n'a pas rechargé — pas urgent, pas d'auto-dismiss.
-  _showUpdateToast(newVersion) {
+  _showUpdateToast(newVersion, notes = []) {
     this._updateToastShown = true;
     document.getElementById('updateToast')?.remove();
     const toast = document.createElement('div');
     toast.id = 'updateToast';
     toast.className = 'update-toast';
     const label = newVersion ? `Nouvelle version disponible (v${esc(newVersion)})` : 'Nouvelle version disponible';
-    toast.innerHTML = `<span>${label}</span><button class="update-toast-btn" onclick="location.reload()">Recharger</button>`;
+    const toggleBtn = notes.length ? `
+      <button class="update-toast-notes-btn" onclick="window.app.toggleUpdateToastNotes()" aria-label="Voir les changements">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>` : '';
+    const notesHTML = notes.length ? `
+      <div class="update-toast-notes">
+        <div class="update-toast-notes-inner">
+          <ul>${notes.map(n => `<li>${esc(n.message)}</li>`).join('')}</ul>
+        </div>
+      </div>` : '';
+    toast.innerHTML = `
+      <div class="update-toast-main">
+        <span>${label}</span>
+        ${toggleBtn}
+        <button class="update-toast-btn" onclick="location.reload()">Recharger</button>
+      </div>
+      ${notesHTML}`;
     document.body.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('update-toast--visible'));
+  }
+
+  toggleUpdateToastNotes() {
+    document.getElementById('updateToast')?.classList.toggle('expanded');
   }
 
   _maybeShowNewDayToast() {
