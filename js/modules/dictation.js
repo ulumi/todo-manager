@@ -21,10 +21,16 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const AUTO_KEY = 'dictationAuto';
 const LANGS = { fr: 'fr-FR', en: 'en-US', es: 'es-ES' };
 
-// Relance tant que l'utilisateur n'a pas explicitement arrêté : Chrome coupe
-// la reconnaissance de lui-même après quelques secondes de silence, ce qui
-// rendrait le micro inutilisable dès qu'on réfléchit deux secondes.
-const IDLE_STOP_MS  = 30000; // silence total avant d'abandonner la session
+// Chrome coupe la reconnaissance de lui-même après quelques secondes de
+// silence : sans relance, le micro serait inutilisable dès qu'on réfléchit
+// deux secondes. MAIS chaque (re)démarrage fait jouer à Chrome son bip de
+// reconnaissance vocale — son joué par le NAVIGATEUR, qu'aucune API ne
+// permet de couper (l'interface SpeechRecognition n'expose rien de tel).
+// La seule variable sous notre contrôle est donc le NOMBRE de relances :
+//  - session qui n'a jamais rien entendu → aucune relance (micro armé à
+//    l'ouverture du modal pendant qu'on tape : ça ne biperait que dans le vide) ;
+//  - session qui a déjà transcrit → on relance, mais sur une fenêtre courte.
+const IDLE_STOP_MS  = 12000; // silence après la dernière transcription
 const TIGHT_RUN_MS  = 500;   // un run plus court que ça sans résultat = boucle
 const MAX_TIGHT_RUNS = 3;    // garde-fou anti-boucle serrée (micro indisponible)
 
@@ -132,13 +138,14 @@ export function startDictation(el) {
   _lastActivity = Date.now();
   _tightRuns = 0;
 
-  let runStart = 0, runGotResult = false;
+  let runStart = 0, runGotResult = false, sessionGotResult = false;
 
   rec.onstart = () => { runStart = Date.now(); runGotResult = false; };
 
   rec.onresult = e => {
     if (_rec !== rec) return;
     runGotResult = true;
+    sessionGotResult = true;
     _lastActivity = Date.now();
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -169,8 +176,11 @@ export function startDictation(el) {
     if (_rec !== rec) return; // une autre session a déjà pris la main
     const tight = !runGotResult && Date.now() - runStart < TIGHT_RUN_MS;
     _tightRuns = tight ? _tightRuns + 1 : 0;
-    if (!_stopping && el.isConnected && _tightRuns < MAX_TIGHT_RUNS
-        && Date.now() - _lastActivity < IDLE_STOP_MS) {
+    // sessionGotResult : ne jamais relancer une session restée muette — c'est
+    // le cas « micro armé automatiquement, mais l'utilisateur tape », où
+    // chaque relance ne ferait qu'ajouter un bip de Chrome sans rien capter.
+    const worthRestarting = sessionGotResult && Date.now() - _lastActivity < IDLE_STOP_MS;
+    if (!_stopping && el.isConnected && _tightRuns < MAX_TIGHT_RUNS && worthRestarting) {
       try { rec.start(); return; } catch {}
     }
     if (_interim) { _base = _append(_base, _interim); _interim = ''; _apply(); }
