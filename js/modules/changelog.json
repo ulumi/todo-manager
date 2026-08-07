@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2470",
+    "date": "2026-08-07",
+    "message": "test: reprise — 2e palier, le toast aurait dû se mettre à jour tout seul depuis le 1er palier"
+  },
+  {
     "version": "0.4.2469",
     "date": "2026-08-07",
     "message": "test: reprise — 1er palier (cette fois depuis un onglet bien rechargé sur le code corrigé)"
