@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2468",
+    "date": "2026-08-07",
+    "message": "test: 2e palier — le toast aurait dû se mettre à jour tout seul depuis le 1er palier, sans recharger"
+  },
+  {
     "version": "0.4.2467",
     "date": "2026-08-07",
     "message": "test: 1er palier — vérification que le toast se met à jour vers un 2e palier sans rechargement"
