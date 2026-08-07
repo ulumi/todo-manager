@@ -4648,6 +4648,89 @@ body.marquee-active {
   color: var(--text);
 }
 
+.dictate-field {
+  position: relative;
+  display: block;
+  width: 100%;
+  break-inside: avoid;
+}
+
+.dictate-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.dictate-btn:hover {
+  opacity: 1;
+  background: var(--surface2);
+  color: var(--text);
+}
+.dictate-btn.listening {
+  opacity: 1;
+  color: var(--danger);
+  background: var(--surface2);
+  animation: dictate-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dictate-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 22%, transparent);
+  }
+}
+.dictate-btn--sm {
+  width: 18px;
+  height: 18px;
+  top: 4px;
+  right: 3px;
+}
+.dictate-btn--sm svg {
+  width: 11px;
+  height: 11px;
+}
+.dictate-btn--sm.listening {
+  animation-name: dictate-pulse-sm;
+}
+
+@keyframes dictate-pulse-sm {
+  0%, 100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent);
+  }
+}
+.form-input.has-dictate,
+.focus-subtask-new-input.has-dictate {
+  padding-right: 36px;
+}
+
+.subtask-new-input.has-dictate {
+  padding-right: 24px;
+}
+
+.form-input.dictating,
+.subtask-new-input.dictating,
+.focus-subtask-new-input.dictating {
+  border-color: var(--danger);
+}
+
 .fl-group {
   position: relative;
   margin-bottom: 26px;

@@ -151,6 +151,22 @@
           </div>
         </div>
 
+        <!-- Dictée vocale — section révélée par app._initDictation() seulement
+             si le navigateur supporte la reconnaissance vocale -->
+        <div class="settings-menu-section" id="settingsDictationSection" style="display:none">
+          <div class="settings-section-header">
+            <div class="settings-menu-title">Dictée vocale</div>
+            <span class="settings-help-icon" title="Reconnaissance vocale du navigateur">?</span>
+          </div>
+          <div class="settings-glass-toggle">
+            <label class="settings-glass-label">
+              <input type="checkbox" id="settingsDictationInput" onchange="window.app.toggleDictationAuto()">
+              <span>Écoute automatique</span>
+              <span class="settings-help-icon" title="Démarre le micro tout seul à l'ouverture de « Nouvelle tâche » et à chaque champ de sous-tâche. Décoché, le micro reste disponible via le bouton micro de chaque champ.">?</span>
+            </label>
+          </div>
+        </div>
+
         <!-- Text Size -->
         <div class="settings-menu-section">
           <div class="settings-section-header">

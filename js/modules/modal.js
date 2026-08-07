@@ -8,6 +8,7 @@ import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 import { getProjects, saveProjects } from './projectManager.js';
 import { pushNow, saveTodos } from './storage.js';
+import { attachMic, autoStartDictation, stopDictation } from './dictation.js';
 
 // ─── Smooth reveal / hide helpers ──────────────────────────────────────────
 
@@ -434,6 +435,9 @@ export function addModalSubtaskInline(parentStid) {
     addBtn.style.display = 'none';
     list.insertBefore(input, addBtn);
   }
+  // wrap: ces inputs n'ont pas de conteneur à eux où ancrer le micro.
+  // attachMic() redirige aussi input.remove() vers le wrapper (cf. dictation.js).
+  attachMic(input, { wrap: true, compact: true });
   let done = false;
   const finish = () => {
     if (done) return;
@@ -471,6 +475,7 @@ export function addModalSubtaskInline(parentStid) {
   });
   input.addEventListener('blur', finish);
   input.focus();
+  autoStartDictation(input);
 }
 
 // ─── Draft management ─────────────────────────────────────────────────────
@@ -974,10 +979,18 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   _initCombobox(todos);
   _initDraftListeners();
   _initContextReveal();
-  setTimeout(() => document.getElementById('taskTitle').focus(), 50);
+  setTimeout(() => {
+    const ti = document.getElementById('taskTitle');
+    ti?.focus();
+    // Dictée automatique à l'ouverture de « Nouvelle tâche » (réglage
+    // dictationAuto). Jamais sur un brouillon restauré : le champ n'est pas
+    // vierge, l'utilisateur vient relire/compléter, pas dicter à neuf.
+    if (ti && !ti.value) autoStartDictation(ti);
+  }, 50);
 }
 
 export function closeModal() {
+  stopDictation();
   _destroyCombobox();
   _destroyDraftListeners();
   _destroyContextReveal();
@@ -1842,6 +1855,9 @@ export function closeGuidedCards() {
   const overlay = document.getElementById('guidedOverlay');
   const main = document.querySelector('.modal-main');
 
+  // Couper le micro AVANT la recopie vers le formulaire principal : sinon un
+  // dernier résultat pourrait arriver dans le champ guidé après la synchro.
+  stopDictation();
   // Sync guided values back to main form
   _syncGuidedToMain();
 

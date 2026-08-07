@@ -18,6 +18,10 @@ import {
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
+  attachMic, autoStartDictation, stopIfDetached,
+  isDictationSupported, isAutoDictate, setAutoDictate
+} from './modules/dictation.js';
+import {
   getTodosForDate, isCompleted, isCancelled, toggleTodo, cancelTodo, deleteOneOccurrence,
   deleteFutureOccurrences, addTask, getSuggestions
 } from './modules/calendar.js';
@@ -194,6 +198,7 @@ class TodoApp {
     this.applyZoom();
     this.initTheme();
     this.applyLang();
+    this._initDictation();
     initLowPolyBg();
     this.initGlassMode();
     // Restore state from URL hash, fall back to localStorage
@@ -733,6 +738,10 @@ class TodoApp {
     // Update auto-postpone checkbox
     const autoPostponeInput = document.getElementById('settingsAutoPostponeInput');
     if (autoPostponeInput) autoPostponeInput.checked = localStorage.getItem('autoPostpone') === 'true';
+
+    // Update dictation checkbox
+    const dictationInput = document.getElementById('settingsDictationInput');
+    if (dictationInput) dictationInput.checked = isAutoDictate();
 
     // Update accent color picker (presets + custom input)
     const accentColors = isDark
@@ -1794,7 +1803,11 @@ class TodoApp {
     input.addEventListener('blur', () => confirm(false));
     addBtn.style.display = 'none';
     list.appendChild(input);
+    // Micro avant le focus : attachMic({wrap}) détache brièvement l'input le
+    // temps de l'envelopper, ce qui perdrait un focus déjà posé.
+    attachMic(input, { wrap: true, compact: true });
     input.focus();
+    autoStartDictation(input);
   }
 
   // Menu contextuel (sous-tâche) « Ajouter une sous-tâche » : même patch
@@ -3507,7 +3520,9 @@ class TodoApp {
     input.addEventListener('blur', confirm);
     addBtn.style.display = 'none';
     box.appendChild(input);
+    attachMic(input, { wrap: true });
     input.focus();
+    autoStartDictation(input);
   }
 
   focusCounterStep(id, dir) {
@@ -4385,6 +4400,7 @@ class TodoApp {
         if (data.config.icalHour)   localStorage.setItem('icalHour',   data.config.icalHour);
         if (data.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(data.config.icalFilters));
         if (data.config.autoPostpone) localStorage.setItem('autoPostpone', data.config.autoPostpone);
+        if (data.config.dictationAuto) localStorage.setItem('dictationAuto', data.config.dictationAuto);
         if (data.config.focusQueueView) localStorage.setItem('focusQueueView', data.config.focusQueueView);
         if (data.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', data.config.focusBreakMinutes);
         if (data.config.backlogQueueView) localStorage.setItem('backlogQueueView', data.config.backlogQueueView);
@@ -4417,6 +4433,7 @@ class TodoApp {
   // RENDER
   // ═══════════════════════════════════════════════════
   render() {
+    stopIfDetached(); // le DOM va être régénéré : ne pas laisser un micro tourner dans le vide
     const isCategories  = state.view === 'categories';
     const isProjects    = state.view === 'projects';
     const isProfile     = state.view === 'profile';
@@ -5152,6 +5169,31 @@ class TodoApp {
         this.render();
       }
     }
+  }
+
+  // Dictée vocale — pose le bouton micro sur les champs statiques du modal
+  // (titre + notes, mode normal ET mode guidé). Les champs de sous-tâche,
+  // créés à la volée, sont équipés à leur création (addSubtaskInline,
+  // focusAddSubtask, addModalSubtaskInline). Sans support navigateur, rien
+  // n'est injecté du tout — pas de bouton mort à l'écran.
+  _initDictation() {
+    if (!isDictationSupported()) return;
+    // #taskTitle / #taskDescription : PAS de wrapper — leur label flottant
+    // dépend de `.fl-input:focus ~ .fl-label`, envelopper l'input romprait
+    // cette fratrie. Leur .fl-group est déjà en position:relative.
+    attachMic(document.getElementById('taskTitle'));
+    attachMic(document.getElementById('taskDescription'));
+    // Mode guidé : pas de label flottant, un wrapper est plus simple que de
+    // rendre .guided-card / .guided-detail-item positionnés.
+    attachMic(document.getElementById('guidedTitle'), { wrap: true });
+    attachMic(document.getElementById('guidedDescription'), { wrap: true });
+    const section = document.getElementById('settingsDictationSection');
+    if (section) section.style.display = '';
+  }
+
+  toggleDictationAuto() {
+    setAutoDictate(!!document.getElementById('settingsDictationInput')?.checked);
+    this._saveConfigChange();
   }
 
   openReviewModal() {
@@ -7424,6 +7466,7 @@ class TodoApp {
       if (backup.config.icalHour)   localStorage.setItem('icalHour',   backup.config.icalHour);
       if (backup.config.icalFilters) localStorage.setItem('icalFilters', JSON.stringify(backup.config.icalFilters));
       if (backup.config.autoPostpone) localStorage.setItem('autoPostpone', backup.config.autoPostpone);
+      if (backup.config.dictationAuto) localStorage.setItem('dictationAuto', backup.config.dictationAuto);
       if (backup.config.focusQueueView) localStorage.setItem('focusQueueView', backup.config.focusQueueView);
       if (backup.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', backup.config.focusBreakMinutes);
       if (backup.config.backlogQueueView) localStorage.setItem('backlogQueueView', backup.config.backlogQueueView);

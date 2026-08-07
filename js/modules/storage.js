@@ -158,6 +158,7 @@ export function getAppConfig() {
     bgPalette: localStorage.getItem('bgPalette'),
     bgColor:   localStorage.getItem('bgColor'),
     autoPostpone: localStorage.getItem('autoPostpone'),
+    dictationAuto: localStorage.getItem('dictationAuto'),
     focusQueueView: localStorage.getItem('focusQueueView'),
     focusBreakMinutes: localStorage.getItem('focusBreakMinutes'),
     backlogQueueView: localStorage.getItem('backlogQueueView'),
