@@ -2952,6 +2952,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-item:hover .subtask-add-mini-slot,
+.inbox-item:hover .subtask-add-mini-slot,
 .subtask-list:hover .subtask-add-mini-slot {
   height: 26px;
 }
@@ -2981,6 +2982,7 @@ input:checked + .cal-sid-toggle-track::after {
 }
 
 .todo-item:hover .subtask-add-mini,
+.inbox-item:hover .subtask-add-mini,
 .subtask-list:hover .subtask-add-mini {
   opacity: 1;
   transform: rotate(0deg);
@@ -12381,6 +12383,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position: relative;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 10px 12px;
   background: var(--surface);
@@ -12409,6 +12412,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 .inbox-item.dragging {
   opacity: 0.35;
   border-style: dashed;
+}
+.inbox-item > .subtask-collapse {
+  flex: 0 0 calc(100% - 28px);
+  margin-left: 28px;
 }
 
 .inbox-copy-ghost {

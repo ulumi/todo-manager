@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2516",
+    "date": "2026-08-07",
+    "message": "feat(inbox/backlog): les sous-tâches s'affichent maintenant dans les cartes, comme en vue jour (repli, ajout, clic droit)"
+  },
+  {
     "version": "0.4.2504",
     "date": "2026-08-07",
     "message": "feat(dictée): extension Chrome optionnelle qui coupe le son des autres onglets (YouTube…) pendant que le micro écoute"

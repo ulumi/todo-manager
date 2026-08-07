@@ -2912,6 +2912,7 @@ main {
 }
 
 .todo-item:hover .subtask-add-mini-slot,
+.inbox-item:hover .subtask-add-mini-slot,
 .subtask-list:hover .subtask-add-mini-slot { height: 26px; }
 
 .subtask-add-mini {
@@ -2938,6 +2939,7 @@ main {
 }
 
 .todo-item:hover .subtask-add-mini,
+.inbox-item:hover .subtask-add-mini,
 .subtask-list:hover .subtask-add-mini {
   opacity: 1;
   transform: rotate(0deg);
@@ -11501,6 +11503,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   position:         relative; // ancre .inbox-item-actions en overlay, hors du flux flex
   display:          flex;
   align-items:      center;
+  flex-wrap:        wrap; // le bloc sous-tâches (100% de large) passe sous le titre
   gap:              10px;
   padding:          10px 12px;
   background:       var(--surface);
@@ -11527,6 +11530,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   &.dragging {
     opacity:      .35;
     border-style: dashed;
+  }
+
+  // Checklist rendue dans la carte comme en vue jour (cf. subtaskParts,
+  // render.js). L'indentation par défaut de .subtask-collapse est calibrée
+  // sur la vue jour (check 22px + gap 12px) ; ici la check fait 18px et le
+  // gap 10px — d'où l'alignement recalculé sur le contenu de CETTE carte.
+  > .subtask-collapse {
+    flex:        0 0 calc(100% - 28px);
+    margin-left: 28px;
   }
 }
 

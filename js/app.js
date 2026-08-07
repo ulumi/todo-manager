@@ -1513,11 +1513,15 @@ class TodoApp {
   // encore dans le DOM — on l'injecte ici par patch ciblé (pas de render()
   // complet, pour ne pas faire clignoter le reste de la vue jour), puis on
   // ouvre l'input inline comme le bouton natif le ferait déjà.
+  // Ancré aussi sur .inbox-item (cartes Inbox/Backlog, même checklist rendue
+  // dans la carte) — ds vide dans ce cas : un item sans date n'est pas
+  // focusable, subtaskListHTML masque alors les boutons ▶.
   ctxAddSubtask(id) {
-    const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
+    const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
     if (!itemEl) return;
     if (!itemEl.querySelector('.subtask-list')) {
-      itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, DS(today()))}</div></div>`);
+      const ds = itemEl.classList.contains('inbox-item') ? '' : DS(today());
+      itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, ds)}</div></div>`);
     } else {
       // La liste peut déjà exister mais être repliée (grid-template-rows:0)
       // — sans dépli, l'input inline serait injecté hors de vue
@@ -1636,9 +1640,12 @@ class TodoApp {
     });
   }
 
+  // .inbox-item : cartes Inbox/Backlog, qui rendent la même checklist que la
+  // vue jour (cf. subtaskParts, render.js) — sans ce sélecteur, le repli y
+  // serait persisté mais jamais appliqué visuellement
   toggleSubtasksCollapse(btn, id) {
     const collapsed = toggleSubtaskCollapsed(id);
-    const item = btn.closest('.todo-item');
+    const item = btn.closest('.todo-item, .inbox-item');
     const wrap = item?.querySelector('.subtask-collapse');
     if (wrap) wrap.classList.toggle('collapsed', collapsed);
     btn.querySelector('.subtask-toggle-chevron')?.classList.toggle('collapsed', collapsed);
@@ -3527,6 +3534,15 @@ class TodoApp {
 
   focusCounterStep(id, dir) {
     dir > 0 ? this.incrementCount(id) : this.decrementCount(id);
+  }
+
+  // Clic sur une carte Inbox/Backlog → édition, sauf dans le bloc
+  // sous-tâches : ses propres contrôles stoppent déjà la propagation, mais
+  // pas les zones de padding entre eux (ni l'input inline de création d'une
+  // nouvelle sous-tâche). Même garde que clickTodo() en vue jour.
+  clickInboxItem(e, id) {
+    if (e.target.closest('.subtask-collapse')) return;
+    this.openEditModal(id, null);
   }
 
   clickTodo(e, id, ds) {
@@ -8068,9 +8084,14 @@ function _renderSubtaskCtxMenu() {
   const t = state.todos.find(x => x.id === todoId);
   const s = window.app._findSubtask(t, stid, parentStid);
   if (!s) { _todoCtxMenu.innerHTML = ''; return; }
+  // La file Focus ne couvre que la journée en cours (cf. focusStartOn) : sur
+  // une sous-tâche d'un item Inbox/Backlog (aucune date) ou d'une tâche déjà
+  // faite/annulée aujourd'hui, l'action serait un clic mort — on la masque.
+  const d = today();
+  const canFocus = getTodosForDate(d, state.todos).some(x => x.id === todoId && !isCompleted(x, d) && !isCancelled(x, d));
   _todoCtxMenu.innerHTML = `
     <div class="ctx-item" data-action="subtask-complete"><span>${s.completed ? '↺' : '✓'}</span> ${s.completed ? 'Décompléter' : 'Compléter'}</div>
-    <div class="ctx-item" data-action="subtask-focus"><span>▶</span> Focus</div>
+    ${canFocus ? `<div class="ctx-item" data-action="subtask-focus"><span>▶</span> Focus</div>` : ''}
     ${!parentStid ? `<div class="ctx-item" data-action="subtask-add-nested"><span>☑</span> Ajouter une sous-tâche</div>` : ''}
     <div class="ctx-item" data-action="subtask-extract"><span>⤴</span> Sortir du groupe</div>
     <div class="ctx-sep"></div>

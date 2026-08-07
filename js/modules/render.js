@@ -29,7 +29,12 @@ const _subtaskChevronSVG = (collapsed) => `<svg class="subtask-toggle-chevron${c
 // rend le niveau sous-sous-tâche POUR cette sous-tâche précise — jamais plus
 // profond (décision produit : un seul niveau d'imbrication supplémentaire),
 // d'où `!parentStid` qui garde la récursion à un seul cran ci-dessous.
+// ds vide = item sans date (cartes Inbox/Backlog) : la file Focus ne couvre
+// que la journée en cours, donc focusStartOn() n'y ferait rien — le bouton ▶
+// est masqué plutôt que laissé mort à l'écran (le ds vide se propage aux
+// listes imbriquées via data-ds, cf. app.ctxAddNestedSubtask).
 export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
+  const canFocus = !!ds;
   const items = (subtasks || []).map(s => {
     const args = parentStid ? `,'${parentStid}'` : '';
     const child = !parentStid && s.subtasks?.length
@@ -40,9 +45,9 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
       <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
-      <button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
+      ${canFocus ? `<button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
-      </button>
+      </button>` : ''}
       <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>
     </div>${child}`;
   }).join('');
@@ -56,6 +61,23 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}'${parentStid ? `,'${parentStid}'` : ''})" title="Ajouter une sous-tâche">＋</button>
     </span>
   </div>`;
+}
+
+// Badge chevron + compteur « fait/total » (posé dans .todo-meta) et bloc
+// repliable de la checklist — partagés entre la vue jour (todoItemHTML) et
+// les cartes Inbox/Backlog, pour que les sous-tâches s'affichent partout de
+// la même façon. Repli/dépli persistant par tâche (isSubtaskCollapsed,
+// utils.js) ; l'ajout de la 1re sous-tâche passe par app.ctxAddSubtask() qui
+// injecte le bloc déplié par patch DOM ciblé (pas ce chemin de render()).
+function subtaskParts(todo, ds) {
+  const subs = todo.subtasks || [];
+  if (!subs.length) return { toggle: '', block: '' };
+  const collapsed = isSubtaskCollapsed(todo.id);
+  const doneCnt = subs.filter(s => s.completed).length;
+  return {
+    toggle: `<button class="todo-subtask-toggle" onclick="event.stopPropagation();window.app.toggleSubtasksCollapse(this,'${todo.id}')" title="${collapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches'}">${_subtaskChevronSVG(collapsed)}<span class="todo-subtask-toggle-cnt">${doneCnt}/${subs.length}</span></button>`,
+    block: `<div class="subtask-collapse${collapsed ? ' collapsed' : ''}"><div class="subtask-collapse-inner">${subtaskListHTML(subs, todo.id, ds)}</div></div>`,
+  };
 }
 
 // ── Stats viz color helpers ───────────────────────────────────────────────
@@ -156,19 +178,9 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <span class="todo-counter-target">/ ${to}${unit}</span>
     </div>`;
   })();
-  const subtasks = todo.subtasks || [];
-  // Repli/dépli persistant par tâche (isSubtaskCollapsed, utils.js) — l'ajout
-  // de la 1re sous-tâche passe par app.ctxAddSubtask() qui injecte le bloc
-  // déplié directement via patch DOM ciblé (pas ce chemin de render())
-  const subtasksCollapsed = subtasks.length > 0 && isSubtaskCollapsed(todo.id);
-  const subtaskToggleHTML = subtasks.length > 0
-    ? `<button class="todo-subtask-toggle" onclick="event.stopPropagation();window.app.toggleSubtasksCollapse(this,'${todo.id}')" title="${subtasksCollapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches'}">${_subtaskChevronSVG(subtasksCollapsed)}<span class="todo-subtask-toggle-cnt">${subtasks.filter(s=>s.completed).length}/${subtasks.length}</span></button>`
-    : '';
+  const { toggle: subtaskToggleHTML, block: expandedHTML } = subtaskParts(todo, ds);
   const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || subtaskToggleHTML;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
-  const expandedHTML = subtasks.length > 0
-    ? `<div class="subtask-collapse${subtasksCollapsed ? ' collapsed' : ''}"><div class="subtask-collapse-inner">${subtaskListHTML(subtasks, todo.id, ds)}</div></div>`
-    : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
@@ -1474,16 +1486,19 @@ export function renderInboxView(todos) {
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
-    const hasMeta = !!catBadge;
+    // Sous-tâches affichées dans la carte comme en vue jour — ds vide : un
+    // item d'inbox n'a pas de date, donc rien à focuser (cf. subtaskListHTML)
+    const subtasks = subtaskParts(t, '');
+    const hasMeta = !!catBadge || !!subtasks.toggle;
     return `
       <div class="inbox-item${prioCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
-        onclick="window.app.openEditModal('${t.id}', null)">
+        onclick="window.app.clickInboxItem(event,'${t.id}')">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          ${hasMeta ? `<div class="todo-meta">${catBadge}</div>` : ''}
+          ${hasMeta ? `<div class="todo-meta">${catBadge}${subtasks.toggle}</div>` : ''}
         </div>
         <div class="inbox-item-actions">
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Assigner à aujourd'hui">
@@ -1495,6 +1510,7 @@ export function renderInboxView(todos) {
           <button class="todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)">✎</button>
           <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
         </div>
+        ${subtasks.block}
       </div>`;
   };
   const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
@@ -1558,15 +1574,18 @@ export function renderBacklogView(todos) {
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    // Sous-tâches affichées dans la carte comme en vue jour — ds vide : un
+    // item de backlog n'a pas de date, donc rien à focuser (subtaskListHTML)
+    const subtasks = subtaskParts(t, '');
     return `
       <div class="inbox-item${prioCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
-        onclick="window.app.openEditModal('${t.id}', null)">
+        onclick="window.app.clickInboxItem(event,'${t.id}')">
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          <div class="todo-meta">${catBadge}${ageBadge(t)}${deadlineBadge(t, { ghostIfEmpty: true })}</div>
+          <div class="todo-meta">${catBadge}${ageBadge(t)}${deadlineBadge(t, { ghostIfEmpty: true })}${subtasks.toggle}</div>
         </div>
         <div class="inbox-item-actions">
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Planifier aujourd'hui">
@@ -1578,6 +1597,7 @@ export function renderBacklogView(todos) {
           <button class="todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}', null)">✎</button>
           <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
         </div>
+        ${subtasks.block}
       </div>`;
   };
   const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
