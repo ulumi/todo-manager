@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2478",
+    "date": "2026-08-07",
+    "message": "fix(focus): recharger la page juste après avoir complété la tâche affichée ne saute plus au prochain item — le fil restait perdu malgré le fix précédent car l'ordre de navigation, non persisté, se reconstruisait sans les tâches déjà complétées"
+  },
+  {
     "version": "0.4.2477",
     "date": "2026-08-07",
     "message": "feat(clavier): Alt+Entrée sauve une nouvelle tâche ou sous-tâche et bascule directement en mode Focus dessus"

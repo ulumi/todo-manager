@@ -321,6 +321,16 @@ function _ensureOrder(app) {
   for (const t of todays) for (const s of (t.subtasks || [])) validToday.add(focusSubtaskId(t.id, s.id));
   _order = _order.filter(id => validToday.has(id));
   for (const t of getFocusQueue(app)) if (!_order.includes(t.id)) _order.push(t.id);
+  // getFocusQueue() exclut les tâches/sous-tâches déjà complétées — _order
+  // ne les perd normalement jamais (grossit sans rétrécir à la complétion,
+  // cf. commentaire plus haut), mais UNIQUEMENT parce qu'il les contenait
+  // déjà avant la complétion. _order n'est pas persisté (seul _currentId
+  // l'est, via CURRENT_ID_KEY) : après un rechargement de page, il repart
+  // vide et se reconstruit entièrement depuis getFocusQueue() ci-dessus, qui
+  // omet justement la tâche/sous-tâche déjà complétée en cours d'affichage —
+  // sans ce filet, getCurrentFocusTask() rejetait alors _currentId (absent
+  // de _order) et retombait sur le prochain item de la file.
+  if (_currentId && validToday.has(_currentId) && !_order.includes(_currentId)) _order.push(_currentId);
 }
 
 export function getFocusOrder(app) {
