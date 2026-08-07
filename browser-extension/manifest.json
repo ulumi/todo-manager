@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "2FŨKOI — Silence pendant la dictée",
+  "version": "1.0.0",
+  "description": "Coupe le son des autres onglets pendant que la dictée vocale de 2FŨKOI écoute, puis le rétablit exactement comme il était.",
+  "permissions": ["tabs", "storage", "alarms"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://todo.hugues.app/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

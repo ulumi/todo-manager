@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2504",
+    "date": "2026-08-07",
+    "message": "feat(dictée): extension Chrome optionnelle qui coupe le son des autres onglets (YouTube…) pendant que le micro écoute"
+  },
+  {
     "version": "0.4.2497",
     "date": "2026-08-07",
     "message": "fix(dictée): beaucoup moins de bips — une écoute qui n'a rien entendu ne se relance plus, et la fenêtre de relance après dictée passe de 30 s à 12 s"

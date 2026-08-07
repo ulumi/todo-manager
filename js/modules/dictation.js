@@ -91,7 +91,18 @@ function _onUserInput(e) {
   _interim = '';
 }
 
+// Signale l'écoute à l'extension navigateur optionnelle (browser-extension/),
+// qui coupe le son des autres onglets pendant la dictée. Une page web ne peut
+// PAS agir sur un autre onglet (ni sur une autre app) : c'est une frontière
+// du bac à sable, seule une extension a l'API `chrome.tabs`. On se contente
+// donc de crier dans le vide — si l'extension n'est pas installée, ce
+// postMessage n'a strictement aucun effet et aucun coût.
+function _notifyExtension(stateName) {
+  try { window.postMessage({ __2fukoi: 'dictation', state: stateName }, window.location.origin); } catch {}
+}
+
 function _cleanup() {
+  _notifyExtension('stop');
   if (_btn) _btn.classList.remove('listening');
   if (_target) {
     _target.classList.remove('dictating');
@@ -191,6 +202,7 @@ export function startDictation(el) {
   el.addEventListener('input', _onUserInput);
   el.classList.add('dictating');
   if (_btn) _btn.classList.add('listening');
+  _notifyExtension('start');
   return true;
 }
 

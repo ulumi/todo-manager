@@ -36,3 +36,4 @@ month-view-verification.png
 # Internal working directories — dev artifacts, not app content
 reviews/
 supabase/
+browser-extension/
