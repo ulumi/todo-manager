@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2467",
+    "date": "2026-08-07",
+    "message": "test: 1er palier — vérification que le toast se met à jour vers un 2e palier sans rechargement"
+  },
+  {
     "version": "0.4.2466",
     "date": "2026-08-07",
     "message": "fix(update-toast): le toast de nouvelle version se met à jour à chaque nouveau déploiement détecté sur un onglet resté ouvert, au lieu de rester figé sur la première version annoncée"
