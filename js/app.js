@@ -1830,10 +1830,15 @@ class TodoApp {
       }
     };
     el.addEventListener('blur', save, { once: true });
+    // Pas de { once: true } : voir le même commentaire dans editModalSubtask()
+    // (modal.js) — ce listener doit survivre à la 1re frappe, sinon corriger
+    // le titre avant d'appuyer sur Entrée le désarme, et Entrée retombe sur
+    // le comportement par défaut du navigateur (saut de ligne inséré dans le
+    // span). Shift+Entrée reste le seul moyen explicite de sauter une ligne.
     el.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
       if (e.key === 'Escape') { el.textContent = s.title; el.contentEditable = 'false'; }
-    }, { once: true });
+    });
   }
 
   // ── Task grouping — commissions-style : tâche+sous-tâches ⇄ groupe de
@@ -7458,9 +7463,11 @@ class TodoApp {
       step2.classList.remove('onboarding-step--hidden');
       step2.classList.add('onboarding-step--enter');
       document.getElementById('guestNameInput')?.focus();
-      // Listen for Enter key
+      // Listen for Enter key — pas de { once: true } : même bug que
+      // editModalSubtask()/editSubtaskTitle(), la 1re lettre tapée du prénom
+      // désarmait le listener avant même que Entrée soit pressée.
       document.getElementById('guestNameInput')?.addEventListener('keydown',
-        e => { if (e.key === 'Enter') this.saveGuestName(); }, { once: true });
+        e => { if (e.key === 'Enter') this.saveGuestName(); });
     }, 300);
   }
 

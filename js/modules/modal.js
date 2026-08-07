@@ -340,10 +340,19 @@ export function editModalSubtask(el, stid, parentStid) {
     else el.textContent = s.title;
   };
   el.addEventListener('blur', save, { once: true });
+  // Pas de { once: true } ici : ce listener doit rester actif tant que
+  // l'édition dure, pas seulement pour la 1re frappe — sinon corriger le
+  // titre (taper un caractère avant d'appuyer sur Entrée) désarme le
+  // handler, et Entrée tombe soit sur le listener global du modal (sauve
+  // + FERME tout le modal), soit — hors modal — sur le comportement par
+  // défaut du navigateur (insertion d'un saut de ligne). Le span est de
+  // toute façon recréé à chaque _renderModalSubtasks(), donc pas de fuite.
+  // Shift+Entrée est volontairement exclu : seul moyen explicite de sauter
+  // une ligne dans un champ en édition (sinon Entrée sauve toujours).
   el.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); el.blur(); }
     if (e.key === 'Escape') { el.textContent = s.title; el.contentEditable = 'false'; }
-  }, { once: true });
+  });
 }
 
 // parentStid absent : comportement inchangé (input avant le bouton
