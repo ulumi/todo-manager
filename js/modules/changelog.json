@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2473",
+    "date": "2026-08-07",
+    "message": "fix(focus): un rechargement de page ne perd plus le fil de la tâche/sous-tâche en cours, et le chrono revient toujours en pause plutôt que de repartir tout seul"
+  },
+  {
     "version": "0.4.2471",
     "date": "2026-08-07",
     "message": "feat(update-toast): toasts de mise à jour indépendants et empilés — chacun garde son propre numéro de version et affiche son heure exacte d'apparition"

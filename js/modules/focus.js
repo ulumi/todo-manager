@@ -33,13 +33,52 @@ let _skipped = [];
 let _order = [];
 // Tâche actuellement affichée — pointeur explicite, jamais recalculé au
 // rendu (contrairement à l'ancien `_pinned` qui se recalait sur queue[0] à
-// chaque render et causait l'avance automatique après complétion).
-let _currentId = null;
+// chaque render et causait l'avance automatique après complétion). Restauré
+// depuis localStorage au chargement du module (voir CURRENT_ID_KEY plus bas)
+// pour qu'un rechargement de page (ex. après détection d'une nouvelle
+// version, cf. update-toast) ne perde pas le fil de la tâche/sous-tâche en
+// cours — sans ça, _currentId repartait toujours à null et se recalait sur
+// la première tâche de la file, potentiellement différente de celle qu'on
+// était en train de faire.
+const CURRENT_ID_KEY = 'focusCurrentId';
+let _currentId = (() => {
+  try { return localStorage.getItem(CURRENT_ID_KEY) || null; } catch { return null; }
+})();
 // Horodatage de la dernière complétion (bandeau de pause) — global à la
 // session, pas lié à une tâche précise.
 let _lastCompletionAt = null;
 
-export function focusResetSession() { _skipped = []; _currentId = null; _order = []; _lastCompletionAt = null; }
+// Un chrono resté « en cours » (paused:false) au moment d'un rechargement de
+// page devient invalide : startedAt n'a plus aucun sens une fois le module
+// réévalué (durée du rechargement, temps avant de revenir sur l'onglet…),
+// donc le laisser tel quel ferait compter tout cet écart comme du temps de
+// focus actif au prochain calcul. On le fige en pause dès le chargement —
+// accum garde son dernier palier, mais rien ne repart tout seul ; il faut
+// explicitement appuyer sur lecture pour reprendre. Volontairement pas de
+// tentative de « corriger » accum avec le delta écoulé : sans sauvegarde au
+// déchargement de la page, ce delta n'est pas fiable — mieux vaut sous-
+// compter que gonfler silencieusement le chrono.
+(() => {
+  try {
+    const ts = JSON.parse(localStorage.getItem('focusTimer'));
+    if (ts && ts.paused === false) {
+      ts.paused = true;
+      ts.startedAt = Date.now();
+      localStorage.setItem('focusTimer', JSON.stringify(ts));
+    }
+  } catch { /* corrompu, laissé tel quel — getTimerState() y survit déjà */ }
+})();
+
+// Efface aussi la tâche courante persistée (voir CURRENT_ID_KEY ci-dessus) —
+// une fermeture réelle du Focus (pas une simple réduction en PiP) ne doit
+// pas laisser un rechargement ultérieur y résumer dans le vide.
+export function focusResetSession() {
+  _skipped = [];
+  _currentId = null;
+  _order = [];
+  _lastCompletionAt = null;
+  try { localStorage.removeItem(CURRENT_ID_KEY); } catch {}
+}
 
 export function focusMarkSkipped(id) {
   _skipped = _skipped.filter(x => x !== id);
@@ -49,6 +88,10 @@ export function focusMarkSkipped(id) {
 export function focusSetCurrent(id) {
   _skipped = _skipped.filter(x => x !== id);
   _currentId = id;
+  try {
+    if (id) localStorage.setItem(CURRENT_ID_KEY, id);
+    else localStorage.removeItem(CURRENT_ID_KEY);
+  } catch {}
 }
 
 export function focusMarkCompletion() { _lastCompletionAt = Date.now(); }
@@ -296,7 +339,7 @@ export function getCurrentFocusTask(app) {
     if (ref && _order.includes(_currentId)) return toFocusItem(ref);
   }
   const queue = getFocusQueue(app);
-  _currentId = queue[0]?.id ?? null;
+  focusSetCurrent(queue[0]?.id ?? null); // persiste aussi ce choix par défaut (voir CURRENT_ID_KEY)
   return queue[0] ?? null;
 }
 
