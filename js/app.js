@@ -1800,6 +1800,10 @@ class TodoApp {
   }
 
   editSubtaskTitle(el, todoId, stid, parentStid) {
+    // Même garde que editModalSubtask() (modal.js) : le span reste cliquable
+    // pendant toute l'édition, sans quoi cliquer pour repositionner le
+    // curseur relançait la sélection du mot entier à chaque fois.
+    if (el.isContentEditable) return;
     const t = state.todos.find(x => x.id === todoId);
     const s = this._findSubtask(t, stid, parentStid);
     if (!s) return;

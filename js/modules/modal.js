@@ -317,6 +317,11 @@ export function moveModalSubtask(stid, dir, parentStid) {
 }
 
 export function editModalSubtask(el, stid, parentStid) {
+  // Le span reste cliquable pendant toute l'édition (onclick, pas juste au
+  // 1er clic) — sans cette garde, cliquer pour repositionner le curseur
+  // dans le titre relançait la sélection du mot entier à chaque fois,
+  // rendant impossible tout positionnement fin du curseur.
+  if (el.isContentEditable) return;
   const s = _findModalSubtask(stid, parentStid);
   if (!s) return;
   el.contentEditable = 'true';

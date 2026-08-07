@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2442",
+    "date": "2026-08-07",
+    "message": "fix(sous-tâches): cliquer pour repositionner le curseur en éditant le titre d'une sous-tâche ne re-sélectionne plus tout le mot (modal + vue jour)"
+  },
+  {
     "version": "0.4.2440",
     "date": "2026-08-07",
     "message": "fix(bilan): annuler/compléter/déplacer une tâche depuis le clic droit d'un item du Bilan rafraîchit maintenant le modal (avant : aucun signe visuel que l'action avait eu lieu)"
