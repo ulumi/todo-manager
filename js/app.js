@@ -4361,6 +4361,14 @@ class TodoApp {
     this._applyMultilineClasses();
     if (state.view === 'day') setupTodoItemHoverAnimations();
     msRefreshUI();
+    // #reviewModalBody existe toujours dans le DOM (juste masqué si le modal
+    // est fermé) — le tenir à jour ici, dans le seul point de sortie commun à
+    // TOUTE mutation, plutôt que dans chaque action individuelle (cancelMany,
+    // completeMany, deleteMany...). Sinon une action lancée depuis le menu
+    // contextuel d'un .review-item pendant que le Bilan est ouvert (ex.
+    // "Annuler") mute bien les données mais laisse la ligne du modal affichée
+    // telle quelle, sans aucun signe que quelque chose a changé.
+    this._renderReviewBody();
   }
 
   _renderPlanView() {
@@ -5030,8 +5038,7 @@ class TodoApp {
     snapshot(state.todos);
     fn();
     saveTodos(state.todos);
-    this._renderReviewBody();
-    this.render();
+    this.render(); // rafraîchit aussi #reviewModalBody, voir render()
   }
 
   // Grosses zones de dépôt du Bilan (bandeau vue jour + modal) : on drague
