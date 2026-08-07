@@ -1701,19 +1701,29 @@ class TodoApp {
       if (parentStid) list.remove();
       else (list.closest('.subtask-collapse') || list).remove();
     };
-    const confirm = () => {
+    // reopen=true (Entrée) enchaîne directement sur un nouvel input pour la
+    // sous-tâche suivante — ajout en rafale sans re-cliquer sur le "+" à
+    // chaque fois. false (blur, ex. clic ailleurs) ne rouvre jamais : sinon
+    // le nouvel input reprendrait le focus juste après le clic qui visait
+    // à en sortir, rendant la liste impossible à quitter autrement qu'Échap.
+    const confirm = (reopen = false) => {
       if (saved) return;
       saved = true;
       const title = input.value.trim();
       input.remove();
-      if (title) { addBtn.style.display = ''; this._saveNewSubtask(todoId, title, parentStid); }
-      else cancel();
+      if (title) {
+        addBtn.style.display = '';
+        this._saveNewSubtask(todoId, title, parentStid);
+        if (reopen) this.addSubtaskInline(todoId, parentStid);
+      } else {
+        cancel();
+      }
     };
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+      if (e.key === 'Enter') { e.preventDefault(); confirm(true); }
       if (e.key === 'Escape') { saved = true; input.remove(); cancel(); }
     });
-    input.addEventListener('blur', confirm);
+    input.addEventListener('blur', () => confirm(false));
     addBtn.style.display = 'none';
     list.appendChild(input);
     input.focus();
