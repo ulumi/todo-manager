@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2466",
+    "date": "2026-08-07",
+    "message": "fix(update-toast): le toast de nouvelle version se met à jour à chaque nouveau déploiement détecté sur un onglet resté ouvert, au lieu de rester figé sur la première version annoncée"
+  },
+  {
     "version": "0.4.2465",
     "date": "2026-08-07",
     "message": "feat(focus): le mode Focus peut cibler une sous-tâche directement — chrono, estimation et complétion propres, sa propre ligne dans la file « Ensuite »"

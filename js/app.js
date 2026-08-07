@@ -983,16 +983,21 @@ class TodoApp {
     setInterval(check, 60 * 1000);
   }
 
+  // Pas de garde "déjà montré une fois" — un onglet resté ouvert pendant
+  // plusieurs déploiements successifs doit voir le toast se mettre à jour à
+  // chaque nouvelle version détectée (numéro + liste de commentaires), pas
+  // rester figé sur la toute première annonce. On ne re-déclenche que si la
+  // version distante a réellement changé depuis la dernière annonce, pour ne
+  // pas re-remplacer le toast à chaque poll de 60s sans rien de neuf.
   async _checkForNewVersion() {
-    if (this._updateToastShown) return;
     try {
       const res = await fetch('/js/modules/version.js', { cache: 'no-store' });
       const text = await res.text();
       const m = text.match(/VERSION\s*=\s*['"]([^'"]+)['"]/);
-      if (m && m[1] !== VERSION) {
-        const notes = await this._fetchChangelogNotes();
-        this._showUpdateToast(m[1], notes);
-      }
+      if (!m || m[1] === VERSION || m[1] === this._announcedVersion) return;
+      const notes = await this._fetchChangelogNotes();
+      this._announcedVersion = m[1];
+      this._showUpdateToast(m[1], notes);
     } catch {}
   }
 
@@ -1011,7 +1016,6 @@ class TodoApp {
   // Contrairement à .undo-toast (auto-fade), reste affiché tant que
   // l'utilisateur n'a pas rechargé — pas urgent, pas d'auto-dismiss.
   _showUpdateToast(newVersion, notes = []) {
-    this._updateToastShown = true;
     document.getElementById('updateToast')?.remove();
     const toast = document.createElement('div');
     toast.id = 'updateToast';
