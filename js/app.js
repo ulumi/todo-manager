@@ -250,6 +250,7 @@ class TodoApp {
     initMultiSelect(this);
     this._initNewDayWatch();
     this._initVersionWatch();
+    this._initSubtaskAddHover();
 
     // Register celebrate debug panel (independent of server sync)
     onCelebrateDebug((data) => { this._showCelebrateDebugPanel(data); });
@@ -1516,9 +1517,12 @@ class TodoApp {
   // Ancré aussi sur .inbox-item (cartes Inbox/Backlog, même checklist rendue
   // dans la carte) — ds vide dans ce cas : un item sans date n'est pas
   // focusable, subtaskListHTML masque alors les boutons ▶.
+  // Point d'entrée commun avec l'affordance « + » de survol
+  // (_initSubtaskAddHover) : elle laisse la place à la vraie checklist.
   ctxAddSubtask(id) {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
     if (!itemEl) return;
+    itemEl.querySelector(':scope > .subtask-add-lone')?.remove();
     if (!itemEl.querySelector('.subtask-list')) {
       const ds = itemEl.classList.contains('inbox-item') ? '' : DS(today());
       itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, ds)}</div></div>`);
@@ -1535,6 +1539,73 @@ class TodoApp {
       }
     }
     this.addSubtaskInline(id);
+  }
+
+  // Affordance « + » pour poser une PREMIÈRE sous-tâche : une tâche qui n'en
+  // a aucune ne rend aucun bloc checklist (subtaskParts, render.js), donc
+  // aucun bouton d'ajout — il fallait passer par le clic droit. Le bouton est
+  // désormais injecté à la volée après DELAY (1 s) de survol de la tâche, en
+  // vue jour comme dans les cartes Inbox/Backlog.
+  //
+  // Injecté plutôt que rendu-puis-masqué : `.subtask-add-lone` est un item du
+  // flux flex de .todo-item/.inbox-item, donc sa seule présence y ajouterait
+  // déjà le row-gap du conteneur — de l'espace réservé pour un élément
+  // invisible, exactement ce que la règle d'apparition au survol interdit.
+  // Un délai identique à l'entrée ET à la sortie du survol (« hover intent »)
+  // évite que le bouton clignote au passage rapide de la souris ; les timers
+  // vivent sur l'élément lui-même, pour qu'un aller-retour rapide entre deux
+  // tâches ne perde pas le retrait de la première.
+  //
+  // Délégation sur document (un seul listener, posé à l'init) plutôt que des
+  // listeners par item : render() régénère tout le DOM à chaque mutation.
+  _initSubtaskAddHover() {
+    const DELAY = 1000;
+    // Une checklist déjà rendue a son propre bouton « + » (.subtask-add-mini-slot,
+    // révélé en CSS) — rien à injecter dans ce cas.
+    const hasList = item => !!item.querySelector('.subtask-list');
+    const lone = item => item.querySelector(':scope > .subtask-add-lone');
+
+    const scheduleAdd = item => {
+      clearTimeout(item._subAddOutTimer);
+      clearTimeout(item._subAddKillTimer);
+      // Retour de la souris pendant le repli : rouvrir le bloc existant
+      // plutôt que d'attendre qu'il soit retiré pour en réinjecter un autre
+      const existing = lone(item);
+      if (existing) { existing.classList.add('open'); return; }
+      if (hasList(item) || !item.dataset.id) return;
+      item._subAddInTimer = setTimeout(() => {
+        // L'item a pu être remplacé par un render() entre-temps
+        if (!item.isConnected || hasList(item) || lone(item)) return;
+        item.insertAdjacentHTML('beforeend', `<span class="subtask-add-lone"><button class="subtask-add-mini" onclick="event.stopPropagation();window.app.ctxAddSubtask('${item.dataset.id}')" title="Ajouter une sous-tâche">＋</button></span>`);
+        // Une frame entre l'insertion et .open : sans ça le passage de
+        // height 0 à 26px ne s'animerait pas (élément tout juste inséré)
+        const el = lone(item);
+        requestAnimationFrame(() => el?.classList.add('open'));
+      }, DELAY);
+    };
+
+    const scheduleRemove = item => {
+      clearTimeout(item._subAddInTimer);
+      item._subAddOutTimer = setTimeout(() => {
+        const el = lone(item);
+        // Jamais pendant une saisie (le clic sur « + » remplace de toute
+        // façon ce bloc par la vraie checklist, mais mieux vaut le garantir)
+        if (!el || el.querySelector('input')) return;
+        el.classList.remove('open');
+        item._subAddKillTimer = setTimeout(() => el.remove(), 350); // après le repli
+      }, DELAY);
+    };
+
+    let current = null;
+    // mouseover (et non mouseenter) pour pouvoir déléguer : il bubble, d'où
+    // le suivi de l'item courant pour ne réagir qu'aux vrais changements.
+    document.addEventListener('mouseover', e => {
+      const item = e.target.closest('.todo-item, .inbox-item');
+      if (item === current) return;
+      if (current) scheduleRemove(current);
+      current = item;
+      if (item) scheduleAdd(item);
+    });
   }
 
   // Petit input inline injecté juste au-dessus d'un item de tâche pour
@@ -3541,13 +3612,13 @@ class TodoApp {
   // pas les zones de padding entre eux (ni l'input inline de création d'une
   // nouvelle sous-tâche). Même garde que clickTodo() en vue jour.
   clickInboxItem(e, id) {
-    if (e.target.closest('.subtask-collapse')) return;
+    if (e.target.closest('.subtask-collapse, .subtask-add-lone')) return;
     this.openEditModal(id, null);
   }
 
   clickTodo(e, id, ds) {
     if (e.ctrlKey || e.metaKey || e.shiftKey) return; // clic de multi-sélection (multiselect.js)
-    if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-list, .subtask-warning-popover')) return;
+    if (e.target.closest('.todo-check, .todo-actions, .todo-menu-btn, .todo-drag-handle, .subtask-list, .subtask-add-lone, .subtask-warning-popover')) return;
     if (this._clickTimer) { // 2e clic pendant la fenêtre → double-clic
       clearTimeout(this._clickTimer);
       this._clickTimer = null;

@@ -2948,7 +2948,7 @@ input:checked + .cal-sid-toggle-track::after {
   height: 0;
   overflow: hidden;
   column-span: all;
-  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1) 1s;
 }
 
 .todo-item:hover .subtask-add-mini-slot,
@@ -2975,17 +2975,42 @@ input:checked + .cal-sid-toggle-track::after {
   cursor: pointer;
   opacity: 0;
   transform: rotate(-150deg);
-  transition: opacity 0.22s ease 0.5s, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) 0.5s, filter 0.15s ease;
+  transition: opacity 0.22s ease 1s, transform 0.32s cubic-bezier(0.16, 1, 0.3, 1) 1s, filter 0.15s ease;
 }
 .subtask-add-mini:hover {
   filter: brightness(1.12);
 }
 
-.todo-item:hover .subtask-add-mini,
-.inbox-item:hover .subtask-add-mini,
-.subtask-list:hover .subtask-add-mini {
+.todo-item:hover .subtask-add-mini-slot .subtask-add-mini,
+.inbox-item:hover .subtask-add-mini-slot .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini-slot .subtask-add-mini {
   opacity: 1;
   transform: rotate(0deg);
+}
+
+.subtask-add-lone {
+  display: flex;
+  align-items: center;
+  flex: 0 0 calc(100% - 34px);
+  margin-left: 34px;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.subtask-add-lone.open {
+  height: 26px;
+}
+.subtask-add-lone .subtask-add-mini {
+  transition-delay: 0s;
+}
+.subtask-add-lone.open .subtask-add-mini {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.inbox-item > .subtask-add-lone {
+  flex-basis: calc(100% - 28px);
+  margin-left: 28px;
 }
 
 .subtask-new-input {

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2518",
+    "date": "2026-08-08",
+    "message": "feat(sous-tâches): le bouton « + » apparaît après 1 s de survol même sur une tâche qui n'a encore aucune sous-tâche (plus besoin du clic droit)"
+  },
+  {
     "version": "0.4.2516",
     "date": "2026-08-07",
     "message": "feat(inbox/backlog): les sous-tâches s'affichent maintenant dans les cartes, comme en vue jour (repli, ajout, clic droit)"

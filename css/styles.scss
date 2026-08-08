@@ -2899,16 +2899,19 @@ main {
 //   non multiple de 90° pour rester visible malgré la symétrie du « + »)
 //   combiné à l'opacity le révèle, sans jamais toucher à sa taille.
 // Easing « expo-out » (rapide puis ralentit net, pas de rebond) pour un
-// rendu fluide et snappy plutôt qu'élastique. Délai de 500 ms (« hover
+// rendu fluide et snappy plutôt qu'élastique. Délai de 1 s (« hover
 // intent ») avant de réagir à l'entrée COMME à la sortie du survol — un
 // passage rapide de la souris ne doit ni révéler ni refermer le bouton.
+// (1 s et non les 500 ms par défaut de la règle globale : demandé
+// explicitement pour ce bouton, et aligné sur .subtask-add-lone ci-dessous,
+// l'affordance équivalente pour une tâche encore sans sous-tâche.)
 .subtask-add-mini-slot {
   display: flex;
   align-items: center;
   height: 0;
   overflow: hidden;
   column-span: all; // reste sur sa propre ligne même en deux colonnes
-  transition: height .32s cubic-bezier(.16, 1, .3, 1) .5s;
+  transition: height .32s cubic-bezier(.16, 1, .3, 1) 1s;
 }
 
 .todo-item:hover .subtask-add-mini-slot,
@@ -2933,16 +2936,51 @@ main {
   cursor: pointer;
   opacity: 0;
   transform: rotate(-150deg);
-  transition: opacity .22s ease .5s, transform .32s cubic-bezier(.16, 1, .3, 1) .5s, filter .15s ease;
+  transition: opacity .22s ease 1s, transform .32s cubic-bezier(.16, 1, .3, 1) 1s, filter .15s ease;
 
   &:hover { filter: brightness(1.12); }
 }
 
-.todo-item:hover .subtask-add-mini,
-.inbox-item:hover .subtask-add-mini,
-.subtask-list:hover .subtask-add-mini {
+// Scopé à .subtask-add-mini-slot : le même bouton sert aussi d'affordance
+// « première sous-tâche » (.subtask-add-lone ci-dessous), dont l'apparition
+// est pilotée en JS et ne doit donc pas dépendre de ces règles de survol.
+.todo-item:hover .subtask-add-mini-slot .subtask-add-mini,
+.inbox-item:hover .subtask-add-mini-slot .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini-slot .subtask-add-mini {
   opacity: 1;
   transform: rotate(0deg);
+}
+
+// Affordance « + » d'une PREMIÈRE sous-tâche, injectée à la volée par
+// app._initSubtaskAddHover() après 1 s de survol d'une tâche qui n'a encore
+// aucune checklist (rien n'est alors rendu par subtaskParts, render.js).
+// Injectée et non rendue-puis-masquée : ce bloc est un item du flux flex de
+// .todo-item/.inbox-item, sa seule présence y ajouterait déjà le row-gap du
+// conteneur — de l'espace réservé pour un élément invisible.
+// Même partage des rôles que .subtask-add-mini-slot : le wrapper fait la
+// place (height 0 → 26px), le bouton garde TOUJOURS ses 26×26 et n'apparaît
+// que par opacity + rotate. Aucun délai CSS ici : le délai d'intention a
+// déjà été attendu côté JS avant l'injection (idem au retrait).
+.subtask-add-lone {
+  display: flex;
+  align-items: center;
+  flex: 0 0 calc(100% - 34px);
+  margin-left: 34px;
+  height: 0;
+  overflow: hidden;
+  transition: height .32s cubic-bezier(.16, 1, .3, 1);
+
+  &.open { height: 26px; }
+
+  .subtask-add-mini { transition-delay: 0s; }
+  &.open .subtask-add-mini { opacity: 1; transform: rotate(0deg); }
+}
+
+// Cartes Inbox/Backlog : check 18px + gap 10px (34px est calibré sur la vue
+// jour, check 22px + gap 12px) — même alignement que .subtask-collapse
+.inbox-item > .subtask-add-lone {
+  flex-basis:  calc(100% - 28px);
+  margin-left: 28px;
 }
 
 .subtask-new-input {
