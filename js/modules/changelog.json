@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2526",
+    "date": "2026-08-09",
+    "message": "fix(sous-tâches): le « + » d'ajout passe en ligne à droite du titre, avec ▶ et ⋯ — la carte ne change plus de taille au survol"
+  },
+  {
     "version": "0.4.2518",
     "date": "2026-08-08",
     "message": "feat(sous-tâches): le bouton « + » apparaît après 1 s de survol même sur une tâche qui n'a encore aucune sous-tâche (plus besoin du clic droit)"

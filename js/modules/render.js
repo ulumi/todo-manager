@@ -63,18 +63,29 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
   </div>`;
 }
 
-// Badge chevron + compteur « fait/total » (posé dans .todo-meta) et bloc
-// repliable de la checklist — partagés entre la vue jour (todoItemHTML) et
-// les cartes Inbox/Backlog, pour que les sous-tâches s'affichent partout de
-// la même façon. Repli/dépli persistant par tâche (isSubtaskCollapsed,
-// utils.js) ; l'ajout de la 1re sous-tâche passe par app.ctxAddSubtask() qui
-// injecte le bloc déplié par patch DOM ciblé (pas ce chemin de render()).
+const _plusSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+
+// Trois morceaux, partagés entre la vue jour (todoItemHTML) et les cartes
+// Inbox/Backlog pour que les sous-tâches s'affichent partout de la même façon :
+// - `toggle` : badge chevron + compteur « fait/total », posé dans .todo-meta ;
+// - `block`  : la checklist repliable (repli persistant par tâche,
+//   isSubtaskCollapsed, utils.js) — son propre bouton « + » vit dedans, en
+//   fin de liste (.subtask-add-mini-slot) ;
+// - `addBtn` : uniquement quand la tâche n'a AUCUNE sous-tâche (donc aucune
+//   checklist, donc aucun « + » dedans) — bouton d'ajout posé dans la rangée
+//   d'actions de l'item, en ligne à droite du titre avec ▶ et ⋯. En flux
+//   comme ses voisins : la carte ne change jamais de taille, ni au survol ni
+//   d'une tâche à l'autre.
 function subtaskParts(todo, ds) {
   const subs = todo.subtasks || [];
-  if (!subs.length) return { toggle: '', block: '' };
+  if (!subs.length) return {
+    toggle: '', block: '',
+    addBtn: `<button class="todo-subtask-add-btn" onclick="event.stopPropagation();window.app.ctxAddSubtask('${todo.id}')" title="Ajouter une sous-tâche">${_plusSVG}</button>`,
+  };
   const collapsed = isSubtaskCollapsed(todo.id);
   const doneCnt = subs.filter(s => s.completed).length;
   return {
+    addBtn: '',
     toggle: `<button class="todo-subtask-toggle" onclick="event.stopPropagation();window.app.toggleSubtasksCollapse(this,'${todo.id}')" title="${collapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches'}">${_subtaskChevronSVG(collapsed)}<span class="todo-subtask-toggle-cnt">${doneCnt}/${subs.length}</span></button>`,
     block: `<div class="subtask-collapse${collapsed ? ' collapsed' : ''}"><div class="subtask-collapse-inner">${subtaskListHTML(subs, todo.id, ds)}</div></div>`,
   };
@@ -178,7 +189,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <span class="todo-counter-target">/ ${to}${unit}</span>
     </div>`;
   })();
-  const { toggle: subtaskToggleHTML, block: expandedHTML } = subtaskParts(todo, ds);
+  const { toggle: subtaskToggleHTML, block: expandedHTML, addBtn: subtaskAddBtnHTML } = subtaskParts(todo, ds);
   const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || subtaskToggleHTML;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
@@ -189,6 +200,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
         ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
         ${counterBar}
       </div>
+      ${subtaskAddBtnHTML}
       <button class="todo-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todo.id}','${ds}')" title="Focus sur cette tâche">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
       </button>
@@ -1501,6 +1513,7 @@ export function renderInboxView(todos) {
           ${hasMeta ? `<div class="todo-meta">${catBadge}${subtasks.toggle}</div>` : ''}
         </div>
         <div class="inbox-item-actions">
+          ${subtasks.addBtn}
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Assigner à aujourd'hui">
             ${state.T.assignToday || "Auj."}
           </button>
@@ -1588,6 +1601,7 @@ export function renderBacklogView(todos) {
           <div class="todo-meta">${catBadge}${ageBadge(t)}${deadlineBadge(t, { ghostIfEmpty: true })}${subtasks.toggle}</div>
         </div>
         <div class="inbox-item-actions">
+          ${subtasks.addBtn}
           <button class="inbox-assign-today" onclick="event.stopPropagation();window.app.assignInboxToday('${t.id}')" title="Planifier aujourd'hui">
             ${state.T.assignToday || "Auj."}
           </button>

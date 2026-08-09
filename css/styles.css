@@ -2497,7 +2497,7 @@ input:checked + .cal-sid-toggle-track::after {
 .todo-item:hover .todo-reorder-btn {
   opacity: 0.5;
 }
-.todo-item:hover .todo-menu-btn, .todo-item:hover .todo-focus-btn {
+.todo-item:hover .todo-menu-btn, .todo-item:hover .todo-focus-btn, .todo-item:hover .todo-subtask-add-btn {
   opacity: 1;
 }
 .todo-item.done .todo-text {
@@ -2981,36 +2981,47 @@ input:checked + .cal-sid-toggle-track::after {
   filter: brightness(1.12);
 }
 
-.todo-item:hover .subtask-add-mini-slot .subtask-add-mini,
-.inbox-item:hover .subtask-add-mini-slot .subtask-add-mini,
-.subtask-list:hover .subtask-add-mini-slot .subtask-add-mini {
+.todo-item:hover .subtask-add-mini,
+.inbox-item:hover .subtask-add-mini,
+.subtask-list:hover .subtask-add-mini {
   opacity: 1;
   transform: rotate(0deg);
 }
 
-.subtask-add-lone {
+.todo-subtask-add-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  flex: 0 0 calc(100% - 34px);
-  margin-left: 34px;
-  height: 0;
-  overflow: hidden;
-  transition: height 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
 }
-.subtask-add-lone.open {
-  height: 26px;
+.todo-subtask-add-btn svg {
+  width: 14px;
+  height: 14px;
 }
-.subtask-add-lone .subtask-add-mini {
-  transition-delay: 0s;
-}
-.subtask-add-lone.open .subtask-add-mini {
-  opacity: 1;
-  transform: rotate(0deg);
+.todo-subtask-add-btn:hover {
+  background: var(--surface2);
+  color: var(--primary);
 }
 
-.inbox-item > .subtask-add-lone {
-  flex-basis: calc(100% - 28px);
-  margin-left: 28px;
+.inbox-item-actions .todo-subtask-add-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  opacity: 1;
+}
+.inbox-item-actions .todo-subtask-add-btn svg {
+  width: 13px;
+  height: 13px;
 }
 
 .subtask-new-input {
