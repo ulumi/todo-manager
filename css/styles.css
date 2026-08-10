@@ -1475,6 +1475,9 @@ input:checked + .cal-sid-toggle-track::after {
   display: grid;
   gap: 10px;
 }
+.day-col--punctual .todo-list, .day-col--recurring .todo-list {
+  align-items: start;
+}
 
 .day-columns--three .day-col--punctual .todo-list {
   display: flex;
@@ -2230,6 +2233,14 @@ input:checked + .cal-sid-toggle-track::after {
   gap: 10px;
 }
 
+.todo-list.masonry {
+  grid-auto-rows: 4px;
+  row-gap: 0;
+}
+.todo-list.masonry > * {
+  grid-row: span var(--rspan, 1);
+}
+
 .day-group-label {
   display: flex;
   align-items: center;
@@ -2322,11 +2333,11 @@ input:checked + .cal-sid-toggle-track::after {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 2px;
+  padding-top: 16px;
   cursor: grab;
 }
 .task-group-header:first-child {
-  margin-top: 0;
+  padding-top: 0;
 }
 .task-group-header:active {
   cursor: grabbing;
@@ -2508,11 +2519,20 @@ input:checked + .cal-sid-toggle-track::after {
 
 .todo-content {
   flex: 1;
+  flex-basis: min-content;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 10px;
+}
+
+.todo-item > .todo-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .todo-meta {
@@ -2605,6 +2625,14 @@ input:checked + .cal-sid-toggle-track::after {
 .todo-ctx-menu .ctx-item.danger:hover {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
+}
+.todo-ctx-menu .ctx-section-label {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 .todo-ctx-menu .ctx-item.has-submenu {
   position: relative;
@@ -3260,7 +3288,7 @@ input:checked + .cal-sid-toggle-track::after {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 .todo-text.editable {
   cursor: default;
@@ -3489,6 +3517,9 @@ input:checked + .cal-sid-toggle-track::after {
 }
 .drop-gap.visible {
   opacity: 1;
+}
+.todo-list.masonry > .drop-gap {
+  grid-column: 1/-1;
 }
 
 .drag-ghost {

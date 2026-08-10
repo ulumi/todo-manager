@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2534",
+    "date": "2026-08-10",
+    "message": "fix(vue jour): les titres ne sont plus coupés en plein mot, les cartes ne s'étirent plus et s'empilent (masonry) ; clic droit sur un moment, « Promouvoir en tâche parente »"
+  },
+  {
     "version": "0.4.2526",
     "date": "2026-08-09",
     "message": "fix(sous-tâches): le « + » d'ajout passe en ligne à droite du titre, avec ▶ et ⋯ — la carte ne change plus de taille au survol"

@@ -267,6 +267,10 @@ class TodoApp {
         const sidebar = document.getElementById('calSidebar');
         if (sidebar && state.view === 'day') sidebar.innerHTML = renderSidebar(state.todos);
         this._animateQuickAddBtn();
+        // Le nombre de colonnes peut changer (media queries) : les hauteurs
+        // seules sont suivies par le ResizeObserver, pas le passage
+        // grille ↔ colonne unique
+        if (state.view === 'day') this._layoutMasonry();
       }, 150);
     });
     setupOfflineIndicator();
@@ -1547,28 +1551,44 @@ class TodoApp {
   _inlineTitlePrompt(id, placeholder, onConfirm) {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
     if (!itemEl || itemEl.previousElementSibling?.classList.contains('ctx-title-input')) return;
+    this._inlineInput(placeholder, onConfirm, el => itemEl.before(el));
+  }
+
+  // Cœur partagé des saisies inline de titre : Entrée confirme, Échap annule
+  // sans trace, blur confirme. `place` décide de l'emplacement (avant un
+  // item, en fin de section…) — c'est la seule chose qui change d'un appel à
+  // l'autre. onConfirm reçoit `viaEnter` : seule une validation au clavier
+  // peut enchaîner sur une nouvelle saisie (même convention que la rafale de
+  // sous-tâches — sinon le clic destiné à SORTIR du champ rouvrirait aussitôt
+  // un champ qui reprend le focus). En liste masonry, l'input doit recevoir
+  // son --rspan comme les autres enfants, sinon il n'occuperait qu'une
+  // tranche de 4 px.
+  _inlineInput(placeholder, onConfirm, place) {
     const input = document.createElement('input');
     input.className = 'ctx-title-input';
     input.placeholder = placeholder;
     input.autocomplete = 'off';
     let done = false;
-    const finish = () => {
+    const finish = (viaEnter = false) => {
       if (done) return;
       done = true;
       const title = input.value.trim();
       input.remove();
-      if (title) onConfirm(title);
+      if (title) onConfirm(title, viaEnter);
     };
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
       if (e.key === 'Escape') { done = true; input.remove(); }
     });
-    input.addEventListener('blur', finish);
-    itemEl.before(input);
+    input.addEventListener('blur', () => finish(false));
+    place(input);
+    this._updateMasonrySpan(input);
+    this._masonryRO?.observe(input);
     input.focus();
+    return input;
   }
 
-  // Menu contextuel « Ajouter une tâche parente » : crée une nouvelle tâche
+  // Menu contextuel → Grouper → « Promouvoir en tâche parente » : crée une nouvelle tâche
   // qui hérite du contexte de la tâche visée (date/backlog, moment, heure,
   // priorité, tag/projet/intention, groupe) et l'absorbe comme 1re
   // sous-tâche — inverse exact d'« Ajouter une sous-tâche ». La tâche visée
@@ -1642,6 +1662,64 @@ class TodoApp {
       this.render();
     });
   }
+
+  // Liste d'un moment de la colonne Aujourd'hui (Matin/Après-midi/Soir, ou
+  // la liste sans moment) — cible des saisies inline lancées par le clic
+  // droit sur la section elle-même.
+  _sectionListEl(period) {
+    const col = document.querySelector('.day-col--punctual');
+    if (!col) return null;
+    if (period) {
+      return col.querySelector(`.day-heure-section[data-period="${period}"] .todo-list`)
+          || col.querySelector(`.todo-list[data-group="punctual-${period}"]`);
+    }
+    const existing = col.querySelector('.todo-list[data-group="punctual"]');
+    if (existing) return existing;
+    // Aucune tâche sans moment aujourd'hui : cette liste n'est pas rendue du
+    // tout — on pose un conteneur d'accueil à l'endroit exact qu'elle
+    // occupera (juste avant les sections de moment). Il disparaît au
+    // prochain render(), et ne laisse rien de visible si la saisie est annulée.
+    const grid = col.querySelector('.day-heure-grid');
+    if (!grid) return null;
+    const holder = document.createElement('div');
+    holder.className = 'todo-list';
+    grid.before(holder);
+    return holder;
+  }
+
+  // Clic droit sur un moment → « Créer un en-tête de groupe ». Un groupe
+  // n'existe que par ses membres (groupId/groupTitle dénormalisés sur chaque
+  // tâche, pas de collection séparée) : un en-tête vide est impossible à
+  // stocker, d'où l'enchaînement direct titre du groupe → 1re tâche.
+  addSectionGroupHeader(period) {
+    const list = this._sectionListEl(period);
+    if (!list) return;
+    this._inlineInput('Nom du groupe…', title => {
+      this._addSectionTaskInline(period, 'grp-' + Date.now().toString(), title);
+    }, el => list.appendChild(el));
+  }
+
+  // Saisie inline d'une tâche dans un moment donné (avec ou sans groupe), en
+  // rafale : Entrée crée et rouvre aussitôt un champ pour la suivante —
+  // remplir un groupe qu'on vient de nommer doit rester d'un seul geste.
+  // Entrée à vide ou Échap sort.
+  _addSectionTaskInline(period, groupId, groupTitle) {
+    const list = this._sectionListEl(period);
+    if (!list) return;
+    const ph = groupTitle ? `Tâche dans « ${groupTitle} »…` : 'Titre de la tâche…';
+    this._inlineInput(ph, (title, viaEnter) => {
+      snapshot(state.todos);
+      const data = { title, date: DS(state.navDate), recurrence: 'none' };
+      if (period) data.dayPeriod = period;
+      if (groupId) { data.groupId = groupId; data.groupTitle = groupTitle; }
+      addTask(data, state.todos);
+      saveTodos(state.todos);
+      this.render();
+      if (viaEnter) this._addSectionTaskInline(period, groupId, groupTitle);
+    }, el => list.appendChild(el));
+  }
+
+  addSectionTask(period) { this._addSectionTaskInline(period, null, null); }
 
   // .inbox-item : cartes Inbox/Backlog, qui rendent la même checklist que la
   // vue jour (cf. subtaskParts, render.js) — sans ce sélecteur, le repli y
@@ -3089,6 +3167,11 @@ class TodoApp {
   // MODE FOCUS
   // ═══════════════════════════════════════════════════
   enterFocus() {
+    // Le menu contextuel est en position:fixed au-dessus de tout : ouvert au
+    // moment où le Focus démarre (raccourci F, double-clic…), il restait
+    // affiché par-dessus le plein écran. Fermé ici pour couvrir toutes les
+    // entrées en Focus d'un coup, et pas seulement son propre item « Focus ».
+    _hideTodoCtxMenu();
     if (state.view === 'focus') return;
     if (this._focusMinimized) { this.restoreFocus(); return; }
     this._preFocusView = state.view;
@@ -3574,6 +3657,7 @@ class TodoApp {
   // focusable — utilisé par le raccourci Alt+Entrée (création tâche/sous-tâche
   // → focus direct) pour ne jamais rouvrir un modal qu'on vient de fermer.
   focusStartOn(id, ds, stid, opts = {}) {
+    _hideTodoCtxMenu(); // cf. enterFocus() — vaut aussi quand on est DÉJÀ en Focus
     const d = today();
     const targetId = stid ? focusSubtaskId(id, stid) : id;
     const focusable = stid
@@ -4013,6 +4097,7 @@ class TodoApp {
         }
         requestAnimationFrame(() => {
           placeholder.style.height = draggedHeight + 'px';
+          placeholder.style.setProperty('--rspan', Math.max(1, Math.ceil((draggedHeight + 10) / 4)));
           placeholder.classList.add('visible');
         });
         return;
@@ -4042,6 +4127,7 @@ class TodoApp {
           if (dropTarget) {
             requestAnimationFrame(() => {
               placeholder.style.height = draggedHeight + 'px';
+              placeholder.style.setProperty('--rspan', Math.max(1, Math.ceil((draggedHeight + 10) / 4)));
               placeholder.classList.add('visible');
             });
           }
@@ -4073,6 +4159,7 @@ class TodoApp {
             }
             requestAnimationFrame(() => {
               placeholder.style.height = draggedHeight + 'px';
+              placeholder.style.setProperty('--rspan', Math.max(1, Math.ceil((draggedHeight + 10) / 4)));
               placeholder.classList.add('visible');
             });
           }
@@ -4101,6 +4188,7 @@ class TodoApp {
           }
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
+            placeholder.style.setProperty('--rspan', Math.max(1, Math.ceil((draggedHeight + 10) / 4)));
             placeholder.classList.add('visible');
           });
           return;
@@ -4119,6 +4207,7 @@ class TodoApp {
           lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
           requestAnimationFrame(() => {
             placeholder.style.height = draggedHeight + 'px';
+            placeholder.style.setProperty('--rspan', Math.max(1, Math.ceil((draggedHeight + 10) / 4)));
             placeholder.classList.add('visible');
           });
         }
@@ -4533,7 +4622,7 @@ class TodoApp {
     this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
-    if (state.view === 'day') setupTodoItemHoverAnimations();
+    if (state.view === 'day') { setupTodoItemHoverAnimations(); this._layoutMasonry(); }
     msRefreshUI();
     // #reviewModalBody existe toujours dans le DOM (juste masqué si le modal
     // est fermé) — le tenir à jour ici, dans le seul point de sortie commun à
@@ -6418,6 +6507,50 @@ class TodoApp {
     });
   }
 
+  // ── Empilement masonry des listes de la vue jour ────────────────────────
+  // Une grille CSS raisonne par RANGÉE : une carte courte à côté d'une carte
+  // haute laisse un grand vide (et s'étirait même à sa hauteur avant
+  // `align-items: start`, cf. .day-col dans styles.scss). On découpe donc les
+  // rangées en tranches de MASONRY_ROW px et on donne à chaque enfant autant
+  // de tranches que sa hauteur réelle : le 3e item remonte directement sous
+  // le 1er. L'ordre du DOM ne bouge pas (colonne 1, colonne 2, colonne 1…),
+  // donc l'ordre manuel et le drag-and-drop restent inchangés.
+  // Mesure PUIS pose de la classe dans la même tâche JS : jamais d'état
+  // intermédiaire où .masonry serait active avec des --rspan encore absents.
+  _layoutMasonry() {
+    const ROW = 4, GAP = 10; // ROW = .todo-list.masonry grid-auto-rows, GAP = row-gap d'origine
+    if (!this._masonryRO && window.ResizeObserver) {
+      // Le contenu d'un item change de hauteur sans re-render : survol (slot
+      // du « + » sous-tâche), repli/dépli de la checklist, édition en place
+      // d'une estimation… sans ce recalcul l'item déborderait de ses tranches
+      // et recouvrirait son voisin du dessous.
+      this._masonryRO = new ResizeObserver(entries => {
+        entries.forEach(e => this._updateMasonrySpan(e.target));
+      });
+    }
+    this._masonryRO?.disconnect();
+    document.querySelectorAll('.day-col .todo-list').forEach(list => {
+      const cs = getComputedStyle(list);
+      const cols = cs.display === 'grid' ? cs.gridTemplateColumns.split(' ').filter(Boolean).length : 1;
+      const kids = [...list.children];
+      if (cols < 2) {
+        list.classList.remove('masonry');
+        kids.forEach(el => el.style.removeProperty('--rspan'));
+        return;
+      }
+      const spans = kids.map(el => Math.max(1, Math.ceil((el.getBoundingClientRect().height + GAP) / ROW)));
+      kids.forEach((el, i) => el.style.setProperty('--rspan', spans[i]));
+      list.classList.add('masonry');
+      kids.forEach(el => this._masonryRO?.observe(el));
+    });
+  }
+
+  _updateMasonrySpan(el) {
+    if (!el.parentElement?.classList.contains('masonry')) return;
+    const span = Math.max(1, Math.ceil((el.getBoundingClientRect().height + 10) / 4));
+    if (el.style.getPropertyValue('--rspan') !== String(span)) el.style.setProperty('--rspan', span);
+  }
+
   setDayColCount(n) {
     localStorage.setItem('dayColCount', n);
     this.render();
@@ -8102,10 +8235,26 @@ function _renderSubtaskCtxMenu() {
   `;
 }
 
+// Menu d'une SECTION de la colonne Aujourd'hui (un moment de la journée, ou
+// la zone sans moment) : le clic droit doit être actif partout, y compris
+// dans le vide d'un moment — c'est là qu'on veut créer un en-tête de groupe
+// ou poser une tâche, pas seulement sur une tâche existante.
+const _PERIOD_LABELS = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', '': 'Sans moment' };
+
+function _renderSectionCtxMenu() {
+  const label = _PERIOD_LABELS[_ctxTarget.period] ?? 'Sans moment';
+  _todoCtxMenu.innerHTML = `
+    <div class="ctx-section-label">${esc(label)}</div>
+    <div class="ctx-item" data-action="section-add-task"><span>＋</span> Ajouter une tâche</div>
+    <div class="ctx-item" data-action="section-group-header"><span>⊞</span> Créer un en-tête de groupe</div>
+  `;
+}
+
 // Contenu dynamique selon la cible : groupe (N > 1) ou item seul,
 // état complété, présence de tâches déplaçables (non récurrentes)
 function _renderCtxMenu() {
   if (_ctxTarget.kind === 'subtask') { _renderSubtaskCtxMenu(); return; }
+  if (_ctxTarget.kind === 'section') { _renderSectionCtxMenu(); return; }
   const { ids } = _ctxTarget;
   const group = ids.length > 1;
   const occ = window.app._resolveOccurrences(ids);
@@ -8130,7 +8279,7 @@ function _renderCtxMenu() {
   const canAddGroupHeader = hasAnchor && !single.groupId;
   // Cluster « Grouper » (flyout) : n'existe que si au moins une des actions
   // de groupement s'applique — sinon le sous-menu serait vide.
-  const canGroupCluster = !group && (canAddGroupHeader || canGroupify || canGroupToTask || canUngroupify);
+  const canGroupCluster = !group && (canAddGroupHeader || canAddParent || canGroupify || canGroupToTask || canUngroupify);
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
@@ -8162,7 +8311,6 @@ function _renderCtxMenu() {
       <div class="ctx-submenu">
         <div class="ctx-item" data-action="add-after">Ajouter après</div>
         <div class="ctx-item" data-action="add-subtask">Ajouter une sous-tâche</div>
-        ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Ajouter une tâche parente</div>` : ''}
         <div class="ctx-item" data-action="duplicate">Dupliquer</div>
       </div>
     </div>`;
@@ -8170,6 +8318,7 @@ function _renderCtxMenu() {
     <div class="ctx-item has-submenu"><span>⊞</span> Grouper<span class="ctx-caret">›</span>
       <div class="ctx-submenu">
         ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un en-tête de groupe</div>` : ''}
+        ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Promouvoir en tâche parente</div>` : ''}
         ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Voir comme groupe</div>` : ''}
         ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task">Regrouper en sous-tâches</div>` : ''}
         ${canUngroupify ? `<div class="ctx-item" data-action="ungroup">Dégrouper</div>` : ''}
@@ -8271,6 +8420,15 @@ _todoCtxMenu.addEventListener('click', e => {
     if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, parentStid);
     return;
   }
+  if (_ctxTarget?.kind === 'section') {
+    const item = e.target.closest('.ctx-item');
+    if (!item) return;
+    const { period } = _ctxTarget;
+    _hideTodoCtxMenu();
+    if (item.dataset.action === 'section-add-task')     window.app.addSectionTask(period);
+    if (item.dataset.action === 'section-group-header') window.app.addSectionGroupHeader(period);
+    return;
+  }
   const prioBtn = e.target.closest('.ctx-prio-btn');
   const periodBtn = e.target.closest('.ctx-period-btn');
   // .ctx-item:not(.has-submenu) cible la feuille cliquée — closest() s'arrête
@@ -8334,6 +8492,22 @@ document.addEventListener('contextmenu', e => {
     _todoCtxMenu.classList.remove('hidden');
     _positionCtxMenu(e.clientX + 4, e.clientY);
     return;
+  }
+  // Clic droit dans le vide d'un moment de la colonne Aujourd'hui (label,
+  // liste, zone de dépôt vide) — jamais sur une tâche, un en-tête de groupe
+  // ou un séparateur, qui ont déjà leur propre menu.
+  if (!e.target.closest('.todo-item, .task-group-header, .day-spacer, .ctx-title-input')) {
+    const sectionEl = e.target.closest('.day-col--punctual .day-heure-section[data-period], .day-col--punctual .todo-list[data-group]');
+    if (sectionEl) {
+      e.preventDefault();
+      const grp = sectionEl.dataset.group || '';
+      const m = grp.match(/-(morning|afternoon|evening)$/);
+      _ctxTarget = { kind: 'section', period: sectionEl.dataset.period || (m ? m[1] : '') };
+      _renderCtxMenu();
+      _todoCtxMenu.classList.remove('hidden');
+      _positionCtxMenu(e.clientX + 4, e.clientY);
+      return;
+    }
   }
   const item = e.target.closest(MS_SELECTABLE);
   if (!item || !item.dataset.id) return;

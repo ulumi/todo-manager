@@ -1412,6 +1412,12 @@ main {
     display: grid;
     gap: 10px;
   }
+
+  // Chaque carte garde sa hauteur naturelle : par défaut une grille étire
+  // tous les items d'une rangée à la hauteur du plus haut — une carte à
+  // 2 sous-tâches devenait un grand rectangle vide à côté d'une carte à 7.
+  &--punctual .todo-list,
+  &--recurring .todo-list { align-items: start; }
 }
 
 .day-columns--three .day-col--punctual .todo-list {
@@ -2166,6 +2172,22 @@ main {
   gap: 10px;
 }
 
+// Empilement « masonry » d'une liste en grille (vue jour, ≥2 colonnes) :
+// les rangées deviennent des tranches de 4 px et chaque enfant occupe autant
+// de tranches que sa hauteur réelle (--rspan, posé par app._layoutMasonry())
+// — le 3e item remonte donc juste sous le 1er au lieu d'attendre la fin de la
+// rangée du 2e. L'ordre DOM (et donc l'ordre manuel et le drag-and-drop)
+// reste inchangé : colonne 1, colonne 2, colonne 1…
+// La classe n'est posée qu'APRÈS le calcul des spans, dans la même tâche JS —
+// sans quoi un --rspan encore à 1 empilerait tous les items sur 4 px.
+// L'espacement vertical passe dans le span (row-gap: 0), le column-gap reste.
+.todo-list.masonry {
+  grid-auto-rows: 4px;
+  row-gap: 0;
+
+  > * { grid-row: span var(--rspan, 1); }
+}
+
 .day-group-label {
   display: flex;
   align-items: center;
@@ -2261,15 +2283,19 @@ main {
 // visible d'un groupId partagé, à l'intérieur d'un .todo-list en grid :
 // doit occuper toute la largeur de la rangée, pas une seule cellule.
 // Draggable : déplace tout le groupe d'un bloc (cf. initDayDragDrop, app.js).
+// L'air au-dessus de l'en-tête passe par du padding et non une marge : en
+// liste masonry, la hauteur mesurée par app._layoutMasonry()
+// (getBoundingClientRect) ignore les marges — une marge sortirait donc du
+// nombre de tranches réservées et l'en-tête chevaucherait le contenu voisin.
 .task-group-header {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 2px;
+  padding-top: 16px;
   cursor: grab;
 
-  &:first-child { margin-top: 0; }
+  &:first-child { padding-top: 0; }
   &:active { cursor: grabbing; }
 }
 
@@ -2442,13 +2468,38 @@ main {
   }
 }
 
+// flex-basis: min-content (et non le 0% de `flex: 1`) : la taille hypothétique
+// du bloc titre+badges vaut au moins son mot le plus long, donc dans une
+// colonne trop étroite c'est la rangée d'actions qui passe à la ligne — le
+// titre n'est JAMAIS écrasé sous la largeur d'un mot (il se coupait sinon
+// lettre par lettre, « Planchers » → « Plancher » + « s »). Dans une carte
+// normale, rien ne change : la taille hypothétique reste petite, aucun retour
+// à la ligne, et flex-grow remplit la rangée comme avant. min-width: 0 reste
+// le dernier filet pour un mot plus large que la carte entière.
+// Si un navigateur ne comprend pas `min-content` ici, la déclaration tombe et
+// on retrouve exactement le comportement d'avant (flex-basis: 0%).
 .todo-content {
   flex: 1;
+  flex-basis: min-content;
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 10px;
+}
+
+// Rangée d'actions de l'item (+ sous-tâche, ▶ Focus, ⋯ menu) — groupée dans
+// un seul conteneur pour deux raisons : ne coûter qu'UN gap de 12px au titre
+// au lieu de trois, et pouvoir passer à la ligne d'un bloc (avec .todo-content
+// en flex-basis: min-content ci-dessus) quand la colonne est trop étroite,
+// plutôt que d'écraser le titre. margin-left: auto la garde collée à droite,
+// y compris seule sur sa ligne.
+.todo-item > .todo-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .todo-meta {
@@ -2534,6 +2585,18 @@ main {
     span { font-size: 15px; width: 18px; text-align: center; }
     &:hover { background: var(--surface2); }
     &.danger:hover { background: rgba(239,68,68,.1); color: #ef4444; }
+  }
+
+  // En-tête du menu de section (clic droit sur un moment de la journée) :
+  // rappelle sur quel moment portera l'action, le menu n'étant ancré à
+  // aucune tâche visible.
+  .ctx-section-label {
+    padding: 6px 12px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   // Cluster d'actions replié en sous-menu (« mega menu ») : une seule icône
@@ -3239,7 +3302,13 @@ main {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
-  word-break: break-word;
+  // overflow-wrap et NON `word-break: break-word` (= overflow-wrap: anywhere) :
+  // `anywhere` ramène la largeur min-content du titre à UN caractère, donc le
+  // flex l'écrasait volontiers et coupait les mots en plein milieu dans une
+  // colonne étroite. `break-word` garde min-content = mot le plus long (ce qui
+  // fait fonctionner le flex-basis de .todo-content) et ne casse un mot que
+  // s'il ne tient pas même seul sur sa ligne.
+  overflow-wrap: break-word;
 
   &.editable {
     cursor: default;
@@ -3455,6 +3524,10 @@ main {
   transition: height .2s cubic-bezier(.2,1,.3,1), opacity .15s;
 
   &.visible { opacity: 1; }
+
+  // En liste masonry, l'aperçu de dépôt occupe toute la rangée (son --rspan
+  // est posé par initDayDragDrop en même temps que sa hauteur)
+  .todo-list.masonry > & { grid-column: 1 / -1; }
 }
 
 // ── Drag ghost (custom drag image) ────────────────────────────────────────────
