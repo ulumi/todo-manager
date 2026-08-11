@@ -3306,7 +3306,7 @@ main.plan-mode, main.search-mode {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  animation: todo-estimate-hover-in 0.18s ease;
+  animation: todo-estimate-hover-in 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .todo-estimate-hover-input:focus {
   outline: none;
@@ -3319,11 +3319,11 @@ main.plan-mode, main.search-mode {
 @keyframes todo-estimate-hover-in {
   from {
     opacity: 0;
-    transform: scale(0.85);
+    transform: translateY(-3px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0);
   }
 }
 .todo-duration-prompt {

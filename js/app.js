@@ -1412,7 +1412,11 @@ class TodoApp {
   // temps focus (.todo-focustime-label) est déjà affiché, l'édition se fait
   // en place dedans (_editEstimateLabel, partagé avec editEstimateBadge) ;
   // sinon (aucun temps passé ni estimation, donc aucun badge) un input
-  // flottant est ajouté dans .todo-content faute d'endroit où s'insérer.
+  // flottant rejoint .todo-meta (créée si absente) — jamais .todo-content
+  // directement : ce dernier est le conteneur du TITRE lui-même (flex-wrap),
+  // y ajouter un enfant de plus le fait concurrencer le titre pour la place
+  // sur sa propre ligne. .todo-meta est la rangée de badges dédiée — le
+  // rejoindre revient à traiter ce champ comme le futur badge qu'il deviendra.
   showEstimateHoverEdit(itemEl) {
     if (!itemEl.isConnected) return;
     // Le timer de 2s (setupTodoItemHoverAnimations) tourne depuis l'entrée
@@ -1430,7 +1434,15 @@ class TodoApp {
     const label = itemEl.querySelector('.todo-focustime-label');
     if (label) { this._editEstimateLabel(label, t); return; }
     const content = itemEl.querySelector('.todo-content');
-    if (!content || content.querySelector('.todo-estimate-hover-input')) return;
+    if (!content) return;
+    let meta = itemEl.querySelector('.todo-meta');
+    if (!meta) {
+      meta = document.createElement('div');
+      meta.className = 'todo-meta';
+      content.appendChild(meta);
+    } else if (meta.querySelector('.todo-estimate-hover-input')) {
+      return;
+    }
     const input = document.createElement('input');
     input.type = 'number';
     input.min = '1';
@@ -1445,6 +1457,7 @@ class TodoApp {
     const confirm = () => {
       if (saved) return;
       saved = true;
+      itemEl.removeEventListener('mouseleave', confirm);
       const val = parseInt(input.value, 10);
       input.remove();
       if (val > 0 && val !== t.durationEstimated) {
@@ -1457,10 +1470,15 @@ class TodoApp {
     };
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); confirm(); }
-      if (e.key === 'Escape') { saved = true; input.remove(); }
+      if (e.key === 'Escape') { saved = true; itemEl.removeEventListener('mouseleave', confirm); input.remove(); }
     });
     input.addEventListener('blur', confirm);
-    content.appendChild(input);
+    // « Juste un hover » : quitter l'item referme le champ (sauve s'il y a
+    // une valeur valide, sinon disparaît sans rien créer) — même confirm()
+    // que blur/Entrée, pour ne jamais laisser un champ orphelin une fois la
+    // souris repartie.
+    itemEl.addEventListener('mouseleave', confirm);
+    meta.appendChild(input);
     input.focus();
     input.select();
   }

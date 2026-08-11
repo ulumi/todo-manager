@@ -3349,8 +3349,8 @@ main {
 }
 
 // Édition rapide de la durée estimée après 2 s de survol sur un item sans
-// badge existant (aucun temps passé ni estimation) — input flottant ajouté
-// dans .todo-content faute d'endroit où éditer en place (app.showEstimateHoverEdit)
+// badge existant (aucun temps passé ni estimation) — input rejoint .todo-meta
+// (créée si absente), jamais .todo-content directement (app.showEstimateHoverEdit)
 .todo-estimate-hover-input {
   width: 52px;
   padding: 3px 8px;
@@ -3361,15 +3361,17 @@ main {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  animation: todo-estimate-hover-in .18s ease;
+  // Fondu + léger glissement — jamais de scale() sur l'élément lui-même
+  // (règle globale : un hover-reveal ne change jamais sa propre taille)
+  animation: todo-estimate-hover-in .18s cubic-bezier(.25,.46,.45,.94);
 
   &:focus { outline: none; }
   &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 }
 
 @keyframes todo-estimate-hover-in {
-  from { opacity: 0; transform: scale(.85); }
-  to   { opacity: 1; transform: scale(1); }
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 // Invite « Durée ? » à la complétion d'une tâche jamais chronométrée
