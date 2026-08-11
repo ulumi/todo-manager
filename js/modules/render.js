@@ -320,7 +320,8 @@ function _renderDayMiniWeek() {
 export function renderDayView(todos) {
   const navDate = state.navDate;
   const dateStr = DS(navDate);
-  const isToday = dateStr === DS(new Date());
+  const now = new Date();
+  const isToday = dateStr === DS(now);
   const allItems = getTodosForDate(navDate, todos);
 
   const prevDate = new Date(navDate); prevDate.setDate(prevDate.getDate() - 1);
@@ -352,6 +353,20 @@ export function renderDayView(todos) {
   // Nombre d'items réellement visibles (les complétées masquées en mode
   // stats ne comptent pas) — une section/un groupe sans item visible disparaît
   const _visCount = items => isStatsMode ? items.filter(t => !isCompleted(t, navDate) && !isCancelled(t, navDate)).length : items.length;
+
+  // Un moment PONCTUEL vide (aucune tâche) garde normalement sa place —
+  // placeholder .period-dropzone en pointillés, toujours là comme cible de
+  // drop (voir _mkPeriodSection/mkHeureSection plus bas). Passé son heure de
+  // fin, ce placeholder vide n'a plus d'utilité : il disparaît. Ne s'applique
+  // QUE si le moment est réellement vide (aucune tâche dedans, faite ou pas)
+  // — un moment qui contient des tâches ne disparaît JAMAIS avec l'heure,
+  // seulement quand il est vide au sens strict (cf. _visCount ci-dessus,
+  // qui gère déjà le cas « tout complété masqué en mode stats » séparément).
+  // Uniquement pour AUJOURD'HUI : un jour passé est de toute façon figé, un
+  // jour futur n'a encore rien d'« expiré ». Soir n'a pas de moment suivant
+  // pour justifier sa propre expiration — reste toujours affiché.
+  const PERIOD_EXPIRY_HOUR = { morning: 13, afternoon: 15 };
+  const _periodExpired = period => isToday && now.getHours() >= (PERIOD_EXPIRY_HOUR[period] ?? Infinity);
 
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
@@ -538,6 +553,7 @@ export function renderDayView(todos) {
   let punctualPeriodSections = '';
   const _mkPeriodSection = (items, group, label) => {
     if (items.length > 0 && _visCount(items) === 0) return '';
+    if (items.length === 0 && _periodExpired(group.replace('punctual-', ''))) return '';
     const content = items.length
       ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
       : `<div class="period-dropzone"></div>`;
@@ -647,6 +663,7 @@ export function renderDayView(todos) {
 
     const mkHeureSection = (items, group, period, label, icon) => {
       if (items.length > 0 && _visCount(items) === 0) return '';
+      if (items.length === 0 && _periodExpired(period)) return '';
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
       const listContent = items.length
         ? todoListHTML(items, navDate, group, true)
