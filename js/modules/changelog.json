@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2535",
+    "date": "2026-08-11",
+    "message": "fix(réglages): le color picker de la couleur de fond se ferme de nouveau après un choix (clic natif déclenché deux fois)"
+  },
+  {
     "version": "0.4.2534",
     "date": "2026-08-10",
     "message": "fix(vue jour): les titres ne sont plus coupés en plein mot, les cartes ne s'étirent plus et s'empilent (masonry) ; clic droit sur un moment, « Promouvoir en tâche parente »"

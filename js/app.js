@@ -814,8 +814,16 @@ class TodoApp {
   }
 
   selectBgColor(e) {
-    // Don't trigger if clicking the color input itself (let native behavior handle it)
+    // Don't trigger if clicking the color input itself (let native behavior handle it —
+    // the label would otherwise ALSO forward this same click to the input natively,
+    // opening the picker a 2nd time via the setTimeout below and interfering with it
+    // ever closing again).
     if (e?.target?.type === 'color') return;
+
+    // Clicking elsewhere in the label (e.g. the "Color" text) would normally have the
+    // browser forward the click to the input natively too — prevent that default action
+    // so only the single manual .click() below opens the picker, not both.
+    e?.preventDefault();
 
     // Activate custom color mode
     const bgColorInput = document.getElementById('settingsBgColor');
