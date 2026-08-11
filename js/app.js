@@ -23,7 +23,7 @@ import {
 } from './modules/dictation.js';
 import {
   getTodosForDate, isCompleted, isCancelled, toggleTodo, cancelTodo, deleteOneOccurrence,
-  deleteFutureOccurrences, addTask, getSuggestions
+  deleteFutureOccurrences, addTask, getSuggestions, getPeriodStatus
 } from './modules/calendar.js';
 import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
@@ -53,7 +53,7 @@ import {
   subtaskListHTML,
 } from './modules/render.js';
 import { setupEventListeners } from './modules/events.js';
-import { celebrate, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
+import { celebrate, celebrateSpecial, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
 import { openAdminModal, closeAdminModal, showAdminSection, addSuggestedTask, removeSuggestedTask, moveSuggestedTask, clearAllSuggestedTasks, clearAllCalendarData, openTemplateModal, closeTemplateModal, applyTemplate, addTemplate, removeTemplate, addTaskToTemplate, removeTaskFromTemplate, addCategory, removeCategory, getCategories, saveCategories, renderAdminICal } from './modules/admin.js';
 import {
@@ -1300,7 +1300,9 @@ class TodoApp {
     snapshot(state.todos);
     toggleTodo(id, d, state.todos);
     saveTodos(state.todos);
-    if (!wasCompleted && !e?.altKey) celebrate(state.lang);
+    if (!wasCompleted && !e?.altKey) {
+      if (!this._maybeCelebrateMilestone(todo, d)) celebrate(state.lang);
+    }
     this.render();
     this._refreshCategoryPanel();
     // Animate checkbox bounce
@@ -1319,6 +1321,34 @@ class TodoApp {
 
   _hasNoTimerInfo(t) {
     return !t?.durationReal && (!Array.isArray(t?.durationHistory) || t.durationHistory.length === 0);
+  }
+
+  // Célébrations spéciales de fin de journée (voir celebrate.js
+  // `celebrateSpecial`) : « spécial » quand la dernière tâche d'après-midi
+  // vient d'être complétée ET que la soirée n'a rien de prévu (journée
+  // quasi bouclée) ; « super spécial » quand la dernière tâche de soirée
+  // vient d'être complétée (journée entièrement bouclée). Portée
+  // volontairement limitée à la case à cocher de la vue jour, sur
+  // aujourd'hui — pas les actions de lot, pas les autres vues. Retourne
+  // true si une célébration spéciale a été jouée (remplace celebrate()).
+  _maybeCelebrateMilestone(todo, d) {
+    const period = todo?.dayPeriod;
+    if (period !== 'afternoon' && period !== 'evening') return false;
+    const ds = DS(d);
+    if (ds !== DS(today())) return false;
+    const status = getPeriodStatus(ds, period, state.todos);
+    if (!status.total || status.done < status.total) return false; // pas encore la dernière
+
+    if (period === 'evening') {
+      celebrateSpecial(state.lang, 'evening');
+      return true;
+    }
+    // Après-midi bouclé : « spécial » seulement si la soirée est libre —
+    // sinon célébration normale, il reste du travail ce soir
+    const evening = getPeriodStatus(ds, 'evening', state.todos);
+    if (evening.total > 0) return false;
+    celebrateSpecial(state.lang, 'afternoon', () => this.addSectionTask('evening'));
+    return true;
   }
 
   // Invite « Durée ? » à la complétion d'une tâche jamais chronométrée.

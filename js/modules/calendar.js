@@ -42,6 +42,16 @@ export function isCancelled(todo, d) {
   return !!todo.cancelled;
 }
 
+// Occurrences actives (non annulées) d'un moment donné (morning/afternoon/
+// evening) pour une date — sert aux célébrations spéciales de fin de
+// journée (app.js `_maybeCelebrateMilestone`, cf. celebrate.js `celebrateSpecial`).
+export function getPeriodStatus(ds, period, todos) {
+  const d = parseDS(ds);
+  const items = getTodosForDate(d, todos).filter(t => t.dayPeriod === period && !isCancelled(t, d));
+  const done = items.filter(t => isCompleted(t, d)).length;
+  return { items, total: items.length, done };
+}
+
 // Toggle annulée/restaurée — une occurrence annulée n'est jamais aussi « faite »
 export function cancelTodo(id, d, todos) {
   const t = todos.find(x => x.id === id);

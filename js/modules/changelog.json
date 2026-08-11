@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2587",
+    "date": "2026-08-11",
+    "message": "feat(célébrations): célébration spéciale fin d'après-midi + super spéciale fin de soirée, invitation à ajouter une tâche si le soir est libre"
+  },
+  {
     "version": "0.4.2573",
     "date": "2026-08-11",
     "message": "feat(vue jour): les moments Matin/Après-midi vides disparaissent une fois leur heure passée (13h/15h) — seulement s'ils sont vraiment vides, jamais s'ils contiennent des tâches"

@@ -230,6 +230,77 @@ const PARTICLES = [
 ];
 const RAINBOW   = ['#ff0055','#ff6600','#ffcc00','#00cc44','#0099ff','#cc00ff'];
 
+// ── Célébrations spéciales de fin de journée (app.js `_maybeCelebrateMilestone`) ─
+// « afternoon » : dernière tâche d'après-midi complétée, soirée libre.
+// « evening » : dernière tâche de soirée complétée — journée entièrement bouclée.
+// Palette dédiée par moment (coucher de soleil / nuit étoilée) plutôt que le
+// violet/arc-en-ciel habituel de buildScene, pour bien les distinguer d'une
+// célébration normale.
+const TIER_THEMES = {
+  afternoon: {
+    bgFrom: 'rgba(46,16,8,0)', bgTo: 'rgba(46,16,8,0.93)',
+    ring: 'rgba(255,150,60,0.95)', ringShadow: 'rgba(255,150,60,0.6)',
+    rainbow: ['#ff6a00','#ff9e00','#ffce54','#ff5e7e','#c81d5e','#7a1fa2'],
+    textShadow: '0 0 100px rgba(255,170,90,0.98),0 4px 40px rgba(0,0,0,0.95)',
+    labelColor: 'rgba(255,200,140,0.95)',
+    particles: ['🌇','🧡','🍑','☀️','🔥','✨','⭐','🎉','💫','🥂','🍾','🌤️'],
+  },
+  evening: {
+    bgFrom: 'rgba(4,7,24,0)', bgTo: 'rgba(4,7,24,0.95)',
+    ring: 'rgba(140,170,255,0.95)', ringShadow: 'rgba(140,170,255,0.65)',
+    rainbow: ['#5b8dff','#7b5bff','#b15bff','#5bdcff','#5bffd0','#2a2a72'],
+    textShadow: '0 0 100px rgba(150,180,255,0.98),0 4px 40px rgba(0,0,0,0.95)',
+    labelColor: 'rgba(190,210,255,0.95)',
+    particles: ['🌙','⭐','✨','🌌','🌠','💫','🔮','🛌','😴','🎉','🥂','🏆'],
+  },
+};
+
+const TIER_SUBTITLE = {
+  afternoon: { fr: '🌇 Après-midi complété', en: '🌇 Afternoon complete' },
+  evening:   { fr: '🌙 Journée entièrement bouclée', en: '🌙 Entire day complete' },
+};
+
+const TIER_QUOTES_AFTERNOON_FR = [
+  "APRÈS-MIDI BOUCLÉ.<br>LE SOIR T'APPARTIENT. 🌇",
+  "PLUS RIEN AU PROGRAMME.<br>LA SOIRÉE EST À TOI. ✨",
+  "TU AS FINI TON APRÈS-MIDI.<br>MISSION: DÉTENTE. 🧡",
+  "AVANT MÊME LE COUCHER DU SOLEIL.<br>DÉJÀ CHAMPION(NE). 🌅",
+  "L'APRÈS-MIDI EST TERRASSÉ.<br>RESPIRE UN COUP. 🌤️",
+  "TOUT EST FAIT.<br>LE SOIR PEUT COMMENCER. 🥂",
+  "TU AS DEVANCÉ LE COUCHER DE SOLEIL.<br>BEAU TRAVAIL. 🔥",
+  "FIN D'APRÈS-MIDI.<br>ZÉRO TÂCHE EN SUSPENS. 🏆",
+];
+const TIER_QUOTES_AFTERNOON_EN = [
+  "AFTERNOON: CLEARED.<br>THE EVENING IS YOURS. 🌇",
+  "NOTHING LEFT ON THE LIST.<br>TONIGHT IS FREE. ✨",
+  "YOU BEAT THE SUNSET.<br>ALREADY A CHAMPION. 🌅",
+  "AFTERNOON DEFEATED.<br>TAKE A BREATH. 🌤️",
+  "ALL DONE.<br>THE EVENING CAN BEGIN. 🥂",
+  "YOU OUTRAN THE CLOCK.<br>WELL PLAYED. 🔥",
+  "AFTERNOON OVER.<br>ZERO TASKS LEFT HANGING. 🏆",
+  "THE SUN HASN'T EVEN SET.<br>AND YOU'RE DONE. 🧡",
+];
+const TIER_QUOTES_EVENING_FR = [
+  "JOURNÉE ENTIÈREMENT BOUCLÉE.<br>VA DORMIR TRANQUILLE. 🌙",
+  "PLUS RIEN À FAIRE.<br>NULLE PART. AUJOURD'HUI. 🏆",
+  "TU AS TOUT FINI.<br>MÊME LE SOIR. RESPECT TOTAL. 🌌",
+  "24 HEURES. TOUT COCHÉ.<br>DORS SUR TES DEUX OREILLES. 😴",
+  "LA JOURNÉE EST GAGNÉE.<br>DE L'AUBE AU COUCHER. ⭐",
+  "RIEN NE T'A RÉSISTÉ.<br>PAS MÊME LA SOIRÉE. 🔮",
+  "TOUT EST FAIT.<br>DEMAIN PEUT ATTENDRE. 🛌",
+  "JOURNÉE PARFAITE.<br>BONNE NUIT, CHAMPION(NE). 🎉",
+];
+const TIER_QUOTES_EVENING_EN = [
+  "ENTIRE DAY: CLEARED.<br>SLEEP EASY. 🌙",
+  "NOTHING LEFT.<br>ANYWHERE. TODAY. 🏆",
+  "YOU FINISHED EVERYTHING.<br>EVEN TONIGHT. RESPECT. 🌌",
+  "24 HOURS. FULLY CHECKED.<br>REST WELL. 😴",
+  "THE DAY IS WON.<br>DAWN TO BEDTIME. ⭐",
+  "NOTHING STOOD A CHANCE.<br>NOT EVEN TONIGHT. 🔮",
+  "ALL DONE.<br>TOMORROW CAN WAIT. 🛌",
+  "PERFECT DAY.<br>GOODNIGHT, CHAMPION. 🎉",
+];
+
 // ── Completion tracking for stats ──────────────────────
 const completionLog = []; // timestamps
 
@@ -408,13 +479,47 @@ export function celebrate(lang = 'en', debug = false) {
   buildScene(quote, stats, mascot, {}, font);
 }
 
+// ── Célébration spéciale de fin de journée ──────────────
+// tier: 'afternoon' (soirée libre après l'après-midi) ou 'evening' (journée
+// entièrement bouclée) — voir app.js `_maybeCelebrateMilestone`. onInvite,
+// si fourni, ajoute un bouton dans l'écran de célébration qui déclenche
+// l'ajout d'une tâche de soirée une fois l'écran refermé (jamais pendant :
+// le dismiss-sur-mousemove serait sinon en concurrence avec le clic).
+export function celebrateSpecial(lang = 'fr', tier = 'afternoon', onInvite = null) {
+  recordCompletion();
+  const fr = lang === 'fr';
+  const pool = tier === 'evening'
+    ? (fr ? TIER_QUOTES_EVENING_FR   : TIER_QUOTES_EVENING_EN)
+    : (fr ? TIER_QUOTES_AFTERNOON_FR : TIER_QUOTES_AFTERNOON_EN);
+  const quote = pool[Math.floor(Math.random() * pool.length)];
+  _lastQuote = quote;
+
+  const bannedFonts = getBannedFonts();
+  const bannedMascots = getBannedMascots();
+  const fontPool = FONTS.filter(f => !bannedFonts.includes(f));
+  const mascotPool = MASCOTS.filter(m => !bannedMascots.includes(m));
+  const mascot = (mascotPool.length ? mascotPool : MASCOTS)[Math.floor(Math.random() * (mascotPool.length ? mascotPool.length : MASCOTS.length))];
+  const font = (fontPool.length ? fontPool : FONTS)[Math.floor(Math.random() * (fontPool.length ? fontPool.length : FONTS.length))];
+
+  const subtitle = TIER_SUBTITLE[tier][fr ? 'fr' : 'en'];
+  const inviteLabel = onInvite ? (fr ? '🌙 Rien de prévu ce soir — ajouter une tâche ?' : '🌙 Nothing planned tonight — add a task?') : null;
+  buildScene(quote, null, mascot, { theme: tier, subtitle, intense: tier === 'evening', onInvite, inviteLabel }, font);
+}
+
 // ── Scene builder ──────────────────────────────────────
 // opts: { onNext, onPrev, onClose, counter } — when set, enables slideshow nav mode
+// opts: { theme, subtitle, intense, onInvite, inviteLabel } — special end-of-day
+// celebrations (celebrateSpecial): theme picks a dedicated color palette
+// (TIER_THEMES) instead of the default purple/rainbow, subtitle is a small
+// label above the quote, intense pumps up particle count/duration, onInvite
+// adds a dismiss-then-callback button (see celebrateSpecial for why it can't
+// just be a normal click handler).
 function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   const isSlideshow = !!(opts.onNext || opts.onPrev);
+  const theme = opts.theme ? TIER_THEMES[opts.theme] : null;
   const ov = el('div', `
     position:fixed;inset:0;z-index:9990;overflow:hidden;cursor:pointer;
-    background:rgba(8,4,18,0);
+    background:${theme ? theme.bgFrom : 'rgba(8,4,18,0)'};
   `);
   document.body.appendChild(ov);
 
@@ -425,14 +530,14 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   const ring = el('div', `
     position:absolute;top:38%;left:50%;
     width:60px;height:60px;border-radius:50%;
-    border:6px solid rgba(255,210,60,0.95);
-    box-shadow:0 0 30px rgba(255,210,60,0.6);
+    border:6px solid ${theme ? theme.ring : 'rgba(255,210,60,0.95)'};
+    box-shadow:0 0 30px ${theme ? theme.ringShadow : 'rgba(255,210,60,0.6)'};
     transform:translate(-50%,-50%);opacity:0;z-index:9992;
   `);
   ov.appendChild(ring);
 
   // Rainbow motion streaks (from right)
-  const streaks = RAINBOW.map((color, i) => {
+  const streaks = (theme ? theme.rainbow : RAINBOW).map((color, i) => {
     const s = el('div', `
       position:absolute;height:8px;width:0;right:0;
       top:calc(38% + ${(i - 2.5) * 16}px);
@@ -468,13 +573,23 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   ov.appendChild(textBlock);
   gsap.set(textBlock, { xPercent: -50, yPercent: -50 });
 
+  // Subtitle — small label above the quote (celebrateSpecial only)
+  const subtitleEl = opts.subtitle ? el('div', `
+    font-size:clamp(14px,2vw,22px);font-weight:800;letter-spacing:0.1em;
+    text-transform:uppercase;text-align:center;opacity:0;
+    color:${theme ? theme.labelColor : 'rgba(255,220,100,0.92)'};
+    text-shadow:0 2px 16px rgba(0,0,0,0.8);
+    font-family:${randomFont};
+  `) : null;
+  if (subtitleEl) subtitleEl.textContent = opts.subtitle;
+
   // Quote (words stagger in from small scale)
   const quoteEl = el('div', `
     font-size:clamp(22px,3.5vw,48px);font-weight:900;
     color:#fff;text-align:center;
     line-height:1.2;letter-spacing:-0.01em;
     max-width:75vw;
-    text-shadow:0 0 100px rgba(255,180,255,0.98),0 4px 40px rgba(0,0,0,0.95);
+    text-shadow:${theme ? theme.textShadow : '0 0 100px rgba(255,180,255,0.98),0 4px 40px rgba(0,0,0,0.95)'};
     font-family:${randomFont};
   `);
 
@@ -521,8 +636,10 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
     }
   });
 
+  if (subtitleEl) textBlock.appendChild(subtitleEl);
   textBlock.appendChild(quoteEl);
   gsap.set(wordSpans, { opacity: 0, scale: 0.55, y: 10 });
+  if (subtitleEl) gsap.set(subtitleEl, { y: -8 });
 
   // Stats (below quote, in same flex container)
   const statsEl = stats ? el('div', `
@@ -538,7 +655,7 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   const tl = gsap.timeline();
 
   // Dim overlay
-  tl.to(ov, { background: 'rgba(8,4,18,0.92)', duration: 0.18, ease: 'power2.out' });
+  tl.to(ov, { background: theme ? theme.bgTo : 'rgba(8,4,18,0.92)', duration: 0.18, ease: 'power2.out' });
 
   // Streaks flash (motion blur effect from right)
   tl.to(streaks, { width: '70vw', opacity: 0.8, duration: 0.22, stagger: 0.018, ease: 'power4.out' }, 0.05);
@@ -555,9 +672,28 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
   // Shockwave
   tl.to(ring, { width: '90vmax', height: '90vmax', opacity: 0, borderWidth: 1, duration: 0.8, ease: 'power2.out' }, '-=0.55');
 
+  // Second shockwave, slightly delayed — "super special" evening tier only
+  let ring2 = null;
+  if (opts.intense) {
+    ring2 = el('div', `
+      position:absolute;top:38%;left:50%;
+      width:60px;height:60px;border-radius:50%;
+      border:4px solid ${theme ? theme.ring : 'rgba(255,210,60,0.95)'};
+      box-shadow:0 0 20px ${theme ? theme.ringShadow : 'rgba(255,210,60,0.6)'};
+      transform:translate(-50%,-50%);opacity:0;z-index:9992;
+    `);
+    ov.appendChild(ring2);
+    tl.to(ring2, { width: '70vmax', height: '70vmax', opacity: 0, borderWidth: 1, duration: 1.0, ease: 'power2.out' }, '-=0.35');
+  }
+
   // Particle burst — starts early, particles from all over
   let particles = [];
-  tl.call(() => { particles = burstParticles(ov); }, [], 0.05);
+  tl.call(() => { particles = burstParticles(ov, theme ? theme.particles : PARTICLES, opts.intense ? 80 : 50); }, [], 0.05);
+
+  // Subtitle fades up first, just ahead of the quote
+  if (subtitleEl) {
+    tl.to(subtitleEl, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' }, '0.12');
+  }
 
   // ── Quote: words stagger in from small scale ──────────
   tl.to(wordSpans,
@@ -591,21 +727,42 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
     position:fixed;bottom:42px;left:50%;transform:translateX(-50%);
     color:rgba(255,255,255,0.4);font-size:13px;font-weight:600;letter-spacing:.06em;z-index:9999;opacity:0;
   `) : null;
+  // Invite button (celebrateSpecial, tier 'afternoon' when the evening is
+  // free) — dismiss(callback) only, never a plain click handler: the
+  // mousemove-dismiss below would otherwise race the user moving their
+  // mouse toward the button (see onMouseMove's `suppressMoveDismiss`).
+  const inviteBtn = opts.onInvite ? el('button', `
+    position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
+    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.28);
+    border-radius:999px;padding:12px 26px;font-size:15px;font-weight:700;
+    cursor:pointer;color:#fff;z-index:9999;opacity:0;white-space:nowrap;
+    backdrop-filter:blur(6px);transition:background 0.15s,transform 0.15s;
+  `) : null;
   if (prevBtn) { prevBtn.textContent = '←'; prevBtn.title = 'Précédent (←)'; ov.appendChild(prevBtn); }
   if (nextBtn) { nextBtn.textContent = '→'; nextBtn.title = 'Suivant (→)'; ov.appendChild(nextBtn); }
   if (counterEl) { counterEl.textContent = opts.counter; ov.appendChild(counterEl); }
+  if (inviteBtn) {
+    inviteBtn.textContent = opts.inviteLabel;
+    ov.appendChild(inviteBtn);
+    inviteBtn.addEventListener('mouseenter', () => { inviteBtn.style.background = 'rgba(255,255,255,0.24)'; inviteBtn.style.transform = 'translateX(-50%) scale(1.05)'; });
+    inviteBtn.addEventListener('mouseleave', () => { inviteBtn.style.background = 'rgba(255,255,255,0.12)'; inviteBtn.style.transform = 'translateX(-50%) scale(1)'; });
+  }
   [prevBtn, nextBtn].forEach(b => b && (
     b.addEventListener('mouseenter', () => { b.style.background = 'rgba(255,255,255,0.22)'; b.style.transform = 'scale(1.08)'; }),
     b.addEventListener('mouseleave', () => { b.style.background = 'rgba(255,255,255,0.1)';  b.style.transform = 'scale(1)'; })
   ));
 
-  // Slideshow nav fades in
+  // Slideshow nav (and invite button) fade in alongside the unicorn's happy
+  // dance, above — proven timing, no need to compute a fresh offset
   if (prevBtn)   tl.to(prevBtn,   { opacity: 1, duration: 0.3 }, '<');
   if (nextBtn)   tl.to(nextBtn,   { opacity: 1, duration: 0.3 }, '<');
   if (counterEl) tl.to(counterEl, { opacity: 1, duration: 0.3 }, '<');
+  if (inviteBtn) tl.to(inviteBtn, { opacity: 1, duration: 0.35 }, '<');
 
-  // Auto-dismiss only in non-slideshow mode
-  if (!isSlideshow) tl.call(() => dismiss(), [], '+=8.0');
+  // Auto-dismiss only in non-slideshow mode — pushed out a bit when there's
+  // an invite button (time to notice it) or for the more intense evening tier
+  const autoDismissDelay = opts.onInvite ? 10.5 : (opts.intense ? 11.5 : 8.0);
+  if (!isSlideshow) tl.call(() => dismiss(), [], `+=${autoDismissDelay}`);
 
   // ── Dismiss ───────────────────────────────────────────
   let dismissed = false;
@@ -622,22 +779,26 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
       gsap.to(ov, { opacity: 0, duration: 0.18, ease: 'power2.in', onComplete: () => { ov.remove(); callback(); } });
     } else {
       // Mega zoom + fade out effect — diving into rainbow
-      gsap.to([quoteEl, statsEl, unicornWrap, particles], { opacity: 0, duration: 0.1, ease: 'none' });
-      gsap.to([quoteEl, statsEl, unicornWrap, streaks], { scale: 3, duration: 0.25, ease: 'power2.in' });
+      gsap.to([quoteEl, subtitleEl, statsEl, unicornWrap, particles], { opacity: 0, duration: 0.1, ease: 'none' });
+      gsap.to([quoteEl, subtitleEl, statsEl, unicornWrap, streaks], { scale: 3, duration: 0.25, ease: 'power2.in' });
       gsap.to(ov, { opacity: 0, duration: 0.25, ease: 'power2.in', onComplete: () => ov.remove() });
     }
   };
 
   if (prevBtn) prevBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(opts.onPrev); });
   if (nextBtn) nextBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(opts.onNext); });
+  if (inviteBtn) inviteBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(opts.onInvite); });
 
-  // Dismiss on mousemove (with distance threshold) or keydown
+  // Dismiss on mousemove (with distance threshold) or keydown — suppressed
+  // when an invite button is present, same as slideshow mode, so reaching
+  // for it doesn't dismiss the screen before the click lands.
   let acceptInput = false;
   let moveOrigin = null;
   const MOVE_THRESHOLD = 80;
+  const suppressMoveDismiss = isSlideshow || !!opts.onInvite;
   setTimeout(() => { acceptInput = true; }, 3500);
   const onMouseMove = (e) => {
-    if (!acceptInput || isSlideshow) return;
+    if (!acceptInput || suppressMoveDismiss) return;
     if (!moveOrigin) { moveOrigin = { x: e.clientX, y: e.clientY }; return; }
     const dx = e.clientX - moveOrigin.x;
     const dy = e.clientY - moveOrigin.y;
@@ -660,10 +821,10 @@ function buildScene(quote, stats, mascot, opts = {}, presetFont = null) {
 }
 
 // ── Particle burst — cannon-style from corners & sides ──
-function burstParticles(parent) {
+function burstParticles(parent, particlePool = PARTICLES, count = 50) {
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const COUNT = 50;
+  const COUNT = count;
   const particles = [];
 
   for (let i = 0; i < COUNT; i++) {
@@ -672,7 +833,7 @@ function burstParticles(parent) {
       position:absolute;top:0;left:0;
       font-size:${size}px;z-index:9994;pointer-events:none;
     `);
-    p.textContent = PARTICLES[Math.floor(Math.random() * PARTICLES.length)];
+    p.textContent = particlePool[Math.floor(Math.random() * particlePool.length)];
     parent.appendChild(p);
     particles.push(p);
 

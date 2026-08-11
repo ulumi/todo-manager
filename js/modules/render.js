@@ -426,6 +426,11 @@ export function renderDayView(todos) {
   // et la colonne Aujourd'hui repasse sur une seule colonne
   const hasRefill = !isPastDay && totalAll > 0 && (punctDone + recDone) === totalAll;
   const doneAll = punctDone + recDone;
+  // Soirée libre après une journée bouclée : le placeholder vide du moment
+  // Soir devient une invitation à ajouter une tâche plutôt qu'un simple
+  // pointillé neutre — voir aussi celebrate.js `celebrateSpecial` (tier
+  // 'afternoon'), qui propose la même action depuis l'écran de célébration.
+  const eveningFreeInvite = isToday && hasRefill;
   // Masqués en mode stats : complétées + annulées (ces dernières hors totalAll ci-dessus)
   const cancelledAll = (recAllItems.length - recActive.length) + (punctualItems.length - punctActive.length);
   const hiddenAll = doneAll + cancelledAll;
@@ -551,12 +556,21 @@ export function renderDayView(todos) {
   // complétés-masqués (mode stats) : là, la section disparaît
   const hasPunctualPeriods = dayPeriodGroupsForRender;
   let punctualPeriodSections = '';
+  // Placeholder du moment vide — invitation ludique pour Soir quand la
+  // journée est bouclée et qu'il n'y a rien de prévu ce soir, pointillé
+  // neutre sinon (cible de drop, cf. règle CSS filter/backdrop-filter plus
+  // bas dans le fichier — aucun ancêtre filtré ici, donc pas de souci de drop)
+  const _periodDropzoneHTML = period => (period === 'evening' && eveningFreeInvite)
+    ? `<div class="period-dropzone period-dropzone--evening-invite" onclick="window.app.addSectionTask('evening')" title="Ajouter une tâche pour ce soir">
+         <span class="period-invite-icon">🌙</span><span>Rien de prévu ce soir — une envie&nbsp;?</span>
+       </div>`
+    : `<div class="period-dropzone"></div>`;
   const _mkPeriodSection = (items, group, label) => {
     if (items.length > 0 && _visCount(items) === 0) return '';
     if (items.length === 0 && _periodExpired(group.replace('punctual-', ''))) return '';
     const content = items.length
       ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
-      : `<div class="period-dropzone"></div>`;
+      : _periodDropzoneHTML(group.replace('punctual-', ''));
     return `<div class="day-heure-section" data-period="${group.replace('punctual-', '')}"><div class="day-period-label day-heure-label" data-period="${group.replace('punctual-', '')}">${label}</div><div class="todo-list" data-group="${group}" style="${colStyle}">${content}</div></div>`;
   };
   if (dayPeriodGroupsForRender && daySort !== 'chrono') {
@@ -667,7 +681,7 @@ export function renderDayView(todos) {
       const labelHtml = `<div class="day-period-label day-heure-label" data-period="${period}">${icon}<span>${label}</span></div>`;
       const listContent = items.length
         ? todoListHTML(items, navDate, group, true)
-        : `<div class="period-dropzone"></div>`;
+        : _periodDropzoneHTML(period);
       const listHtml  = `<div class="todo-list" data-group="${group}" style="${colStyle}">${listContent}</div>`;
       return `<div class="day-heure-section" data-period="${period}">${labelHtml}${listHtml}</div>`;
     };
