@@ -4796,22 +4796,10 @@ class TodoApp {
     this.render();
   }
 
-  togglePastDisplay() {
-    const newMode = state.pastDisplayMode === 'normal' ? 'stats' : 'normal';
-    state.setPastDisplayMode(newMode);
-    // Lock main height before toggling to prevent sidebar shift
-    const main = document.getElementById('mainContent');
-    if (main) main.style.minHeight = main.offsetHeight + 'px';
-    const dayView = document.querySelector('.day-view');
-    if (dayView) {
-      dayView.classList.toggle('stats-mode', newMode === 'stats');
-      const toggle = document.querySelector('.cal-sid-toggle input');
-      if (toggle) toggle.checked = newMode === 'stats';
-      const stateEl = document.querySelector('.cal-sid-toggle-state');
-      if (stateEl) stateEl.textContent = newMode === 'stats' ? stateEl.dataset.on : stateEl.dataset.off;
-    } else {
-      this.render();
-    }
+  setPastDisplay(mode) {
+    if (state.pastDisplayMode === mode) return;
+    state.setPastDisplayMode(mode);
+    this.render();
   }
 
   toggleDoneAccordion() {
@@ -6645,6 +6633,27 @@ class TodoApp {
 
   resetAutoCloseDayCol() {
     this.startAutoCloseDayCol();
+  }
+
+  toggleDayDone() {
+    const cur = localStorage.getItem('dayDoneCollapsed') !== 'false';
+    localStorage.setItem('dayDoneCollapsed', !cur ? 'true' : 'false');
+    this.render();
+    if (!cur) this.startAutoCloseDayDone();
+  }
+
+  closeDayDone() {
+    localStorage.setItem('dayDoneCollapsed', 'true');
+    this.render();
+  }
+
+  startAutoCloseDayDone() {
+    clearTimeout(this.autoCloseDayDoneTimer);
+    this.autoCloseDayDoneTimer = setTimeout(() => this.closeDayDone(), 3000);
+  }
+
+  resetAutoCloseDayDone() {
+    this.startAutoCloseDayDone();
   }
 
   setRecColCount(n) {

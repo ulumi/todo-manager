@@ -730,7 +730,28 @@ export function renderDayView(todos) {
 
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
+  const doneCollapsed = localStorage.getItem('dayDoneCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
+
+  // Groupe "Complétés" (Tri / Colonnes / Complétés) — remplace l'ancien
+  // panneau "Options d'affichage" de la colonne calendrier (#calSidebar),
+  // déplacé ici pour rester à portée de main pendant qu'on regarde le jour
+  // qu'il affecte. Le réglage (state.pastDisplayMode/statsViz) reste global :
+  // il continue d'agir sur les vues semaine/mois même si le contrôle ne vit
+  // plus que dans la vue jour.
+  const vizOpts = [
+    { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
+    { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
+    { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
+  ];
+  const vizBtns = vizOpts.map(o => {
+    const lbl = state.lang === 'fr' ? o.fr : o.en;
+    return `<button class="day-ctrl-btn${state.statsViz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')" title="Style semaine/mois : ${lbl}">${lbl}</button>`;
+  }).join('');
+  const doneBtns = `
+    <button class="day-ctrl-btn${!isStatsMode ? ' active' : ''}" onclick="window.app.setPastDisplay('normal')" title="Afficher les tâches complétées">Visibles</button>
+    <button class="day-ctrl-btn${isStatsMode ? ' active' : ''}" onclick="window.app.setPastDisplay('stats')" title="Masquer les tâches complétées">Masquées</button>
+    ${isStatsMode ? `<span class="day-ctrl-sep"></span>${vizBtns}` : ''}`;
 
   const punctualTitle = isToday ? state.T.groupOnce : (state.lang === 'fr' ? 'Ponctuel' : 'One-time');
   const punctualHeader = `<div class="day-col-title-row">
@@ -750,6 +771,15 @@ export function renderDayView(todos) {
           <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="day-ctrl-group day-col-group" onmouseenter="window.app.resetAutoCloseDayCol()">${colBtns}</div>
+      </div>
+
+      <div class="day-ctrl-expandable${!doneCollapsed ? ' expanded' : ''}">
+        <button class="day-ctrl-toggle" onclick="window.app.toggleDayDone()" title="Complétés">
+          <span class="day-ctrl-label">Complétés</span>
+          ${isStatsMode && doneAll > 0 ? `<span class="day-ctrl-count">${doneAll}</span>` : ''}
+          <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="day-ctrl-group day-done-group" onmouseenter="window.app.resetAutoCloseDayDone()">${doneBtns}</div>
       </div>
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
@@ -1143,39 +1173,6 @@ export function renderYearView(todos) {
   return html;
 }
 
-function renderSidebarOptions() {
-  const isStats = state.pastDisplayMode === 'stats';
-  const viz = state.statsViz;
-  const title = state.lang === 'fr' ? 'Options d\'affichage' : 'Display options';
-  const label = state.lang === 'fr' ? 'Complétés' : 'Completed';
-  const stateLabel = isStats ? 'stats' : 'visible';
-  const vizOpts = [
-    { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
-    { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
-    { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
-  ];
-  const vizPicker = isStats ? `
-    <div class="cal-sid-viz-row">
-      <div class="cal-sid-viz-pick">
-        ${vizOpts.map(o => `<button class="cal-sid-viz-btn${viz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')">${state.lang==='fr'?o.fr:o.en}</button>`).join('')}
-      </div>
-    </div>` : '';
-  return `<div class="cal-sid-options">
-    <div class="cal-sid-options-title">${title}</div>
-    <div class="cal-sid-toggle-row">
-      <span class="cal-sid-toggle-label">${label}</span>
-      <div class="cal-sid-toggle-right">
-        <span class="cal-sid-toggle-state" data-on="stats" data-off="visible">${stateLabel}</span>
-        <label class="cal-sid-toggle">
-          <input type="checkbox" ${isStats ? 'checked' : ''} onchange="window.app.togglePastDisplay()">
-          <span class="cal-sid-toggle-track"></span>
-        </label>
-      </div>
-    </div>
-    ${vizPicker}
-  </div>`;
-}
-
 // Petit onglet toujours visible (même colonne repliée) pour replier/déplier
 // la colonne calendrier — app.toggleCalSidebar() bascule juste une classe
 // CSS sur #calSidebar (pas de render() complet, transition en pur CSS).
@@ -1195,7 +1192,7 @@ export function renderSidebar(todos) {
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
   const navDate = state.navDate;
 
-  let html = renderSidebarOptions();
+  let html = '';
   for (let i = 0; i < maxMonths; i++) {
     const monthDate = new Date(navDate.getFullYear(), navDate.getMonth() + i, 1);
     html += renderSideMonth(monthDate, todayDate, navDate, todos);
@@ -1213,7 +1210,7 @@ export function renderWeekSidebar(todos) {
   const y = todayDate.getFullYear();
   const m = todayDate.getMonth();
 
-  let html = renderSidebarOptions();
+  let html = '';
   for (let i = 0; i < maxMonths; i++) {
     const monthDate = new Date(y, m + i, 1);
     html += renderSideMonth(monthDate, todayDate, state.navDate, todos);
