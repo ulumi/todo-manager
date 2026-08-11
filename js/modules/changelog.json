@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2568",
+    "date": "2026-08-11",
+    "message": "fix(sous-tâches): le badge « + durée » (aucune estimation posée) n'écrase plus le titre dans les cartes étroites — devient un hover comme ▶/× au lieu d'être toujours réservé"
+  },
+  {
     "version": "0.4.2566",
     "date": "2026-08-11",
     "message": "fix(vue jour): l'édition rapide de durée (survol 2s sur une tâche sans badge) ne prend plus la place du titre — rejoint la rangée de badges, et se referme dès qu'on quitte l'item"

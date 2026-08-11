@@ -12540,6 +12540,28 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-style: dashed;
 }
 
+.subtask-estimate-slot {
+  display: inline-flex;
+  align-items: center;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+}
+.subtask-estimate-slot .subtask-estimate-badge {
+  opacity: 0;
+  transition: opacity 0.2s ease 0.5s;
+}
+
+.subtask-item:hover .subtask-estimate-slot,
+.subtask-estimate-slot:focus-within {
+  width: 60px;
+}
+.subtask-item:hover .subtask-estimate-slot .subtask-estimate-badge,
+.subtask-estimate-slot:focus-within .subtask-estimate-badge {
+  opacity: 1;
+}
+
 .subtask-estimate-input {
   border: none;
   background: transparent;

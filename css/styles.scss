@@ -11758,6 +11758,36 @@ body:has(.bottom-panel:not(.hidden))::before {
   }
 }
 
+// Le ghost « + durée » (aucune estimation posée) n'est qu'une AFFORDANCE
+// d'ajout — comme .subtask-focus-btn/.subtask-del juste après lui, il ne
+// doit apparaître qu'au survol de la ligne (une valeur déjà posée, elle,
+// reste toujours visible : c'est de l'info, cf. render.js). Contrairement à
+// ces deux boutons — icônes ~16px dont l'écart de largeur en permanence
+// réservé est négligeable — ce badge est un texte large qui écrasait le
+// titre dans les cartes étroites (Backlog/Inbox à plusieurs colonnes) :
+// slot replié en LARGEUR tant que non survolé, même technique que
+// .subtask-add-mini-slot (hauteur) juste plus bas. :focus-within garde le
+// slot ouvert pendant l'édition (l'input vit dedans, cf. editSubtaskEstimate
+// dans app.js) même si la souris quitte la ligne entre-temps — sinon le
+// champ disparaîtrait sous le curseur clavier encore actif.
+.subtask-estimate-slot {
+  display: inline-flex;
+  align-items: center;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width .3s cubic-bezier(.16, 1, .3, 1) .5s;
+
+  .subtask-estimate-badge { opacity: 0; transition: opacity .2s ease .5s; }
+}
+
+.subtask-item:hover .subtask-estimate-slot,
+.subtask-estimate-slot:focus-within {
+  width: 60px;
+
+  .subtask-estimate-badge { opacity: 1; }
+}
+
 .subtask-estimate-input {
   border: none;
   background: transparent;
