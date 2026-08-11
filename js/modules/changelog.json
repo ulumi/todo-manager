@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2569",
+    "date": "2026-08-11",
+    "message": "fix(update-toast): un déploiement ne montre plus 2-3 toasts identiques — les déclencheurs concurrents (poll, focus, mise à jour du service worker) sont maintenant dédupliqués par un verrou anti-course"
+  },
+  {
     "version": "0.4.2568",
     "date": "2026-08-11",
     "message": "fix(sous-tâches): le badge « + durée » (aucune estimation posée) n'écrase plus le titre dans les cartes étroites — devient un hover comme ▶/× au lieu d'être toujours réservé"

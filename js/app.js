@@ -1010,7 +1010,20 @@ class TodoApp {
   // annonce. On ne re-déclenche que si la version distante a réellement
   // changé depuis la dernière annonce, pour ne pas empiler un toast à chaque
   // poll de 60s sans rien de neuf.
+  // _checkingVersion : verrou anti-course — cette fonction a PLUSIEURS
+  // déclencheurs indépendants (poll 60s, visibilitychange, focus, et
+  // maintenant aussi controllerchange/SW_UPDATED, cf. index.html) qui
+  // peuvent tous se déclencher dans le même instant (ex. l'onglet reprend le
+  // focus pile au moment où le SW active) ; sans ce verrou, plusieurs appels
+  // concurrents passent tous le test `=== this._announcedVersion` (encore à
+  // l'ancienne valeur) avant qu'aucun n'ait eu le temps de le mettre à jour
+  // — chacun finit alors par appeler _showUpdateToast() séparément pour la
+  // MÊME version tout juste détectée, d'où plusieurs toasts identiques
+  // empilés. Le verrou rend les appels concurrents inoffensifs (no-op) sans
+  // rien perdre : le prochain poll/trigger repassera de toute façon.
   async _checkForNewVersion() {
+    if (this._checkingVersion) return;
+    this._checkingVersion = true;
     try {
       const res = await fetch('/js/modules/version.js', { cache: 'no-store' });
       const text = await res.text();
@@ -1024,7 +1037,9 @@ class TodoApp {
       const notes = await this._fetchChangelogNotes(since);
       this._announcedVersion = m[1];
       this._showUpdateToast(m[1], notes);
-    } catch {}
+    } catch {} finally {
+      this._checkingVersion = false;
+    }
   }
 
   // Entrées écrites à chaque `cmt`/`dpl` (voir CLAUDE.md) — une par commit,

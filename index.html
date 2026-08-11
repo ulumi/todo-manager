@@ -1139,13 +1139,18 @@
     // deploys where sw.js's bytes didn't change. window.app may not be
     // ready yet when this listener is registered, but this event only
     // fires later, asynchronously, once a new SW actually takes control.
+    // Routed through _checkForNewVersion() (not _showUpdateToast() directly):
+    // that's the single function with the version-number/notes lookup AND
+    // the dedup guard — calling _showUpdateToast() bare here used to skip
+    // both, showing a stripped-down toast (no version, no notes) that also
+    // didn't know a poll trigger had just announced the same version.
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      window.app?._showUpdateToast?.();
+      window.app?._checkForNewVersion?.();
     });
     // Pushed by sw.js's activate handler — reacts immediately instead of
     // waiting for _checkForNewVersion()'s next visibility/focus/30min poll.
     navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data?.type === 'SW_UPDATED') window.app?._showUpdateToast?.();
+      if (e.data?.type === 'SW_UPDATED') window.app?._checkForNewVersion?.();
     });
   }
 </script>
