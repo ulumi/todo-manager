@@ -1788,6 +1788,76 @@ class TodoApp {
     this.render();
   }
 
+  // Réordonnancement par glisser-déposer des sous-tâches (vue jour, cartes
+  // Inbox/Backlog — subtaskListHTML est partagé) : la ligne ENTIÈRE est
+  // draggable="true" (un grip seul serait trop fragile à saisir, cf.
+  // .review-item) — déjà couverte par MARQUEE_EXCLUDE (générique sur
+  // [draggable="true"]), donc pas de conflit avec le lasso. Survoler un
+  // autre item de LA MÊME liste (même tâche, même profondeur — jamais
+  // entre deux tâches ni entre un niveau et son sous-niveau, cf. dragList)
+  // le fait « prendre sa place », même sémantique de swap que le reste de
+  // la vue jour (.drop-target-swap). e.stopPropagation() systématique :
+  // .subtask-item vit à l'intérieur d'un .todo-item lui-même draggable
+  // (délégation sur .day-columns dans initDayDragDrop) — sans ça son
+  // dragstart bulle jusqu'à ce listener et ferait démarrer le drag de
+  // toute la tâche parente à la place. Écouteurs posés directement sur
+  // chaque item (pas de délégation sur .day-columns) : appelée après
+  // CHAQUE render(), les nœuds sont donc toujours neufs.
+  initSubtaskDragDrop(root) {
+    let dragEl = null, dragList = null, activeTarget = null;
+    const clearTarget = () => { if (activeTarget) { activeTarget.classList.remove('drop-target-swap'); activeTarget = null; } };
+    (root || document).querySelectorAll('.subtask-item[draggable]').forEach(item => {
+      item.addEventListener('dragstart', e => {
+        e.stopPropagation();
+        dragEl = item;
+        dragList = item.closest('.subtask-list');
+        requestAnimationFrame(() => item.classList.add('dragging'));
+      });
+      item.addEventListener('dragend', e => {
+        e.stopPropagation();
+        item.classList.remove('dragging');
+        clearTarget();
+        dragEl = null; dragList = null;
+      });
+      item.addEventListener('dragover', e => {
+        if (!dragEl || dragEl === item || item.closest('.subtask-list') !== dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (activeTarget !== item) { clearTarget(); activeTarget = item; item.classList.add('drop-target-swap'); }
+      });
+      item.addEventListener('dragleave', e => {
+        if (activeTarget === item && !item.contains(e.relatedTarget)) clearTarget();
+      });
+      item.addEventListener('drop', e => {
+        if (!dragEl || dragEl === item || item.closest('.subtask-list') !== dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        clearTarget();
+        const todoId = dragEl.dataset.todoId;
+        const parentStid = dragEl.dataset.parentStid || null;
+        this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, parentStid);
+      });
+    });
+  }
+
+  // Sous-tâche déposée sur une autre : elle prend sa place (la cible et les
+  // suivantes décalent) — même sémantique que le reste de la vue jour.
+  _reorderSubtask(todoId, stid, targetStid, parentStid) {
+    const t = state.todos.find(x => x.id === todoId);
+    const arr = parentStid ? t?.subtasks?.find(p => p.id === parentStid)?.subtasks : t?.subtasks;
+    if (!arr) return;
+    const from = arr.findIndex(x => x.id === stid);
+    let to = arr.findIndex(x => x.id === targetStid);
+    if (from < 0 || to < 0 || from === to) return;
+    snapshot(state.todos);
+    const [item] = arr.splice(from, 1);
+    if (from < to) to--; // la suppression a décalé les index suivants d'un cran
+    arr.splice(to, 0, item);
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
   // Menu contextuel (sous-tâche) « Sortir du groupe » : retire CETTE seule
   // (sous-)sous-tâche de sa liste et la fait redevenir une tâche indépendante
   // à part entière, sans toucher aux autres membres — contrairement à
@@ -4631,6 +4701,7 @@ class TodoApp {
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
     if (state.view === 'day') { setupTodoItemHoverAnimations(); this._layoutMasonry(); }
+    this.initSubtaskDragDrop();
     msRefreshUI();
     // #reviewModalBody existe toujours dans le DOM (juste masqué si le modal
     // est fermé) — le tenir à jour ici, dans le seul point de sortie commun à

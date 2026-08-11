@@ -2749,12 +2749,23 @@ main.plan-mode, main.search-mode {
   border-radius: 8px;
   background: var(--surface2);
   break-inside: avoid;
+  cursor: grab;
 }
 .subtask-item:hover .subtask-focus-btn, .subtask-item:hover .subtask-del {
   opacity: 1;
 }
 .subtask-item.done {
   opacity: 0.6;
+}
+.subtask-item.dragging {
+  opacity: 0.35;
+}
+.subtask-item.drop-target-swap {
+  border-color: var(--primary);
+  border-style: solid;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+  transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .subtask-item .subtask-check {
   flex-shrink: 0;

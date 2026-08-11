@@ -41,7 +41,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       ? subtaskListHTML(s.subtasks, todoId, ds, s.id)
       : '';
     return `
-    <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
+    <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''} draggable="true">
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
       <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
