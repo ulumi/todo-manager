@@ -2952,8 +2952,8 @@ main.plan-mode, main.search-mode {
   margin-top: 0;
   padding: 6px 8px;
   border-radius: 8px;
-  border-color: transparent;
-  box-shadow: 0 0 0 1.5px var(--primary), 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+  border: 1.5px dashed var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   animation: subtask-input-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .subtask-new-input--card::placeholder {

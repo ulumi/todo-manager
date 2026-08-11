@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2565",
+    "date": "2026-08-11",
+    "message": "feat(sous-tâches): réordonnancement par glisser-déposer (haut, bas, fin de liste) en vue jour/Inbox/Backlog ; champ d'ajout restylé, en pointillés animés"
+  },
+  {
     "version": "0.4.2564",
     "date": "2026-08-11",
     "message": "fix(vue jour): « Complétés » redevient une simple bascule sans sous-menu ; masque aussi les tâches annulées (plus seulement complétées) ; retrait du picker de style semaine/mois Barres/Anneaux/Sceau, inutilisé"

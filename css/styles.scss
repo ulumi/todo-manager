@@ -2977,19 +2977,23 @@ main {
 // Variante « carte » (vue jour, Inbox/Backlog — app.addSubtaskInline) :
 // reprend le gabarit de .subtask-item (padding 6px 8px, radius 8px) pour
 // s'intégrer comme une ligne de plus dans la liste au lieu d'un champ
-// générique plaqué dessus ; bord plein remplacé par un anneau doux façon
-// .subtask-title[contenteditable] (box-shadow, pas de bord dur) ; entrée
-// animée (fondu + léger glissement, jamais de scale — taille de l'élément
-// inchangée) puisque cet input est un vrai ajout ponctuel au DOM (pas un
-// hover-reveal rejoué à chaque render, cf. .subtask-list plus haut) — le
-// modal d'édition garde le gabarit d'origine (`.subtask-new-input` seule),
-// non concerné, même logique que `.subtask-add-btn` vs `.subtask-add-mini`.
+// générique plaqué dessus ; bord en pointillés (même langage que
+// .subtask-add-btn/.period-dropzone — les affordances « vides/à remplir »
+// de cette app sont déjà en dashed) plutôt qu'un bord plein, coloré en
+// --primary (pas --border comme un placeholder inerte : ce champ est
+// activement en cours de saisie) pour rester bien visible sur le fond
+// --surface2 ; entrée animée (fondu + léger glissement, jamais de scale —
+// taille de l'élément inchangée) puisque cet input est un vrai ajout
+// ponctuel au DOM (pas un hover-reveal rejoué à chaque render, cf.
+// .subtask-list plus haut) — le modal d'édition garde le gabarit d'origine
+// (`.subtask-new-input` seule), non concerné, même logique que
+// `.subtask-add-btn` vs `.subtask-add-mini`.
 .subtask-new-input--card {
   margin-top: 0;
   padding: 6px 8px;
   border-radius: 8px;
-  border-color: transparent;
-  box-shadow: 0 0 0 1.5px var(--primary), 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+  border: 1.5px dashed var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
   animation: subtask-input-in .22s cubic-bezier(.25,.46,.45,.94);
 
   &::placeholder { color: var(--text-muted); }
