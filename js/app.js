@@ -1795,17 +1795,23 @@ class TodoApp {
   // [draggable="true"]), donc pas de conflit avec le lasso. Survoler un
   // autre item de LA MÊME liste (même tâche, même profondeur — jamais
   // entre deux tâches ni entre un niveau et son sous-niveau, cf. dragList)
-  // le fait « prendre sa place », même sémantique de swap que le reste de
-  // la vue jour (.drop-target-swap). e.stopPropagation() systématique :
-  // .subtask-item vit à l'intérieur d'un .todo-item lui-même draggable
-  // (délégation sur .day-columns dans initDayDragDrop) — sans ça son
-  // dragstart bulle jusqu'à ce listener et ferait démarrer le drag de
-  // toute la tâche parente à la place. Écouteurs posés directement sur
-  // chaque item (pas de délégation sur .day-columns) : appelée après
-  // CHAQUE render(), les nœuds sont donc toujours neufs.
+  // insère l'item glissé avant/après cette cible selon la moitié survolée
+  // (`insertAfter`, calculée sur `clientY` — indispensable pour pouvoir
+  // descendre d'UN cran : sans détection de moitié, déposer sur le voisin
+  // immédiat suivant est un no-op, cf. `_reorderSubtask`). Survoler la zone
+  // vide APRÈS le dernier item (padding, bouton "+") — écouteur posé sur
+  // .subtask-list elle-même, atteint seulement quand aucun item ne
+  // consomme l'event — équivaut à « fin de liste » (targetStid=null).
+  // e.stopPropagation() systématique : .subtask-item vit à l'intérieur d'un
+  // .todo-item lui-même draggable (délégation sur .day-columns dans
+  // initDayDragDrop) — sans ça son dragstart bulle jusqu'à ce listener et
+  // ferait démarrer le drag de toute la tâche parente à la place. Écouteurs
+  // posés directement sur chaque item/liste (pas de délégation sur
+  // .day-columns) : appelée après CHAQUE render(), les nœuds sont donc
+  // toujours neufs.
   initSubtaskDragDrop(root) {
-    let dragEl = null, dragList = null, activeTarget = null;
-    const clearTarget = () => { if (activeTarget) { activeTarget.classList.remove('drop-target-swap'); activeTarget = null; } };
+    let dragEl = null, dragList = null, activeTarget = null, insertAfter = false;
+    const clearTarget = () => { if (activeTarget) { activeTarget.classList.remove('drop-target-swap', 'drop-after'); activeTarget = null; } };
     (root || document).querySelectorAll('.subtask-item[draggable]').forEach(item => {
       item.addEventListener('dragstart', e => {
         e.stopPropagation();
@@ -1823,7 +1829,10 @@ class TodoApp {
         if (!dragEl || dragEl === item || item.closest('.subtask-list') !== dragList) return;
         e.preventDefault();
         e.stopPropagation();
+        const r = item.getBoundingClientRect();
+        insertAfter = e.clientY > r.top + r.height / 2;
         if (activeTarget !== item) { clearTarget(); activeTarget = item; item.classList.add('drop-target-swap'); }
+        item.classList.toggle('drop-after', insertAfter);
       });
       item.addEventListener('dragleave', e => {
         if (activeTarget === item && !item.contains(e.relatedTarget)) clearTarget();
@@ -1835,23 +1844,59 @@ class TodoApp {
         clearTarget();
         const todoId = dragEl.dataset.todoId;
         const parentStid = dragEl.dataset.parentStid || null;
-        this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, parentStid);
+        this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, parentStid, insertAfter);
+      });
+    });
+    (root || document).querySelectorAll('.subtask-list').forEach(list => {
+      list.addEventListener('dragover', e => {
+        if (!dragEl || list !== dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const items = [...list.querySelectorAll(':scope > .subtask-item')];
+        const lastItem = items[items.length - 1];
+        if (!lastItem || lastItem === dragEl) { clearTarget(); return; }
+        insertAfter = true;
+        if (activeTarget !== lastItem) { clearTarget(); activeTarget = lastItem; lastItem.classList.add('drop-target-swap'); }
+        lastItem.classList.add('drop-after');
+      });
+      list.addEventListener('drop', e => {
+        if (!dragEl || list !== dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        clearTarget();
+        const todoId = dragEl.dataset.todoId;
+        const parentStid = dragEl.dataset.parentStid || null;
+        this._reorderSubtask(todoId, dragEl.dataset.stid, null, parentStid);
       });
     });
   }
 
-  // Sous-tâche déposée sur une autre : elle prend sa place (la cible et les
-  // suivantes décalent) — même sémantique que le reste de la vue jour.
-  _reorderSubtask(todoId, stid, targetStid, parentStid) {
+  // Sous-tâche déposée sur une autre : elle s'insère avant ou après la
+  // cible selon `insertAfter` (moitié survolée) ; `targetStid` nul = fin de
+  // liste (survol de la zone vide après le dernier item). `to` est calculé
+  // sur les index AVANT retrait, donc décrémenté d'un cran si la source
+  // était avant la cible (le splice de retrait a déjà décalé tout ce qui
+  // suit) ; les deux no-op (`from===to` et `from===to-1`) couvrent les cas
+  // où l'item est déjà exactement à la position visée (immédiatement avant/
+  // après la cible), pour ne pas re-render inutilement.
+  _reorderSubtask(todoId, stid, targetStid, parentStid, insertAfter = false) {
     const t = state.todos.find(x => x.id === todoId);
     const arr = parentStid ? t?.subtasks?.find(p => p.id === parentStid)?.subtasks : t?.subtasks;
     if (!arr) return;
     const from = arr.findIndex(x => x.id === stid);
-    let to = arr.findIndex(x => x.id === targetStid);
-    if (from < 0 || to < 0 || from === to) return;
+    if (from < 0) return;
+    let to;
+    if (targetStid == null) {
+      to = arr.length;
+    } else {
+      to = arr.findIndex(x => x.id === targetStid);
+      if (to < 0) return;
+      if (insertAfter) to++;
+    }
+    if (from === to || from === to - 1) return;
     snapshot(state.todos);
     const [item] = arr.splice(from, 1);
-    if (from < to) to--; // la suppression a décalé les index suivants d'un cran
+    if (from < to) to--;
     arr.splice(to, 0, item);
     t.updatedAt = Date.now();
     saveTodos(state.todos);
@@ -1925,8 +1970,13 @@ class TodoApp {
     // le sien propre.
     const addBtn = list.querySelector(':scope > .subtask-add-mini-slot > .subtask-add-mini');
     if (!addBtn) return;
+    // Masquer le SLOT entier (pas juste le bouton) : sinon, si la souris
+    // survole encore la liste au moment du clic sur "+", .subtask-list:hover
+    // le maintient déplié à 26px — un bloc vide et invisible juste au-dessus
+    // de l'input, perçu comme un excès d'espace non désiré.
+    const slot = addBtn.closest('.subtask-add-mini-slot');
     const input = document.createElement('input');
-    input.className = 'subtask-new-input';
+    input.className = 'subtask-new-input subtask-new-input--card';
     input.placeholder = 'Nouvelle sous-tâche…';
     input.autocomplete = 'off';
     let saved = false;
@@ -1936,7 +1986,7 @@ class TodoApp {
     // imbriquée : remonter à .closest('.subtask-collapse') retirerait TOUTES
     // les sous-tâches du niveau racine, pas seulement cette liste-ci.
     const cancel = () => {
-      if (list.querySelector(':scope > .subtask-item')) { addBtn.style.display = ''; return; }
+      if (list.querySelector(':scope > .subtask-item')) { slot.style.display = ''; return; }
       if (parentStid) list.remove();
       else (list.closest('.subtask-collapse') || list).remove();
     };
@@ -1954,7 +2004,7 @@ class TodoApp {
       const title = input.value.trim();
       input.remove();
       if (title) {
-        addBtn.style.display = '';
+        slot.style.display = '';
         const newSub = this._saveNewSubtask(todoId, title, parentStid);
         if (andFocus && newSub && !parentStid) this.focusStartOn(todoId, DS(today()), newSub.id, { fallbackToEdit: false });
         else if (reopen) this.addSubtaskInline(todoId, parentStid);
@@ -1967,8 +2017,8 @@ class TodoApp {
       if (e.key === 'Escape') { saved = true; input.remove(); cancel(); }
     });
     input.addEventListener('blur', () => confirm(false));
-    addBtn.style.display = 'none';
-    list.appendChild(input);
+    slot.style.display = 'none';
+    list.insertBefore(input, slot);
     // Micro avant le focus : attachMic({wrap}) détache brièvement l'input le
     // temps de l'envelopper, ce qui perdrait un focus déjà posé.
     attachMic(input, { wrap: true, compact: true });
@@ -4862,15 +4912,14 @@ class TodoApp {
     this.render();
   }
 
-  setStatsViz(viz) {
-    state.setStatsViz(viz);
-    this.render();
-  }
-
   setPastDisplay(mode) {
     if (state.pastDisplayMode === mode) return;
     state.setPastDisplayMode(mode);
     this.render();
+  }
+
+  togglePastDisplay() {
+    this.setPastDisplay(state.pastDisplayMode === 'stats' ? 'normal' : 'stats');
   }
 
   toggleDoneAccordion() {
@@ -6704,27 +6753,6 @@ class TodoApp {
 
   resetAutoCloseDayCol() {
     this.startAutoCloseDayCol();
-  }
-
-  toggleDayDone() {
-    const cur = localStorage.getItem('dayDoneCollapsed') !== 'false';
-    localStorage.setItem('dayDoneCollapsed', !cur ? 'true' : 'false');
-    this.render();
-    if (!cur) this.startAutoCloseDayDone();
-  }
-
-  closeDayDone() {
-    localStorage.setItem('dayDoneCollapsed', 'true');
-    this.render();
-  }
-
-  startAutoCloseDayDone() {
-    clearTimeout(this.autoCloseDayDoneTimer);
-    this.autoCloseDayDoneTimer = setTimeout(() => this.closeDayDone(), 3000);
-  }
-
-  resetAutoCloseDayDone() {
-    this.startAutoCloseDayDone();
   }
 
   setRecColCount(n) {

@@ -336,7 +336,7 @@ export function renderDayView(todos) {
   const isPastDay = dateStr < DS(new Date());
   // Nombre d'items réellement visibles (les complétées masquées en mode
   // stats ne comptent pas) — une section/un groupe sans item visible disparaît
-  const _visCount = items => isStatsMode ? items.filter(t => !isCompleted(t, navDate)).length : items.length;
+  const _visCount = items => isStatsMode ? items.filter(t => !isCompleted(t, navDate) && !isCancelled(t, navDate)).length : items.length;
 
   const dailyItems   = allItems.filter(t => t.recurrence === 'daily');
   const weeklyItems  = allItems.filter(t => t.recurrence === 'weekly');
@@ -396,6 +396,9 @@ export function renderDayView(todos) {
   // et la colonne Aujourd'hui repasse sur une seule colonne
   const hasRefill = !isPastDay && totalAll > 0 && (punctDone + recDone) === totalAll;
   const doneAll = punctDone + recDone;
+  // Masqués en mode stats : complétées + annulées (ces dernières hors totalAll ci-dessus)
+  const cancelledAll = (recAllItems.length - recActive.length) + (punctualItems.length - punctActive.length);
+  const hiddenAll = doneAll + cancelledAll;
 
   // Always render ALL items (CSS hides .done items in stats-mode)
   // Daily column count (only for daily group)
@@ -707,14 +710,14 @@ export function renderDayView(todos) {
     rightColItems += addItemPlaceholderHTML();
   }
 
-  // Done accordion (stats mode) — collapsible section for completed punctual items
+  // Done accordion (stats mode) — collapsible section for completed/cancelled punctual items
   let doneAccordion = '';
   if (isStatsMode) {
-    const doneItems = punctualItems.filter(t => isCompleted(t, navDate));
+    const doneItems = punctualItems.filter(t => isCompleted(t, navDate) || isCancelled(t, navDate));
     if (doneItems.length > 0) {
       const isOpen = localStorage.getItem('dayDoneAccordionOpen') === '1';
       const chevron = `<svg class="day-done-chevron" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
-      const label = state.lang === 'fr' ? 'Complétées' : 'Completed';
+      const label = state.lang === 'fr' ? 'Masquées' : 'Hidden';
       doneAccordion = `<div class="day-done-accordion${isOpen ? ' open' : ''}">
         <button class="day-done-accordion-hd" onclick="window.app.toggleDoneAccordion()">
           ${chevron}
@@ -730,28 +733,16 @@ export function renderDayView(todos) {
 
   const sortCollapsed = localStorage.getItem('daySortCollapsed') !== 'false';
   const colCollapsed = localStorage.getItem('dayColCollapsed') !== 'false';
-  const doneCollapsed = localStorage.getItem('dayDoneCollapsed') !== 'false';
   const ctrlsCollapsed = localStorage.getItem('dayCtrlsCollapsed') !== 'false';
 
-  // Groupe "Complétés" (Tri / Colonnes / Complétés) — remplace l'ancien
+  // Toggle "Complétés" (Tri / Colonnes / Complétés) — remplace l'ancien
   // panneau "Options d'affichage" de la colonne calendrier (#calSidebar),
   // déplacé ici pour rester à portée de main pendant qu'on regarde le jour
-  // qu'il affecte. Le réglage (state.pastDisplayMode/statsViz) reste global :
-  // il continue d'agir sur les vues semaine/mois même si le contrôle ne vit
-  // plus que dans la vue jour.
-  const vizOpts = [
-    { id: 'bars',  fr: 'Barres',  en: 'Bars'  },
-    { id: 'rings', fr: 'Anneaux', en: 'Rings'  },
-    { id: 'stamp', fr: 'Sceau',   en: 'Stamp'  },
-  ];
-  const vizBtns = vizOpts.map(o => {
-    const lbl = state.lang === 'fr' ? o.fr : o.en;
-    return `<button class="day-ctrl-btn${state.statsViz===o.id?' active':''}" onclick="window.app.setStatsViz('${o.id}')" title="Style semaine/mois : ${lbl}">${lbl}</button>`;
-  }).join('');
-  const doneBtns = `
-    <button class="day-ctrl-btn${!isStatsMode ? ' active' : ''}" onclick="window.app.setPastDisplay('normal')" title="Afficher les tâches complétées">Visibles</button>
-    <button class="day-ctrl-btn${isStatsMode ? ' active' : ''}" onclick="window.app.setPastDisplay('stats')" title="Masquer les tâches complétées">Masquées</button>
-    ${isStatsMode ? `<span class="day-ctrl-sep"></span>${vizBtns}` : ''}`;
+  // qu'il affecte. Le réglage (state.pastDisplayMode) reste global : il
+  // continue d'agir sur les vues semaine/mois même si le contrôle ne vit
+  // plus que dans la vue jour. Bascule directe (pas de sous-menu) : un clic
+  // inverse Visibles/Masquées.
+  const doneToggleTitle = isStatsMode ? 'Afficher les tâches complétées et annulées' : 'Masquer les tâches complétées et annulées';
 
   const punctualTitle = isToday ? state.T.groupOnce : (state.lang === 'fr' ? 'Ponctuel' : 'One-time');
   const punctualHeader = `<div class="day-col-title-row">
@@ -773,14 +764,10 @@ export function renderDayView(todos) {
         <div class="day-ctrl-group day-col-group" onmouseenter="window.app.resetAutoCloseDayCol()">${colBtns}</div>
       </div>
 
-      <div class="day-ctrl-expandable${!doneCollapsed ? ' expanded' : ''}">
-        <button class="day-ctrl-toggle" onclick="window.app.toggleDayDone()" title="Complétés">
-          <span class="day-ctrl-label">Complétés</span>
-          ${isStatsMode && doneAll > 0 ? `<span class="day-ctrl-count">${doneAll}</span>` : ''}
-          <svg class="day-ctrl-chevron" viewBox="0 0 12 12" width="10" height="10"><polyline points="3 5 6 8 9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="day-ctrl-group day-done-group" onmouseenter="window.app.resetAutoCloseDayDone()">${doneBtns}</div>
-      </div>
+      <button class="day-ctrl-toggle day-ctrl-toggle--switch${isStatsMode ? ' active' : ''}" onclick="window.app.togglePastDisplay()" title="${doneToggleTitle}">
+        <span class="day-ctrl-label">Complétés</span>
+        ${isStatsMode && hiddenAll > 0 ? `<span class="day-ctrl-count">${hiddenAll}</span>` : ''}
+      </button>
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
@@ -849,39 +836,10 @@ function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, next
   </div></div>`;
 }
 
-// Returns [fillDiv, statsDiv] — fillDiv is absolute in .week-day-col, same pattern as month
+// fillDiv is absolute in .week-day-col, same pattern as month
 function _weekCellStats(doneCount, totalCount) {
   const pct = Math.round(totalCount > 0 ? doneCount / totalCount * 100 : 0);
-  const viz = state.statsViz;
 
-  if (viz === 'rings') {
-    const R = 26, CX = 32, CY = 32, SZ = 64;
-    const circ = (2 * Math.PI * R).toFixed(1);
-    const offset = (2 * Math.PI * R * (1 - pct / 100)).toFixed(1);
-    const color = _pctHsl(pct, 0.92);
-    const check = pct >= 85;
-    return `<div class="week-cell-stats wc-rings">
-      <svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="hsla(220,12%,22%,1)" stroke-width="2.5"/>
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
-          stroke="${color}" stroke-width="2.5"
-          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
-          stroke-linecap="round" transform="rotate(-90 ${CX} ${CY})"/>
-        ${check
-          ? `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="17" fill="${color}" font-weight="800">✓</text>`
-          : `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="13" fill="${_pctHsl(pct,.72)}" font-weight="700">${pct}%</text>`}
-      </svg>
-    </div>`;
-  }
-
-  if (viz === 'stamp') {
-    // tint applied on .week-day-col externally; just show score
-    return `<div class="week-cell-stats wc-stamp">
-      <div class="mc-stamp-score" style="color:${_pctHsl(pct,.95)}">${doneCount}/${totalCount}</div>
-    </div>`;
-  }
-
-  // bars — same pattern as month: fill positioned absolute in .week-day-col
   return `<div class="mc-bars-fill" style="height:${Math.max(pct,5)}%;background:${_pctHsl(pct,.4)}"></div>
   <div class="week-cell-stats wc-bars">
     <div class="mc-bars-score" style="color:${_pctHsl(pct,.95)}">${doneCount}/${totalCount}</div>
@@ -899,7 +857,6 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
     const allItems = getTodosForDate(d, todos);
     const totalCount = allItems.filter(t => !isCancelled(t, d)).length;
     const doneCount = allItems.filter(t => isCompleted(t, d)).length;
-    const ratio = totalCount > 0 ? doneCount / totalCount : 0;
     const showStats = isPast && !isT && isStatsMode;
     const todayStats = isT && isStatsMode;
     const nonDaily = allItems.filter(t => t.recurrence !== 'daily')
@@ -914,13 +871,7 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
       todayScoreHTML = `<div class="week-today-score">${doneCount}/${totalCount} ✓</div>`;
     }
     const noExpand = (showStats && !weekStatsHTML) || (!showStats && !todayStats && displayItems.length === 0);
-    // Stamp mode: tinted background on the cell itself
-    let cellStyle = '';
-    if (showStats && state.statsViz === 'stamp' && totalCount > 0) {
-      const pct = Math.round(ratio * 100);
-      cellStyle = ` style="background:${_pctHsl(pct,.16)};border-color:${_pctHsl(pct,.45)};"`;
-    }
-    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}"${cellStyle} onclick="window.app.setNavDateAndView('${ds}', 'day')">
+    html += `<div class="week-day-col${isT?' is-today':isPast?' past':''}${noExpand?' empty':''}" onclick="window.app.setNavDateAndView('${ds}', 'day')">
       <div class="week-day-header">
         <div class="week-day-name">${state.DAYS[(d.getDay()+6)%7]}</div>
         <div class="week-day-num">${d.getDate()}</div>
@@ -1041,37 +992,9 @@ function monthMiniCal(y, m, todayDS) {
   </div>`;
 }
 
+// fill positioned relative to the full .month-cell (covers entire cell height)
 function monthCellStats(date, ds, total, done) {
   const pct = Math.round(total > 0 ? done / total * 100 : 0);
-  const viz = state.statsViz;
-
-  if (viz === 'rings') {
-    const R = 26, CX = 32, CY = 32, SZ = 64;
-    const circ = (2 * Math.PI * R).toFixed(1);
-    const offset = (2 * Math.PI * R * (1 - pct / 100)).toFixed(1);
-    const color = _pctHsl(pct, 0.92);
-    const check = pct >= 85;
-    return `<div class="month-cell-stats mc-rings">
-      <svg width="${SZ}" height="${SZ}" viewBox="0 0 ${SZ} ${SZ}">
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="hsla(220,12%,22%,1)" stroke-width="2.5"/>
-        <circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
-          stroke="${color}" stroke-width="2.5"
-          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
-          stroke-linecap="round" transform="rotate(-90 ${CX} ${CY})"/>
-        ${check
-          ? `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="17" fill="${color}" font-weight="800">✓</text>`
-          : `<text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="13" fill="${_pctHsl(pct,.72)}" font-weight="700">${pct}%</text>`}
-      </svg>
-    </div>`;
-  }
-
-  if (viz === 'stamp') {
-    return `<div class="month-cell-stats mc-stamp">
-      <div class="mc-stamp-score" style="color:${_pctHsl(pct,.95)}">${done}/${total}</div>
-    </div>`;
-  }
-
-  // bars — fill positioned relative to the full .month-cell (covers entire cell height)
   return `<div class="mc-bars-fill" style="height:${Math.max(pct, 5)}%;background:${_pctHsl(pct,.4)}"></div>
   <div class="month-cell-stats mc-bars">
     <div class="mc-bars-score" style="color:${_pctHsl(pct,.95)}">${done}/${total}</div>
@@ -1096,12 +1019,7 @@ function monthCell(date, otherMonth, todayDS, todos) {
   if (todayStats && doneCount > 0) {
     todayScoreHTML = `<div class="month-today-score">${doneCount}/${activeCount} ✓</div>`;
   }
-  let cellStyle = '';
-  if (showStats && state.statsViz === 'stamp' && allItems.length > 0) {
-    const pct = Math.round(doneCount / allItems.length * 100);
-    cellStyle = ` style="background:${_pctHsl(pct,.16)};border-color:${_pctHsl(pct,.45)};"`;
-  }
-  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"${cellStyle}
+  return `<div class="month-cell${otherMonth?' other-month':''}${isT?' is-today':isPast?' past':''}" data-date="${ds}"
     onclick="window.app.setNavDateAndView('${ds}', 'day')">
     <div class="month-cell-top">
       <div class="month-cell-num">${date.getDate()}</div>

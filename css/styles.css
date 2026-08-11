@@ -824,17 +824,6 @@ main.plan-mode, main.search-mode {
   position: relative;
   z-index: 1;
 }
-.month-cell-stats.mc-rings {
-  padding: 2px 0;
-}
-.month-cell-stats.mc-rings svg {
-  overflow: visible;
-}
-.month-cell-stats.mc-stamp {
-  gap: 2px;
-  position: relative;
-  z-index: 1;
-}
 
 .mc-bars-fill {
   position: absolute;
@@ -852,21 +841,6 @@ main.plan-mode, main.search-mode {
   position: relative;
   z-index: 1;
   padding: 4px 0;
-}
-
-.mc-stamp-score {
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.week-cell-stats.wc-rings {
-  gap: 4px;
-}
-.week-cell-stats.wc-rings svg {
-  overflow: visible;
-}
-.week-cell-stats.wc-stamp {
-  gap: 4px;
 }
 
 .week-cell-stats {
@@ -904,7 +878,8 @@ main.plan-mode, main.search-mode {
   letter-spacing: 0.02em;
 }
 
-.day-view.stats-mode .todo-item.done {
+.day-view.stats-mode .todo-item.done,
+.day-view.stats-mode .todo-item.cancelled {
   display: none;
 }
 
@@ -1446,13 +1421,6 @@ main.plan-mode, main.search-mode {
   line-height: 1;
 }
 
-.day-ctrl-sep {
-  width: 1px;
-  height: 14px;
-  background: rgba(255, 255, 255, 0.15);
-  margin: 0 5px;
-}
-
 .day-ctrl-btn {
   height: 22px;
   min-width: auto;
@@ -1542,6 +1510,11 @@ main.plan-mode, main.search-mode {
 .day-ctrl-toggle:hover {
   background: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.7);
+}
+.day-ctrl-toggle.day-ctrl-toggle--switch.active {
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .day-ctrl-chevron {
@@ -2764,8 +2737,11 @@ main.plan-mode, main.search-mode {
   border-color: var(--primary);
   border-style: solid;
   background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
   transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.subtask-item.drop-target-swap.drop-after {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary);
 }
 .subtask-item .subtask-check {
   flex-shrink: 0;
@@ -2972,6 +2948,33 @@ main.plan-mode, main.search-mode {
   margin-top: 2px;
 }
 
+.subtask-new-input--card {
+  margin-top: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px var(--primary), 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+  animation: subtask-input-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.subtask-new-input--card::placeholder {
+  color: var(--text-muted);
+}
+
+.subtask-new-input--card + .dictate-btn--sm {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes subtask-input-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 .subtask-warning-popover {
   position: absolute;
   bottom: calc(100% + 6px);

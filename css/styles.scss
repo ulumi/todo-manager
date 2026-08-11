@@ -820,12 +820,7 @@ main {
   letter-spacing: .02em;
 }
 
-// Stats viz — month cell variants
-.month-cell-stats {
-  &.mc-bars  { position: relative; z-index: 1; }
-  &.mc-rings { padding: 2px 0; svg { overflow: visible; } }
-  &.mc-stamp { gap: 2px; position: relative; z-index: 1; }
-}
+.month-cell-stats.mc-bars { position: relative; z-index: 1; }
 
 // mc-bars-fill: positioned absolute relative to .month-cell (covers full cell height)
 .mc-bars-fill {
@@ -842,18 +837,6 @@ main {
   position: relative;
   z-index: 1;
   padding: 4px 0;
-}
-
-.mc-stamp-score {
-  font-size: 10px;
-  font-weight: 700;
-}
-
-
-// Stats viz — week cell variants
-.week-cell-stats {
-  &.wc-rings { gap: 4px; svg { overflow: visible; } }
-  &.wc-stamp { gap: 4px; }
 }
 
 // Week cell stats
@@ -892,8 +875,9 @@ main {
   letter-spacing: .02em;
 }
 
-.day-view.stats-mode .todo-item.done { display: none; }
-// Done items are visible inside the accordion body despite the stats-mode hide
+.day-view.stats-mode .todo-item.done,
+.day-view.stats-mode .todo-item.cancelled { display: none; }
+// Ces items restent visibles dans le corps de l'accordéon malgré le masquage ci-dessus
 .day-view.stats-mode .day-done-accordion-bd .todo-item { display: flex; }
 
 // ─── Done accordion (stats mode) ─────────────────────────────────────────────
@@ -1392,13 +1376,6 @@ main {
   line-height: 1;
 }
 
-.day-ctrl-sep {
-  width: 1px;
-  height: 14px;
-  background: rgba(255,255,255,.15);
-  margin: 0 5px;
-}
-
 .day-ctrl-btn {
   height: 22px;
   min-width: auto;
@@ -1493,6 +1470,13 @@ main {
   &:hover {
     background: rgba(255,255,255,.08);
     color: rgba(255,255,255,.7);
+  }
+
+  // Bascule directe (ex. "Complétés") — état actif = réglage masqué en cours
+  &.day-ctrl-toggle--switch.active {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: #fff;
+    border-color: color-mix(in srgb, var(--primary) 40%, transparent);
   }
 }
 
@@ -2740,12 +2724,19 @@ main {
   // même sémantique de swap que .todo-item.drop-target-swap ci-dessous
   &.dragging { opacity: .35; }
 
+  // .drop-after distingue insertion avant/après la cible (moitié survolée,
+  // cf. initSubtaskDragDrop) via un liseré interne en haut ou en bas —
+  // seule différence visuelle, la taille de l'item ne bouge jamais.
   &.drop-target-swap {
     border-color: var(--primary);
     border-style: solid;
     background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
     transition: background .12s cubic-bezier(.25,.46,.45,.94), box-shadow .12s cubic-bezier(.25,.46,.45,.94), border-color .12s cubic-bezier(.25,.46,.45,.94);
+
+    &.drop-after {
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary);
+    }
   }
 
   .subtask-check {
@@ -2981,6 +2972,40 @@ main {
   outline: none;
   width: 100%;
   margin-top: 2px;
+}
+
+// Variante « carte » (vue jour, Inbox/Backlog — app.addSubtaskInline) :
+// reprend le gabarit de .subtask-item (padding 6px 8px, radius 8px) pour
+// s'intégrer comme une ligne de plus dans la liste au lieu d'un champ
+// générique plaqué dessus ; bord plein remplacé par un anneau doux façon
+// .subtask-title[contenteditable] (box-shadow, pas de bord dur) ; entrée
+// animée (fondu + léger glissement, jamais de scale — taille de l'élément
+// inchangée) puisque cet input est un vrai ajout ponctuel au DOM (pas un
+// hover-reveal rejoué à chaque render, cf. .subtask-list plus haut) — le
+// modal d'édition garde le gabarit d'origine (`.subtask-new-input` seule),
+// non concerné, même logique que `.subtask-add-btn` vs `.subtask-add-mini`.
+.subtask-new-input--card {
+  margin-top: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px var(--primary), 0 0 0 4px color-mix(in srgb, var(--primary) 16%, transparent);
+  animation: subtask-input-in .22s cubic-bezier(.25,.46,.45,.94);
+
+  &::placeholder { color: var(--text-muted); }
+}
+
+// Micro recentré : l'input « carte » est plus haut que le gabarit d'origine
+// (2px→6px de padding vertical) — translateY(-50%) reste juste quelle que
+// soit la hauteur exacte, contrairement à un top figé en px.
+.subtask-new-input--card + .dictate-btn--sm {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes subtask-input-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .subtask-warning-popover {
