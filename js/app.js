@@ -1091,7 +1091,7 @@ class TodoApp {
         <span>${label}</span>
         <span class="update-toast-time" title="Heure de détection">${time}</span>
         ${toggleBtn}
-        <button class="update-toast-btn" onclick="location.reload()">Recharger</button>
+        <button class="update-toast-btn" onclick="window.app.reloadForUpdate()">Recharger</button>
       </div>
       ${notesHTML}`;
     stack.appendChild(toast);
@@ -1100,6 +1100,23 @@ class TodoApp {
 
   toggleUpdateToastNotes(btn) {
     btn.closest('.update-toast')?.classList.toggle('expanded');
+  }
+
+  // Un chrono Focus laissé EN COURS (paused:false) au moment du reload
+  // perdrait tout le temps écoulé depuis son dernier `startedAt` : le filet
+  // de sécurité au chargement du module (focus.js) le fige en pause SANS
+  // recalculer ce delta (pas fiable après un rechargement non maîtrisé —
+  // crash, fermeture d'onglet…), donc systématiquement sous-compté. Ici le
+  // rechargement est un clic délibéré : on peut donc le faire correctement,
+  // comme un vrai clic Pause (`pauseTimer` réplie le temps écoulé dans
+  // `accum` et persiste), juste avant de recharger — le filet de focus.js
+  // n'a alors plus rien à corriger.
+  reloadForUpdate() {
+    try {
+      const ts = JSON.parse(localStorage.getItem('focusTimer'));
+      if (ts && ts.paused === false) pauseTimer(ts);
+    } catch {}
+    location.reload();
   }
 
   _maybeShowNewDayToast() {

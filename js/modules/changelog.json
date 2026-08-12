@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2597",
+    "date": "2026-08-12",
+    "message": "fix(focus): un rechargement via le toast de mise à jour ne perd plus le temps du chrono en cours"
+  },
+  {
     "version": "0.4.2596",
     "date": "2026-08-12",
     "message": "feat(vue jour): les tâches complétées descendent en bas de chaque liste par défaut, toggle « En bas » pour désactiver"
