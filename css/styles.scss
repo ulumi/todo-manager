@@ -2866,34 +2866,27 @@ main {
 // ci-dessus, toujours visible via #modalSubtaskSection) — même langage visuel
 // que .add-item-placeholder (pastille colorée), en miniature, à la place de
 // l'ancien bouton pointillé pleine largeur.
-// Deux éléments séparés, jamais le même dimensionné pour les deux rôles :
-// - .subtask-add-mini-slot : replié à hauteur 0 tant que non révélé (ne
-//   réserve aucun espace), grandit au survol pour faire de la place à l'item.
-// - .subtask-add-mini : TOUJOURS 26×26, sa grosseur n'est JAMAIS modifiée
-//   (même pas via transform:scale, même uniforme) — seul un rotate() (angle
-//   non multiple de 90° pour rester visible malgré la symétrie du « + »)
-//   combiné à l'opacity le révèle, sans jamais toucher à sa taille.
-// Easing « expo-out » (rapide puis ralentit net, pas de rebond) pour un
-// rendu fluide et snappy plutôt qu'élastique. Délai de 1 s (« hover
-// intent ») avant de réagir à l'entrée COMME à la sortie du survol — un
-// passage rapide de la souris ne doit ni révéler ni refermer le bouton.
-// (1 s et non les 500 ms par défaut de la règle globale : demandé
-// explicitement pour ce bouton — c'est lui qui fait grandir l'item en se
-// révélant, donc le délai le protège d'un clignotement. La variante « aucune
-// sous-tâche encore », .todo-subtask-add-btn ci-dessous, ne fait grandir
-// personne : elle n'a donc pas de délai propre et suit ses voisins ▶/⋯.)
+// .subtask-add-mini-slot réserve TOUJOURS ses 26px (pas de collapse à
+// hauteur 0) : une 1re version le repliait tant que non survolé, ce qui
+// faisait grandir/rétrécir la carte à chaque survol — écart délibéré à la
+// règle globale « ne jamais réserver l'espace d'un élément invisible »,
+// même traitement que .todo-subtask-add-btn ci-dessous (case zéro
+// sous-tâche) : ici c'est l'absence de redimensionnement qui est demandée.
+// .subtask-add-mini lui-même reste TOUJOURS 26×26, sa grosseur n'est JAMAIS
+// modifiée (même pas via transform:scale, même uniforme) — seul un
+// rotate() (angle non multiple de 90° pour rester visible malgré la
+// symétrie du « + ») combiné à l'opacity le révèle.
+// Easing « expo-out » (rapide puis ralentit net, pas de rebond). Délai de
+// 1 s (« hover intent ») avant de réagir à l'entrée COMME à la sortie du
+// survol — un passage rapide de la souris ne doit ni révéler ni refermer
+// le bouton (1 s et non les 500 ms par défaut de la règle globale :
+// demandé explicitement pour ce bouton).
 .subtask-add-mini-slot {
   display: flex;
   align-items: center;
-  height: 0;
-  overflow: hidden;
+  height: 26px;
   column-span: all; // reste sur sa propre ligne même en deux colonnes
-  transition: height .32s cubic-bezier(.16, 1, .3, 1) 1s;
 }
-
-.todo-item:hover .subtask-add-mini-slot,
-.inbox-item:hover .subtask-add-mini-slot,
-.subtask-list:hover .subtask-add-mini-slot { height: 26px; }
 
 .subtask-add-mini {
   display: flex;
@@ -11776,8 +11769,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ces deux boutons — icônes ~16px dont l'écart de largeur en permanence
 // réservé est négligeable — ce badge est un texte large qui écrasait le
 // titre dans les cartes étroites (Backlog/Inbox à plusieurs colonnes) :
-// slot replié en LARGEUR tant que non survolé, même technique que
-// .subtask-add-mini-slot (hauteur) juste plus bas. :focus-within garde le
+// slot replié en LARGEUR tant que non survolé (contrairement à
+// .subtask-add-mini-slot juste plus bas, qui réserve désormais toujours sa
+// hauteur — ici le texte reste assez large pour justifier le collapse).
+// :focus-within garde le
 // slot ouvert pendant l'édition (l'input vit dedans, cf. editSubtaskEstimate
 // dans app.js) même si la souris quitte la ligne entre-temps — sinon le
 // champ disparaîtrait sous le curseur clavier encore actif.
