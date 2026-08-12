@@ -66,11 +66,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>
     </div>${child}`;
   }).join('');
-  // Au-delà de 2 sous-tâches, bascule en deux colonnes (CSS multi-colonnes
-  // fluide) — jamais au niveau sous-sous-tâche (peu d'items attendus, et la
-  // bascule ne concerne que la liste racine)
-  const twoCol = !parentStid && (subtasks || []).length > 2;
-  return `<div class="subtask-list${twoCol ? ' two-col' : ''}${parentStid ? ' subtask-list--nested' : ''}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
+  return `<div class="subtask-list${parentStid ? ' subtask-list--nested' : ''}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
     ${items}
     <span class="subtask-add-mini-slot">
       <button class="subtask-add-mini" onclick="event.stopPropagation();window.app.addSubtaskInline('${todoId}'${parentStid ? `,'${parentStid}'` : ''})" title="Ajouter une sous-tâche">＋</button>

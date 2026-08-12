@@ -2722,14 +2722,6 @@ main.plan-mode, main.search-mode {
   padding-bottom: 4px;
   border-radius: 6px;
 }
-.subtask-list.two-col {
-  display: block;
-  column-count: 2;
-  column-gap: 14px;
-}
-.subtask-list.two-col .subtask-item {
-  margin-bottom: 5px;
-}
 .subtask-list.subtask-list--nested {
   margin: 4px 0 4px 24px;
   break-inside: avoid;

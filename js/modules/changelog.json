@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2601",
+    "date": "2026-08-12",
+    "message": "fix(sous-tâches): la liste reste toujours sur une seule colonne (plus de bascule en 2 colonnes au-delà de 2 items)"
+  },
+  {
     "version": "0.4.2597",
     "date": "2026-08-12",
     "message": "fix(focus): un rechargement via le toast de mise à jour ne perd plus le temps du chrono en cours"

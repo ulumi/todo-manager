@@ -2703,22 +2703,9 @@ main {
   // ce bloc est régénéré à CHAQUE render() (pas seulement au 1er affichage) —
   // une animation ici rejouerait sans arrêt et ferait clignoter les items
 
-  // Au-delà de 2 sous-tâches : deux colonnes fluides (CSS multi-colonnes,
-  // se rééquilibrent seules selon le nombre d'items, pas de grille figée)
-  &.two-col {
-    display: block;
-    column-count: 2;
-    column-gap: 14px;
-
-    .subtask-item { margin-bottom: 5px; }
-  }
-
   // Sous-sous-tâche (un niveau de plus, jamais davantage — décision
   // produit) : même habillage que .subtask-list mais indentée sous la
-  // ligne de sa sous-tâche parente ; jamais deux colonnes ici (peu d'items
-  // attendus à ce niveau — la bascule ne s'applique qu'à la liste racine,
-  // cf. subtaskListHTML). break-inside:avoid au cas où la liste racine
-  // parente serait elle-même en deux colonnes.
+  // ligne de sa sous-tâche parente.
   &.subtask-list--nested {
     margin: 4px 0 4px 24px;
     break-inside: avoid;
@@ -4612,7 +4599,7 @@ body.marquee-active {
   position: relative;
   display: block;
   width: 100%;
-  break-inside: avoid; // .subtask-list.two-col est en column-count:2
+  break-inside: avoid;
 }
 
 .dictate-btn {
