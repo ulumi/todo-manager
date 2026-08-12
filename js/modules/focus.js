@@ -361,12 +361,13 @@ export function getCurrentFocusTask(app) {
 // lieu de repartir de zéro. Filet de sécurité : si la tâche quittée n'est
 // pas passée par saveFocusProgress() avant d'être remplacée, on la
 // sauvegarde ici avant d'écraser son état.
-// Pour une tâche RÉCURRENTE, ce temps ne doit reprendre que s'il vient de
-// l'occurrence d'AUJOURD'HUI (t.focusTimeSpentDate) — sinon un reste non
-// terminé hier resterait affecté à la nouvelle occurrence du jour. Pour une
-// sous-tâche, mêmes champs mais portés par `s` — la récurrence testée reste
-// toujours celle du parent de premier niveau (`ref.t`), une sous-tâche
-// n'ayant pas de récurrence propre.
+// Ce temps ne doit reprendre que s'il vient de l'occurrence d'AUJOURD'HUI
+// (t.focusTimeSpentDate) — vrai pour une récurrente (sinon un reste non
+// terminé hier resterait affecté à la nouvelle occurrence du jour) comme
+// pour une ponctuelle (sinon une tâche reportée à aujourd'hui après avoir
+// déjà eu du temps de focus un autre jour — t.date change, focusTimeSpentDate
+// non — reprendrait ce reste comme si le focus avait eu lieu aujourd'hui).
+// Pour une sous-tâche, mêmes champs mais portés par `s`.
 export function getTimerState(taskId) {
   let ts = null;
   try { ts = JSON.parse(localStorage.getItem('focusTimer')); } catch { /* corrompu */ }
@@ -374,8 +375,7 @@ export function getTimerState(taskId) {
     if (ts) _flushProgress(ts.taskId, ts);
     const ref = resolveFocusRef(taskId);
     const own = ref ? (ref.s || ref.t) : null;
-    const isRec = ref?.t?.recurrence && ref.t.recurrence !== 'none';
-    const sameDayProgress = !isRec || own?.focusTimeSpentDate === DS(today());
+    const sameDayProgress = own?.focusTimeSpentDate === DS(today());
     const resume = sameDayProgress ? Math.max(0, Math.round(own?.focusTimeSpent || 0)) : 0;
     ts = { taskId, startedAt: Date.now(), accum: resume, paused: false };
     localStorage.setItem('focusTimer', JSON.stringify(ts));

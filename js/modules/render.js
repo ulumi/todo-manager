@@ -174,9 +174,12 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const focusTimeBadge = (() => {
     if (!dayView) return '';
     const est = effectiveEstimate(todo) || null;
-    // Récurrente : un focusTimeSpent d'une occurrence passée ne doit pas
-    // s'afficher sur celle d'aujourd'hui — voir focusTimeSpentDate (focus.js)
-    const sameDayProgress = !isRec || todo.focusTimeSpentDate === ds;
+    // Un focusTimeSpent accumulé sur une date passée ne doit pas s'afficher
+    // sur l'occurrence affichée aujourd'hui — vrai pour une récurrente
+    // (occurrence différente) comme pour une ponctuelle reportée après avoir
+    // déjà eu du temps de focus (t.date change, focusTimeSpentDate non) —
+    // voir focusTimeSpentDate (focus.js)
+    const sameDayProgress = todo.focusTimeSpentDate === ds;
     const spentMin = done ? (todo.durationReal || null) : ((sameDayProgress && todo.focusTimeSpent) ? Math.round(todo.focusTimeSpent / 60) : null);
     if (!spentMin && !est) return '';
     const label = spentMin && est ? `${spentMin}/${est} min` : spentMin ? `${spentMin} min` : `~${est} min`;
