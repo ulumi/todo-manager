@@ -6746,6 +6746,12 @@ class TodoApp {
     this.render();
   }
 
+  toggleDayDoneBottom() {
+    const cur = localStorage.getItem('dayDoneBottom') !== 'false';
+    localStorage.setItem('dayDoneBottom', String(!cur));
+    this.render();
+  }
+
   toggleDayPeriodGroups() {
     const cur = localStorage.getItem('dayPeriodGroups') !== 'false';
     localStorage.setItem('dayPeriodGroups', String(!cur));

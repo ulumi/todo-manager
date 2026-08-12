@@ -357,6 +357,18 @@ export function renderDayView(todos) {
   // stats ne comptent pas) — une section/un groupe sans item visible disparaît
   const _visCount = items => isStatsMode ? items.filter(t => !isCompleted(t, navDate) && !isCancelled(t, navDate)).length : items.length;
 
+  // Complétées/annulées visibles (mode normal) → reléguées en bas de CHAQUE
+  // liste par défaut, les non-complétées remontant d'autant — tri stable
+  // (Array#sort), donc l'ordre relatif au sein de chaque groupe (manuel/heure/
+  // priorité/tag) est préservé, seul le statut fait/pas-fait prime dessus.
+  // Toggle utilisateur (`app.toggleDayDoneBottom()`), réglage local comme
+  // dayAutoPrio/dayPeriodGroups — sans effet visible en mode stats puisque
+  // ces items y sont de toute façon masqués en CSS. Appliqué en tout DERNIER
+  // (après tri manuel/heure/priorité/auto-prio) sur chaque liste finale.
+  const doneBottom = localStorage.getItem('dayDoneBottom') !== 'false';
+  const _isDone = t => isCompleted(t, navDate) || isCancelled(t, navDate);
+  const _sinkDone = items => doneBottom ? [...items].sort((a, b) => _isDone(a) - _isDone(b)) : items;
+
   // Un moment PONCTUEL vide (aucune tâche) garde normalement sa place —
   // placeholder .period-dropzone en pointillés, toujours là comme cible de
   // drop (voir _mkPeriodSection/mkHeureSection plus bas). Passé son heure de
@@ -398,13 +410,13 @@ export function renderDayView(todos) {
     const untimed = items.filter(t => !t.startTime);
     return [...timed, ...untimed];
   };
-  const sortedDailyMorning   = sortByOrder(_recSortApply(dailyMorning),   recOrd['daily-morning']   || []);
-  const sortedDailyAfternoon = sortByOrder(_recSortApply(dailyAfternoon), recOrd['daily-afternoon'] || []);
-  const sortedDailyEvening   = sortByOrder(_recSortApply(dailyEvening),   recOrd['daily-evening']   || []);
-  const sortedDailyNoPeriod  = sortByOrder(_recSortApply(dailyNoPeriod),  recOrd['daily']           || []);
-  const sortedWeekly  = sortByOrder(weeklyItems,  recOrd.weekly  || []);
-  const sortedMonthly = sortByOrder(monthlyItems, recOrd.monthly || []);
-  const sortedYearly  = sortByOrder(yearlyItems,  recOrd.yearly  || []);
+  const sortedDailyMorning   = _sinkDone(sortByOrder(_recSortApply(dailyMorning),   recOrd['daily-morning']   || []));
+  const sortedDailyAfternoon = _sinkDone(sortByOrder(_recSortApply(dailyAfternoon), recOrd['daily-afternoon'] || []));
+  const sortedDailyEvening   = _sinkDone(sortByOrder(_recSortApply(dailyEvening),   recOrd['daily-evening']   || []));
+  const sortedDailyNoPeriod  = _sinkDone(sortByOrder(_recSortApply(dailyNoPeriod),  recOrd['daily']           || []));
+  const sortedWeekly  = _sinkDone(sortByOrder(weeklyItems,  recOrd.weekly  || []));
+  const sortedMonthly = _sinkDone(sortByOrder(monthlyItems, recOrd.monthly || []));
+  const sortedYearly  = _sinkDone(sortByOrder(yearlyItems,  recOrd.yearly  || []));
 
   const punctualPeriodOrd = window.app?.punctualPeriodOrder?.[dateStr] || {};
   const punctualMorning   = punctualItems.filter(t => t.dayPeriod === 'morning');
@@ -496,7 +508,7 @@ export function renderDayView(todos) {
       if (_visCount(sortedDailyEvening) > 0)
         leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
     } else {
-      const allDaily = sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []);
+      const allDaily = _sinkDone(sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []));
       leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${allDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
     }
   }
@@ -550,6 +562,7 @@ export function renderDayView(todos) {
     const prioW = { high: 0, medium: 1, low: 2 };
     itemsForRender.sort((a, b) => (prioW[a.priority] ?? 3) - (prioW[b.priority] ?? 3));
   }
+  itemsForRender = _sinkDone(itemsForRender);
 
   const colStyle = `grid-template-columns:repeat(${colCount},1fr)`;
   let rightColItems = '';
@@ -668,7 +681,7 @@ export function renderDayView(todos) {
       const untimed = items.filter(t => !t.startTime);
       return [...timed, ...untimed];
     };
-    const _chronoSort = (items, ord) => sortByOrder(sortByTime(items), ord);
+    const _chronoSort = (items, ord) => _sinkDone(sortByOrder(sortByTime(items), ord));
     const hNone = _chronoSort(punctualItems.filter(t => !t.dayPeriod), dayOrd);
     const hMorn = _chronoSort(punctualItems.filter(t => t.dayPeriod === 'morning'),   punctualPeriodOrd['morning']   || []);
     const hAftn = _chronoSort(punctualItems.filter(t => t.dayPeriod === 'afternoon'), punctualPeriodOrd['afternoon'] || []);
@@ -792,6 +805,14 @@ export function renderDayView(todos) {
   // plus que dans la vue jour. Bascule directe (pas de sous-menu) : un clic
   // inverse Visibles/Masquées.
   const doneToggleTitle = isStatsMode ? 'Afficher les tâches complétées et annulées' : 'Masquer les tâches complétées et annulées';
+  // Bascule visible seulement quand les complétées sont montrées (mode
+  // normal) — sans effet en mode stats, où l'option n'aurait rien à montrer.
+  const doneBottomTitle = doneBottom ? 'Garder les tâches complétées à leur place' : 'Envoyer les tâches complétées en bas de la liste';
+  const doneBottomToggle = !isStatsMode
+    ? `<button class="day-ctrl-toggle day-ctrl-toggle--switch${!doneBottom ? ' active' : ''}" onclick="window.app.toggleDayDoneBottom()" title="${doneBottomTitle}">
+        <span class="day-ctrl-label">En bas</span>
+      </button>`
+    : '';
 
   const punctualTitle = isToday ? state.T.groupOnce : (state.lang === 'fr' ? 'Ponctuel' : 'One-time');
   const punctualHeader = `<div class="day-col-title-row">
@@ -817,6 +838,7 @@ export function renderDayView(todos) {
         <span class="day-ctrl-label">Complétés</span>
         ${isStatsMode && hiddenAll > 0 ? `<span class="day-ctrl-count">${hiddenAll}</span>` : ''}
       </button>
+      ${doneBottomToggle}
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}

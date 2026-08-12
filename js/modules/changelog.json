@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2596",
+    "date": "2026-08-12",
+    "message": "feat(vue jour): les tâches complétées descendent en bas de chaque liste par défaut, toggle « En bas » pour désactiver"
+  },
+  {
     "version": "0.4.2589",
     "date": "2026-08-12",
     "message": "fix(focus): le badge/chrono de temps focus d'une tâche ponctuelle reportée n'affiche/ne reprend plus le temps d'un jour précédent"
