@@ -2729,6 +2729,7 @@ main.plan-mode, main.search-mode {
 }
 
 .subtask-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2751,6 +2752,9 @@ main.plan-mode, main.search-mode {
   background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
   transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.subtask-item.drop-target-swap.drop-before {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
 }
 .subtask-item.drop-target-swap.drop-after {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary);
@@ -16386,8 +16390,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 /* ════════════════════════════════════════════════════════
-   DRAG — l'item déposé prend la place de la cible survolée
-   Confirmation visuelle persistante pendant tout le survol
+   DRAG — survoler le haut/bas d'un item insère avant/après (liseré
+   interne, même langage que l'existant), survoler le centre imbrique
+   comme sous-tâche de la cible (.drop-nest, look distinct). Confirmation
+   visuelle persistante pendant tout le survol.
    ════════════════════════════════════════════════════════ */
 .todo-item.drop-target-swap {
   border-color: var(--primary) !important;
@@ -16396,6 +16402,50 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
   transform: scale(1.015);
   transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.todo-item.drop-target-swap.drop-before {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 3px 0 0 var(--primary);
+}
+.todo-item.drop-target-swap.drop-after {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -3px 0 0 var(--primary);
+}
+
+.todo-item.drop-target-swap.drop-nest,
+.subtask-item.drop-target-swap.drop-nest,
+.inbox-item.drop-nest {
+  border-color: var(--warning) !important;
+  border-style: dashed !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+.todo-item.drop-target-swap.drop-nest,
+.inbox-item.drop-nest {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface)) !important;
+}
+
+.subtask-item.drop-target-swap.drop-nest {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface2)) !important;
+}
+
+.dnd-nest-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  transition: opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.dnd-nest-badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.drop-nest .dnd-nest-badge {
+  opacity: 1;
 }
 
 /*# sourceMappingURL=styles.css.map */

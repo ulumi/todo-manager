@@ -2721,6 +2721,7 @@ main {
 // Items à bordure propre (pas un style checklist compact) — chacun se
 // distingue visuellement, tout en restant à l'intérieur de la tâche parente
 .subtask-item {
+  position: relative; // ancre .dnd-nest-badge (zone « imbriquer »)
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2737,15 +2738,20 @@ main {
   // même sémantique de swap que .todo-item.drop-target-swap ci-dessous
   &.dragging { opacity: .35; }
 
-  // .drop-after distingue insertion avant/après la cible (moitié survolée,
-  // cf. initSubtaskDragDrop) via un liseré interne en haut ou en bas —
-  // seule différence visuelle, la taille de l'item ne bouge jamais.
+  // .drop-before/.drop-after distinguent insertion avant/après la cible
+  // (zone survolée, cf. initSubtaskDragDrop) via un liseré interne en haut
+  // ou en bas — seule différence visuelle, la taille de l'item ne bouge
+  // jamais. .drop-nest (zone centrale) a son propre look, voir plus bas.
   &.drop-target-swap {
     border-color: var(--primary);
     border-style: solid;
     background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
     transition: background .12s cubic-bezier(.25,.46,.45,.94), box-shadow .12s cubic-bezier(.25,.46,.45,.94), border-color .12s cubic-bezier(.25,.46,.45,.94);
+
+    &.drop-before {
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
+    }
 
     &.drop-after {
       box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary);
@@ -15488,8 +15494,10 @@ body.view-focus header { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════
-   DRAG — l'item déposé prend la place de la cible survolée
-   Confirmation visuelle persistante pendant tout le survol
+   DRAG — survoler le haut/bas d'un item insère avant/après (liseré
+   interne, même langage que l'existant), survoler le centre imbrique
+   comme sous-tâche de la cible (.drop-nest, look distinct). Confirmation
+   visuelle persistante pendant tout le survol.
    ════════════════════════════════════════════════════════ */
 
 .todo-item.drop-target-swap {
@@ -15499,4 +15507,56 @@ body.view-focus header { display: none; }
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
   transform: scale(1.015);
   transition: background .12s cubic-bezier(.25,.46,.45,.94), box-shadow .12s cubic-bezier(.25,.46,.45,.94), transform .12s cubic-bezier(.25,.46,.45,.94), border-color .12s cubic-bezier(.25,.46,.45,.94);
+
+  &.drop-before {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 3px 0 0 var(--primary);
+  }
+
+  &.drop-after {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -3px 0 0 var(--primary);
+  }
 }
+
+// Zone « imbriquer » (centre) : look distinct de l'échange avant/après —
+// bordure pointillée + teinte --warning (jamais --primary, pour ne pas se
+// confondre avec un simple réordonnancement) + icône fixe dans le DOM,
+// visibilité pilotée uniquement en CSS (jamais injectée/retirée pendant le
+// drag — répondre à `dragover` à 60fps en modifiant le DOM serait coûteux
+// et incohérent avec le reste de ces handlers, qui ne font que basculer
+// des classes).
+.todo-item.drop-target-swap.drop-nest,
+.subtask-item.drop-target-swap.drop-nest,
+.inbox-item.drop-nest {
+  border-color: var(--warning) !important;
+  border-style: dashed !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent);
+}
+
+// Fond teinté séparé de la règle ci-dessus : chaque item mélange --warning
+// à sa PROPRE couleur de fond de repos (.subtask-item est sur --surface2,
+// pas --surface comme .todo-item/.inbox-item) — sinon le mélange partirait
+// d'une base légèrement fausse pour les sous-tâches.
+.todo-item.drop-target-swap.drop-nest,
+.inbox-item.drop-nest {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface)) !important;
+}
+.subtask-item.drop-target-swap.drop-nest {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface2)) !important;
+}
+
+.dnd-nest-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  transition: opacity .12s cubic-bezier(.25, .46, .45, .94);
+
+  svg { width: 14px; height: 14px; }
+}
+
+.drop-nest .dnd-nest-badge { opacity: 1; }

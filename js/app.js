@@ -7,7 +7,8 @@ import { initLowPolyBg, setPalette as _setBgPalette, setBgColor as _setBgColor, 
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
   daysInMonth, firstDayOfMonth, esc,
-  toggleSubtaskCollapsed, expandSubtask, safeParseJSON
+  toggleSubtaskCollapsed, expandSubtask, safeParseJSON,
+  dnDZone, needsSplit, splitIntoPromotedChildren
 } from './modules/utils.js';
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
@@ -114,6 +115,40 @@ function _pruneDeletions(dels) {
     if (ts >= cutoff) pruned[id] = ts;
   }
   return pruned;
+}
+
+// Champs qu'une tâche perd en devenant une sous-tâche (nestTaskAsSubtask,
+// glisser-déposer en zone « imbriquer ») — une sous-tâche ne supporte que
+// id/title/completed/subtasks(+durée/focus). Union sur tout le lot glissé,
+// pas par item : un seul confirm() couvre tout le lot plutôt qu'une boîte
+// de dialogue par tâche (cohérent avec le tout-ou-rien de moveManyToDate/
+// _sendManyTo). La récurrence n'y figure pas : elle est bloquée en amont,
+// sans confirm possible, comme addParentTask.
+const _LOST_FIELD_CHECKS = [
+  [t => !!t.priority, 'priorité'],
+  [t => !!(t.categoryIds?.length || t.categoryId), 'catégorie'],
+  [t => !!(t.projectIds?.length || t.projectId), 'projet'],
+  [t => !!(t.intentionIds?.length || t.intentionId), 'intention'],
+  [t => !!t.date, 'date'],
+  [t => !!t.dayPeriod, 'moment de la journée'],
+  [t => !!(t.startTime || t.endTime), 'heure'],
+  [t => !!t.deadline, 'échéance'],
+  [t => !!t.counterEnabled, 'compteur'],
+  [t => !!t.groupId, 'groupe'],
+];
+function _lostFieldLabels(sources) {
+  return _LOST_FIELD_CHECKS.filter(([test]) => sources.some(test)).map(([, label]) => label);
+}
+function _fieldLossConfirmMsg(sources, target, labels) {
+  const list = labels.join(', ');
+  return sources.length === 1
+    ? `« ${sources[0].title} » perdra les champs suivants en devenant une sous-tâche de « ${target.title} » : ${list}. Continuer ?`
+    : `Ces ${sources.length} tâches perdront les champs suivants en devenant des sous-tâches de « ${target.title} » : ${list}. Continuer ?`;
+}
+function _splitConfirmMsg(splitSources, target) {
+  return splitSources.length === 1
+    ? `« ${splitSources[0].title} » a déjà 2 niveaux de sous-tâches : elle sera remplacée par ses sous-tâches directes (renommées « ${splitSources[0].title} - … »), intégrées à « ${target.title} ». Continuer ?`
+    : `${splitSources.length} tâches ont déjà 2 niveaux de sous-tâches : chacune sera remplacée par ses propres sous-tâches directes (renommées « Titre - … »), intégrées à « ${target.title} ». Continuer ?`;
 }
 
 // Application class
@@ -1890,8 +1925,8 @@ class TodoApp {
   // .day-columns) : appelée après CHAQUE render(), les nœuds sont donc
   // toujours neufs.
   initSubtaskDragDrop(root) {
-    let dragEl = null, dragList = null, activeTarget = null, insertAfter = false;
-    const clearTarget = () => { if (activeTarget) { activeTarget.classList.remove('drop-target-swap', 'drop-after'); activeTarget = null; } };
+    let dragEl = null, dragList = null, activeTarget = null, insertAfter = false, activeZone = 'before';
+    const clearTarget = () => { if (activeTarget) { activeTarget.classList.remove('drop-target-swap', 'drop-before', 'drop-after', 'drop-nest'); activeTarget = null; } };
     (root || document).querySelectorAll('.subtask-item[draggable]').forEach(item => {
       item.addEventListener('dragstart', e => {
         e.stopPropagation();
@@ -1910,9 +1945,16 @@ class TodoApp {
         e.preventDefault();
         e.stopPropagation();
         const r = item.getBoundingClientRect();
-        insertAfter = e.clientY > r.top + r.height / 2;
+        // Profondeur 2 (.subtask-list--nested) : jamais de zone imbriquer,
+        // un 3e niveau est interdit et aucun split ne peut le rescaper —
+        // dégrade en 50/50 avant/après, comme avant cette fonctionnalité.
+        const isNested = dragList.classList.contains('subtask-list--nested');
+        activeZone = isNested ? (e.clientY > r.top + r.height / 2 ? 'after' : 'before') : dnDZone(e.clientY, r);
+        insertAfter = activeZone === 'after';
         if (activeTarget !== item) { clearTarget(); activeTarget = item; item.classList.add('drop-target-swap'); }
-        item.classList.toggle('drop-after', insertAfter);
+        item.classList.toggle('drop-before', activeZone === 'before');
+        item.classList.toggle('drop-after', activeZone === 'after');
+        item.classList.toggle('drop-nest', activeZone === 'nest');
       });
       item.addEventListener('dragleave', e => {
         if (activeTarget === item && !item.contains(e.relatedTarget)) clearTarget();
@@ -1924,6 +1966,7 @@ class TodoApp {
         clearTarget();
         const todoId = dragEl.dataset.todoId;
         const parentStid = dragEl.dataset.parentStid || null;
+        if (activeZone === 'nest') { this.nestSubtaskUnderSibling(todoId, dragEl.dataset.stid, item.dataset.stid); return; }
         this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, parentStid, insertAfter);
       });
     });
@@ -1981,6 +2024,39 @@ class TodoApp {
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
+  }
+
+  // Glisser-déposer en zone « imbriquer » entre deux sous-tâches SŒURS
+  // (même .subtask-list, donc même profondeur — garanti par le garde-fou
+  // de initSubtaskDragDrop en amont) : `stid` devient sous-tâche de
+  // `targetStid`. Pas de multi-sélection (.subtask-item hors MS_SELECTABLE),
+  // pas de confirm perte-de-champs (une sous-tâche n'a que id/title/
+  // completed/subtasks, rien à perdre). needsSplit(1, source) : la cible
+  // est déjà elle-même profondeur 1, donc toute source qui a ses propres
+  // enfants dépasserait la limite — split (enfants promus, titre préfixé)
+  // au lieu d'imbriquer telle quelle.
+  nestSubtaskUnderSibling(todoId, stid, targetStid) {
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t?.subtasks || stid === targetStid) return false;
+    const fromIdx = t.subtasks.findIndex(x => x.id === stid);
+    const target = t.subtasks.find(x => x.id === targetStid);
+    if (fromIdx < 0 || !target) return false;
+    const source = t.subtasks[fromIdx];
+
+    const split = needsSplit(1, source);
+    if (split && !confirm(_splitConfirmMsg([source], target))) return false;
+
+    snapshot(state.todos);
+    const entries = split ? splitIntoPromotedChildren(source)
+      : [{ id: source.id, title: source.title, completed: !!source.completed,
+           ...(source.subtasks?.length ? { subtasks: source.subtasks.map(c => ({ ...c })) } : {}) }];
+    t.subtasks.splice(fromIdx, 1);
+    if (!target.subtasks) target.subtasks = [];
+    target.subtasks.push(...entries);
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+    return true;
   }
 
   // Menu contextuel (sous-tâche) « Sortir du groupe » : retire CETTE seule
@@ -2896,6 +2972,7 @@ class TodoApp {
     const list = document.getElementById(view === 'backlog' ? 'backlogList' : 'inboxList');
     if (!list) return;
     let dragEl = null, dragOrigId = null, origParent = null, origNext = null;
+    let nestTargetEl = null, nestTargetId = null; // zone « imbriquer » survolée (voir dragover plus bas)
     // Copie (Alt/Ctrl/Cmd maintenu) : un placeholder dédié se déplace dans
     // la liste pendant le survol à la place de l'item réel, qui lui reste
     // visuellement à sa position d'origine tant que le drop ne confirme pas
@@ -2914,6 +2991,14 @@ class TodoApp {
       });
       item.addEventListener('dragend', () => {
         item.classList.remove('dragging');
+        if (nestTargetId) {
+          const targetId = nestTargetId, ids = this._dropIds(dragOrigId);
+          nestTargetEl?.classList.remove('drop-nest');
+          nestTargetEl = null; nestTargetId = null;
+          dragEl = null; dragOrigId = null; origParent = null; origNext = null;
+          this.nestTaskAsSubtask(ids, targetId);
+          return;
+        }
         if (!dragOrigId) { ghost.remove(); return; }
         const isCopy = !!ghost.parentNode;
         if (isCopy) {
@@ -2945,6 +3030,21 @@ class TodoApp {
       e.preventDefault();
       const isCopy = this._isCopyDrag(e);
       e.dataTransfer.dropEffect = isCopy ? 'copy' : 'move';
+      // Zone « imbriquer » : survoler le centre d'un item (hors copie) gèle
+      // le repositionnement DOM habituel — la cible est simplement mise en
+      // surbrillance, la mutation réelle se décide à dragend (ci-dessus).
+      const hovered = e.target.closest('.inbox-item[data-id]');
+      const dropIds = this._dropIds(dragOrigId);
+      const eligible = !isCopy && hovered && hovered !== dragEl
+        && !hovered.classList.contains('inbox-copy-ghost') && !dropIds.includes(hovered.dataset.id);
+      const zone = eligible ? dnDZone(e.clientY, hovered.getBoundingClientRect()) : null;
+      if (zone === 'nest') {
+        if (nestTargetEl && nestTargetEl !== hovered) nestTargetEl.classList.remove('drop-nest');
+        nestTargetEl = hovered; nestTargetId = hovered.dataset.id;
+        hovered.classList.add('drop-nest');
+        return;
+      }
+      if (nestTargetEl) { nestTargetEl.classList.remove('drop-nest'); nestTargetEl = null; nestTargetId = null; }
       if (isCopy) {
         if (dragEl.parentNode !== origParent || dragEl.nextSibling !== origNext) {
           origParent.insertBefore(dragEl, origNext);
@@ -3959,6 +4059,46 @@ class TodoApp {
     this.render();
   }
 
+  // Glisser-déposer en zone « imbriquer » (vue jour/Backlog/Inbox) : les
+  // tâches `draggedIds` deviennent des sous-tâches de `target` — mêmes
+  // précédents que addParentTask/convertGroupToTask (confirm() natif,
+  // dépouillement de champs, _trackDeletion avant retrait de state.todos).
+  // Récurrente en source → bloqué sans confirm, aucun équivalent sous-tâche
+  // pour completedDates (comme addParentTask). Récurrente en CIBLE → permis,
+  // seule la source absorbée est gardée. `needsSplit(0, s)` : une source qui
+  // a déjà 2 niveaux de sous-tâches dépasserait la limite en s'imbriquant
+  // telle quelle sous une cible racine — ses enfants directs sont alors
+  // promus à la place (splitIntoPromotedChildren), titre préfixé.
+  nestTaskAsSubtask(draggedIds, targetId) {
+    const target = state.todos.find(x => x.id === targetId);
+    if (!target) return false;
+    const sources = draggedIds.filter(id => id !== targetId)
+      .map(id => state.todos.find(x => x.id === id)).filter(Boolean);
+    if (!sources.length) return false;
+    if (sources.some(s => s.recurrence && s.recurrence !== 'none')) return false;
+
+    const lost = _lostFieldLabels(sources);
+    if (lost.length && !confirm(_fieldLossConfirmMsg(sources, target, lost))) return false;
+    const splitSources = sources.filter(s => needsSplit(0, s));
+    if (splitSources.length && !confirm(_splitConfirmMsg(splitSources, target))) return false;
+
+    snapshot(state.todos);
+    const newSubtasks = sources.flatMap(s =>
+      needsSplit(0, s) ? splitIntoPromotedChildren(s)
+                       : [{ id: s.id, title: s.title, completed: !!s.completed,
+                            ...(s.subtasks?.length ? { subtasks: s.subtasks.map(c => ({ ...c })) } : {}) }]
+    );
+    sources.forEach(s => this._trackDeletion(s.id));
+    if (!target.subtasks) target.subtasks = [];
+    target.subtasks.push(...newSubtasks);
+    const removeIds = new Set(sources.map(s => s.id));
+    state.setTodos(state.todos.filter(t => !removeIds.has(t.id)));
+    target.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+    return true;
+  }
+
   moveTodoToDate(todoId, newDateStr, event) {
     this.moveManyToDate(this._dropIds(todoId), newDateStr, event);
   }
@@ -4153,6 +4293,7 @@ class TodoApp {
     if (!container) return;
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null, dropPeriod = null;
     let dropBefore = false; // drop sur la moitié haute d'un item → insérer avant
+    let dropZone = 'before'; // 'before' | 'after' | 'nest' — zone survolée sur l'item cible
     let draggedHeight = 0;
 
     // Gap placeholder (utilisé pour les zones section-level : séparateurs,
@@ -4161,7 +4302,10 @@ class TodoApp {
     placeholder.className = 'drop-gap';
     let activeDropSpacer = null, activeHeureLabel = null, activeItemTarget = null;
     const clearItemTarget = () => {
-      if (activeItemTarget) { activeItemTarget.classList.remove('drop-target-swap'); activeItemTarget = null; }
+      if (activeItemTarget) {
+        activeItemTarget.classList.remove('drop-target-swap', 'drop-before', 'drop-after', 'drop-nest');
+        activeItemTarget = null;
+      }
     };
     const clearDropSpacer = () => {
       if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
@@ -4220,7 +4364,7 @@ class TodoApp {
       removePlaceholder();
       clearItemTarget();
       container.classList.remove('dragging-active');
-      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false;
+      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false; dropZone = 'before';
     });
 
     container.addEventListener('dragover', e => {
@@ -4250,20 +4394,33 @@ class TodoApp {
       const isHeureDrop = _ds === 'chrono' || _ds === 'heure' || _periodGroups;
       const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
 
-      // Survol d'un item → il PREND SA PLACE (l'item survolé et les
-      // suivants décalent) ; highlight persistant sur toute la durée du
-      // survol, en confirmation visuelle claire — plus de gap ambigu.
+      // Survol du haut/bas d'un item → il PREND SA PLACE avant/après ;
+      // survol du centre → la tâche(s) glissée(s) devient sous-tâche de
+      // l'item survolé (voir nestTaskAsSubtask). Highlight persistant sur
+      // toute la durée du survol, en confirmation visuelle claire.
       const todoTarget = e.target.closest('.todo-item[draggable]');
       if (todoTarget && todoTarget !== draggedEl) {
         const sameGroup  = todoTarget.dataset.group === draggedGroup;
         const heureGroup = isHeureDrop && isPunctGroup(todoTarget.dataset.group) && isPunctGroup(draggedGroup);
         if (sameGroup || heureGroup) {
           clearDropSpacer();
-          if (activeItemTarget && activeItemTarget !== todoTarget) activeItemTarget.classList.remove('drop-target-swap');
+          if (activeItemTarget && activeItemTarget !== todoTarget) clearItemTarget();
           activeItemTarget = todoTarget;
           todoTarget.classList.add('drop-target-swap');
           dropTarget = todoTarget.dataset.id;
-          dropBefore = true;
+          // Imbriquer désactivé : cible dans la sélection draguée, drag de
+          // groupe entier, copy-drag (Alt/Ctrl/Cmd), ou une source récurrente
+          // (aucun équivalent sous-tâche pour completedDates) — dégrade en
+          // 50/50 avant/après dans tous ces cas (dnDZone, utils.js).
+          const dropIds = this._dropIds(draggedEl.dataset.id);
+          const anyRecurring = dropIds.some(id => { const s = state.todos.find(x => x.id === id); return s?.recurrence && s.recurrence !== 'none'; });
+          const isGroupDrag = draggedEl.classList.contains('task-group-header');
+          const allowNest = !anyRecurring && !isGroupDrag && !this._isCopyDrag(e) && !dropIds.includes(todoTarget.dataset.id);
+          dropZone = dnDZone(e.clientY, todoTarget.getBoundingClientRect(), { allowNest });
+          dropBefore = dropZone !== 'after';
+          todoTarget.classList.toggle('drop-before', dropZone === 'before');
+          todoTarget.classList.toggle('drop-after', dropZone === 'after');
+          todoTarget.classList.toggle('drop-nest', dropZone === 'nest');
           dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
           if (isHeureDrop) {
             // Normaliser groupe → moment : 'punctual-morning'/'daily-morning' → 'morning',
@@ -4446,6 +4603,7 @@ class TodoApp {
       }
 
       const originalIds = this._dropIds(draggedEl.dataset.id);
+      if (dropZone === 'nest' && dropTarget) { this.nestTaskAsSubtask(originalIds, dropTarget); return; }
       // Copie (Alt/Ctrl/Cmd maintenu) : les clones prennent la place cible,
       // les originaux restent intouchés (même dayPeriod/priorité/position).
       // Résolu paresseusement (une seule fois, snapshot() inclus) au premier

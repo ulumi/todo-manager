@@ -95,3 +95,44 @@ export function effectiveEstimate(node) {
   if (!node.subtasks?.length) return 0;
   return node.subtasks.reduce((s, c) => s + effectiveEstimate(c), 0) || 0;
 }
+
+// Zone de drop au survol d'une cible : 25% haut = avant, 25% bas = après,
+// 50% centre = imbriquer (devient sous-tâche de la cible). allowNest:false
+// dégrade en 50/50 avant/après — utilisé partout où imbriquer n'a
+// structurellement pas de sens (cible dans la sélection multiple draguée,
+// drag de groupe entier, source récurrente, liste de sous-tâches déjà
+// profondeur 2 où un 3e niveau est interdit).
+export function dnDZone(clientY, rect, { edge = 0.25, allowNest = true } = {}) {
+  if (!allowNest || rect.height <= 0) return clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+  const ratio = (clientY - rect.top) / rect.height;
+  if (ratio < edge) return 'before';
+  if (ratio > 1 - edge) return 'after';
+  return 'nest';
+}
+
+// Profondeur du sous-arbre propre à `node` (tâche racine ou sous-tâche) :
+// 0 = pas de sous-tâches, 1 = sous-tâches sans enfants, 2 = au moins une
+// sous-tâche a elle-même des enfants (max possible, le modèle interdit un
+// 3e niveau partout ailleurs dans l'app).
+export function ownDepth(node) {
+  if (!node.subtasks?.length) return 0;
+  return node.subtasks.some(c => c.subtasks?.length) ? 2 : 1;
+}
+
+// targetDepth : 0 = la cible est une tâche racine (vue jour/Backlog/Inbox),
+// 1 = la cible est déjà elle-même une sous-tâche (imbrication sous-tâche
+// ↔ sous-tâche). Vrai si imbriquer `source` sous une cible à cette
+// profondeur dépasserait la limite de 2 niveaux — dans ce cas il faut
+// « splitter » (splitIntoPromotedChildren) plutôt qu'imbriquer tel quel.
+export function needsSplit(targetDepth, source) {
+  return targetDepth + 1 + ownDepth(source) > 2;
+}
+
+// Remplace `source` par ses enfants DIRECTS promus au même niveau que
+// l'aurait été `source`, titre préfixé pour garder le contexte perdu
+// (« TitreSource - TitreEnfant »). Les petits-enfants (child.subtasks)
+// restent attachés tels quels sous chaque enfant promu — `source` lui-même
+// est jeté, copie superficielle donc aucun risque de référence partagée.
+export function splitIntoPromotedChildren(source) {
+  return (source.subtasks || []).map(child => ({ ...child, title: `${source.title} - ${child.title}` }));
+}

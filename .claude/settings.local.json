@@ -21,7 +21,9 @@
       "Bash(node --check js/app.js)",
       "Bash(node --check js/modules/events.js)",
       "Bash(node --check js/modules/storage.js)",
-      "Bash(grep -n \"^| \\\\`focus.js\\\\`\" CLAUDE.md)"
+      "Bash(grep -n \"^| \\\\`focus.js\\\\`\" CLAUDE.md)",
+      "Bash(grep -n \"select:TodoWrite\" /dev/null; echo done)",
+      "Read(//dev/**)"
     ]
   }
 }

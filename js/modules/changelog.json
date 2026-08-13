@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2623",
+    "date": "2026-08-13",
+    "message": "feat(glisser-déposer): 3 zones avant/après/imbriquer — déposer au centre transforme la tâche en sous-tâche de la cible"
+  },
+  {
     "version": "0.4.2613",
     "date": "2026-08-13",
     "message": "fix(sous-tâches): ▶ et × ne réservent plus d'espace vide à côté du titre tant qu'invisibles"
