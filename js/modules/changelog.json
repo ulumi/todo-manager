@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2630",
+    "date": "2026-08-13",
+    "message": "feat(glisser-déposer): sortir une sous-tâche du groupe par drag, déposer sur un en-tête = 1er du groupe/moment, flèches et pastille plus visibles"
+  },
+  {
     "version": "0.4.2623",
     "date": "2026-08-13",
     "message": "feat(glisser-déposer): 3 zones avant/après/imbriquer — déposer au centre transforme la tâche en sous-tâche de la cible"

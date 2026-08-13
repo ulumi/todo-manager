@@ -26,7 +26,16 @@ const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="cu
 // dans le DOM, visibilité pilotée uniquement par .drop-nest en CSS (jamais
 // injecté/retiré pendant le drag).
 const _nestIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>`;
-const _nestBadgeHTML = `<span class="dnd-nest-badge" aria-hidden="true">${_nestIconSVG}</span>`;
+const _nestBadgeHTML = `<span class="dnd-nest-badge" aria-hidden="true">${_nestIconSVG}<span>Sous-tâche</span></span>`;
+
+// Flèches d'insertion avant/après (glisser-déposer) — un simple liseré
+// interne était trop discret (retour utilisateur) : pastille + chevron
+// pleins, pinnés au bord haut/bas de la carte, toujours dans le DOM,
+// visibilité pilotée par .drop-before/.drop-after en CSS (jamais injectées/
+// retirées pendant le drag, même logique que le badge « imbriquer »).
+const _arrowUpSVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 7H5z"/></svg>`;
+const _arrowDownSVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 19l-7-7h14z"/></svg>`;
+const _edgeArrowsHTML = `<span class="dnd-edge-arrow dnd-edge-arrow--before" aria-hidden="true">${_arrowUpSVG}</span><span class="dnd-edge-arrow dnd-edge-arrow--after" aria-hidden="true">${_arrowDownSVG}</span>`;
 
 const _subtaskChevronSVG = (collapsed) => `<svg class="subtask-toggle-chevron${collapsed ? ' collapsed' : ''}" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
 
@@ -64,6 +73,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       : `<span class="subtask-estimate-slot"><span class="subtask-estimate-badge ghost" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}'${args})" title="Ajouter une durée estimée">+ durée</span></span>`;
     return `
     <div class="subtask-item${s.completed ? ' done' : ''}" data-todo-id="${todoId}" data-stid="${s.id}" data-ds="${ds}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''} draggable="true">
+      ${_edgeArrowsHTML}
       ${!parentStid ? _nestBadgeHTML : ''}
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
@@ -218,6 +228,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
+      ${group ? _edgeArrowsHTML : ''}
       ${group ? _nestBadgeHTML : ''}
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">

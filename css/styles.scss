@@ -2199,9 +2199,19 @@ main {
   gap: 8px;
   padding-top: 16px;
   cursor: grab;
+  border-radius: 6px;
+  transition: background .12s;
 
   &:first-child { padding-top: 0; }
   &:active { cursor: grabbing; }
+
+  // Cible de drop : une tâche déposée ici rejoint ce groupe en 1re position
+  // (cf. initDayDragDrop(), app.js — dropJoinGroup)
+  &.drop-target {
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+
+    .task-group-title { color: var(--primary); }
+  }
 }
 
 .task-group-title {
@@ -15494,11 +15504,46 @@ body.view-focus header { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════
-   DRAG — survoler le haut/bas d'un item insère avant/après (liseré
-   interne, même langage que l'existant), survoler le centre imbrique
-   comme sous-tâche de la cible (.drop-nest, look distinct). Confirmation
-   visuelle persistante pendant tout le survol.
+   DRAG — survoler le haut/bas d'un item insère avant/après (liseré interne
+   + pastille chevron, cf. .dnd-edge-arrow plus bas — un simple liseré
+   s'est révélé trop discret), survoler le centre imbrique comme sous-tâche
+   de la cible (.drop-nest, look distinct). Confirmation visuelle
+   persistante pendant tout le survol.
    ════════════════════════════════════════════════════════ */
+
+// Pastille + chevron plein, pinnés au bord haut/bas de la carte — toujours
+// dans le DOM (render.js, _edgeArrowsHTML), visibilité pilotée ici en CSS.
+// Partagée .todo-item/.subtask-item (pas .inbox-item : Backlog/Inbox montre
+// déjà l'avant/après par repositionnement DOM en direct, pas besoin d'une
+// pastille en plus).
+.dnd-edge-arrow {
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+  transition: opacity .1s ease;
+  z-index: 2;
+
+  svg { width: 12px; height: 12px; }
+}
+
+.dnd-edge-arrow--before { top: 0; }
+.dnd-edge-arrow--after { bottom: 0; }
+
+.drop-target-swap.drop-before .dnd-edge-arrow--before,
+.drop-target-swap.drop-after .dnd-edge-arrow--after {
+  opacity: 1;
+}
 
 .todo-item.drop-target-swap {
   border-color: var(--primary) !important;
@@ -15544,19 +15589,32 @@ body.view-focus header { display: none; }
   background: color-mix(in srgb, var(--warning) 12%, var(--surface2)) !important;
 }
 
+// Pastille pleine centrée (pas juste une teinte de fond) : le dashed border
+// + fond teinté ci-dessus s'est révélé pas assez distinct au premier coup
+// d'œil du simple survol avant/après — un badge opaque avec libellé texte
+// lève toute ambiguïté.
 .dnd-nest-badge {
   position: absolute;
-  inset: 0;
-  display: flex;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(.9);
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
   pointer-events: none;
   opacity: 0;
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 18%, transparent);
-  transition: opacity .12s cubic-bezier(.25, .46, .45, .94);
+  background: var(--warning);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .3);
+  transition: opacity .12s cubic-bezier(.25, .46, .45, .94), transform .12s cubic-bezier(.25, .46, .45, .94);
+  z-index: 2;
 
-  svg { width: 14px; height: 14px; }
+  svg { width: 14px; height: 14px; flex-shrink: 0; }
 }
 
-.drop-nest .dnd-nest-badge { opacity: 1; }
+.drop-nest .dnd-nest-badge { opacity: 1; transform: translate(-50%, -50%) scale(1); }

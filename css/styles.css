@@ -2226,12 +2226,20 @@ main.plan-mode, main.search-mode {
   gap: 8px;
   padding-top: 16px;
   cursor: grab;
+  border-radius: 6px;
+  transition: background 0.12s;
 }
 .task-group-header:first-child {
   padding-top: 0;
 }
 .task-group-header:active {
   cursor: grabbing;
+}
+.task-group-header.drop-target {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.task-group-header.drop-target .task-group-title {
+  color: var(--primary);
 }
 
 .task-group-title {
@@ -16390,11 +16398,48 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 /* ════════════════════════════════════════════════════════
-   DRAG — survoler le haut/bas d'un item insère avant/après (liseré
-   interne, même langage que l'existant), survoler le centre imbrique
-   comme sous-tâche de la cible (.drop-nest, look distinct). Confirmation
-   visuelle persistante pendant tout le survol.
+   DRAG — survoler le haut/bas d'un item insère avant/après (liseré interne
+   + pastille chevron, cf. .dnd-edge-arrow plus bas — un simple liseré
+   s'est révélé trop discret), survoler le centre imbrique comme sous-tâche
+   de la cible (.drop-nest, look distinct). Confirmation visuelle
+   persistante pendant tout le survol.
    ════════════════════════════════════════════════════════ */
+.dnd-edge-arrow {
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.1s ease;
+  z-index: 2;
+}
+.dnd-edge-arrow svg {
+  width: 12px;
+  height: 12px;
+}
+
+.dnd-edge-arrow--before {
+  top: 0;
+}
+
+.dnd-edge-arrow--after {
+  bottom: 0;
+}
+
+.drop-target-swap.drop-before .dnd-edge-arrow--before,
+.drop-target-swap.drop-after .dnd-edge-arrow--after {
+  opacity: 1;
+}
+
 .todo-item.drop-target-swap {
   border-color: var(--primary) !important;
   border-style: solid !important;
@@ -16429,23 +16474,34 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .dnd-nest-badge {
   position: absolute;
-  inset: 0;
-  display: flex;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
   pointer-events: none;
   opacity: 0;
-  color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 18%, transparent);
-  transition: opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: var(--warning);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  transition: opacity 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 2;
 }
 .dnd-nest-badge svg {
   width: 14px;
   height: 14px;
+  flex-shrink: 0;
 }
 
 .drop-nest .dnd-nest-badge {
   opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
 }
 
 /*# sourceMappingURL=styles.css.map */

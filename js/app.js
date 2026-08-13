@@ -1992,6 +1992,97 @@ class TodoApp {
         this._reorderSubtask(todoId, dragEl.dataset.stid, null, parentStid);
       });
     });
+
+    // Sortir une sous-tâche du groupe par glisser-déposer : la lâcher
+    // n'importe où dans .day-columns HORS de sa propre .subtask-list (dragEl
+    // toujours actif, mais item.closest('.subtask-list') !== dragList dans
+    // tous les handlers ci-dessus, qui `return` donc sans stopPropagation)
+    // la fait redevenir une tâche indépendante (app.extractSubtask()),
+    // positionnée là où elle a été lâchée — même langage que le dépôt d'une
+    // tâche normale (avant/après un item voisin, en tête d'un moment/groupe
+    // si lâchée sur son en-tête). Jamais de ré-imbrication sous un AUTRE
+    // parent ici (hors scope de ce geste) : le survol d'un .todo-item
+    // n'insère qu'avant/après, ne nest jamais. Écouteurs délégués sur
+    // .day-columns (pas par item) — celui-ci est entièrement régénéré à
+    // chaque render() donc pas de risque de doublon, mais un appel scopé
+    // (root ciblé, sans passer par un render() complet) laisse le même nœud
+    // en place : data-subtask-extract-bound évite d'empiler des écouteurs.
+    const dayColumns = document.querySelector('.day-columns');
+    if (dayColumns && !dayColumns.dataset.subtaskExtractBound) {
+      dayColumns.dataset.subtaskExtractBound = '1';
+      let extractTarget = null;
+      const clearExtractTarget = () => {
+        if (extractTarget?.el) extractTarget.el.classList.remove('drop-target-swap', 'drop-before', 'drop-after', 'drop-target');
+        extractTarget = null;
+      };
+      dayColumns.addEventListener('dragover', e => {
+        if (!dragEl || e.target.closest('.subtask-list') === dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        clearExtractTarget();
+        const todoTarget = e.target.closest('.todo-item[draggable]');
+        const groupHeaderTarget = !todoTarget && e.target.closest('.task-group-header');
+        const heureLabel = !todoTarget && !groupHeaderTarget && e.target.closest('.day-heure-label[data-period]');
+        const heureSection = !heureLabel && !todoTarget && !groupHeaderTarget && e.target.closest('.day-heure-section[data-period]');
+        const heureTarget = heureLabel || heureSection;
+        if (todoTarget) {
+          const r = todoTarget.getBoundingClientRect();
+          const before = e.clientY < r.top + r.height / 2;
+          todoTarget.classList.add('drop-target-swap');
+          todoTarget.classList.toggle('drop-before', before);
+          todoTarget.classList.toggle('drop-after', !before);
+          extractTarget = { kind: 'sibling', el: todoTarget, id: todoTarget.dataset.id, before, group: todoTarget.dataset.group };
+        } else if (groupHeaderTarget) {
+          const firstMember = state.todos.find(x => x.id === groupHeaderTarget.dataset.id);
+          if (firstMember?.groupId) {
+            groupHeaderTarget.classList.add('drop-target');
+            const grp = groupHeaderTarget.dataset.group;
+            const m = grp.match(/-(morning|afternoon|evening)$/);
+            extractTarget = { kind: 'group', el: groupHeaderTarget, groupId: firstMember.groupId, groupTitle: firstMember.groupTitle || '', dayPeriodValue: m ? m[1] : '', sectionGroup: grp, firstMemberId: firstMember.id };
+          }
+        } else if (heureTarget) {
+          const labelEl = heureLabel || heureTarget.querySelector('.day-heure-label') || heureTarget;
+          labelEl.classList.add('drop-target');
+          extractTarget = { kind: 'period', el: labelEl, dayPeriodValue: heureTarget.dataset.period };
+        }
+      });
+      dayColumns.addEventListener('dragleave', e => {
+        if (!dayColumns.contains(e.relatedTarget)) clearExtractTarget();
+      });
+      dayColumns.addEventListener('drop', e => {
+        if (!dragEl || e.target.closest('.subtask-list') === dragList) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const todoId = dragEl.dataset.todoId;
+        const stid = dragEl.dataset.stid;
+        const parentStid = dragEl.dataset.parentStid || null;
+        const target = extractTarget;
+        clearExtractTarget();
+        const extracted = this.extractSubtask(todoId, stid, parentStid);
+        if (!extracted || !target) return;
+        // Cible ponctuelle seulement : une tâche extraite est toujours
+        // non-récurrente, la positionner dans un groupe récurrent (daily/
+        // weekly/…) ne voudrait rien dire (dropReorder() y filtre par
+        // t.recurrence === recType, l'extraite n'y matcherait jamais).
+        const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
+        if (target.kind === 'sibling' && isPunctGroup(target.group)) {
+          const targetTask = state.todos.find(x => x.id === target.id);
+          if (targetTask?.dayPeriod) extracted.dayPeriod = targetTask.dayPeriod; else delete extracted.dayPeriod;
+          saveTodos(state.todos);
+          this.dropReorder([extracted.id], target.group, target.id, target.before);
+        } else if (target.kind === 'group') {
+          extracted.groupId = target.groupId;
+          if (target.groupTitle) extracted.groupTitle = target.groupTitle;
+          if (target.dayPeriodValue === '') delete extracted.dayPeriod; else extracted.dayPeriod = target.dayPeriodValue;
+          saveTodos(state.todos);
+          this.dropReorder([extracted.id], target.sectionGroup, target.firstMemberId, true);
+        } else if (target.kind === 'period') {
+          if (target.dayPeriodValue === '') delete extracted.dayPeriod; else extracted.dayPeriod = target.dayPeriodValue;
+          saveTodos(state.todos);
+          this.render();
+        }
+      });
+    }
   }
 
   // Sous-tâche déposée sur une autre : elle s'insère avant ou après la
@@ -2113,6 +2204,7 @@ class TodoApp {
     state.todos.splice(idx + 1, 0, extracted);
     saveTodos(state.todos);
     this.render();
+    return extracted;
   }
 
   addSubtaskInline(todoId, parentStid) {
@@ -4294,13 +4386,14 @@ class TodoApp {
     let draggedEl = null, draggedGroup = null, dropTarget = null, dropPriority = null, dropPeriod = null;
     let dropBefore = false; // drop sur la moitié haute d'un item → insérer avant
     let dropZone = 'before'; // 'before' | 'after' | 'nest' — zone survolée sur l'item cible
+    let dropJoinGroup = null; // { groupId, groupTitle, dayPeriodValue, sectionGroup, firstMemberId } quand un .task-group-header est survolé
     let draggedHeight = 0;
 
     // Gap placeholder (utilisé pour les zones section-level : séparateurs,
     // libellés de moment/groupe, fin de colonne — pas pour l'échange item↔item)
     const placeholder = document.createElement('div');
     placeholder.className = 'drop-gap';
-    let activeDropSpacer = null, activeHeureLabel = null, activeItemTarget = null;
+    let activeDropSpacer = null, activeHeureLabel = null, activeItemTarget = null, activeGroupHeader = null;
     const clearItemTarget = () => {
       if (activeItemTarget) {
         activeItemTarget.classList.remove('drop-target-swap', 'drop-before', 'drop-after', 'drop-nest');
@@ -4310,6 +4403,7 @@ class TodoApp {
     const clearDropSpacer = () => {
       if (activeDropSpacer) { activeDropSpacer.classList.remove('drop-target'); activeDropSpacer = null; }
       if (activeHeureLabel) { activeHeureLabel.classList.remove('drop-target'); activeHeureLabel = null; }
+      if (activeGroupHeader) { activeGroupHeader.classList.remove('drop-target'); activeGroupHeader = null; }
     };
     // Drag EXTERNE (une tâche non accomplie du Bilan/bandeau .review-item,
     // via planDragStart) : son dragstart ne bubble jamais jusqu'ici (le
@@ -4364,7 +4458,7 @@ class TodoApp {
       removePlaceholder();
       clearItemTarget();
       container.classList.remove('dragging-active');
-      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false; dropZone = 'before';
+      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false; dropZone = 'before'; dropJoinGroup = null;
     });
 
     container.addEventListener('dragover', e => {
@@ -4388,6 +4482,7 @@ class TodoApp {
       // curseur, ex. insertion avant le 1er item) → garder la cible actuelle,
       // sinon la branche « bas de colonne » renvoie le drop en fin de liste
       if (placeholder.contains(e.target)) return;
+      dropJoinGroup = null; // reposé par la branche .task-group-header ci-dessous si elle matche cette fois-ci
 
       const _ds = localStorage.getItem('daySort');
       const _periodGroups = localStorage.getItem('dayPeriodGroups') !== 'false';
@@ -4435,6 +4530,32 @@ class TodoApp {
         }
       }
       clearItemTarget();
+
+      // Hover sur l'en-tête d'un groupe (« commissions », groupId) → la
+      // tâche glissée rejoint ce groupe et en devient le 1er membre — geste
+      // symétrique du dépôt sur un en-tête de moment (toujours en tête de
+      // liste, jamais en fin). Un seul geste possible ici (rejoindre), pas
+      // besoin des 3 zones avant/après/imbriquer.
+      const groupHeaderTarget = e.target.closest('.task-group-header');
+      if (groupHeaderTarget && groupHeaderTarget !== draggedEl) {
+        const firstMember = state.todos.find(x => x.id === groupHeaderTarget.dataset.id);
+        const dropIds = this._dropIds(draggedEl.dataset.id);
+        if (firstMember?.groupId && !dropIds.includes(firstMember.id)) {
+          clearDropSpacer();
+          activeGroupHeader = groupHeaderTarget;
+          groupHeaderTarget.classList.add('drop-target');
+          const grp = groupHeaderTarget.dataset.group;
+          const m = grp.match(/-(morning|afternoon|evening)$/);
+          dropJoinGroup = {
+            groupId: firstMember.groupId,
+            groupTitle: firstMember.groupTitle || '',
+            dayPeriodValue: m ? m[1] : '',
+            sectionGroup: grp,
+            firstMemberId: firstMember.id,
+          };
+          return;
+        }
+      }
 
       // Hover on a spacer → drop right after it (= bottom of its section)
       const spacerTarget = e.target.closest('.day-spacer[draggable]');
@@ -4500,7 +4621,9 @@ class TodoApp {
         return;
       }
 
-      // Hover on a heure period label or empty section → change moment
+      // Hover on a heure period label or empty section → change moment ET
+      // devient le 1er item de ce moment (déposer sur l'en-tête = en tête de
+      // liste, pas en fin — demandé explicitement par Hugues, cf. CLAUDE.md).
       if (isHeureDrop && !e.target.closest('.todo-item')) {
         const heureLabel   = e.target.closest('.day-heure-label[data-period]');
         const heureSection = !heureLabel && e.target.closest('.day-heure-section[data-period]');
@@ -4510,14 +4633,14 @@ class TodoApp {
           activeHeureLabel = heureLabel || heureTarget.querySelector('.day-heure-label');
           if (activeHeureLabel) activeHeureLabel.classList.add('drop-target');
           dropPeriod = heureTarget.dataset.period;
-          dropBefore = false;
+          dropBefore = true;
           const section  = heureTarget.closest('.day-heure-section') || heureTarget;
           const todoList = section?.querySelector('.todo-list[data-group]');
           if (todoList) {
-            const lastItem = [...todoList.querySelectorAll('.todo-item[draggable]')].filter(el => el !== draggedEl).pop();
-            if (lastItem) {
-              dropTarget = lastItem.dataset.id;
-              lastItem.parentNode.insertBefore(placeholder, lastItem.nextSibling);
+            const firstItem = [...todoList.querySelectorAll('.todo-item[draggable]')].find(el => el !== draggedEl);
+            if (firstItem) {
+              dropTarget = firstItem.dataset.id;
+              firstItem.parentNode.insertBefore(placeholder, firstItem);
             } else {
               todoList.appendChild(placeholder);
               dropTarget = '__heure_empty__';
@@ -4603,6 +4726,21 @@ class TodoApp {
       }
 
       const originalIds = this._dropIds(draggedEl.dataset.id);
+      if (dropJoinGroup) {
+        const { groupId, groupTitle, dayPeriodValue, sectionGroup, firstMemberId } = dropJoinGroup;
+        const targets = state.todos.filter(t => originalIds.includes(t.id));
+        if (targets.length) {
+          snapshot(state.todos);
+          targets.forEach(t => {
+            t.groupId = groupId;
+            if (groupTitle) t.groupTitle = groupTitle;
+            if (dayPeriodValue === '') delete t.dayPeriod; else t.dayPeriod = dayPeriodValue;
+          });
+          saveTodos(state.todos);
+          this.dropReorder(originalIds, sectionGroup, firstMemberId, true);
+        }
+        return;
+      }
       if (dropZone === 'nest' && dropTarget) { this.nestTaskAsSubtask(originalIds, dropTarget); return; }
       // Copie (Alt/Ctrl/Cmd maintenu) : les clones prennent la place cible,
       // les originaux restent intouchés (même dayPeriod/priorité/position).
