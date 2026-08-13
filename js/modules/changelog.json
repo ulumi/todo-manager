@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2637",
+    "date": "2026-08-13",
+    "message": "fix(vue jour): boutons + / ▶ / ⋯ en overlay flottant, plus d'espace réservé sous le titre ; correction du badge « sous-tâche » qui s'allumait en double pendant un drag"
+  },
+  {
     "version": "0.4.2630",
     "date": "2026-08-13",
     "message": "feat(glisser-déposer): sortir une sous-tâche du groupe par drag, déposer sur un en-tête = 1er du groupe/moment, flèches et pastille plus visibles"

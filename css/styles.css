@@ -2407,8 +2407,9 @@ main.plan-mode, main.search-mode {
 .todo-item:hover .todo-reorder-btn {
   opacity: 0.5;
 }
-.todo-item:hover .todo-menu-btn, .todo-item:hover .todo-focus-btn, .todo-item:hover .todo-subtask-add-btn {
+.todo-item:hover > .todo-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 .todo-item.done .todo-text {
   text-decoration: line-through;
@@ -2427,12 +2428,19 @@ main.plan-mode, main.search-mode {
 }
 
 .todo-item > .todo-actions {
+  position: absolute;
+  top: 6px;
+  right: 10px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 2px;
-  flex-shrink: 0;
-  flex-basis: 100%;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .todo-meta {
@@ -2457,8 +2465,8 @@ main.plan-mode, main.search-mode {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  opacity: 1;
+  transition: background 0.15s, color 0.15s;
 }
 .todo-menu-btn:hover {
   background: var(--surface2);
@@ -2477,8 +2485,8 @@ main.plan-mode, main.search-mode {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  opacity: 1;
+  transition: background 0.15s, color 0.15s;
 }
 .todo-focus-btn svg {
   width: 14px;
@@ -2943,8 +2951,8 @@ main.plan-mode, main.search-mode {
   align-items: center;
   justify-content: center;
   padding: 0;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  opacity: 1;
+  transition: background 0.15s, color 0.15s;
 }
 .todo-subtask-add-btn svg {
   width: 14px;
@@ -2959,7 +2967,6 @@ main.plan-mode, main.search-mode {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  opacity: 1;
 }
 .inbox-item-actions .todo-subtask-add-btn svg {
   width: 13px;
@@ -13729,8 +13736,8 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex !important;
   opacity: 1 !important;
   transform: none !important;
+  pointer-events: auto !important;
   flex-shrink: 0;
-  flex-basis: auto;
   gap: 4px;
 }
 
@@ -16435,8 +16442,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   bottom: 0;
 }
 
-.drop-target-swap.drop-before .dnd-edge-arrow--before,
-.drop-target-swap.drop-after .dnd-edge-arrow--after {
+.drop-target-swap.drop-before > .dnd-edge-arrow--before,
+.drop-target-swap.drop-after > .dnd-edge-arrow--after {
   opacity: 1;
 }
 
@@ -16499,7 +16506,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   flex-shrink: 0;
 }
 
-.drop-nest .dnd-nest-badge {
+.drop-nest > .dnd-nest-badge {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }

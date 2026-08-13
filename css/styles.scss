@@ -2375,7 +2375,7 @@ main {
     border-color: var(--primary);
 
     .todo-reorder-btn { opacity: 0.5; }
-    .todo-menu-btn, .todo-focus-btn, .todo-subtask-add-btn { opacity: 1; }
+    > .todo-actions { opacity: 1; pointer-events: auto; }
   }
 
   &.done {
@@ -2383,16 +2383,11 @@ main {
   }
 }
 
-// flex-basis: min-content (et non le 0% de `flex: 1`) : la taille hypothétique
-// du bloc titre+badges vaut au moins son mot le plus long, donc dans une
-// colonne trop étroite c'est la rangée d'actions qui passe à la ligne — le
-// titre n'est JAMAIS écrasé sous la largeur d'un mot (il se coupait sinon
-// lettre par lettre, « Planchers » → « Plancher » + « s »). Dans une carte
-// normale, rien ne change : la taille hypothétique reste petite, aucun retour
-// à la ligne, et flex-grow remplit la rangée comme avant. min-width: 0 reste
-// le dernier filet pour un mot plus large que la carte entière.
-// Si un navigateur ne comprend pas `min-content` ici, la déclaration tombe et
-// on retrouve exactement le comportement d'avant (flex-basis: 0%).
+// Le titre n'a plus jamais à partager sa ligne avec .todo-actions (overlay,
+// voir plus bas) — flex-basis: min-content reste néanmoins utile pour un mot
+// plus large que la carte : sans lui la largeur hypothétique retomberait à 0
+// et le mot se couperait lettre par lettre (« Planchers » → « Plancher » +
+// « s »). min-width: 0 reste le dernier filet.
 .todo-content {
   flex: 1;
   flex-basis: min-content;
@@ -2403,24 +2398,37 @@ main {
   gap: 4px 10px;
 }
 
-// Rangée d'actions de l'item (+ sous-tâche, ▶ Focus, ⋯ menu) — groupée dans
-// un seul conteneur pour ne coûter qu'UN gap au titre au lieu de trois, et
-// TOUJOURS passer sur sa propre ligne sous le titre (flex-basis: 100% —
-// avec .todo-content en flex-basis: min-content ci-dessus, il n'y a jamais
-// assez de place restante sur la ligne du titre pour cette largeur pleine,
-// donc le flex-wrap du parent la fait redescendre systématiquement, jamais
-// seulement quand la colonne est trop étroite). Ne réserve jamais d'espace
-// à côté du titre, même vide : justify-content aligne les boutons à droite
-// sur leur propre ligne. Le Planifier réutilise `.todo-item`/`.todo-actions`
-// avec un tout autre layout compact sur une ligne — voir
-// `.plan-overdue-section .todo-actions` plus bas, qui remet flex-basis:auto.
+// Rangée d'actions de l'item (+ sous-tâche, ▶ Focus, ⋯ menu) — overlay en
+// position:absolute au coin haut-droit de la carte, même recette que
+// .inbox-item-actions (Backlog/Inbox) plus bas dans ce fichier : entièrement
+// hors du flux flex, donc ne réserve jamais d'espace ET ne pousse/ne squeeze
+// jamais le titre, quel que soit l'état de survol — contrairement à la
+// version précédente (flex-basis: 100%, toujours reléguée sous le titre)
+// qui réservait en permanence la hauteur d'une ligne entière même invisible.
+// Petit fond + ombre pour rester lisible par-dessus le texte qu'elle peut
+// recouvrir (mêmes conséquences acceptées que .inbox-item-actions). Un seul
+// fondu sur le CONTENEUR gère la visibilité des 3 boutons d'un coup — eux-
+// mêmes sont à opacity:1 en permanence (cf. .todo-menu-btn/.todo-focus-btn/
+// .todo-subtask-add-btn plus bas), un enfant à opacity:1 sous un parent à
+// opacity:0 restant invisible de toute façon. Délai hover-intent 500ms dans
+// la transition de base (jamais écrasé dans :hover), symétrique entrée/
+// sortie. Le Planifier réutilise `.todo-item`/`.todo-actions` avec un tout
+// autre layout compact, toujours visible : voir `.plan-overdue-section
+// .todo-actions` plus bas qui repasse en position statique/opacité fixe.
 .todo-item > .todo-actions {
+  position: absolute;
+  top: 6px;
+  right: 10px;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: 2px;
-  flex-shrink: 0;
-  flex-basis: 100%;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s;
 }
 
 .todo-meta {
@@ -2430,6 +2438,10 @@ main {
   align-items: center;
 }
 
+// opacity:1 fixe (pas de reveal individuel) : c'est désormais le conteneur
+// .todo-item > .todo-actions (overlay) qui gère la visibilité au survol —
+// un enfant à opacity:1 sous un parent à opacity:0 reste invisible de toute
+// façon, inutile de dupliquer le fondu sur chaque bouton.
 .todo-menu-btn {
   flex-shrink: 0;
   width: 28px;
@@ -2445,8 +2457,8 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity .15s, background .15s, color .15s;
+  opacity: 1;
+  transition: background .15s, color .15s;
 
   &:hover {
     background: var(--surface2);
@@ -2454,8 +2466,8 @@ main {
   }
 }
 
-// Focus direct sur la tâche, même icône que .subtask-focus-btn — révélé au
-// survol comme .todo-menu-btn
+// Focus direct sur la tâche, même icône que .subtask-focus-btn — visibilité
+// gérée par .todo-item > .todo-actions (overlay), voir .todo-menu-btn.
 .todo-focus-btn {
   flex-shrink: 0;
   width: 28px;
@@ -2468,8 +2480,8 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
-  transition: opacity .15s, background .15s, color .15s;
+  opacity: 1;
+  transition: background .15s, color .15s;
 
   svg { width: 14px; height: 14px; }
 
@@ -2956,15 +2968,9 @@ main {
 
 // Ajout d'une PREMIÈRE sous-tâche : une tâche sans checklist n'a pas de
 // bouton « + » dans une liste (il n'y a pas de liste) — il prend donc place
-// dans la rangée d'actions de l'item, en ligne à droite du titre, aux côtés
-// de ▶ et ⋯ dont il reprend exactement l'habillage (ghost 28px révélé au
-// survol de l'item). En flux comme eux, jamais en overlay : la carte ne
-// change pas de taille au survol, et le titre garde la même largeur d'une
-// tâche à l'autre. Assume donc de réserver ses 28px en permanence — écart
-// délibéré à la règle globale « ne jamais réserver l'espace d'un élément
-// invisible », qui vise les révélations qui font grandir le conteneur : ici
-// c'est précisément l'inverse qui est demandé (aucun redimensionnement), et
-// c'est déjà le fonctionnement de .todo-focus-btn/.todo-menu-btn juste à côté.
+// dans l'overlay .todo-actions (coin haut-droit de la carte), aux côtés de
+// ▶ et ⋯ dont il reprend exactement l'habillage. opacity:1 fixe : c'est le
+// conteneur qui gère la visibilité au survol, voir .todo-menu-btn plus haut.
 .todo-subtask-add-btn {
   flex-shrink: 0;
   width: 28px;
@@ -2978,8 +2984,8 @@ main {
   align-items: center;
   justify-content: center;
   padding: 0;
-  opacity: 0;
-  transition: opacity .15s, background .15s, color .15s;
+  opacity: 1;
+  transition: background .15s, color .15s;
 
   svg { width: 14px; height: 14px; }
 
@@ -2991,12 +2997,11 @@ main {
 
 // Cartes Inbox/Backlog : le bouton rejoint l'overlay .inbox-item-actions,
 // c'est donc lui qui gère l'apparition (et le délai d'intention) pour tout
-// le groupe — d'où l'opacity forcée ici. Dimensions de ses voisins ✎/×.
+// le groupe (opacity déjà fixe à 1 sur la base). Dimensions de ses voisins ✎/×.
 .inbox-item-actions .todo-subtask-add-btn {
   width:         24px;
   height:        24px;
   border-radius: 6px;
-  opacity:       1;
 
   svg { width: 13px; height: 13px; }
 }
@@ -12871,15 +12876,18 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding-right: 36px !important; // room for drag handle
 
   // Contrairement à la vue jour, ces boutons (Auj./BL) sont toujours visibles
-  // et le Planifier veut une ligne compacte — flex-basis: auto annule le
-  // passage à la ligne forcé de la règle générale .todo-item > .todo-actions.
+  // et le Planifier veut une ligne compacte — position:static annule
+  // l'overlay de la règle générale .todo-item > .todo-actions (coin
+  // haut-droit, hover-reveal), pointer-events:auto puisqu'ils doivent rester
+  // cliquables même hors survol (contrairement à l'overlay qui les bloque
+  // tant qu'invisible).
   .todo-actions {
     position:  static !important;
     display:   flex !important;
     opacity:   1 !important;
     transform: none !important;
+    pointer-events: auto !important;
     flex-shrink: 0;
-    flex-basis: auto;
     gap:       4px;
   }
 }
@@ -15540,8 +15548,13 @@ body.view-focus header { display: none; }
 .dnd-edge-arrow--before { top: 0; }
 .dnd-edge-arrow--after { bottom: 0; }
 
-.drop-target-swap.drop-before .dnd-edge-arrow--before,
-.drop-target-swap.drop-after .dnd-edge-arrow--after {
+// Combinateur enfant DIRECT (>), pas descendant : sans lui, un .todo-item
+// ciblé qui a des sous-tâches visibles allumait AUSSI la flèche de chacune
+// de ses propres sous-tâches (leur .dnd-edge-arrow est un descendant du
+// même .todo-item.drop-before, juste plus profond dans l'arbre) — plusieurs
+// pastilles empilées au lieu d'une seule sur l'item réellement visé.
+.drop-target-swap.drop-before > .dnd-edge-arrow--before,
+.drop-target-swap.drop-after > .dnd-edge-arrow--after {
   opacity: 1;
 }
 
@@ -15617,4 +15630,7 @@ body.view-focus header { display: none; }
   svg { width: 14px; height: 14px; flex-shrink: 0; }
 }
 
-.drop-nest .dnd-nest-badge { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+// Enfant DIRECT (>), même raison que .dnd-edge-arrow plus haut : un
+// .todo-item ciblé qui a des sous-tâches visibles n'allume ainsi QUE son
+// propre badge, jamais celui de chacune de ses sous-tâches imbriquées.
+.drop-nest > .dnd-nest-badge { opacity: 1; transform: translate(-50%, -50%) scale(1); }
