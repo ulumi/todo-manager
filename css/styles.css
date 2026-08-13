@@ -2739,9 +2739,6 @@ main.plan-mode, main.search-mode {
   break-inside: avoid;
   cursor: grab;
 }
-.subtask-item:hover .subtask-focus-btn, .subtask-item:hover .subtask-del {
-  opacity: 1;
-}
 .subtask-item.done {
   opacity: 0.6;
 }
@@ -2821,7 +2818,7 @@ main.plan-mode, main.search-mode {
   color: var(--text-muted);
   padding: 0 3px;
   border-radius: 3px;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity 0.2s ease 0.5s, color 0.15s, background 0.15s;
 }
 .subtask-item .subtask-focus-btn svg {
   width: 12px;
@@ -2842,11 +2839,35 @@ main.plan-mode, main.search-mode {
   line-height: 1;
   padding: 0 3px;
   border-radius: 3px;
-  transition: opacity 0.15s, color 0.15s, background 0.15s;
+  transition: opacity 0.2s ease 0.5s, color 0.15s, background 0.15s;
 }
 .subtask-item .subtask-del:hover {
   color: #ef4444;
   background: var(--surface2);
+}
+
+.subtask-action-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+}
+
+.subtask-item:hover .subtask-action-slot,
+.subtask-action-slot:focus-within {
+  width: 44px;
+}
+.subtask-item:hover .subtask-action-slot.subtask-action-slot--single,
+.subtask-action-slot:focus-within.subtask-action-slot--single {
+  width: 22px;
+}
+.subtask-item:hover .subtask-action-slot .subtask-focus-btn, .subtask-item:hover .subtask-action-slot .subtask-del,
+.subtask-action-slot:focus-within .subtask-focus-btn,
+.subtask-action-slot:focus-within .subtask-del {
+  opacity: 1;
 }
 
 .subtask-add-btn {

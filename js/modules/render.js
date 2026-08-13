@@ -60,10 +60,12 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}'${args})">${esc(s.title)}</span>
       ${estimateHTML}
-      ${canFocus ? `<button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
-      </button>` : ''}
-      <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>
+      <span class="subtask-action-slot${canFocus ? '' : ' subtask-action-slot--single'}">
+        ${canFocus ? `<button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
+        </button>` : ''}
+        <button class="subtask-del" onclick="event.stopPropagation();window.app.deleteSubtask('${todoId}','${s.id}'${args})">×</button>
+      </span>
     </div>${child}`;
   }).join('');
   return `<div class="subtask-list${parentStid ? ' subtask-list--nested' : ''}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>

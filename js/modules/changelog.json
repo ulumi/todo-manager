@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2613",
+    "date": "2026-08-13",
+    "message": "fix(sous-tâches): ▶ et × ne réservent plus d'espace vide à côté du titre tant qu'invisibles"
+  },
+  {
     "version": "0.4.2607",
     "date": "2026-08-13",
     "message": "fix(vue jour): les boutons + / ▶ / ⋯ passent toujours sous le titre, plus jamais d'espace vide à côté"

@@ -2731,10 +2731,6 @@ main {
   break-inside: avoid; // ne jamais couper un item entre deux colonnes
   cursor: grab;
 
-  &:hover {
-    .subtask-focus-btn, .subtask-del { opacity: 1; }
-  }
-
   &.done { opacity: .6; }
 
   // Réordonnancement par glisser-déposer (app.js, initSubtaskDragDrop) —
@@ -2818,7 +2814,7 @@ main {
     color: var(--text-muted);
     padding: 0 3px;
     border-radius: 3px;
-    transition: opacity .15s, color .15s, background .15s;
+    transition: opacity .2s ease .5s, color .15s, background .15s;
 
     svg { width: 12px; height: 12px; }
 
@@ -2839,13 +2835,43 @@ main {
     line-height: 1;
     padding: 0 3px;
     border-radius: 3px;
-    transition: opacity .15s, color .15s, background .15s;
+    transition: opacity .2s ease .5s, color .15s, background .15s;
 
     &:hover {
       color: #ef4444;
       background: var(--surface2);
     }
   }
+}
+
+// ▶ Focus et × Supprimer partagent UN SEUL .subtask-action-slot (render.js,
+// subtaskListHTML) — même défaut à côté (`opacity:0` seul sur chaque bouton)
+// réservait leur largeur en permanence, laissant un vide visible à droite du
+// titre avant même le survol (repéré dans des cartes à une seule colonne où
+// ce vide devenait franchement visible). Même technique que
+// .subtask-estimate-slot juste plus bas (largeur repliée à 0, révélée au
+// survol de la ligne). Un seul slot plutôt qu'un par bouton : deux slots
+// distincts auraient chacun coûté leur propre `gap` au flex parent — un
+// espace résiduel qui serait resté réservé même repliés à 0. Largeur cible
+// double (deux boutons) sauf `--single` (▶ absent en Inbox/Backlog, cf.
+// canFocus dans subtaskListHTML) qui n'a que × à révéler.
+.subtask-action-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  width: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width .3s cubic-bezier(.16, 1, .3, 1) .5s;
+}
+
+.subtask-item:hover .subtask-action-slot,
+.subtask-action-slot:focus-within {
+  width: 44px;
+
+  &.subtask-action-slot--single { width: 22px; }
+
+  .subtask-focus-btn, .subtask-del { opacity: 1; }
 }
 
 .subtask-add-btn {
