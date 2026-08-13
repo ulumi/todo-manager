@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2607",
+    "date": "2026-08-13",
+    "message": "fix(vue jour): les boutons + / ▶ / ⋯ passent toujours sous le titre, plus jamais d'espace vide à côté"
+  },
+  {
     "version": "0.4.2605",
     "date": "2026-08-12",
     "message": "fix(sous-tâches): bouton « + » plus petit, toujours visible, gris au repos et snappy au survol"

@@ -2421,9 +2421,10 @@ main.plan-mode, main.search-mode {
 .todo-item > .todo-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 2px;
   flex-shrink: 0;
-  margin-left: auto;
+  flex-basis: 100%;
 }
 
 .todo-meta {
@@ -13696,6 +13697,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   opacity: 1 !important;
   transform: none !important;
   flex-shrink: 0;
+  flex-basis: auto;
   gap: 4px;
 }
 

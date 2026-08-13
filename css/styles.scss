@@ -2394,17 +2394,23 @@ main {
 }
 
 // Rangée d'actions de l'item (+ sous-tâche, ▶ Focus, ⋯ menu) — groupée dans
-// un seul conteneur pour deux raisons : ne coûter qu'UN gap de 12px au titre
-// au lieu de trois, et pouvoir passer à la ligne d'un bloc (avec .todo-content
-// en flex-basis: min-content ci-dessus) quand la colonne est trop étroite,
-// plutôt que d'écraser le titre. margin-left: auto la garde collée à droite,
-// y compris seule sur sa ligne.
+// un seul conteneur pour ne coûter qu'UN gap au titre au lieu de trois, et
+// TOUJOURS passer sur sa propre ligne sous le titre (flex-basis: 100% —
+// avec .todo-content en flex-basis: min-content ci-dessus, il n'y a jamais
+// assez de place restante sur la ligne du titre pour cette largeur pleine,
+// donc le flex-wrap du parent la fait redescendre systématiquement, jamais
+// seulement quand la colonne est trop étroite). Ne réserve jamais d'espace
+// à côté du titre, même vide : justify-content aligne les boutons à droite
+// sur leur propre ligne. Le Planifier réutilise `.todo-item`/`.todo-actions`
+// avec un tout autre layout compact sur une ligne — voir
+// `.plan-overdue-section .todo-actions` plus bas, qui remet flex-basis:auto.
 .todo-item > .todo-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 2px;
   flex-shrink: 0;
-  margin-left: auto;
+  flex-basis: 100%;
 }
 
 .todo-meta {
@@ -12822,12 +12828,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   padding-left:  10px !important;
   padding-right: 36px !important; // room for drag handle
 
+  // Contrairement à la vue jour, ces boutons (Auj./BL) sont toujours visibles
+  // et le Planifier veut une ligne compacte — flex-basis: auto annule le
+  // passage à la ligne forcé de la règle générale .todo-item > .todo-actions.
   .todo-actions {
     position:  static !important;
     display:   flex !important;
     opacity:   1 !important;
     transform: none !important;
     flex-shrink: 0;
+    flex-basis: auto;
     gap:       4px;
   }
 }
