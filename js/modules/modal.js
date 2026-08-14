@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate } from './utils.js';
-import { getTodosForDate, addTask, getSuggestions, getRecentTasks } from './calendar.js';
+import { getTodosForDate, addTask, getSuggestions, getRecentTasks, resolveOccurrence, occurrenceOverride } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 import { getProjects, saveProjects } from './projectManager.js';
@@ -222,7 +222,16 @@ function _persistSubtasksIfEditing() {
   if (!state.editingId) return;
   const t = state.todos.find(x => x.id === state.editingId);
   if (!t) return;
-  t.subtasks = _modalSubtasks.length ? JSON.parse(JSON.stringify(_modalSubtasks)) : undefined;
+  const subtasks = JSON.parse(JSON.stringify(_modalSubtasks));
+  // Tâche récurrente + occurrence connue : cette checklist n'est valable QUE
+  // pour cette date — écrite dans l'override, le master (et donc les autres
+  // occurrences) reste intact. Sinon (tâche non récurrente) : comportement
+  // inchangé, directement sur le master.
+  if (t.recurrence && t.recurrence !== 'none' && state.editingDate) {
+    occurrenceOverride(t, state.editingDate).subtasks = subtasks;
+  } else {
+    t.subtasks = subtasks.length ? subtasks : undefined;
+  }
   t.updatedAt = Date.now();
   saveTodos(state.todos);
   _subtasksDirty = true;
@@ -995,6 +1004,7 @@ export function closeModal() {
   _destroyDraftListeners();
   _destroyContextReveal();
   state.setEditingId(null);
+  state.setEditingDate(null);
   state.setInsertAfterId(null);
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   const overlay = document.getElementById('modalOverlay');
@@ -1007,7 +1017,13 @@ export function closeModal() {
 export function openEditModal(id, dateStr, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
+  // effT = valeurs EFFECTIVES de cette occurrence (override s'il y en a un
+  // pour une tâche récurrente) — pour PEUPLER le formulaire. `t` (master)
+  // reste utilisé pour les champs qui définissent la récurrence elle-même
+  // et le compteur, jamais par occurrence (cf. calendar.js resolveOccurrence).
+  const effT = resolveOccurrence(t, dateStr);
   state.setEditingId(id);
+  state.setEditingDate(dateStr || null);
   // Detect schedule mode
   const isBacklog = (!t.recurrence || t.recurrence === 'none') && !t.date && t.backlog;
   const isInbox   = (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog;
@@ -1042,21 +1058,21 @@ export function openEditModal(id, dateStr, todos) {
   if (_completeOrigBtn) _completeOrigBtn.style.display = (t.date || dateStr) ? '' : 'none';
   const _guidedPill = document.getElementById('guidedPillBtn');
   if (_guidedPill) _guidedPill.style.display = 'none';
-  document.getElementById('taskTitle').value = t.title;
-  document.getElementById('taskDescription').value = t.description || '';
-  document.getElementById('taskStartTime').value = t.startTime || '';
-  document.getElementById('taskEndTime').value = t.endTime || '';
-  document.getElementById('taskFlexibleTime').checked = t.flexibleTime || false;
-  document.getElementById('taskDurationEstimated').value = t.durationEstimated || '';
+  document.getElementById('taskTitle').value = effT.title;
+  document.getElementById('taskDescription').value = effT.description || '';
+  document.getElementById('taskStartTime').value = effT.startTime || '';
+  document.getElementById('taskEndTime').value = effT.endTime || '';
+  document.getElementById('taskFlexibleTime').checked = effT.flexibleTime || false;
+  document.getElementById('taskDurationEstimated').value = effT.durationEstimated || '';
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
-  populateCategoryTags(t.categoryIds || (t.categoryId ? [t.categoryId] : []));
-  populateProjectTags(t.projectIds || (t.projectId ? [t.projectId] : []));
-  populateIntentionTags(t.intentionIds || (t.intentionId ? [t.intentionId] : []));
-  selectPriority(t.priority || '');
+  populateCategoryTags(effT.categoryIds || (effT.categoryId ? [effT.categoryId] : []));
+  populateProjectTags(effT.projectIds || (effT.projectId ? [effT.projectId] : []));
+  populateIntentionTags(effT.intentionIds || (effT.intentionId ? [effT.intentionId] : []));
+  selectPriority(effT.priority || '');
   // Counter fields
   const counterEnabledEl = document.getElementById('taskCounterEnabled');
   const counterFieldsEl  = document.getElementById('counterFields');
@@ -1100,7 +1116,7 @@ export function openEditModal(id, dateStr, todos) {
     }
     if (state.selectedRecurrence === 'daily') {
       dateGroup.style.display = 'none';
-      detail.innerHTML = _dayPeriodHTML(t.dayPeriod || '');
+      detail.innerHTML = _dayPeriodHTML(effT.dayPeriod || '');
     } else if (state.selectedRecurrence === 'weekly') {
       dateGroup.style.display = 'none';
       detail.innerHTML = `<div class="day-checkboxes" id="weekDayBoxes">
@@ -1149,7 +1165,7 @@ export function openEditModal(id, dateStr, todos) {
   // Subtasks
   const subtaskSection = document.getElementById('modalSubtaskSection');
   if (subtaskSection) subtaskSection.style.display = '';
-  populateModalSubtasks(t.subtasks || []);
+  populateModalSubtasks(effT.subtasks || []);
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
@@ -1444,11 +1460,19 @@ export function saveTaskLogic(todos) {
   if (state.editingId) {
     const t = todos.find(x => x.id === state.editingId);
     if (t) {
-      t.title = data.title;
+      // Tâche récurrente + occurrence connue (dateStr passé à openEditModal)
+      // ⇒ tous les champs de CONTENU ci-dessous n'écrivent que dans
+      // l'override de cette date, jamais sur le master : les autres
+      // occurrences (passées/futures) ne voient jamais ce changement.
+      const perOccurrence = data.recurrence !== 'none' && !!state.editingDate;
+
+      // ── Champs qui définissent la récurrence elle-même, plus le
+      // compteur (cumulatif sur toute la série) et durationReal (déjà un
+      // système d'historique séparé, cf. durationHistory/focus.js) :
+      // toujours sur le master, jamais par occurrence.
       t.recurrence = data.recurrence;
       delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
-      delete t.backlog; delete t.startTime; delete t.endTime; delete t.flexibleTime;
-      delete t.durationEstimated; delete t.durationReal; delete t.dayPeriod;
+      delete t.backlog; delete t.durationReal;
       if (data.date !== undefined) t.date = data.date;
       if (data.recDays !== undefined) t.recDays = data.recDays;
       if (data.recDay !== undefined) t.recDay = data.recDay;
@@ -1456,12 +1480,7 @@ export function saveTaskLogic(todos) {
       if (data.recLastDay !== undefined) t.recLastDay = data.recLastDay;
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
       if (data.backlog) t.backlog = true;
-      if (data.startTime) t.startTime = data.startTime;
-      if (data.endTime) t.endTime = data.endTime;
-      if (data.flexibleTime) t.flexibleTime = data.flexibleTime;
-      if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
       if (data.durationReal) t.durationReal = data.durationReal;
-      if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
       // Counter: update config but preserve countCurrent
       delete t.counterEnabled; delete t.countFrom; delete t.countTo; delete t.countUnit;
       if (data.counterEnabled) {
@@ -1473,14 +1492,44 @@ export function saveTaskLogic(todos) {
       } else {
         delete t.countCurrent;
       }
-      t.categoryIds    = data.categoryIds;
-      t.projectIds     = data.projectIds;
-      t.intentionIds   = data.intentionIds;
-      delete t.categoryId; delete t.projectId; delete t.intentionId;
-      t.priority    = data.priority;
-      t.description = data.description;
-      t.subtasks    = getModalSubtasks();
-      t.updatedAt   = Date.now();
+
+      // ── Champs de « contenu » : sur le master pour une tâche non
+      // récurrente (comportement inchangé), sinon UNIQUEMENT dans l'override
+      // — valeurs toujours explicites (null/[] plutôt qu'undefined :
+      // undefined ne survit pas à un aller-retour JSON, ce qui ferait
+      // réapparaître la valeur du master après un rechargement).
+      if (perOccurrence) {
+        const ov = occurrenceOverride(t, state.editingDate);
+        ov.title             = data.title;
+        ov.description       = data.description ?? null;
+        ov.startTime         = data.startTime ?? null;
+        ov.endTime           = data.endTime ?? null;
+        ov.flexibleTime      = data.flexibleTime ?? false;
+        ov.durationEstimated = data.durationEstimated ?? null;
+        ov.dayPeriod         = data.dayPeriod ?? null;
+        ov.categoryIds       = data.categoryIds || [];
+        ov.projectIds        = data.projectIds || [];
+        ov.intentionIds      = data.intentionIds || [];
+        ov.priority          = data.priority ?? null;
+        ov.subtasks          = getModalSubtasks();
+      } else {
+        t.title = data.title;
+        delete t.startTime; delete t.endTime; delete t.flexibleTime;
+        delete t.durationEstimated; delete t.dayPeriod;
+        if (data.startTime) t.startTime = data.startTime;
+        if (data.endTime) t.endTime = data.endTime;
+        if (data.flexibleTime) t.flexibleTime = data.flexibleTime;
+        if (data.durationEstimated) t.durationEstimated = data.durationEstimated;
+        if (data.dayPeriod) t.dayPeriod = data.dayPeriod;
+        t.categoryIds    = data.categoryIds;
+        t.projectIds     = data.projectIds;
+        t.intentionIds   = data.intentionIds;
+        delete t.categoryId; delete t.projectId; delete t.intentionId;
+        t.priority    = data.priority;
+        t.description = data.description;
+        t.subtasks    = getModalSubtasks();
+      }
+      t.updatedAt = Date.now();
     }
   } else {
     addTask(data, todos);

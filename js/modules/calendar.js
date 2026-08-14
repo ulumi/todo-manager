@@ -27,7 +27,67 @@ export function getTodosForDate(d, todos) {
       case 'yearly':  return t.recMonth === mon && t.recDay === dom;
     }
     return false;
-  });
+  }).map(t => resolveOccurrence(t, ds));
+}
+
+// ── Édition « cette occurrence seulement » (tâches récurrentes) ───────────
+// Un override (t.overrides[ds]) est une snapshot PARTIELLE de champs qui
+// prime sur le master pour UNE SEULE occurrence datée — jamais pour les
+// champs qui définissent la récurrence elle-même (recurrence/recDays/
+// recDay/recMonth/recLastDay/startDate/endDate/excludedDates), ni pour le
+// compteur (countCurrent etc., cumulatif sur toute la série), ni pour
+// durationReal/durationHistory/focusTimeSpent* (déjà un système d'historique
+// séparé, cf. focus.js) — ces champs-là restent toujours sur le master.
+// Pour une tâche non récurrente (ou sans `ds` connu), resolveOccurrence()
+// renvoie `t` LUI-MÊME (même référence) : zéro changement de comportement,
+// zéro coût, pour l'immense majorité des tâches (ponctuelles).
+export function resolveOccurrence(t, ds) {
+  if (!t.recurrence || t.recurrence === 'none' || !ds) return t;
+  const ov = t.overrides && t.overrides[ds];
+  if (!ov) return t;
+  return { ...t, ...ov };
+}
+
+// Renvoie le bucket d'override d'UNE occurrence, en le créant au besoin —
+// point d'entrée unique pour toute mutation « cette occurrence seulement ».
+export function occurrenceOverride(t, ds) {
+  t.overrides = t.overrides || {};
+  if (!t.overrides[ds]) t.overrides[ds] = {};
+  return t.overrides[ds];
+}
+
+// Écrit un champ scalaire quelconque (priority, dayPeriod…) : dans l'override
+// de cette occurrence pour une tâche récurrente avec ds connu — toujours une
+// valeur explicite (null pour « vide », jamais undefined : undefined ne
+// survit pas à un aller-retour JSON, ce qui ferait réapparaître la valeur du
+// master après un rechargement) — sinon directement sur le master (tâche non
+// récurrente, ou pas de contexte de date), comportement inchangé.
+export function setOccurrenceField(t, ds, key, value) {
+  if (t.recurrence && t.recurrence !== 'none' && ds) {
+    occurrenceOverride(t, ds)[key] = (value === undefined ? null : value);
+  } else if (value === undefined || value === null) {
+    delete t[key];
+  } else {
+    t[key] = value;
+  }
+}
+
+// Sous-tâches : renvoie le tableau MUTABLE à utiliser pour cette occurrence —
+// pour une tâche récurrente avec ds connu, clone profond des sous-tâches
+// EFFECTIVES actuelles au premier accès (donc identique à ce qui était
+// affiché juste avant), puis toute mutation ultérieure (push/splice sur le
+// tableau retourné, ou sur les objets qu'il contient) ne touche que cette
+// date — jamais le master ni les autres occurrences. Toujours muter ce
+// tableau EN PLACE (push/splice) : une réaffectation (`arr = arr.filter(…)`)
+// perdrait la référence vers le bucket réellement stocké.
+export function occurrenceSubtasks(t, ds) {
+  if (!t.recurrence || t.recurrence === 'none' || !ds) {
+    if (!t.subtasks) t.subtasks = [];
+    return t.subtasks;
+  }
+  const ov = occurrenceOverride(t, ds);
+  if (!ov.subtasks) ov.subtasks = JSON.parse(JSON.stringify(resolveOccurrence(t, ds).subtasks || []));
+  return ov.subtasks;
 }
 
 export function isCompleted(todo, d) {

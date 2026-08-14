@@ -24,7 +24,8 @@ import {
 } from './modules/dictation.js';
 import {
   getTodosForDate, isCompleted, isCancelled, toggleTodo, cancelTodo, deleteOneOccurrence,
-  deleteFutureOccurrences, addTask, getSuggestions, getPeriodStatus
+  deleteFutureOccurrences, addTask, getSuggestions, getPeriodStatus,
+  resolveOccurrence, occurrenceSubtasks, setOccurrenceField
 } from './modules/calendar.js';
 import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
@@ -1340,9 +1341,11 @@ class TodoApp {
     // Warn if completing a todo that has incomplete subtasks — compte
     // récursif (sous-sous-tâches incluses), sinon compléter une tâche
     // ignorerait silencieusement des enfants non faits nichés un niveau
-    // plus bas.
-    if (!wasCompleted && todo?.subtasks?.length) {
-      const incomplete = this._countIncompleteSubtasks(todo.subtasks);
+    // plus bas. resolveOccurrence() : les sous-tâches EFFECTIVES de cette
+    // date (override si la tâche récurrente en a un pour aujourd'hui).
+    const effSubtasks = todo && resolveOccurrence(todo, DS(d)).subtasks;
+    if (!wasCompleted && effSubtasks?.length) {
+      const incomplete = this._countIncompleteSubtasks(effSubtasks);
       if (incomplete) {
         this._showSubtaskWarning(id, d, incomplete);
         return;
@@ -1493,8 +1496,8 @@ class TodoApp {
     const todo = state.todos.find(x => x.id === id);
     if (!todo) return;
     snapshot(state.todos);
-    if (mode === 'all' && todo.subtasks) {
-      todo.subtasks.forEach(s => s.completed = true);
+    if (mode === 'all') {
+      occurrenceSubtasks(todo, dsStr).forEach(s => s.completed = true);
     }
     const d = this.parseDS(dsStr);
     toggleTodo(id, d, state.todos);
@@ -1526,10 +1529,11 @@ class TodoApp {
       return;
     }
     const id = itemEl.dataset.id;
+    const ds = itemEl.dataset.date;
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     const label = itemEl.querySelector('.todo-focustime-label');
-    if (label) { this._editEstimateLabel(label, t); return; }
+    if (label) { this._editEstimateLabel(label, t, ds); return; }
     const content = itemEl.querySelector('.todo-content');
     if (!content) return;
     let meta = itemEl.querySelector('.todo-meta');
@@ -1557,9 +1561,9 @@ class TodoApp {
       itemEl.removeEventListener('mouseleave', confirm);
       const val = parseInt(input.value, 10);
       input.remove();
-      if (val > 0 && val !== t.durationEstimated) {
+      if (val > 0 && val !== resolveOccurrence(t, ds).durationEstimated) {
         snapshot(state.todos);
-        t.durationEstimated = val;
+        setOccurrenceField(t, ds, 'durationEstimated', val);
         t.updatedAt = Date.now();
         saveTodos(state.todos);
         this.render();
@@ -1587,13 +1591,14 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     const label = badgeEl.querySelector('.todo-focustime-label');
     if (!t || !label) return;
-    this._editEstimateLabel(label, t);
+    const ds = badgeEl.closest('[data-date]')?.dataset.date;
+    this._editEstimateLabel(label, t, ds);
   }
 
   // Remplace le contenu texte du badge par un <input> in situ — même
   // position, même taille de police (voir .todo-focustime-input en SCSS) —
   // pour éditer sans jamais faire apparaître un champ ailleurs sur la ligne
-  _editEstimateLabel(label, t) {
+  _editEstimateLabel(label, t, ds) {
     if (label.querySelector('input')) return;
     const prevText = label.textContent;
     const input = document.createElement('input');
@@ -1602,7 +1607,8 @@ class TodoApp {
     input.step = '1';
     input.inputMode = 'numeric';
     input.className = 'todo-focustime-input';
-    if (t.durationEstimated) input.value = t.durationEstimated;
+    const curEstimate = resolveOccurrence(t, ds).durationEstimated;
+    if (curEstimate) input.value = curEstimate;
     input.addEventListener('click', e => e.stopPropagation());
     input.addEventListener('mousedown', e => e.stopPropagation());
     let settled = false;
@@ -1611,9 +1617,9 @@ class TodoApp {
       if (settled) return;
       settled = true;
       const val = parseInt(input.value, 10);
-      if (val > 0 && val !== t.durationEstimated) {
+      if (val > 0 && val !== curEstimate) {
         snapshot(state.todos);
-        t.durationEstimated = val;
+        setOccurrenceField(t, ds, 'durationEstimated', val);
         t.updatedAt = Date.now();
         saveTodos(state.todos);
         this.render();
@@ -1649,8 +1655,10 @@ class TodoApp {
   ctxAddSubtask(id) {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
     if (!itemEl) return;
+    // data-date porte l'occurrence RÉELLEMENT affichée (peut différer
+    // d'aujourd'hui si on consulte un autre jour) — jamais DS(today()) en dur.
+    const ds = itemEl.classList.contains('inbox-item') ? '' : (itemEl.dataset.date || DS(today()));
     if (!itemEl.querySelector('.subtask-list')) {
-      const ds = itemEl.classList.contains('inbox-item') ? '' : DS(today());
       itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, ds)}</div></div>`);
     } else {
       // La liste peut déjà exister mais être repliée (grid-template-rows:0)
@@ -1664,7 +1672,7 @@ class TodoApp {
         if (toggleBtn) toggleBtn.title = 'Masquer les sous-tâches';
       }
     }
-    this.addSubtaskInline(id);
+    this.addSubtaskInline(id, null, ds);
   }
 
   // Petit input inline injecté juste au-dessus d'un item de tâche pour
@@ -1856,14 +1864,15 @@ class TodoApp {
     btn.title = collapsed ? 'Afficher les sous-tâches' : 'Masquer les sous-tâches';
   }
 
-  // Résout une (sous-)sous-tâche : parentStid absent → cherche dans
-  // t.subtasks (profondeur 1) ; présent → cherche dans les enfants de CE
-  // membre (profondeur 2, la seule autorisée — décision produit : un seul
-  // niveau d'imbrication supplémentaire, jamais de 3e niveau).
-  _findSubtask(t, stid, parentStid) {
-    if (!t) return null;
-    if (parentStid) return t.subtasks?.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid) || null;
-    return t.subtasks?.find(x => x.id === stid) || null;
+  // Résout une (sous-)sous-tâche DANS UN TABLEAU DÉJÀ RÉSOLU (cf.
+  // occurrenceSubtasks/resolveOccurrence, calendar.js) : parentStid absent →
+  // cherche à la racine du tableau (profondeur 1) ; présent → cherche dans
+  // les enfants de CE membre (profondeur 2, la seule autorisée — décision
+  // produit : un seul niveau d'imbrication supplémentaire, jamais de 3e niveau).
+  _findSubtask(subs, stid, parentStid) {
+    if (!subs) return null;
+    if (parentStid) return subs.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid) || null;
+    return subs.find(x => x.id === stid) || null;
   }
 
   // Compte récursif des (sous-)sous-tâches non faites — utilisé par
@@ -1877,9 +1886,14 @@ class TodoApp {
     return n;
   }
 
+  // ds = occurrence visée (cf. occurrenceSubtasks, calendar.js) : pour une
+  // tâche récurrente, toute mutation ne touche QUE cette date — les autres
+  // occurrences (passées/futures) gardent le master intact.
   toggleSubtask(todoId, stid, ds, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    const s = this._findSubtask(t, stid, parentStid);
+    if (!t) return;
+    const arr = occurrenceSubtasks(t, ds);
+    const s = this._findSubtask(arr, stid, parentStid);
     if (!s) return;
     snapshot(state.todos);
     s.completed = !s.completed;
@@ -1888,15 +1902,18 @@ class TodoApp {
     this.render();
   }
 
-  deleteSubtask(todoId, stid, parentStid) {
+  deleteSubtask(todoId, stid, ds, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    if (!t?.subtasks) return;
+    if (!t) return;
+    const arr = occurrenceSubtasks(t, ds);
     snapshot(state.todos);
     if (parentStid) {
-      const p = t.subtasks.find(x => x.id === parentStid);
-      if (p?.subtasks) p.subtasks = p.subtasks.filter(x => x.id !== stid);
+      const p = arr.find(x => x.id === parentStid);
+      const i = p?.subtasks?.findIndex(x => x.id === stid) ?? -1;
+      if (i > -1) p.subtasks.splice(i, 1);
     } else {
-      t.subtasks = t.subtasks.filter(x => x.id !== stid);
+      const i = arr.findIndex(x => x.id === stid);
+      if (i > -1) arr.splice(i, 1);
     }
     t.updatedAt = Date.now();
     saveTodos(state.todos);
@@ -1965,9 +1982,10 @@ class TodoApp {
         e.stopPropagation();
         clearTarget();
         const todoId = dragEl.dataset.todoId;
+        const ds = dragEl.dataset.ds;
         const parentStid = dragEl.dataset.parentStid || null;
-        if (activeZone === 'nest') { this.nestSubtaskUnderSibling(todoId, dragEl.dataset.stid, item.dataset.stid); return; }
-        this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, parentStid, insertAfter);
+        if (activeZone === 'nest') { this.nestSubtaskUnderSibling(todoId, dragEl.dataset.stid, item.dataset.stid, ds); return; }
+        this._reorderSubtask(todoId, dragEl.dataset.stid, item.dataset.stid, ds, parentStid, insertAfter);
       });
     });
     (root || document).querySelectorAll('.subtask-list').forEach(list => {
@@ -1989,7 +2007,7 @@ class TodoApp {
         clearTarget();
         const todoId = dragEl.dataset.todoId;
         const parentStid = dragEl.dataset.parentStid || null;
-        this._reorderSubtask(todoId, dragEl.dataset.stid, null, parentStid);
+        this._reorderSubtask(todoId, dragEl.dataset.stid, null, dragEl.dataset.ds, parentStid);
       });
     });
 
@@ -2055,10 +2073,11 @@ class TodoApp {
         e.stopPropagation();
         const todoId = dragEl.dataset.todoId;
         const stid = dragEl.dataset.stid;
+        const ds = dragEl.dataset.ds;
         const parentStid = dragEl.dataset.parentStid || null;
         const target = extractTarget;
         clearExtractTarget();
-        const extracted = this.extractSubtask(todoId, stid, parentStid);
+        const extracted = this.extractSubtask(todoId, stid, ds, parentStid);
         if (!extracted || !target) return;
         // Cible ponctuelle seulement : une tâche extraite est toujours
         // non-récurrente, la positionner dans un groupe récurrent (daily/
@@ -2093,9 +2112,11 @@ class TodoApp {
   // suit) ; les deux no-op (`from===to` et `from===to-1`) couvrent les cas
   // où l'item est déjà exactement à la position visée (immédiatement avant/
   // après la cible), pour ne pas re-render inutilement.
-  _reorderSubtask(todoId, stid, targetStid, parentStid, insertAfter = false) {
+  _reorderSubtask(todoId, stid, targetStid, ds, parentStid, insertAfter = false) {
     const t = state.todos.find(x => x.id === todoId);
-    const arr = parentStid ? t?.subtasks?.find(p => p.id === parentStid)?.subtasks : t?.subtasks;
+    if (!t) return;
+    const base = occurrenceSubtasks(t, ds);
+    const arr = parentStid ? base.find(p => p.id === parentStid)?.subtasks : base;
     if (!arr) return;
     const from = arr.findIndex(x => x.id === stid);
     if (from < 0) return;
@@ -2126,13 +2147,15 @@ class TodoApp {
   // est déjà elle-même profondeur 1, donc toute source qui a ses propres
   // enfants dépasserait la limite — split (enfants promus, titre préfixé)
   // au lieu d'imbriquer telle quelle.
-  nestSubtaskUnderSibling(todoId, stid, targetStid) {
+  nestSubtaskUnderSibling(todoId, stid, targetStid, ds) {
     const t = state.todos.find(x => x.id === todoId);
-    if (!t?.subtasks || stid === targetStid) return false;
-    const fromIdx = t.subtasks.findIndex(x => x.id === stid);
-    const target = t.subtasks.find(x => x.id === targetStid);
+    if (!t || stid === targetStid) return false;
+    const arr = occurrenceSubtasks(t, ds);
+    if (!arr.length) return false;
+    const fromIdx = arr.findIndex(x => x.id === stid);
+    const target = arr.find(x => x.id === targetStid);
     if (fromIdx < 0 || !target) return false;
-    const source = t.subtasks[fromIdx];
+    const source = arr[fromIdx];
 
     const split = needsSplit(1, source);
     if (split && !confirm(_splitConfirmMsg([source], target))) return false;
@@ -2141,7 +2164,7 @@ class TodoApp {
     const entries = split ? splitIntoPromotedChildren(source)
       : [{ id: source.id, title: source.title, completed: !!source.completed,
            ...(source.subtasks?.length ? { subtasks: source.subtasks.map(c => ({ ...c })) } : {}) }];
-    t.subtasks.splice(fromIdx, 1);
+    arr.splice(fromIdx, 1);
     if (!target.subtasks) target.subtasks = [];
     target.subtasks.push(...entries);
     t.updatedAt = Date.now();
@@ -2160,27 +2183,35 @@ class TodoApp {
   // parente est un simple item de checklist, elle n'a pas ces champs.
   // Fonctionne à n'importe quelle profondeur : extraire une sous-sous-tâche
   // saute directement au statut de tâche indépendante.
-  extractSubtask(todoId, stid, parentStid) {
+  extractSubtask(todoId, stid, ds, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
     if (!t) return;
+    const arr = occurrenceSubtasks(t, ds);
     const s = parentStid
-      ? t.subtasks?.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid)
-      : t.subtasks?.find(x => x.id === stid);
+      ? arr.find(p => p.id === parentStid)?.subtasks?.find(x => x.id === stid)
+      : arr.find(x => x.id === stid);
     if (!s) return;
     snapshot(state.todos);
     if (parentStid) {
-      const p = t.subtasks.find(x => x.id === parentStid);
-      p.subtasks = p.subtasks.filter(x => x.id !== stid);
+      const p = arr.find(x => x.id === parentStid);
+      const i = p.subtasks.findIndex(x => x.id === stid);
+      if (i > -1) p.subtasks.splice(i, 1);
     } else {
-      t.subtasks = t.subtasks.filter(x => x.id !== stid);
+      const i = arr.findIndex(x => x.id === stid);
+      if (i > -1) arr.splice(i, 1);
     }
     const nid = Date.now().toString();
+    const isRec = t.recurrence && t.recurrence !== 'none';
+    // Contexte hérité : valeurs EFFECTIVES de cette occurrence (résolues —
+    // un dayPeriod/priorité surchargé aujourd'hui doit suivre la sous-tâche
+    // extraite, pas la valeur du master).
+    const ctx = resolveOccurrence(t, ds);
     const extracted = {
       id: nid,
       title: s.title,
       completed: s.completed,
       completedDates: [],
-      date: t.date,
+      date: isRec ? (ds || undefined) : t.date,
       updatedAt: parseInt(nid),
     };
     // Ses propres enfants (sous-sous-tâche extraite depuis la profondeur 1)
@@ -2189,16 +2220,16 @@ class TodoApp {
     if (s.subtasks?.length) extracted.subtasks = JSON.parse(JSON.stringify(s.subtasks));
     if (t.backlog) extracted.backlog = true;
     if (t.deadline) extracted.deadline = t.deadline;
-    if (t.dayPeriod) extracted.dayPeriod = t.dayPeriod;
-    if (t.startTime) extracted.startTime = t.startTime;
-    if (t.endTime) extracted.endTime = t.endTime;
-    if (t.priority) extracted.priority = t.priority;
-    if (t.categoryIds?.length) extracted.categoryIds = [...t.categoryIds];
-    else if (t.categoryId) extracted.categoryId = t.categoryId;
-    if (t.projectIds?.length) extracted.projectIds = [...t.projectIds];
-    else if (t.projectId) extracted.projectId = t.projectId;
-    if (t.intentionIds?.length) extracted.intentionIds = [...t.intentionIds];
-    else if (t.intentionId) extracted.intentionId = t.intentionId;
+    if (ctx.dayPeriod) extracted.dayPeriod = ctx.dayPeriod;
+    if (ctx.startTime) extracted.startTime = ctx.startTime;
+    if (ctx.endTime) extracted.endTime = ctx.endTime;
+    if (ctx.priority) extracted.priority = ctx.priority;
+    if (ctx.categoryIds?.length) extracted.categoryIds = [...ctx.categoryIds];
+    else if (ctx.categoryId) extracted.categoryId = ctx.categoryId;
+    if (ctx.projectIds?.length) extracted.projectIds = [...ctx.projectIds];
+    else if (ctx.projectId) extracted.projectId = ctx.projectId;
+    if (ctx.intentionIds?.length) extracted.intentionIds = [...ctx.intentionIds];
+    else if (ctx.intentionId) extracted.intentionId = ctx.intentionId;
     t.updatedAt = Date.now();
     const idx = state.todos.findIndex(x => x.id === todoId);
     state.todos.splice(idx + 1, 0, extracted);
@@ -2207,7 +2238,7 @@ class TodoApp {
     return extracted;
   }
 
-  addSubtaskInline(todoId, parentStid) {
+  addSubtaskInline(todoId, parentStid, ds) {
     const list = parentStid
       ? document.querySelector(`.subtask-list[data-parent-stid="${parentStid}"]`)
       : document.querySelector(`[data-id="${todoId}"] .subtask-list`);
@@ -2253,9 +2284,9 @@ class TodoApp {
       input.remove();
       if (title) {
         slot.style.display = '';
-        const newSub = this._saveNewSubtask(todoId, title, parentStid);
+        const newSub = this._saveNewSubtask(todoId, title, parentStid, ds);
         if (andFocus && newSub && !parentStid) this.focusStartOn(todoId, DS(today()), newSub.id, { fallbackToEdit: false });
-        else if (reopen) this.addSubtaskInline(todoId, parentStid);
+        else if (reopen) this.addSubtaskInline(todoId, parentStid, ds);
       } else {
         cancel();
       }
@@ -2285,22 +2316,22 @@ class TodoApp {
     if (!document.querySelector(`.subtask-list[data-parent-stid="${parentStid}"]`)) {
       rowEl.insertAdjacentHTML('afterend', subtaskListHTML([], todoId, ds, parentStid));
     }
-    this.addSubtaskInline(todoId, parentStid);
+    this.addSubtaskInline(todoId, parentStid, ds);
   }
 
-  _saveNewSubtask(todoId, title, parentStid) {
+  _saveNewSubtask(todoId, title, parentStid, ds) {
     const t = state.todos.find(x => x.id === todoId);
     if (!t) return null;
+    const arr = occurrenceSubtasks(t, ds);
     snapshot(state.todos);
     const newSub = { id: Date.now().toString(), title, completed: false };
     if (parentStid) {
-      const p = t.subtasks?.find(x => x.id === parentStid);
+      const p = arr.find(x => x.id === parentStid);
       if (!p) return null;
       if (!p.subtasks) p.subtasks = [];
       p.subtasks.push(newSub);
     } else {
-      if (!t.subtasks) t.subtasks = [];
-      t.subtasks.push(newSub);
+      arr.push(newSub);
     }
     t.updatedAt = Date.now();
     saveTodos(state.todos);
@@ -2308,13 +2339,15 @@ class TodoApp {
     return newSub;
   }
 
-  editSubtaskTitle(el, todoId, stid, parentStid) {
+  editSubtaskTitle(el, todoId, stid, ds, parentStid) {
     // Même garde que editModalSubtask() (modal.js) : le span reste cliquable
     // pendant toute l'édition, sans quoi cliquer pour repositionner le
     // curseur relançait la sélection du mot entier à chaque fois.
     if (el.isContentEditable) return;
     const t = state.todos.find(x => x.id === todoId);
-    const s = this._findSubtask(t, stid, parentStid);
+    if (!t) return;
+    const arr = occurrenceSubtasks(t, ds);
+    const s = this._findSubtask(arr, stid, parentStid);
     if (!s) return;
     el.contentEditable = 'true';
     el.focus();
@@ -2355,9 +2388,11 @@ class TodoApp {
   // <input type=number>. Préremplit avec la valeur BRUTE uniquement (jamais
   // effectiveEstimate()/la somme calculée, sinon éditer sans rien changer
   // figerait silencieusement la somme comme valeur explicite du parent).
-  editSubtaskEstimate(badgeEl, todoId, stid, parentStid) {
+  editSubtaskEstimate(badgeEl, todoId, stid, ds, parentStid) {
     const t = state.todos.find(x => x.id === todoId);
-    const s = this._findSubtask(t, stid, parentStid);
+    if (!t) return;
+    const arr = occurrenceSubtasks(t, ds);
+    const s = this._findSubtask(arr, stid, parentStid);
     if (!s || badgeEl.querySelector('input')) return;
     const prevHTML = badgeEl.innerHTML;
     const input = document.createElement('input');
@@ -3499,7 +3534,12 @@ class TodoApp {
     const base = Date.now();
     occ.forEach(({ t, ds }, i) => {
       const cloneId = String(base + i); // base+i : Date.now() en boucle collisionne
-      const clone = { ...JSON.parse(JSON.stringify(t)), id: cloneId, completed: false, completedDates: [], updatedAt: base + i };
+      // resolveOccurrence() : on duplique ce qui est EFFECTIVEMENT affiché
+      // pour cette occurrence (override du jour compris), pas forcément le
+      // master — puis on retire `overrides`, propre à l'ancienne série, pour
+      // que le clone démarre sans aucun override hérité.
+      const clone = { ...JSON.parse(JSON.stringify(resolveOccurrence(t, ds))), id: cloneId, completed: false, completedDates: [], updatedAt: base + i };
+      delete clone.overrides;
       if (clone.recurrence && clone.recurrence !== 'none') {
         if (ds) clone.startDate = ds;
         delete clone.endDate;
@@ -3540,11 +3580,14 @@ class TodoApp {
     this.render();
   }
 
+  // _resolveOccurrences() (pas un simple state.todos.filter) : une tâche
+  // récurrente n'écrit que dans l'override de SON occurrence affichée —
+  // les autres jours ne sont jamais impactés.
   setPriorityMany(ids, prio) {
-    const targets = state.todos.filter(t => ids.includes(t.id));
-    if (!targets.length) return;
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
     snapshot(state.todos);
-    targets.forEach(t => { t.priority = prio; t.updatedAt = Date.now(); });
+    occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'priority', prio || null); t.updatedAt = Date.now(); });
     saveTodos(state.todos);
     this.render(); // la sélection est conservée (action modifiante, pas de déplacement)
   }
@@ -3552,13 +3595,10 @@ class TodoApp {
   // '' → sans moment : delete plutôt que '' (toute valeur hors
   // morning/afternoon/evening/absent rend la tâche invisible en vue jour — cf. state.js)
   setDayPeriodMany(ids, period) {
-    const targets = state.todos.filter(t => ids.includes(t.id));
-    if (!targets.length) return;
+    const occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
     snapshot(state.todos);
-    targets.forEach(t => {
-      if (period) t.dayPeriod = period; else delete t.dayPeriod;
-      t.updatedAt = Date.now();
-    });
+    occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'dayPeriod', period || null); t.updatedAt = Date.now(); });
     saveTodos(state.todos);
     this.render();
   }
@@ -3781,9 +3821,13 @@ class TodoApp {
     if (!minutes || minutes <= 0) return;
     const ref = resolveFocusRef(id);
     if (!ref) return;
-    const own = ref.s || ref.t;
     snapshot(state.todos);
-    own.durationEstimated = minutes;
+    // Sous-tâche : ref.s cible déjà le tableau occurrence-aware (cf. le
+    // resolveFocusRef corrigé de focus.js) — mutation directe correcte.
+    // Tâche de premier niveau récurrente : par l'override d'aujourd'hui,
+    // jamais le master (setOccurrenceField gère aussi le cas non récurrent).
+    if (ref.kind === 'subtask') ref.s.durationEstimated = minutes;
+    else setOccurrenceField(ref.t, DS(today()), 'durationEstimated', minutes);
     ref.t.updatedAt = Date.now();
     saveTodos(state.todos);
     applyFocusEstimate(this);
@@ -4002,7 +4046,7 @@ class TodoApp {
         const isSub = todoId.includes('::');
         const realTodoId = isSub ? todoId.split('::')[0] : todoId;
         const parentStid = isSub ? todoId.split('::')[1] : undefined;
-        const newSub = this._saveNewSubtask(realTodoId, title, parentStid);
+        const newSub = this._saveNewSubtask(realTodoId, title, parentStid, DS(today()));
         if (andFocus && newSub && !parentStid) this.focusStartOn(realTodoId, DS(today()), newSub.id, { fallbackToEdit: false });
       }
     };
@@ -4768,11 +4812,11 @@ class TodoApp {
       const _pgMode = localStorage.getItem('dayPeriodGroups') !== 'false';
       if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
         const ids = resolveIds();
-        const targets = state.todos.filter(t => ids.includes(t.id));
-        if (targets.length) {
-          targets.forEach(t => {
-            if (dropPeriod === '') { delete t.dayPeriod; } else { t.dayPeriod = dropPeriod; }
-          });
+        // _resolveOccurrences() : une tâche récurrente ne change de moment
+        // que pour SON occurrence affichée — les autres jours ne bougent pas.
+        const occ = this._resolveOccurrences(ids);
+        if (occ.length) {
+          occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'dayPeriod', dropPeriod || null); t.updatedAt = Date.now(); });
           saveTodos(state.todos);
         }
         // Lâché sur un item → réordonner aussi dans ce moment
@@ -4792,9 +4836,9 @@ class TodoApp {
 
       // In priority sort mode, change the item's priority to match the target group
       if (localStorage.getItem('daySort') === 'priority' && dropPriority != null) {
-        const targets = state.todos.filter(t => ids.includes(t.id));
-        if (targets.length) {
-          targets.forEach(t => { t.priority = dropPriority === 'none' ? '' : dropPriority; });
+        const occ = this._resolveOccurrences(ids);
+        if (occ.length) {
+          occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'priority', dropPriority === 'none' ? null : dropPriority); t.updatedAt = Date.now(); });
           saveTodos(state.todos);
         }
       }
@@ -8714,9 +8758,9 @@ let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', 
 // QUELLE profondeur : extraire une sous-sous-tâche saute directement au
 // statut de tâche indépendante, sans étape intermédiaire.
 function _renderSubtaskCtxMenu() {
-  const { todoId, stid, parentStid } = _ctxTarget;
+  const { todoId, stid, ds, parentStid } = _ctxTarget;
   const t = state.todos.find(x => x.id === todoId);
-  const s = window.app._findSubtask(t, stid, parentStid);
+  const s = t && window.app._findSubtask(resolveOccurrence(t, ds).subtasks, stid, parentStid);
   if (!s) { _todoCtxMenu.innerHTML = ''; return; }
   // La file Focus ne couvre que la journée en cours (cf. focusStartOn) : sur
   // une sous-tâche d'un item Inbox/Backlog (aucune date) ou d'une tâche déjà
@@ -8914,8 +8958,8 @@ _todoCtxMenu.addEventListener('click', e => {
     if (action === 'subtask-complete')   window.app.toggleSubtask(todoId, stid, ds, parentStid);
     if (action === 'subtask-focus')      window.app.focusStartOn(todoId, ds, parentStid || stid);
     if (action === 'subtask-add-nested') window.app.ctxAddNestedSubtask(todoId, stid, ds);
-    if (action === 'subtask-extract')    window.app.extractSubtask(todoId, stid, parentStid);
-    if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, parentStid);
+    if (action === 'subtask-extract')    window.app.extractSubtask(todoId, stid, ds, parentStid);
+    if (action === 'subtask-delete')     window.app.deleteSubtask(todoId, stid, ds, parentStid);
     return;
   }
   if (_ctxTarget?.kind === 'section') {

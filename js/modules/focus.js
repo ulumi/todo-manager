@@ -8,7 +8,7 @@
 
 import * as state from './state.js';
 import { DS, today, esc, effectiveEstimate } from './utils.js';
-import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
+import { getTodosForDate, isCompleted, isCancelled, occurrenceSubtasks, resolveOccurrence } from './calendar.js';
 import { getCategories } from './admin.js';
 import { saveTodos } from './storage.js';
 
@@ -277,8 +277,14 @@ export function resolveFocusRef(id) {
   }
   const todoId = id.slice(0, sep), stid = id.slice(sep + 2);
   const t = state.todos.find(x => x.id === todoId);
-  const s = t?.subtasks?.find(x => x.id === stid);
-  return (t && s) ? { kind: 'subtask', t, s } : null;
+  if (!t) return null;
+  // Le Focus ne couvre que la journée en cours — occurrenceSubtasks(t,
+  // DS(today())) renvoie les sous-tâches EFFECTIVES d'aujourd'hui (override
+  // s'il y en a un pour une tâche récurrente), jamais forcément t.subtasks
+  // (master) : sinon écrire ici pourrait cibler le mauvais tableau et
+  // désynchroniser le Focus de la vue jour.
+  const s = occurrenceSubtasks(t, DS(today())).find(x => x.id === stid);
+  return s ? { kind: 'subtask', t, s } : null;
 }
 
 // NORMALISÉ — vue en lecture seule, mêmes noms de champs qu'une Tâche (pour
@@ -293,7 +299,13 @@ export function resolveFocusRef(id) {
 // isCancelled(current,...) continuent de fonctionner sans modification pour
 // un item courant de type sous-tâche — pas besoin d'un helper séparé.
 function toFocusItem(ref) {
-  if (ref.kind === 'todo') return ref.t;
+  // resolveOccurrence(ref.t, DS(today())) : le Focus ne couvre que la
+  // journée en cours — sans ça, une tâche récurrente affichée en Focus
+  // ignorerait un override du jour posé ailleurs (vue jour, clic droit…) et
+  // montrerait des valeurs périmées. Même référence que ref.t quand aucun
+  // override n'existe pour aujourd'hui (cas courant) : zéro changement de
+  // comportement dans ce cas.
+  if (ref.kind === 'todo') return resolveOccurrence(ref.t, DS(today()));
   const { t, s } = ref;
   return {
     id: focusSubtaskId(t.id, s.id), title: s.title, completed: s.completed,

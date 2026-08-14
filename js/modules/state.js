@@ -26,6 +26,7 @@ export let selectedYearDay = 1;
 export let quickAddTarget = 'today'; // 'today' | 'nav'
 export let selectedPriority = '';
 export let editingId = null;
+export let editingDate = null; // ds de l'occurrence en cours d'édition (openEditModal) — cf. calendar.js resolveOccurrence
 export let insertAfterId = null;
 export let pendingDelete = null;
 export let _sugg = []; // safe ref for inline onclick
@@ -97,6 +98,10 @@ export function setSelectedPriority(p) {
 
 export function setEditingId(id) {
   editingId = id;
+}
+
+export function setEditingDate(ds) {
+  editingDate = ds;
 }
 
 export function setInsertAfterId(id) {
