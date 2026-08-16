@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2655",
+    "date": "2026-08-16",
+    "message": "fix(chargement): le retour automatique à aujourd'hui après une longue absence (>8h) n'est plus silencieux — entrée animée + toast"
+  },
+  {
     "version": "0.4.2654",
     "date": "2026-08-14",
     "message": "feat(récurrence): éditer une tâche récurrente (sous-tâches, priorité, moment, titre, notes, catégories, heures, durée estimée) ne modifie plus que l'occurrence affichée, jamais les autres jours"

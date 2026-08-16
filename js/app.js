@@ -246,6 +246,10 @@ class TodoApp {
     const _lastSeen = parseInt(localStorage.getItem('_lastSeen') || '0');
     const _staleSession = _lastSeen > 0 && Date.now() - _lastSeen > 8 * 3600 * 1000;
     localStorage.setItem('_lastSeen', Date.now().toString());
+    // Le snap n'a réellement lieu que si rien dans le hash ne l'a déjà court-circuité
+    // (lien partagé vers une vue/date précise) — sert à ne montrer l'indicateur/
+    // l'entrée animée ci-dessous que quand le saut s'est vraiment produit.
+    const _staleSnap = _staleSession && !_hashView && !_hashNav;
     if (_hashView && _ALL_VIEWS.includes(_hashView)) {
       state.setView(_hashView);
     } else if (_staleSession) {
@@ -260,8 +264,22 @@ class TodoApp {
     } else if (_staleSession) {
       state.setNavDate(today());
     }
+    // Premier paint masqué le temps de render() pour pouvoir l'animer en entrée
+    // juste après (fondu + léger glissement) — sinon la vue apparaîtrait d'un
+    // coup sec, sans aucun signe que l'app vient de sauter d'elle-même sur
+    // aujourd'hui à cause de l'absence prolongée.
+    const _mainEl = document.getElementById('mainContent');
+    if (_staleSnap && _mainEl) gsap.set(_mainEl, { opacity: 0, y: 10 });
     this.render();
     this._syncServer();
+    if (_staleSnap && _mainEl) {
+      gsap.to(_mainEl, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', clearProps: 'transform,opacity' });
+      const _staleItems = document.querySelectorAll('.todo-item');
+      if (_staleItems.length) {
+        gsap.from(_staleItems, { opacity: 0, y: 8, duration: 0.25, stagger: { amount: 0.1 }, ease: 'power3.out' });
+      }
+      this._showToast("↻ Longue absence — retour à aujourd'hui");
+    }
     // Restore modal from hash after render
     const _hashModal = _hash.get('modal');
     if (_hashModal === 'edit') {
