@@ -2828,7 +2828,7 @@ main.plan-mode, main.search-mode {
 }
 .subtask-item .subtask-focus-btn {
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2838,7 +2838,7 @@ main.plan-mode, main.search-mode {
   color: var(--text-muted);
   padding: 0 3px;
   border-radius: 3px;
-  transition: opacity 0.2s ease 0.5s, color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 .subtask-item .subtask-focus-btn svg {
   width: 12px;
@@ -2850,7 +2850,7 @@ main.plan-mode, main.search-mode {
 }
 .subtask-item .subtask-del {
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 1;
   background: none;
   border: none;
   cursor: pointer;
@@ -2859,7 +2859,7 @@ main.plan-mode, main.search-mode {
   line-height: 1;
   padding: 0 3px;
   border-radius: 3px;
-  transition: opacity 0.2s ease 0.5s, color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s;
 }
 .subtask-item .subtask-del:hover {
   color: #ef4444;
@@ -2867,27 +2867,26 @@ main.plan-mode, main.search-mode {
 }
 
 .subtask-action-slot {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  width: 0;
-  overflow: hidden;
-  flex-shrink: 0;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
-.subtask-item:hover .subtask-action-slot,
+.subtask-item:hover > .subtask-action-slot,
 .subtask-action-slot:focus-within {
-  width: 44px;
-}
-.subtask-item:hover .subtask-action-slot.subtask-action-slot--single,
-.subtask-action-slot:focus-within.subtask-action-slot--single {
-  width: 22px;
-}
-.subtask-item:hover .subtask-action-slot .subtask-focus-btn, .subtask-item:hover .subtask-action-slot .subtask-del,
-.subtask-action-slot:focus-within .subtask-focus-btn,
-.subtask-action-slot:focus-within .subtask-del {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .subtask-add-btn {

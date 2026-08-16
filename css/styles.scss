@@ -2832,7 +2832,7 @@ main {
 
   .subtask-focus-btn {
     flex-shrink: 0;
-    opacity: 0;
+    opacity: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2842,7 +2842,7 @@ main {
     color: var(--text-muted);
     padding: 0 3px;
     border-radius: 3px;
-    transition: opacity .2s ease .5s, color .15s, background .15s;
+    transition: color .15s, background .15s;
 
     svg { width: 12px; height: 12px; }
 
@@ -2854,7 +2854,7 @@ main {
 
   .subtask-del {
     flex-shrink: 0;
-    opacity: 0;
+    opacity: 1;
     background: none;
     border: none;
     cursor: pointer;
@@ -2863,7 +2863,7 @@ main {
     line-height: 1;
     padding: 0 3px;
     border-radius: 3px;
-    transition: opacity .2s ease .5s, color .15s, background .15s;
+    transition: color .15s, background .15s;
 
     &:hover {
       color: #ef4444;
@@ -2873,33 +2873,42 @@ main {
 }
 
 // ▶ Focus et × Supprimer partagent UN SEUL .subtask-action-slot (render.js,
-// subtaskListHTML) — même défaut à côté (`opacity:0` seul sur chaque bouton)
-// réservait leur largeur en permanence, laissant un vide visible à droite du
-// titre avant même le survol (repéré dans des cartes à une seule colonne où
-// ce vide devenait franchement visible). Même technique que
-// .subtask-estimate-slot juste plus bas (largeur repliée à 0, révélée au
-// survol de la ligne). Un seul slot plutôt qu'un par bouton : deux slots
-// distincts auraient chacun coûté leur propre `gap` au flex parent — un
-// espace résiduel qui serait resté réservé même repliés à 0. Largeur cible
-// double (deux boutons) sauf `--single` (▶ absent en Inbox/Backlog, cf.
-// canFocus dans subtaskListHTML) qui n'a que × à révéler.
+// subtaskListHTML). Ancienne version : largeur repliée à 0 dans le FLUX,
+// révélée au survol — mais dans une carte étroite (Backlog/Inbox à plusieurs
+// colonnes), ce slot entrait en concurrence avec .subtask-estimate-slot (le
+// badge « + durée », lui aussi révélé au survol, jusqu'à 60px) pour la même
+// largeur disponible ; les deux réclamant leur pleine largeur d'un coup
+// (`flex-shrink: 0` sur les deux), le total dépassait le conteneur et
+// .subtask-action-slot — dernier dans l'ordre — se retrouvait poussé hors
+// champ, invisible malgré le survol (bug repéré par Hugues : bouton Focus
+// disparu derrière le champ durée). Corrigé comme .todo-actions en son
+// temps : overlay `position:absolute` entièrement hors du flux, donc ne
+// dispute plus jamais la largeur du titre ni du badge durée — révélé/masqué
+// d'un coup par son propre `opacity` plutôt qu'en agrandissant sa largeur
+// (les boutons enfants restent à opacity:1 fixe en permanence, cf.
+// .todo-actions). Petit fond + ombre pour rester lisible par-dessus le
+// texte/badge qu'il peut recouvrir (même tradeoff accepté que .todo-actions).
 .subtask-action-slot {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  width: 0;
-  overflow: hidden;
-  flex-shrink: 0;
-  transition: width .3s cubic-bezier(.16, 1, .3, 1) .5s;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s;
 }
 
-.subtask-item:hover .subtask-action-slot,
+.subtask-item:hover > .subtask-action-slot,
 .subtask-action-slot:focus-within {
-  width: 44px;
-
-  &.subtask-action-slot--single { width: 22px; }
-
-  .subtask-focus-btn, .subtask-del { opacity: 1; }
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .subtask-add-btn {

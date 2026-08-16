@@ -58,15 +58,18 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       : '';
     // Une estimation déjà posée est de l'INFORMATION (comme .todo-focustime-
     // badge sur la tâche parente) — toujours visible, jamais réservée en
-    // pointillés. Le ghost « + durée », lui, n'est qu'une AFFORDANCE d'ajout
-    // — comme .subtask-focus-btn/.subtask-del juste après, il ne doit
-    // apparaître qu'au survol de la ligne. Contrairement à ces deux boutons
-    // (icônes ~16px, écart mineur), le badge ghost est un texte large
-    // (« + durée ») : le laisser réserver sa place en permanence, même
-    // invisible, écrasait le titre dans les cartes étroites (Backlog/Inbox
-    // en plusieurs colonnes) — d'où le wrapper .subtask-estimate-slot,
-    // replié en largeur tant que non survolé (même technique que
-    // .subtask-add-mini-slot juste plus bas, largeur au lieu de hauteur).
+    // pointillés. Le ghost « + durée », lui, n'est qu'une AFFORDANCE d'ajout :
+    // il ne doit apparaître qu'au survol de la ligne, via .subtask-estimate-
+    // slot, replié en largeur tant que non survolé (même technique que
+    // .subtask-add-mini-slot juste plus bas, largeur au lieu de hauteur) — le
+    // laisser réserver sa place en permanence, même invisible, écrasait le
+    // titre dans les cartes étroites (Backlog/Inbox en plusieurs colonnes).
+    // .subtask-focus-btn/.subtask-del (juste après) ne se disputent plus
+    // cette largeur : ▶/× vivent dans .subtask-action-slot, un overlay
+    // position:absolute totalement hors du flux (voir le commentaire sur
+    // .subtask-action-slot, styles.scss) — sinon les deux slots réclamaient
+    // chacun leur pleine largeur au survol et le second (▶/×, dernier dans
+    // l'ordre) se retrouvait poussé hors champ dans une carte étroite.
     const est = effectiveEstimate(s);
     const estimateHTML = est
       ? `<span class="subtask-estimate-badge" onclick="event.stopPropagation();window.app.editSubtaskEstimate(this,'${todoId}','${s.id}','${ds}'${args})" title="Durée estimée — cliquer pour modifier">${s.durationEstimated ? `${s.durationEstimated} min` : `~${est} min`}</span>`
@@ -78,7 +81,7 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${todoId}','${s.id}','${ds}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.editSubtaskTitle(this,'${todoId}','${s.id}','${ds}'${args})">${esc(s.title)}</span>
       ${estimateHTML}
-      <span class="subtask-action-slot${canFocus ? '' : ' subtask-action-slot--single'}">
+      <span class="subtask-action-slot">
         ${canFocus ? `<button class="subtask-focus-btn" onclick="event.stopPropagation();window.app.focusStartOn('${todoId}','${ds}','${parentStid || s.id}')" title="Focus sur cette tâche">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
         </button>` : ''}

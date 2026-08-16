@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2658",
+    "date": "2026-08-16",
+    "message": "fix(sous-tâches): le bouton Focus n'est plus caché par le champ durée au survol — ▶/× passent en overlay hors du flux"
+  },
+  {
     "version": "0.4.2655",
     "date": "2026-08-16",
     "message": "fix(chargement): le retour automatique à aujourd'hui après une longue absence (>8h) n'est plus silencieux — entrée animée + toast"
