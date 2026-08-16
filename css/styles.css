@@ -14814,7 +14814,6 @@ body.view-focus header {
   gap: 18px;
   padding: 24px;
   text-align: center;
-  min-height: 0;
 }
 
 .focus-stage.focus-current-item {

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2659",
+    "date": "2026-08-16",
+    "message": "fix(focus): les boutons d'action ne chevauchent plus le titre et le contenu de la file « Ensuite » quand l'écran est trop court pour tout afficher"
+  },
+  {
     "version": "0.4.2658",
     "date": "2026-08-16",
     "message": "fix(sous-tâches): le bouton Focus n'est plus caché par le champ durée au survol — ▶/× passent en overlay hors du flux"

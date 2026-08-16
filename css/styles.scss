@@ -13902,6 +13902,18 @@ body.view-focus header { display: none; }
 }
 
 // ── Scène centrale ──
+// Pas de `min-height: 0` ici : le scroll de tout l'écran Focus vit sur
+// .focus-view (overflow-y: auto), pas sur .focus-stage lui-même — avec
+// min-height: 0, flex-shrink pouvait tasser .focus-stage sous la hauteur
+// réelle de son contenu (chrono géant + sous-tâches + actions) quand la file
+// « Ensuite » en dessous prenait beaucoup de place (viewport bas/beaucoup de
+// tâches) ; le contenu débordait alors visuellement PAR-DESSUS .focus-queue
+// (overlap avec le titre « Ensuite » et les premières lignes), sans même
+// être atteignable au scroll puisque la hauteur de .focus-view ne grossissait
+// pas en conséquence (bug repéré par Hugues). Laisser min-height: auto (la
+// valeur par défaut) permet à .focus-stage de garder sa hauteur de contenu
+// réelle : .focus-view grandit d'autant et le scroll de la page révèle tout
+// normalement, plus aucun chevauchement possible.
 .focus-stage {
   flex: 1;
   display: flex;
@@ -13911,7 +13923,6 @@ body.view-focus header { display: none; }
   gap: 18px;
   padding: 24px;
   text-align: center;
-  min-height: 0;
 }
 
 // Tâche courante : deux colonnes côte à côte, comme un panneau de visio
