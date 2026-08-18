@@ -1384,6 +1384,31 @@ main.plan-mode, main.search-mode {
   background: rgba(255, 255, 255, 0.35);
 }
 
+.day-add-task-btn {
+  flex-shrink: 0;
+  height: 22px;
+  width: 22px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+}
+.day-add-task-btn svg {
+  width: 100%;
+  height: 100%;
+}
+.day-add-task-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
 .day-col-controls {
   display: flex;
   gap: 3px;

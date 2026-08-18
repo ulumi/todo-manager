@@ -837,7 +837,7 @@ export function renderDayView(todos) {
 
   const punctualTitle = isToday ? state.T.groupOnce : (state.lang === 'fr' ? 'Ponctuel' : 'One-time');
   const punctualHeader = `<div class="day-col-title-row">
-    <div class="day-col-title">${punctualTitle}</div>
+    <div class="day-col-title">${punctualTitle}<button class="day-add-task-btn" onclick="window.app.openModal()" title="Ajouter une tâche">${_plusSVG}</button></div>
     <div class="day-col-controls${ctrlsCollapsed ? ' collapsed' : ''}">
       <div class="day-ctrl-expandable${!sortCollapsed ? ' expanded' : ''}">
         <button class="day-ctrl-toggle" onclick="window.app.toggleDaySort()" title="Tri">

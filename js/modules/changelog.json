@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2661",
+    "date": "2026-08-18",
+    "message": "feat(vue jour): bouton d'ajout de tâche toujours visible en tête de colonne, à côté du titre"
+  },
+  {
     "version": "0.4.2659",
     "date": "2026-08-16",
     "message": "fix(focus): les boutons d'action ne chevauchent plus le titre et le contenu de la file « Ensuite » quand l'écran est trop court pour tout afficher"
