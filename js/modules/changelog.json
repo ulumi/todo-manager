@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2671",
+    "date": "2026-08-18",
+    "message": "fix(vue jour): le bouton d'ajout rond reprend la couleur d'accent du compte (var(--primary)) au lieu d'un jaune fixe"
+  },
+  {
     "version": "0.4.2670",
     "date": "2026-08-18",
     "message": "feat(vue jour): bouton d'ajout rond et jaune, repris sur le header Quotidien pour créer une tâche récurrente quotidienne en un clic"
