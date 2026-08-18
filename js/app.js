@@ -2705,11 +2705,17 @@ class TodoApp {
   }
 
   // « + » du header Quotidien (vue jour) : même modal que le « + » Ajouter
-  // une tâche, recurrence pré-sélectionnée sur Quotidien (même mécanique que
-  // quickAdd() pour la cible backlog/inbox)
+  // une tâche, mais bascule directement sur le grand mode « Récurrent »
+  // (comme un clic sur ce bouton) — selectBigMode('recurring') active aussi
+  // le sous-choix Quotidien/Hebdo/Mensuel/Annuel (recSubOptions, masqué par
+  // défaut) et pré-sélectionne Quotidien puisque selectedRecurrence vient
+  // d'être remis à 'none' par openModal(). Appeler selectRecurrence('daily')
+  // seul ne suffit pas : le bouton « Date » du grand mode restait actif à
+  // l'écran et le sous-menu recSubOptions restait caché, donc rien ne
+  // montrait visuellement que la récurrence était sur Quotidien.
   addDailyTask() {
     this.openModal();
-    selectRecurrence('daily');
+    this.selectBigMode('recurring');
   }
 
   selectScheduleMode(mode) {

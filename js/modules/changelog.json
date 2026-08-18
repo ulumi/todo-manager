@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2672",
+    "date": "2026-08-18",
+    "message": "fix(vue jour): le + Quotidien bascule vraiment le modal en mode Récurrent (bouton Date restait actif, récurrence pas visible)"
+  },
+  {
     "version": "0.4.2671",
     "date": "2026-08-18",
     "message": "fix(vue jour): le bouton d'ajout rond reprend la couleur d'accent du compte (var(--primary)) au lieu d'un jaune fixe"
