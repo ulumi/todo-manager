@@ -7122,7 +7122,15 @@ class TodoApp {
       });
     }
     this._masonryRO?.disconnect();
-    document.querySelectorAll('.day-col .todo-list').forEach(list => {
+    // Ponctuel seulement — le Quotidien reste une grille N-par-ligne stricte
+    // (chaque tâche garde sa propre cellule, même si ça laisse un vide sous
+    // une tâche courte à côté d'une plus haute) : Hugues a explicitement
+    // choisi ce comportement plutôt que l'empilement masonry, qui rendait
+    // « 2 colonnes » imprévisible dès que les tâches d'un même moment
+    // n'avaient pas des hauteurs proches (ex. une tâche à sous-tâches à côté
+    // de deux tâches simples — ces deux dernières finissaient empilées dans
+    // la même colonne au lieu d'être chacune sur leur ligne).
+    document.querySelectorAll('.day-col--punctual .todo-list').forEach(list => {
       const cs = getComputedStyle(list);
       const cols = cs.display === 'grid' ? cs.gridTemplateColumns.split(' ').filter(Boolean).length : 1;
       const kids = [...list.children];
