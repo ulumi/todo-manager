@@ -887,6 +887,14 @@ main.plan-mode, main.search-mode {
   display: flex;
 }
 
+.day-view.stats-mode .subtask-item.done {
+  display: none;
+}
+
+.day-view.stats-mode .day-done-accordion-bd .subtask-item {
+  display: flex;
+}
+
 .day-done-accordion {
   margin-top: 10px;
 }

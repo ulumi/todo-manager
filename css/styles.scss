@@ -879,6 +879,9 @@ main {
 .day-view.stats-mode .todo-item.cancelled { display: none; }
 // Ces items restent visibles dans le corps de l'accordéon malgré le masquage ci-dessus
 .day-view.stats-mode .day-done-accordion-bd .todo-item { display: flex; }
+// Même masquage pour les sous-tâches complétées d'une tâche par ailleurs visible
+.day-view.stats-mode .subtask-item.done { display: none; }
+.day-view.stats-mode .day-done-accordion-bd .subtask-item { display: flex; }
 
 // ─── Done accordion (stats mode) ─────────────────────────────────────────────
 .day-done-accordion {
