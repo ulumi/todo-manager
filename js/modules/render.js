@@ -495,6 +495,7 @@ export function renderDayView(todos) {
     : `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
   const dailyGroupLabel = `<div class="day-group-label day-group-label--with-ctrl">
     <span>${state.T.recDaily}</span>
+    <button class="day-add-task-btn" onclick="window.app.addDailyTask()" title="Ajouter une tâche quotidienne">${_plusSVG}</button>
     <div class="day-group-label-line"></div>
     <div class="day-col-controls${recCtrlsCollapsed ? ' collapsed' : ''}">
       <button class="day-ctrl-btn${recPeriodGroups ? ' active' : ''}${recCtrlsCollapsed ? ' hidden' : ''}" onclick="window.app.toggleRecPeriodGroups()" title="Grouper par moment">${periodToggleSvg} Moments</button>
@@ -517,8 +518,10 @@ export function renderDayView(todos) {
   // au moins un item visible : une section entièrement complétée-masquée
   // en mode stats disparaît comme si elle était vide)
   const hasDailyPeriods = _visCount(sortedDailyMorning) > 0 || _visCount(sortedDailyAfternoon) > 0 || _visCount(sortedDailyEvening) > 0 || _visCount(sortedDailyNoPeriod) > 0;
+  // Toujours affiché (même sans aucune quotidienne), pour garder le « + »
+  // d'ajout accessible — même logique que le header Aujourd'hui/Ponctuel
+  leftCol += dailyGroupLabel;
   if (hasDailyPeriods) {
-    leftCol += dailyGroupLabel;
     if (recPeriodGroups) {
       if (_visCount(sortedDailyNoPeriod) > 0)
         leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;

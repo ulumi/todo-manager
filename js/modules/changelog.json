@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2670",
+    "date": "2026-08-18",
+    "message": "feat(vue jour): bouton d'ajout rond et jaune, repris sur le header Quotidien pour créer une tâche récurrente quotidienne en un clic"
+  },
+  {
     "version": "0.4.2667",
     "date": "2026-08-18",
     "message": "style(vue jour): compteur de sous-tâches dans un badge rond coloré, icône timer retirée du badge de durée estimée"

@@ -2704,6 +2704,14 @@ class TodoApp {
     openModal(state.navDate, state.todos, 'inbox');
   }
 
+  // « + » du header Quotidien (vue jour) : même modal que le « + » Ajouter
+  // une tâche, recurrence pré-sélectionnée sur Quotidien (même mécanique que
+  // quickAdd() pour la cible backlog/inbox)
+  addDailyTask() {
+    this.openModal();
+    selectRecurrence('daily');
+  }
+
   selectScheduleMode(mode) {
     selectScheduleMode(mode);
   }
