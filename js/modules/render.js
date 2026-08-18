@@ -514,32 +514,41 @@ export function renderDayView(todos) {
 
   let leftCol = '';
 
-  // Daily items — split by period (only render non-empty sections, i.e.
-  // au moins un item visible : une section entièrement complétée-masquée
-  // en mode stats disparaît comme si elle était vide)
-  const hasDailyPeriods = _visCount(sortedDailyMorning) > 0 || _visCount(sortedDailyAfternoon) > 0 || _visCount(sortedDailyEvening) > 0 || _visCount(sortedDailyNoPeriod) > 0;
   // Toujours affiché (même sans aucune quotidienne), pour garder le « + »
   // d'ajout accessible — même logique que le header Aujourd'hui/Ponctuel
   leftCol += dailyGroupLabel;
-  if (hasDailyPeriods) {
-    if (recPeriodGroups) {
-      if (_visCount(sortedDailyNoPeriod) > 0)
-        leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-      if (_visCount(sortedDailyMorning) > 0)
-        leftCol += `<div class="day-period-label">Matin</div><div class="todo-list" data-group="daily-morning" style="${recColStyle}">${sortedDailyMorning.map(t => todoItemHTML(t, navDate, 'daily-morning', true)).join('')}</div>`;
-      if (_visCount(sortedDailyAfternoon) > 0)
-        leftCol += `<div class="day-period-label">Après-midi</div><div class="todo-list" data-group="daily-afternoon" style="${recColStyle}">${sortedDailyAfternoon.map(t => todoItemHTML(t, navDate, 'daily-afternoon', true)).join('')}</div>`;
-      if (_visCount(sortedDailyEvening) > 0)
-        leftCol += `<div class="day-period-label">Soir</div><div class="todo-list" data-group="daily-evening" style="${recColStyle}">${sortedDailyEvening.map(t => todoItemHTML(t, navDate, 'daily-evening', true)).join('')}</div>`;
-    } else {
-      const allDaily = _sinkDone(sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []));
-      leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${allDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
-    }
+
+  if (recPeriodGroups) {
+    if (_visCount(sortedDailyNoPeriod) > 0)
+      leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${sortedDailyNoPeriod.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
+    // Matin/Après-midi/Soir TOUJOURS affichés, avec un placeholder
+    // .period-dropzone en pointillés si vides — même recette que
+    // mkHeureSection côté ponctuel (« garder une cible de drop » même sans
+    // tâche), portée ici aux sous-périodes du Quotidien pour que le
+    // glisser-déposer d'une quotidienne vers son moment fonctionne même
+    // quand ce moment n'a encore aucune tâche. Disparaît seulement si des
+    // items existent mais sont tous complétés-masqués en mode stats
+    // (_visCount === 0 avec items.length > 0), pas si vraiment vide.
+    const _mkDailyPeriodSection = (items, group, period, label) => {
+      if (items.length > 0 && _visCount(items) === 0) return '';
+      const content = items.length
+        ? items.map(t => todoItemHTML(t, navDate, group, true)).join('')
+        : `<div class="period-dropzone"></div>`;
+      return `<div class="day-heure-section" data-period="${period}"><div class="day-period-label day-heure-label" data-period="${period}">${label}</div><div class="todo-list" data-group="${group}" style="${recColStyle}">${content}</div></div>`;
+    };
+    leftCol += `<div class="day-heure-grid">${
+      _mkDailyPeriodSection(sortedDailyMorning, 'daily-morning', 'morning', 'Matin') +
+      _mkDailyPeriodSection(sortedDailyAfternoon, 'daily-afternoon', 'afternoon', 'Après-midi') +
+      _mkDailyPeriodSection(sortedDailyEvening, 'daily-evening', 'evening', 'Soir')
+    }</div>`;
+  } else {
+    const allDaily = _sinkDone(sortByOrder([...sortedDailyNoPeriod, ...sortedDailyMorning, ...sortedDailyAfternoon, ...sortedDailyEvening], recOrd['daily'] || []));
+    leftCol += `<div class="todo-list" data-group="daily" style="${recColStyle}">${allDaily.map(t => todoItemHTML(t, navDate, 'daily', true)).join('')}</div>`;
   }
+
   if (_visCount(sortedWeekly) > 0)  leftCol += `<div class="day-group-label">${state.T.recWeekly}</div><div class="todo-list" data-group="weekly">${sortedWeekly.map(t => todoItemHTML(t, navDate, 'weekly', true)).join('')}</div>`;
   if (_visCount(sortedMonthly) > 0) leftCol += `<div class="day-group-label">${state.T.recMonthly}</div><div class="todo-list" data-group="monthly">${sortedMonthly.map(t => todoItemHTML(t, navDate, 'monthly', true)).join('')}</div>`;
   if (_visCount(sortedYearly) > 0)  leftCol += `<div class="day-group-label">${state.T.recYearly}</div><div class="todo-list" data-group="yearly">${sortedYearly.map(t => todoItemHTML(t, navDate, 'yearly', true)).join('')}</div>`;
-  if (!leftCol) leftCol = `<div class="day-col-empty">${state.T.emptyRecurring || state.T.emptyDay}</div>`;
 
   // Column count — icon buttons (forcé à 1 quand le panneau de relance occupe la 3e colonne)
   const colCountSetting = parseInt(localStorage.getItem('dayColCount') || '2');

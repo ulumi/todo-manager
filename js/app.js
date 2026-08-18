@@ -4564,6 +4564,12 @@ class TodoApp {
       const _periodGroups = localStorage.getItem('dayPeriodGroups') !== 'false';
       const isHeureDrop = _ds === 'chrono' || _ds === 'heure' || _periodGroups;
       const isPunctGroup = g => g === 'punctual' || g?.startsWith('punctual-');
+      // Équivalent pour la colonne Quotidien — son propre réglage
+      // (recPeriodGroups), indépendant du tri/regroupement de la colonne
+      // Ponctuelle, gouverne si les sous-listes Matin/Après-midi/Soir de
+      // .day-heure-section existent pour servir de cible de drop.
+      const isDailyPeriodDrop = localStorage.getItem('recPeriodGroups') !== 'false';
+      const isDailyGroup = g => g === 'daily' || g?.startsWith('daily-');
 
       // Survol du haut/bas d'un item → il PREND SA PLACE avant/après ;
       // survol du centre → la tâche(s) glissée(s) devient sous-tâche de
@@ -4573,7 +4579,8 @@ class TodoApp {
       if (todoTarget && todoTarget !== draggedEl) {
         const sameGroup  = todoTarget.dataset.group === draggedGroup;
         const heureGroup = isHeureDrop && isPunctGroup(todoTarget.dataset.group) && isPunctGroup(draggedGroup);
-        if (sameGroup || heureGroup) {
+        const dailyGroup = isDailyPeriodDrop && isDailyGroup(todoTarget.dataset.group) && isDailyGroup(draggedGroup);
+        if (sameGroup || heureGroup || dailyGroup) {
           clearDropSpacer();
           if (activeItemTarget && activeItemTarget !== todoTarget) clearItemTarget();
           activeItemTarget = todoTarget;
@@ -4593,7 +4600,7 @@ class TodoApp {
           todoTarget.classList.toggle('drop-after', dropZone === 'after');
           todoTarget.classList.toggle('drop-nest', dropZone === 'nest');
           dropPriority = todoTarget.closest('.todo-list[data-priority]')?.dataset.priority || null;
-          if (isHeureDrop) {
+          if (isHeureDrop || dailyGroup) {
             // Normaliser groupe → moment : 'punctual-morning'/'daily-morning' → 'morning',
             // 'punctual'/'daily'/etc. (sans moment) → '' — sinon on écrit un
             // dayPeriod invalide qui rend la tâche invisible en vue jour
@@ -4700,7 +4707,11 @@ class TodoApp {
       // Hover on a heure period label or empty section → change moment ET
       // devient le 1er item de ce moment (déposer sur l'en-tête = en tête de
       // liste, pas en fin — demandé explicitement par Hugues, cf. CLAUDE.md).
-      if (isHeureDrop && !e.target.closest('.todo-item')) {
+      // Marche aussi pour les sous-périodes du Quotidien (mêmes classes
+      // .day-heure-label/.day-heure-section, cf. render.js) — gouverné par
+      // isDailyPeriodDrop plutôt que isHeureDrop puisque ce sont deux
+      // réglages de colonnes indépendants (dayPeriodGroups vs recPeriodGroups).
+      if ((isHeureDrop || (isDailyPeriodDrop && isDailyGroup(draggedGroup))) && !e.target.closest('.todo-item')) {
         const heureLabel   = e.target.closest('.day-heure-label[data-period]');
         const heureSection = !heureLabel && e.target.closest('.day-heure-section[data-period]');
         const heureTarget  = heureLabel || heureSection;
@@ -4842,7 +4853,11 @@ class TodoApp {
       // Change the item's dayPeriod to match the target section (chrono or period groups)
       const _dsMode = localStorage.getItem('daySort');
       const _pgMode = localStorage.getItem('dayPeriodGroups') !== 'false';
-      if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
+      // Équivalent Quotidien : son propre réglage (recPeriodGroups), pas
+      // celui du ponctuel — cf. isDailyPeriodDrop dans le dragover ci-dessus.
+      const _recPgMode = localStorage.getItem('recPeriodGroups') !== 'false';
+      const _isDailyDrag = draggedGroup === 'daily' || draggedGroup?.startsWith('daily-');
+      if ((_dsMode === 'chrono' || _dsMode === 'heure' || _pgMode || (_isDailyDrag && _recPgMode)) && !draggedEl.classList.contains('day-spacer') && dropPeriod !== null) {
         const ids = resolveIds();
         // _resolveOccurrences() : une tâche récurrente ne change de moment
         // que pour SON occurrence affichée — les autres jours ne bougent pas.
@@ -4854,7 +4869,8 @@ class TodoApp {
         // Lâché sur un item → réordonner aussi dans ce moment
         // (l'ordre manuel prime sur l'heure dans le rendu chrono)
         if (dropTarget && dropTarget !== '__heure_empty__' && !dropTarget.startsWith('spacer-')) {
-          const targetGroup = dropPeriod === '' ? 'punctual' : `punctual-${dropPeriod}`;
+          const groupPrefix = _isDailyDrag ? 'daily' : 'punctual';
+          const targetGroup = dropPeriod === '' ? groupPrefix : `${groupPrefix}-${dropPeriod}`;
           this.dropReorder(ids, targetGroup, dropTarget, dropBefore);
           return; // dropReorder re-render
         }
