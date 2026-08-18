@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2662",
+    "date": "2026-08-18",
+    "message": "fix(vue jour): les tâches courtes s'empilent dans la même colonne d'une grille masonry au lieu de laisser un vide sous chacune"
+  },
+  {
     "version": "0.4.2661",
     "date": "2026-08-18",
     "message": "feat(vue jour): bouton d'ajout de tâche toujours visible en tête de colonne, à côté du titre"

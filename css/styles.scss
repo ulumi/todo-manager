@@ -2083,10 +2083,17 @@ main {
 
 // Empilement « masonry » d'une liste en grille (vue jour, ≥2 colonnes) :
 // les rangées deviennent des tranches de 4 px et chaque enfant occupe autant
-// de tranches que sa hauteur réelle (--rspan, posé par app._layoutMasonry())
-// — le 3e item remonte donc juste sous le 1er au lieu d'attendre la fin de la
-// rangée du 2e. L'ordre DOM (et donc l'ordre manuel et le drag-and-drop)
-// reste inchangé : colonne 1, colonne 2, colonne 1…
+// de tranches que sa hauteur réelle (--rspan, posé par app._layoutMasonry()),
+// qui pose aussi une colonne EXPLICITE par item (inline `grid-column`,
+// calculée par app._packColumns() pour minimiser la hauteur max d'une
+// colonne) — sans ça, le placement auto du navigateur met 1 item par colonne
+// dès la 1re rangée, même quand 2 items courts tiendraient ensemble sous la
+// hauteur du voisin. L'ordre DOM (et donc l'ordre manuel et le
+// drag-and-drop) reste inchangé : les items d'une même colonne restent
+// contigus dans le DOM, seule leur répartition entre colonnes s'équilibre.
+// Les enfants pleine-largeur (en-tête de groupe, input de saisie inline,
+// aperçu de dépôt) gardent leur propre `grid-column: 1/-1` — jamais de
+// colonne explicite posée dessus par _layoutMasonry().
 // La classe n'est posée qu'APRÈS le calcul des spans, dans la même tâche JS —
 // sans quoi un --rspan encore à 1 empilerait tous les items sur 4 px.
 // L'espacement vertical passe dans le span (row-gap: 0), le column-gap reste.

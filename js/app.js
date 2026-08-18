@@ -7066,9 +7066,18 @@ class TodoApp {
   // haute laisse un grand vide (et s'étirait même à sa hauteur avant
   // `align-items: start`, cf. .day-col dans styles.scss). On découpe donc les
   // rangées en tranches de MASONRY_ROW px et on donne à chaque enfant autant
-  // de tranches que sa hauteur réelle : le 3e item remonte directement sous
-  // le 1er. L'ordre du DOM ne bouge pas (colonne 1, colonne 2, colonne 1…),
-  // donc l'ordre manuel et le drag-and-drop restent inchangés.
+  // de tranches que sa hauteur réelle. Ça ne suffit pas seul : sans assigner
+  // aussi la COLONNE de chaque item, le placement auto du navigateur reste
+  // 1 item par colonne sur la 1re rangée (checkup/suivi/Tablettes Storage →
+  // 3 colonnes occupées même si les deux premières tiennent ensemble dans la
+  // hauteur de la 3e) — `_packColumns()` calcule donc, par petits groupes
+  // d'items consécutifs (DOM order jamais changé, donc l'ordre manuel et le
+  // drag-and-drop restent inchangés), la colonne qui minimise la hauteur max
+  // ; item 1+2 finissent alors empilés dans la même colonne si ça les fait
+  // tenir sous la hauteur du plus grand voisin. Les éléments pleine-largeur
+  // (en-tête de groupe, input de saisie inline) gardent leur `grid-column:
+  // 1/-1` du CSS — jamais écrasé par une colonne explicite — et servent de
+  // coupure : l'empilement recommence à zéro juste après.
   // Mesure PUIS pose de la classe dans la même tâche JS : jamais d'état
   // intermédiaire où .masonry serait active avec des --rspan encore absents.
   _layoutMasonry() {
@@ -7089,14 +7098,64 @@ class TodoApp {
       const kids = [...list.children];
       if (cols < 2) {
         list.classList.remove('masonry');
-        kids.forEach(el => el.style.removeProperty('--rspan'));
+        kids.forEach(el => { el.style.removeProperty('--rspan'); el.style.removeProperty('grid-column'); });
         return;
       }
       const spans = kids.map(el => Math.max(1, Math.ceil((el.getBoundingClientRect().height + GAP) / ROW)));
       kids.forEach((el, i) => el.style.setProperty('--rspan', spans[i]));
+      // Coupures pleine-largeur : jamais de colonne explicite dessus (leur
+      // CSS pose déjà 1/-1), l'empilement des items normaux repart à zéro
+      // juste après pour ne pas fausser l'équilibrage sur toute la liste.
+      let segment = [];
+      const flushSegment = () => {
+        if (!segment.length) return;
+        const heights = segment.map(el => el.getBoundingClientRect().height + GAP);
+        this._packColumns(heights, cols).forEach((c, i) => segment[i].style.setProperty('grid-column', c + 1));
+        segment = [];
+      };
+      kids.forEach(el => {
+        if (el.matches('.task-group-header, .ctx-title-input, .drop-gap')) {
+          el.style.removeProperty('grid-column');
+          flushSegment();
+        } else {
+          segment.push(el);
+        }
+      });
+      flushSegment();
       list.classList.add('masonry');
       kids.forEach(el => this._masonryRO?.observe(el));
     });
+  }
+
+  // Partitionne `heights` (dans l'ordre du DOM) en au plus `cols` groupes
+  // contigus en minimisant la hauteur max d'un groupe (recherche binaire sur
+  // la capacité + vérif gloutonne — variante « masonry équilibré » du
+  // problème classique de partition d'un tableau en K sous-tableaux). Renvoie
+  // l'index de colonne (0-based) de chaque item ; les colonnes en trop
+  // restent simplement vides plutôt que d'être forcées à 1 item chacune.
+  _packColumns(heights, cols) {
+    if (!heights.length) return [];
+    const groupsFor = capacity => {
+      let groups = 1, sum = 0;
+      for (const h of heights) {
+        if (sum > 0 && sum + h > capacity) { groups++; sum = 0; }
+        sum += h;
+      }
+      return groups;
+    };
+    let lo = Math.max(...heights), hi = heights.reduce((a, b) => a + b, 0);
+    while (lo < hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      if (groupsFor(mid) <= cols) hi = mid; else lo = mid + 1;
+    }
+    const capacity = lo, colOf = [];
+    let col = 0, sum = 0;
+    for (const h of heights) {
+      if (sum > 0 && sum + h > capacity) { col++; sum = 0; }
+      colOf.push(col);
+      sum += h;
+    }
+    return colOf;
   }
 
   _updateMasonrySpan(el) {
