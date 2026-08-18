@@ -209,7 +209,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     const cls = `todo-focustime-badge${est ? ' editable' : ''}`;
     const badgeTitle = est ? `${title} — cliquer pour modifier` : title;
     const onclick = est ? ` onclick="event.stopPropagation();window.app.editEstimateBadge(this,'${todo.id}')"` : '';
-    return `<span class="${cls}" title="${badgeTitle}"${onclick}>⏱ <span class="todo-focustime-label">${label}</span></span>`;
+    return `<span class="${cls}" title="${badgeTitle}"${onclick}><span class="todo-focustime-label">${label}</span></span>`;
   })();
   const counterBar = (() => {
     if (!todo.counterEnabled || todo.countTo === undefined) return '';

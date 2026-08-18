@@ -2741,6 +2741,21 @@ main.plan-mode, main.search-mode {
   color: var(--text);
 }
 
+.todo-subtask-toggle-cnt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .subtask-toggle-chevron {
   flex-shrink: 0;
   transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);

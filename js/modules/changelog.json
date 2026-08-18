@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2667",
+    "date": "2026-08-18",
+    "message": "style(vue jour): compteur de sous-tâches dans un badge rond coloré, icône timer retirée du badge de durée estimée"
+  },
+  {
     "version": "0.4.2663",
     "date": "2026-08-18",
     "message": "fix(vue jour): les sous-tâches complétées sont aussi masquées quand les tâches complétées sont cachées"

@@ -2729,6 +2729,22 @@ main {
   &:hover { background: var(--surface2); color: var(--text); }
 }
 
+// Même recette que .day-ctrl-count : petit badge rond coloré pour un compte
+.todo-subtask-toggle-cnt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .subtask-toggle-chevron {
   flex-shrink: 0;
   transition: transform .2s cubic-bezier(.25,.46,.45,.94);
