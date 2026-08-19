@@ -6055,6 +6055,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--primary);
 }
 
+// .dictate-btn (posé par attachMic) est en top:6px par défaut — pensé pour
+// un champ assez haut (.fl-group). .quick-insert-field n'a que la hauteur
+// d'une ligne de texte : le bouton dépassait sous la barre. Centré à la
+// verticale à la place, même recette que .subtask-new-input--card + .dictate-btn--sm.
+.quick-insert-field .dictate-btn {
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+}
+
 
 // ─── 18. Clouds ──────────────────────────────────────────────────────────
 
