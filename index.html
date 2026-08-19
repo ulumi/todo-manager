@@ -301,7 +301,7 @@
 
 
 <!-- ═══ NEW Add Task Modal (Floating Labels + Contextual Sidebar) ═══ -->
-<div class="modal-overlay hidden" id="modalOverlay">
+<div class="modal-overlay hidden" id="modalOverlay" onclick="if(event.target===this)window.app.closeModal()">
   <div class="modal modal-floating">
     <!-- ── Main form ── -->
     <div class="modal-main">

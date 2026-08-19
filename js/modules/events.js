@@ -24,7 +24,6 @@ export function setupEventListeners(app) {
   document.getElementById('deleteOneBtn').addEventListener('click', () => app.deleteOneOccurrence());
   document.getElementById('deleteFutureBtn').addEventListener('click', () => app.deleteFutureOccurrences());
   document.getElementById('deleteAllBtn').addEventListener('click', () => app.deleteAllOccurrences());
-  // Backdrop click does NOT close the add modal — only the X button does.
   document.getElementById('saveTask').addEventListener('click', () => app.saveTask());
 
   // Recurrence options

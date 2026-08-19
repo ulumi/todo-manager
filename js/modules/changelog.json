@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2708",
+    "date": "2026-08-18",
+    "message": "fix(modal): cliquer à l'extérieur du modal d'édition de tâche le ferme désormais"
+  },
+  {
     "version": "0.4.2706",
     "date": "2026-08-18",
     "message": "feat(vue jour): bouton de suppression directe sur chaque tâche"
