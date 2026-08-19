@@ -946,7 +946,7 @@ class TodoApp {
       if (state.T[el.dataset.i18n]) el.textContent = state.T[el.dataset.i18n];
     });
     document.getElementById('taskTitle').placeholder = state.T.taskPlaceholder;
-    document.getElementById('quickInsertInput').placeholder = state.T.quickInsertPlaceholder;
+    document.getElementById('quickInsertHintLabel').textContent = state.T.quickInsertPlaceholder;
     const zoomGroup = document.querySelector('.zoom-group');
     if (zoomGroup) zoomGroup.title = state.T.zoomButtonTitle;
     document.getElementById('deleteOneTitle').textContent = state.T.deleteOneOccurrence;

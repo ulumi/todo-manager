@@ -241,10 +241,17 @@
   <span class="qab-label" data-i18n="addTaskShort">ADD TASK</span>
 </button>
 
-<!-- Quick Insert Bar — raccourci clavier 'n', ajout ultra-rapide sans ouvrir la modale -->
+<!-- Quick Insert Bar — raccourci clavier 'n', ajout ultra-rapide sans ouvrir la modale.
+     placeholder=" " (espace, jamais visible) sert uniquement à activer :placeholder-shown
+     en CSS pour faire disparaître .quick-insert-hint dès la première frappe. -->
 <div id="quickInsertBar" class="quick-insert-bar hidden">
-  <svg class="quick-insert-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
-  <input type="text" id="quickInsertInput" class="quick-insert-input" maxlength="200" autocomplete="off">
+  <div class="quick-insert-field">
+    <input type="text" id="quickInsertInput" class="quick-insert-input" placeholder=" " maxlength="200" autocomplete="off">
+    <div class="quick-insert-hint">
+      <svg class="quick-insert-icon" width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+      <span id="quickInsertHintLabel"></span>
+    </div>
+  </div>
 </div>
 
 <!-- Delete Recurrence Modal -->

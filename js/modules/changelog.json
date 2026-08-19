@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2698",
+    "date": "2026-08-18",
+    "message": "style(raccourci): barre de saisie rapide plus soignée — hint hors du placeholder (ne se fait plus tronquer), disparaît en fondu dès la 1re frappe, ouverture/fermeture smooth"
+  },
+  {
     "version": "0.4.2692",
     "date": "2026-08-18",
     "message": "fix(raccourci): la lettre 'n' ne s'insère plus dans le champ de la barre de saisie rapide qu'elle vient d'ouvrir"

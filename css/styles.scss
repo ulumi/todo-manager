@@ -5964,47 +5964,82 @@ body:has(.bottom-panel:not(.hidden))::before {
 // ultra-rapide sans passer par la modale complète. Style command-palette,
 // centrée, plus bas que le header (sticky, hauteur variable) pour ne jamais
 // le recouvrir plutôt que de dépendre de sa hauteur exacte.
+//
+// Ouverture/fermeture en transition opacity+transform (pas @keyframes) pour
+// que les deux sens soient symétriquement smooth — un simple display:none
+// à la fermeture aurait fait disparaître la barre d'un coup sec. La barre
+// reste toujours display:flex (position:fixed, donc zéro coût de layout
+// pendant qu'elle est invisible) ; .hidden ne fait plus que retomber à
+// opacity 0 + pointer-events none.
 .quick-insert-bar {
   position: fixed;
   top: 18vh;
   left: 50%;
-  transform: translateX(-50%);
+  width: min(460px, calc(100vw - 32px));
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1.5px solid var(--primary);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .22);
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+  transition: opacity .2s cubic-bezier(.25, .46, .45, .94), transform .2s cubic-bezier(.25, .46, .45, .94);
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -10px) scale(.96);
+  }
+}
+
+// Champ + hint superposés (même case) : le hint (icône + texte) recouvre
+// l'input tant qu'il est vide, puis s'efface complètement dès la 1re frappe
+// — plus de texte tronqué dans un attribut placeholder natif trop étroit,
+// et le texte tapé récupère alors toute la largeur, sans rien à côté.
+.quick-insert-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.quick-insert-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.quick-insert-hint {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(420px, calc(100vw - 32px));
-  padding: 12px 16px;
-  background: var(--surface);
-  border: 1.5px solid var(--primary);
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
-  z-index: 9500;
-  animation: quick-insert-in .18s cubic-bezier(.25, .46, .45, .94);
+  color: var(--text-muted);
+  font-size: 17px;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity .16s ease;
+}
 
-  &.hidden { display: none; }
+// :placeholder-shown ne matche que si l'input est vide — placeholder=" "
+// (un espace, jamais rendu) sert uniquement de déclencheur à ce sélecteur.
+.quick-insert-input:not(:placeholder-shown) ~ .quick-insert-hint {
+  opacity: 0;
 }
 
 .quick-insert-icon {
   flex-shrink: 0;
   color: var(--primary);
-}
-
-.quick-insert-input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 500;
-
-  &::placeholder { color: var(--text-muted); font-weight: 400; }
-}
-
-@keyframes quick-insert-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 
