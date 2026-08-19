@@ -1737,6 +1737,11 @@ class TodoApp {
       if (title) onConfirm(title, viaEnter);
     };
     input.addEventListener('keydown', e => {
+      // Empêche toute lettre tapée ici (n, d, w, m, y, t, f…) de bubbler
+      // jusqu'aux raccourcis clavier globaux sans touche modificatrice
+      // (events.js/app.js) — sinon une frappe change de vue ou ouvre un
+      // autre panneau en pleine saisie, qui démonte cet input au passage.
+      e.stopPropagation();
       if (e.key === 'Enter') { e.preventDefault(); finish(true); }
       if (e.key === 'Escape') { done = true; input.remove(); }
     });
@@ -2664,6 +2669,10 @@ class TodoApp {
       if (commit && title && title !== current) this.renameGroup(groupId, title);
     };
     input.addEventListener('keydown', e => {
+      // Même garde que _inlineInput() : sans stopPropagation, taper "d"/"w"/
+      // "m"/"y"/"t"/"n"/"f" ici bubble jusqu'aux raccourcis globaux sans
+      // touche modificatrice et change de vue en pleine saisie du nom.
+      e.stopPropagation();
       if (e.key === 'Enter') { e.preventDefault(); finish(true); }
       if (e.key === 'Escape') finish(false);
     });

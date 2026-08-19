@@ -58,19 +58,30 @@ function _syncDurationStepper(inputId) {
 }
 
 const DUR_STEPS = [0, 1, 2, 3, 5, 10, 15, 30, 60, 90];
+const DUR_HOUR_MARK = 180; // 3:00 — au-delà, paliers d'1h plutôt que 30 min
 
+// Au-delà du dernier palier fixe (90 min), la durée reste éditable sans plafond :
+// paliers de 30 min jusqu'à 3:00, puis paliers d'1h ensuite. Bornes du + strictement
+// exclusives (<90/<180) et du - inclusives (<=90/<=180) pour que +/- restent réversibles
+// symétriquement à chaque palier (ex. 150→+30→180→+60→240, et 240→-60→180→-30→150).
 function _stepDuration(current, isPlus) {
-  const max = DUR_STEPS[DUR_STEPS.length - 1];
   if (isPlus) {
-    if (current >= max) return current;
-    const next = DUR_STEPS.find(v => v > current);
-    return next !== undefined ? next : max;
+    if (current < 90) {
+      const next = DUR_STEPS.find(v => v > current);
+      return next !== undefined ? next : 90;
+    }
+    if (current < DUR_HOUR_MARK) return Math.floor(current / 30) * 30 + 30;
+    return Math.floor(current / 60) * 60 + 60;
   }
   if (current <= 0) return 0;
-  for (let i = DUR_STEPS.length - 1; i >= 0; i--) {
-    if (DUR_STEPS[i] < current) return DUR_STEPS[i];
+  if (current <= 90) {
+    for (let i = DUR_STEPS.length - 1; i >= 0; i--) {
+      if (DUR_STEPS[i] < current) return DUR_STEPS[i];
+    }
+    return 0;
   }
-  return 0;
+  if (current <= DUR_HOUR_MARK) return Math.ceil(current / 30) * 30 - 30;
+  return Math.ceil(current / 60) * 60 - 60;
 }
 
 function _commitDurationDisplay(display) {
