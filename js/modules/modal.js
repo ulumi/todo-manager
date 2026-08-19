@@ -153,6 +153,7 @@ document.addEventListener('keydown', e => {
 
   if (e.altKey && e.key === 'Tab') {
     e.preventDefault();
+    setCatSectionOpen('duration', true);
     document.querySelector('.duration-stepper[data-target="taskDurationEstimated"] .dur-display')?.focus();
     return;
   }
@@ -620,7 +621,6 @@ export function discardDraft() {
   populateIntentionTags([]);
   switchTagTab('categories');
   populateModalSubtasks([]);
-  setMoreOptionsExpanded(false);
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
@@ -629,6 +629,7 @@ export function discardDraft() {
   if (scheduleModeGroup) scheduleModeGroup.style.display = '';
   const dateGroup = document.getElementById('dateGroup');
   if (dateGroup) dateGroup.style.display = '';
+  _autoExpandCatSections();
   document.getElementById('taskTitle').focus();
 }
 
@@ -950,19 +951,147 @@ export function selectPriority(p) {
   _scheduleDraftSave();
 }
 
-// ─── Plus d'options (dépliant manuel — remplace l'ancien reveal titre-déclenché) ──
+// ─── Sections thématiques dépliables (Quand/Durée/Priorité/Notes/
+// Étiquettes/Compteur) — remplace l'ancien dépliant unique « Plus
+// d'options ». Chaque section se replie/déplie indépendamment (pas un
+// accordéon exclusif) ; _autoExpandCatSections() décide, à l'ouverture du
+// modal, laquelle a déjà un contenu non par défaut à montrer d'emblée — sur
+// une tâche neuve tous les champs sont vides, donc tout reste replié
+// (départ minimaliste), sans avoir besoin d'un cas séparé pour la création.
 
-function setMoreOptionsExpanded(expanded) {
-  const box = document.getElementById('modalMoreOptions');
-  const toggle = document.getElementById('modalMoreToggle');
-  if (box) box.classList.toggle('expanded', expanded);
-  if (toggle) toggle.classList.toggle('expanded', expanded);
+const CAT_KEYS = ['when', 'duration', 'priority', 'notes', 'tags', 'counter'];
+
+export function setCatSectionOpen(key, open) {
+  document.getElementById(`catSection-${key}`)?.classList.toggle('open', !!open);
 }
 
-export function toggleMoreOptions() {
-  const box = document.getElementById('modalMoreOptions');
-  setMoreOptionsExpanded(!box?.classList.contains('expanded'));
+export function toggleCatSection(key) {
+  const section = document.getElementById(`catSection-${key}`);
+  if (!section) return;
+  setCatSectionOpen(key, !section.classList.contains('open'));
 }
+
+function _hasCatData(key) {
+  switch (key) {
+    case 'when':
+      if (state.scheduleMode !== 'date') return true; // Inbox / Backlog
+      if (state.selectedRecurrence !== 'none') return true;
+      if (document.getElementById('taskStartTime')?.value) return true;
+      if (document.getElementById('taskFlexibleTime')?.checked) return true;
+      if (document.getElementById('taskDayPeriod')?.value) return true;
+      return false;
+    case 'duration':
+      return !!(document.getElementById('taskDurationEstimated')?.value || document.getElementById('taskDurationReal')?.value);
+    case 'priority':
+      return !!state.selectedPriority;
+    case 'notes':
+      return !!document.getElementById('taskDescription')?.value.trim();
+    case 'tags':
+      return !!(_selectedCategoryIds.length || _selectedProjectIds.length || _selectedIntentionIds.length);
+    case 'counter':
+      return !!document.getElementById('taskCounterEnabled')?.checked;
+    default:
+      return false;
+  }
+}
+
+function _autoExpandCatSections() {
+  CAT_KEYS.forEach(key => setCatSectionOpen(key, _hasCatData(key)));
+  _refreshCollapsePreviews();
+}
+
+function _setCatPreview(key, text) {
+  const el = document.getElementById(`catPreview-${key}`);
+  if (el) el.textContent = text;
+}
+
+function _fmtWhenPreview() {
+  if (state.scheduleMode === 'inbox') return 'Inbox';
+  if (state.scheduleMode === 'backlog') return 'Backlog';
+  if (state.selectedRecurrence !== 'none') {
+    const labels = { daily: 'Quotidien', weekly: 'Hebdo', monthly: 'Mensuel', yearly: 'Annuel' };
+    return labels[state.selectedRecurrence] || 'Répète';
+  }
+  const parts = [];
+  const dateVal = document.getElementById('taskDate')?.value;
+  if (dateVal) {
+    const d = parseDS(dateVal);
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    if (dateVal === DS(new Date())) parts.push("Aujourd'hui");
+    else if (dateVal === DS(tomorrow)) parts.push('Demain');
+    else if (d) parts.push(`${d.getDate()} ${_MONTHS_SHORT[d.getMonth()]}`);
+  }
+  const time = document.getElementById('taskStartTime')?.value;
+  if (time) parts.push(time);
+  const period = document.getElementById('taskDayPeriod')?.value;
+  if (period) parts.push(_PERIOD_LABELS[period]);
+  return parts.join(' · ') || 'Non planifiée';
+}
+
+function _fmtDurationPreview() {
+  const est = document.getElementById('taskDurationEstimated')?.value;
+  const real = document.getElementById('taskDurationReal')?.value;
+  const parts = [];
+  if (est) parts.push(`≈ ${_formatDuration(est)}`);
+  if (real) parts.push(`réel ${_formatDuration(real)}`);
+  return parts.join(' · ') || 'Aucune';
+}
+
+function _fmtPriorityPreview() {
+  const labels = { low: 'Basse', medium: 'Moyenne', high: 'Haute' };
+  return labels[state.selectedPriority] || 'Aucune';
+}
+
+function _fmtNotesPreview() {
+  const v = document.getElementById('taskDescription')?.value.trim();
+  if (!v) return 'Aucune';
+  return v.length > 42 ? v.slice(0, 42) + '…' : v;
+}
+
+function _fmtTagsPreview() {
+  const names = [];
+  const cats = getCategories();
+  const projs = getProjects();
+  let intentions = [];
+  try { intentions = JSON.parse(localStorage.getItem('intentions') || '[]'); } catch { intentions = []; }
+  _selectedCategoryIds.forEach(id => { const c = cats.find(x => x.id === id); if (c) names.push(c.name); });
+  _selectedProjectIds.forEach(id => { const p = projs.find(x => x.id === id); if (p) names.push(p.name); });
+  _selectedIntentionIds.forEach(id => { const i = intentions.find(x => x.id === id); if (i) names.push(i.codename || i.title); });
+  return names.length ? names.join(', ') : 'Aucune';
+}
+
+function _fmtCounterPreview() {
+  if (!document.getElementById('taskCounterEnabled')?.checked) return 'Désactivé';
+  const from = document.getElementById('taskCountFrom')?.value || 0;
+  const to   = document.getElementById('taskCountTo')?.value;
+  const unit = document.getElementById('taskCountUnit')?.value || '';
+  return to ? `${from} / ${to} ${unit}`.trim() : `Depuis ${from}${unit ? ' ' + unit : ''}`;
+}
+
+function _refreshCollapsePreviews() {
+  _setCatPreview('when', _fmtWhenPreview());
+  _setCatPreview('duration', _fmtDurationPreview());
+  _setCatPreview('priority', _fmtPriorityPreview());
+  _setCatPreview('notes', _fmtNotesPreview());
+  _setCatPreview('tags', _fmtTagsPreview());
+  _setCatPreview('counter', _fmtCounterPreview());
+}
+
+// Rafraîchi après (quasi) toute interaction dans le modal plutôt que d'être
+// fileté explicitement dans chaque mutateur (selectBigMode, selectPriority,
+// toggle des tags, saisie des durées/notes/compteur...) — un seul point
+// d'entrée, robuste à un futur champ ajouté sans y penser. Coût négligeable :
+// juste quelques lectures de state/DOM + écritures de textContent.
+let _cpRAF = null;
+function _scheduleCollapsePreviewRefresh() {
+  if (_cpRAF) return;
+  _cpRAF = requestAnimationFrame(() => { _cpRAF = null; _refreshCollapsePreviews(); });
+}
+['click', 'input', 'change'].forEach(evt => {
+  document.addEventListener(evt, e => {
+    if (e.target.closest('.modal-main')) _scheduleCollapsePreviewRefresh();
+  });
+});
 
 export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = false } = {}) {
   date = date || state.navDate;
@@ -1043,7 +1172,7 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   if (!restoreDraft) clearDraft();
   if (draftBanner) draftBanner.style.display = hadDraft ? '' : 'none';
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  setMoreOptionsExpanded(hadDraft);
+  _autoExpandCatSections();
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   gsap.fromTo(modalBox,
@@ -1208,9 +1337,11 @@ export function openEditModal(id, dateStr, todos) {
   }
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
-  // Plus d'options — toujours dépliées en édition (notes/sous-tâches/tags
-  // déjà là, pas de raison de les cacher derrière un clic supplémentaire).
-  setMoreOptionsExpanded(true);
+  // Sections thématiques : seules celles qui contiennent déjà une valeur
+  // non par défaut s'ouvrent automatiquement — le contenu existant ne se
+  // cache jamais derrière un clic, mais une tâche simple (juste une date)
+  // reste compacte.
+  _autoExpandCatSections();
   switchTagTab('categories');
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';

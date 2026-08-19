@@ -993,12 +993,6 @@ main {
 }
 
 // ── Counter modal fields ─────────────────────────────────────────────────
-.counter-field-section {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
 .counter-toggle-row {
   display: flex;
   align-items: center;
@@ -4688,15 +4682,6 @@ body.marquee-active {
     &:last-of-type { border-bottom: none; margin-bottom: 0; }
   }
 
-  .modal-section-label {
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: var(--text-muted);
-    margin-bottom: 10px;
-  }
-
   .modal-footer {
     position: sticky;
     bottom: 0;
@@ -4880,6 +4865,10 @@ body.marquee-active {
   margin-bottom: 26px;
 }
 
+// Titre du modal — un peu plus compact que les autres .fl-group, la liste de
+// sections thématiques juste en dessous fournit déjà sa propre respiration.
+.fl-title-group { margin-bottom: 14px; }
+
 .fl-label {
   position: absolute;
   left: 12px;
@@ -5039,7 +5028,6 @@ select.fl-input ~ .fl-label {
 .priority-pastille-row {
   display: flex;
   gap: 6px;
-  margin: 10px 0;
 }
 
 .priority-pastille {
@@ -5063,39 +5051,101 @@ select.fl-input ~ .fl-label {
   &--high.active   { border-color: rgba(239,68,68,.4);  background: rgba(239,68,68,.08);  color: var(--danger); }
 }
 
-// ─── Plus d'options — dépliant manuel (notes/sous-tâches/tags/compteur) ──
-// Même technique grid-template-rows que .subtask-collapse/.focus-queue
-// (jamais max-height) : s'adapte à n'importe quelle hauteur de contenu.
-.modal-more-toggle {
+// ─── Sous-tâches — juste sous le titre, toujours visibles ────────────────
+.modal-subtasks-top {
+  margin-bottom: 16px;
+}
+
+// ─── Sections thématiques dépliables (Quand/Durée/Priorité/Notes/
+// Étiquettes/Compteur) — remplace l'ancien dépliant unique « Plus
+// d'options » : chaque thème est sa propre ligne compacte, avec aperçu de
+// sa valeur courante, qui se déplie indépendamment des autres (pas un
+// accordéon exclusif — plusieurs peuvent être ouvertes en même temps).
+// Groupées dans une carte bordée façon liste de réglages ; départ toujours
+// minimaliste (toutes repliées) sauf en édition, où seules les sections qui
+// contiennent déjà une valeur non par défaut s'ouvrent automatiquement
+// (_autoExpandCatSections, modal.js) — le contenu existant ne se cache
+// jamais derrière un clic, mais rien ne s'affiche sans raison.
+.modal-cat-list {
+  margin: 4px 0 0;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.modal-cat-section + .modal-cat-section {
+  border-top: 1px solid var(--border);
+}
+
+.modal-cat-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 4px 0 0;
-  padding: 6px 2px;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
   border: none;
   background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s;
+
+  &:hover { background: var(--surface2); }
+}
+
+.modal-cat-section.open .modal-cat-header {
+  background: var(--surface2);
+}
+
+.modal-cat-icon {
+  display: flex;
+  flex-shrink: 0;
   color: var(--text-muted);
+}
+
+.modal-cat-label {
+  flex-shrink: 0;
   font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
-  transition: color .15s;
-
-  svg { transition: transform .25s cubic-bezier(.25,.46,.45,.94); }
-  &:hover { color: var(--primary); }
-  &.expanded svg { transform: rotate(180deg); }
+  color: var(--text);
 }
 
-.modal-more-options {
+.modal-cat-preview {
+  flex: 1;
+  min-width: 0;
+  margin-right: 2px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-cat-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform .25s cubic-bezier(.25,.46,.45,.94);
+}
+
+.modal-cat-section.open .modal-cat-chevron {
+  transform: rotate(180deg);
+}
+
+.modal-cat-body {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows .3s cubic-bezier(.25,.46,.45,.94);
-  &.expanded { grid-template-rows: 1fr; }
+  transition: grid-template-rows .28s cubic-bezier(.25,.46,.45,.94);
 }
 
-.modal-more-options-inner {
+.modal-cat-section.open .modal-cat-body {
+  grid-template-rows: 1fr;
+}
+
+.modal-cat-body-inner {
   overflow: hidden;
   min-height: 0;
-  padding-top: 12px;
+  padding: 10px 12px 14px;
 }
 
 .modal-header {
@@ -8249,9 +8299,27 @@ body:has(.bottom-panel:not(.hidden))::before {
     &--high.active   { background: rgba(239,68,68,.15);  border-color: rgba(239,68,68,.5);  color: #fca5a5; }
   }
 
-  .modal-more-toggle {
-    color: rgba(255,255,255,.4);
-    &:hover { color: var(--primary); }
+  .modal-cat-list {
+    border-color: rgba(255,255,255,.12);
+  }
+
+  .modal-cat-section + .modal-cat-section {
+    border-top-color: rgba(255,255,255,.12);
+  }
+
+  .modal-cat-header:hover,
+  .modal-cat-section.open .modal-cat-header {
+    background: rgba(255,255,255,.08);
+  }
+
+  .modal-cat-label {
+    color: #f1f5f9;
+  }
+
+  .modal-cat-icon,
+  .modal-cat-preview,
+  .modal-cat-chevron {
+    color: rgba(255,255,255,.45);
   }
 
   .modal-title {
@@ -10846,7 +10914,10 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .schedule-mode-context {
-  padding: 12px 0 14px;
+  // Le bas est déjà couvert par le padding de .modal-cat-body-inner qui
+  // l'englobe désormais — seul l'écart avec la rangée de puces au-dessus
+  // reste à charge d'ici.
+  padding: 12px 0 0;
 }
 
 .schedule-mode-option {
@@ -10960,7 +11031,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   gap: 12px;
   align-items: flex-end;
-  margin-top: 16px;
 }
 
 .timing-field {

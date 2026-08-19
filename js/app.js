@@ -37,7 +37,7 @@ import {
   toggleCategoryTag, toggleProjectTag, toggleIntentionTag, switchTagTab,
   toggleNewIntentionRow, addIntentionInline,
   selectScheduleMode, selectBigMode, toggleDetailSection,
-  cancelModal, clearDraft, discardDraft, toggleMoreOptions,
+  cancelModal, clearDraft, discardDraft, toggleCatSection,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask,
   editModalSubtaskEstimate,
   consumeModalSubtasksDirty
@@ -3524,7 +3524,7 @@ class TodoApp {
     toggleModalRight();
   }
 
-  toggleMoreOptions() { toggleMoreOptions(); }
+  toggleCatSection(key) { toggleCatSection(key); }
 
   // andFocus (raccourci Alt+Entrée) : sauve puis bascule directement en mode
   // Focus sur la tâche (nouvelle ou éditée) — id capturé avant closeModal()

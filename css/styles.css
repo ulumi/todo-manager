@@ -1014,12 +1014,6 @@ main.plan-mode, main.search-mode {
   white-space: nowrap;
 }
 
-.counter-field-section {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
 .counter-toggle-row {
   display: flex;
   align-items: center;
@@ -4663,14 +4657,6 @@ body.marquee-active {
   border-bottom: none;
   margin-bottom: 0;
 }
-.modal-main .modal-section-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-}
 .modal-main .modal-footer {
   position: sticky;
   bottom: 0;
@@ -4867,6 +4853,10 @@ body.marquee-active {
   margin-bottom: 26px;
 }
 
+.fl-title-group {
+  margin-bottom: 14px;
+}
+
 .fl-label {
   position: absolute;
   left: 12px;
@@ -5023,7 +5013,6 @@ select.fl-input ~ .fl-label {
 .priority-pastille-row {
   display: flex;
   gap: 6px;
-  margin: 10px 0;
 }
 
 .priority-pastille {
@@ -5064,43 +5053,91 @@ select.fl-input ~ .fl-label {
   color: var(--danger);
 }
 
-.modal-more-toggle {
+.modal-subtasks-top {
+  margin-bottom: 16px;
+}
+
+.modal-cat-list {
+  margin: 4px 0 0;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.modal-cat-section + .modal-cat-section {
+  border-top: 1px solid var(--border);
+}
+
+.modal-cat-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 4px 0 0;
-  padding: 6px 2px;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
   border: none;
   background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.modal-cat-header:hover {
+  background: var(--surface2);
+}
+
+.modal-cat-section.open .modal-cat-header {
+  background: var(--surface2);
+}
+
+.modal-cat-icon {
+  display: flex;
+  flex-shrink: 0;
   color: var(--text-muted);
+}
+
+.modal-cat-label {
+  flex-shrink: 0;
   font-size: 12.5px;
   font-weight: 600;
-  cursor: pointer;
-  transition: color 0.15s;
+  color: var(--text);
 }
-.modal-more-toggle svg {
+
+.modal-cat-preview {
+  flex: 1;
+  min-width: 0;
+  margin-right: 2px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-cat-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
   transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.modal-more-toggle:hover {
-  color: var(--primary);
-}
-.modal-more-toggle.expanded svg {
+
+.modal-cat-section.open .modal-cat-chevron {
   transform: rotate(180deg);
 }
 
-.modal-more-options {
+.modal-cat-body {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: grid-template-rows 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-.modal-more-options.expanded {
+
+.modal-cat-section.open .modal-cat-body {
   grid-template-rows: 1fr;
 }
 
-.modal-more-options-inner {
+.modal-cat-body-inner {
   overflow: hidden;
   min-height: 0;
-  padding-top: 12px;
+  padding: 10px 12px 14px;
 }
 
 .modal-header {
@@ -8507,11 +8544,23 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-color: rgba(239, 68, 68, 0.5);
   color: #fca5a5;
 }
-.glass-mode .modal-more-toggle {
-  color: rgba(255, 255, 255, 0.4);
+.glass-mode .modal-cat-list {
+  border-color: rgba(255, 255, 255, 0.12);
 }
-.glass-mode .modal-more-toggle:hover {
-  color: var(--primary);
+.glass-mode .modal-cat-section + .modal-cat-section {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+.glass-mode .modal-cat-header:hover,
+.glass-mode .modal-cat-section.open .modal-cat-header {
+  background: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .modal-cat-label {
+  color: #f1f5f9;
+}
+.glass-mode .modal-cat-icon,
+.glass-mode .modal-cat-preview,
+.glass-mode .modal-cat-chevron {
+  color: rgba(255, 255, 255, 0.45);
 }
 .glass-mode .modal-title {
   color: #f1f5f9;
@@ -11510,7 +11559,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .schedule-mode-context {
-  padding: 12px 0 14px;
+  padding: 12px 0 0;
 }
 
 .schedule-mode-option {
@@ -11651,7 +11700,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   display: flex;
   gap: 12px;
   align-items: flex-end;
-  margin-top: 16px;
 }
 
 .timing-field {
