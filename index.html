@@ -324,13 +324,29 @@
         <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
       </div>
 
-      <!-- ═══ Sous-tâches — toujours visibles, juste sous le titre ═══ -->
-      <div id="modalSubtaskSection" class="modal-subtasks-top">
-        <div id="modalSubtaskList"></div>
-      </div>
-
       <!-- ═══ Sections thématiques dépliables — une ligne au repos ═══ -->
       <div class="modal-cat-list">
+
+        <!-- Sous-tâches — 1re section de la liste, juste sous le titre ;
+             seule section dépliée par défaut à la création d'une tâche
+             neuve (les 6 autres restent repliées) -->
+        <div class="modal-cat-section" id="catSection-subtasks" data-cat="subtasks">
+          <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('subtasks')">
+            <span class="modal-cat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+            <span class="modal-cat-label">Sous-tâches</span>
+            <span class="modal-cat-preview" id="catPreview-subtasks"></span>
+            <svg class="modal-cat-chevron" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
+          </button>
+          <div class="modal-cat-body">
+            <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
+              <div id="modalSubtaskSection">
+                <div id="modalSubtaskList"></div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <!-- Quand -->
         <div class="modal-cat-section" id="catSection-when" data-cat="when">

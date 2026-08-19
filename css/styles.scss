@@ -5051,21 +5051,18 @@ select.fl-input ~ .fl-label {
   &--high.active   { border-color: rgba(239,68,68,.4);  background: rgba(239,68,68,.08);  color: var(--danger); }
 }
 
-// ─── Sous-tâches — juste sous le titre, toujours visibles ────────────────
-.modal-subtasks-top {
-  margin-bottom: 16px;
-}
-
-// ─── Sections thématiques dépliables (Quand/Durée/Priorité/Notes/
+// ─── Sections thématiques dépliables (Sous-tâches/Quand/Durée/Priorité/Notes/
 // Étiquettes/Compteur) — remplace l'ancien dépliant unique « Plus
 // d'options » : chaque thème est sa propre ligne compacte, avec aperçu de
 // sa valeur courante, qui se déplie indépendamment des autres (pas un
 // accordéon exclusif — plusieurs peuvent être ouvertes en même temps).
 // Groupées dans une carte bordée façon liste de réglages ; départ toujours
-// minimaliste (toutes repliées) sauf en édition, où seules les sections qui
-// contiennent déjà une valeur non par défaut s'ouvrent automatiquement
-// (_autoExpandCatSections, modal.js) — le contenu existant ne se cache
-// jamais derrière un clic, mais rien ne s'affiche sans raison.
+// minimaliste (toutes repliées) sauf Sous-tâches — seule section TOUJOURS
+// dépliée par défaut, y compris à la création d'une tâche neuve — et sauf en
+// édition, où toute autre section contenant déjà une valeur non par défaut
+// s'ouvre aussi automatiquement (_autoExpandCatSections/_hasCatData,
+// modal.js) — le contenu existant ne se cache jamais derrière un clic, mais
+// rien ne s'affiche sans raison.
 .modal-cat-list {
   margin: 4px 0 0;
   border: 1.5px solid var(--border);

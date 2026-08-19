@@ -5053,10 +5053,6 @@ select.fl-input ~ .fl-label {
   color: var(--danger);
 }
 
-.modal-subtasks-top {
-  margin-bottom: 16px;
-}
-
 .modal-cat-list {
   margin: 4px 0 0;
   border: 1.5px solid var(--border);

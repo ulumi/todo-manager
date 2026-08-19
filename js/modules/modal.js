@@ -959,7 +959,7 @@ export function selectPriority(p) {
 // une tâche neuve tous les champs sont vides, donc tout reste replié
 // (départ minimaliste), sans avoir besoin d'un cas séparé pour la création.
 
-const CAT_KEYS = ['when', 'duration', 'priority', 'notes', 'tags', 'counter'];
+const CAT_KEYS = ['subtasks', 'when', 'duration', 'priority', 'notes', 'tags', 'counter'];
 
 export function setCatSectionOpen(key, open) {
   document.getElementById(`catSection-${key}`)?.classList.toggle('open', !!open);
@@ -973,6 +973,11 @@ export function toggleCatSection(key) {
 
 function _hasCatData(key) {
   switch (key) {
+    // Seule section toujours dépliée par défaut, y compris tâche neuve
+    // (demandé explicitement — les sous-tâches restent la chose la plus
+    // fréquemment utilisée juste après le titre).
+    case 'subtasks':
+      return true;
     case 'when':
       if (state.scheduleMode !== 'date') return true; // Inbox / Backlog
       if (state.selectedRecurrence !== 'none') return true;
@@ -1003,6 +1008,12 @@ function _autoExpandCatSections() {
 function _setCatPreview(key, text) {
   const el = document.getElementById(`catPreview-${key}`);
   if (el) el.textContent = text;
+}
+
+function _fmtSubtasksPreview() {
+  if (!_modalSubtasks.length) return 'Aucune';
+  const done = _modalSubtasks.filter(s => s.completed).length;
+  return `${done}/${_modalSubtasks.length}`;
 }
 
 function _fmtWhenPreview() {
@@ -1069,6 +1080,7 @@ function _fmtCounterPreview() {
 }
 
 function _refreshCollapsePreviews() {
+  _setCatPreview('subtasks', _fmtSubtasksPreview());
   _setCatPreview('when', _fmtWhenPreview());
   _setCatPreview('duration', _fmtDurationPreview());
   _setCatPreview('priority', _fmtPriorityPreview());
@@ -1162,9 +1174,6 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   populateProjectTags([]);
   populateIntentionTags([]);
   switchTagTab('categories');
-  // Subtasks — visible for all task types (today, date, recurrent)
-  const _stSection = document.getElementById('modalSubtaskSection');
-  if (_stSection) _stSection.style.display = '';
   populateModalSubtasks([]);
   // Restore draft only on page refresh (not on explicit "new task" click)
   const draftBanner = document.getElementById('draftBanner');
@@ -1336,6 +1345,10 @@ export function openEditModal(id, dateStr, todos) {
     detail.innerHTML = _dayPeriodHTML(t.dayPeriod || '');
   }
 
+  // Subtasks — peuplées AVANT _autoExpandCatSections() ci-dessous, dont
+  // l'aperçu replié (« done/total ») lit _modalSubtasks au moment de l'appel.
+  populateModalSubtasks(effT.subtasks || []);
+
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   // Sections thématiques : seules celles qui contiennent déjà une valeur
   // non par défaut s'ouvrent automatiquement — le contenu existant ne se
@@ -1351,10 +1364,6 @@ export function openEditModal(id, dateStr, todos) {
   );
   _initCombobox(todos);
   _initModalSwipe();
-  // Subtasks
-  const subtaskSection = document.getElementById('modalSubtaskSection');
-  if (subtaskSection) subtaskSection.style.display = '';
-  populateModalSubtasks(effT.subtasks || []);
   setTimeout(() => document.getElementById('taskTitle').focus(), 50);
 }
 
