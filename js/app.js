@@ -1491,6 +1491,13 @@ class TodoApp {
         <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','cancel')">Annuler</button>
       </div>`;
     item.appendChild(popover);
+    // Flip sous la carte si pas assez de place au-dessus (ex. tout 1er item
+    // d'une colonne/section, en haut de la vue) — sinon `bottom: 100%+6px`
+    // pousse le popover hors du viewport (top négatif), invisible et donc
+    // inutilisable : au clic sur la checkbox, rien ne semble se passer alors
+    // que l'avertissement est bien là, juste rendu au-dessus de l'écran.
+    const rect = item.getBoundingClientRect();
+    if (rect.top < popover.offsetHeight + 16) popover.classList.add('stw-below');
     setTimeout(() => {
       const dismiss = e => {
         if (!popover.contains(e.target)) {

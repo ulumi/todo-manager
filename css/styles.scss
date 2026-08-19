@@ -3210,6 +3210,14 @@ main {
   color: var(--text);
   white-space: nowrap;
 
+  // Posé par app._showSubtaskWarning() quand pas assez de place au-dessus
+  // de la carte (1er item d'une colonne/section) — sinon le popover se
+  // rendait hors du viewport (bottom:100%+6px pousse au-dessus de l'écran).
+  &.stw-below {
+    bottom: auto;
+    top: calc(100% + 6px);
+  }
+
   .stw-label { color: var(--text-muted); margin-bottom: 8px; }
 
   .stw-actions {

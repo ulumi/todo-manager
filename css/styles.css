@@ -3120,6 +3120,10 @@ main.plan-mode, main.search-mode {
   color: var(--text);
   white-space: nowrap;
 }
+.subtask-warning-popover.stw-below {
+  bottom: auto;
+  top: calc(100% + 6px);
+}
 .subtask-warning-popover .stw-label {
   color: var(--text-muted);
   margin-bottom: 8px;

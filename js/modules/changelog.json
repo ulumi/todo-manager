@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2746",
+    "date": "2026-08-19",
+    "message": "fix(vue jour): l'avertissement « sous-tâches incomplètes » se rendait hors de l'écran pour une tâche tout en haut de colonne — checkbox visiblement sans effet"
+  },
+  {
     "version": "0.4.2745",
     "date": "2026-08-19",
     "message": "fix(vue jour): la checkbox de complétion pouvait être interceptée par le survol +/▶/⋯ sur une carte étroite — délai pointer-events désynchronisé de l'opacité + checkbox toujours au-dessus au clic"
