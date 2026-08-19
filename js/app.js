@@ -41,7 +41,7 @@ import {
   openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
   guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
   guidedToggleNewCat, guidedAddCategory,
-  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask, moveModalSubtask,
+  toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask,
   editModalSubtaskEstimate,
   consumeModalSubtasksDirty
 } from './modules/modal.js';
@@ -2599,12 +2599,141 @@ class TodoApp {
     input.focus();
   }
 
+  // ── Actions du clic droit sur un .task-group-header lui-même (pas un
+  // membre) — kind:'group-header' dans _ctxTarget, cf. _renderGroupHeaderCtxMenu
+  // plus bas. Communes aux vues qui rendent un en-tête de groupe (jour en
+  // tri Chrono, Backlog/Inbox en tri Manuel) puisqu'elles partagent la même
+  // classe/structure DOM (todoListHTML() / renderGroupedItems()).
+
+  // Supprime l'en-tête : dissout TOUS les membres d'un coup (contrairement à
+  // ungroupTask(), qui n'en retire qu'un seul). Les tâches elles-mêmes ne
+  // sont jamais touchées, seulement leur étiquette de groupe — symétrique de
+  // « Créer un en-tête de groupe ».
+  dissolveGroup(groupId) {
+    const members = state.todos.filter(x => x.groupId === groupId);
+    if (!members.length) return;
+    snapshot(state.todos);
+    members.forEach(t => { delete t.groupId; delete t.groupTitle; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  renameGroup(groupId, title) {
+    if (!title) return;
+    const members = state.todos.filter(x => x.groupId === groupId);
+    if (!members.length) return;
+    snapshot(state.todos);
+    members.forEach(t => { t.groupTitle = title; t.updatedAt = Date.now(); });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Édition en place du titre de l'en-tête (input remplace le span le temps
+  // de la saisie, restauré AVANT toute mutation — que ce soit un Entrée, un
+  // blur ou une Échap — pour ne jamais laisser l'en-tête visuellement vide
+  // si le champ est confirmé vide ou annulé).
+  renameGroupPrompt(groupId) {
+    const header = document.querySelector(`.task-group-header[data-group-id="${groupId}"]`);
+    const titleEl = header?.querySelector('.task-group-title');
+    if (!titleEl) return;
+    const current = titleEl.textContent;
+    const input = document.createElement('input');
+    input.className = 'task-group-title-input';
+    input.value = current;
+    input.autocomplete = 'off';
+    let done = false;
+    const finish = commit => {
+      if (done) return;
+      done = true;
+      const title = input.value.trim();
+      input.replaceWith(titleEl);
+      if (commit && title && title !== current) this.renameGroup(groupId, title);
+    };
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+  }
+
+  // Nouvelle tâche qui rejoint directement ce groupe, héritant du contexte
+  // d'un membre existant (date/backlog/moment/priorité/tag) — générique à
+  // toutes les vues où un en-tête peut apparaître (jour, Backlog, Inbox),
+  // contrairement à _addSectionTaskInline() qui est scopée à la colonne
+  // Ponctuelle du jour. Rafale comme les autres saisies inline : Entrée sur
+  // un titre non vide enchaîne aussitôt sur un nouveau champ.
+  addTaskToGroup(groupId) {
+    const ref = state.todos.find(x => x.groupId === groupId);
+    const header = document.querySelector(`.task-group-header[data-group-id="${groupId}"]`);
+    if (!ref || !header) return;
+    this._inlineInput(`Tâche dans « ${ref.groupTitle || ''} »…`, (title, viaEnter) => {
+      snapshot(state.todos);
+      const data = { title, groupId, groupTitle: ref.groupTitle, recurrence: 'none' };
+      if (ref.backlog) data.backlog = true; else if (ref.date) data.date = ref.date;
+      if (ref.dayPeriod) data.dayPeriod = ref.dayPeriod;
+      if (ref.priority) data.priority = ref.priority;
+      if (ref.categoryIds?.length) data.categoryIds = [...ref.categoryIds];
+      else if (ref.categoryId) data.categoryId = ref.categoryId;
+      if (ref.projectIds?.length) data.projectIds = [...ref.projectIds];
+      else if (ref.projectId) data.projectId = ref.projectId;
+      if (ref.intentionIds?.length) data.intentionIds = [...ref.intentionIds];
+      else if (ref.intentionId) data.intentionId = ref.intentionId;
+      addTask(data, state.todos);
+      saveTodos(state.todos);
+      this.render();
+      if (viaEnter) this.addTaskToGroup(groupId);
+    }, el => header.after(el));
+  }
+
+  // Clone TOUS les membres du groupe d'un coup, reliés par un groupId neuf
+  // (groupe indépendant) — mêmes règles que duplicateMany() (reset complété/
+  // sous-tâches/compteur), chaque clone inséré juste après son original.
+  duplicateGroup(groupId) {
+    const members = state.todos.filter(x => x.groupId === groupId);
+    if (!members.length) return;
+    snapshot(state.todos);
+    const base = Date.now();
+    const newGroupId = 'grp-' + base;
+    members.forEach((t, i) => {
+      const cloneId = String(base + i);
+      const clone = { ...JSON.parse(JSON.stringify(t)), id: cloneId, completed: false, completedDates: [], groupId: newGroupId, updatedAt: base + i };
+      delete clone.overrides;
+      if (clone.counterEnabled) clone.countCurrent = clone.countFrom ?? 0;
+      if (Array.isArray(clone.subtasks)) clone.subtasks = clone.subtasks.map(s => ({ ...s, completed: false, ...(s.subtasks?.length ? { subtasks: s.subtasks.map(ss => ({ ...ss, completed: false })) } : {}) }));
+      const idx = state.todos.findIndex(x => x.id === t.id);
+      state.todos.splice(idx + 1, 0, clone);
+    });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Détache `t` de son groupe si ce déplacement le retire d'un contexte
+  // partagé avec les autres membres (nouvelle date/backlog/moment) — sauf si
+  // TOUS les membres du groupe bougent ensemble dans la même opération
+  // (`movingIds`), auquel cas le groupe entier se déplace d'un bloc et reste
+  // groupé. Symétrique du geste « Sortir une sous-tâche du groupe » déjà
+  // existant (extractSubtask via drag), appliqué ici aux groupes de tâches :
+  // glisser un membre hors de son contexte actuel l'en détache pour de bon
+  // (là où l'ancien comportement gardait un groupId périmé « prêt à se
+  // regrouper »). Ne s'applique qu'aux tâches non récurrentes en pratique
+  // (seules elles portent un groupId significatif au niveau racine).
+  _leaveGroupUnlessWhole(t, movingIds) {
+    if (!t?.groupId) return;
+    const members = state.todos.filter(x => x.groupId === t.groupId);
+    if (members.every(m => movingIds.includes(m.id))) return;
+    delete t.groupId;
+    delete t.groupTitle;
+    t.updatedAt = Date.now();
+  }
+
   // ── Modal subtask delegates (called via window.app from modal HTML) ────────
   toggleModalSubtask(stid, parentStid)    { toggleModalSubtask(stid, parentStid); }
   removeModalSubtask(stid, parentStid)    { removeModalSubtask(stid, parentStid); }
   addModalSubtaskInline(parentStid)       { addModalSubtaskInline(parentStid); }
   editModalSubtask(el, stid, parentStid)  { editModalSubtask(el, stid, parentStid); }
-  moveModalSubtask(stid, dir, parentStid) { moveModalSubtask(stid, dir, parentStid); }
   editModalSubtaskEstimate(badgeEl, stid, parentStid) { editModalSubtaskEstimate(badgeEl, stid, parentStid); }
 
   _trackDeletion(id) {
@@ -5691,7 +5820,7 @@ class TodoApp {
     const isCopy = this._isCopyDrag(event);
     targets.forEach(t => {
       if (isCopy) this._insertClone(t, { date, backlog });
-      else { t.date = date; t.backlog = backlog; t.updatedAt = Date.now(); }
+      else { t.date = date; t.backlog = backlog; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();

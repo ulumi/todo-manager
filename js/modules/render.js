@@ -277,7 +277,7 @@ function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge 
       if (members.length > 1 || totalMembers === 1) {
         seen.add(t.groupId);
         const ids = members.map(m => m.id).join(',');
-        header = `<div class="task-group-header" draggable="true" data-group="${group}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
+        header = `<div class="task-group-header" draggable="true" data-group="${group}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
       }
     }
     return header + todoItemHTML(t, navDate, group, dayView, hideCategoryBadge);

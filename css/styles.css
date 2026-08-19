@@ -3131,33 +3131,43 @@ main.plan-mode, main.search-mode {
   padding: 5px 4px;
   border-radius: 5px;
 }
-.modal-subtask-item .subtask-reorder {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.modal-subtask-item .subtask-drag-handle {
   flex-shrink: 0;
-}
-.modal-subtask-item .subtask-move-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 16px;
-  line-height: 1;
-  padding: 0 4px;
   border-radius: 4px;
+  color: var(--text-muted);
+  cursor: grab;
   transition: color 0.15s, background 0.15s;
 }
-.modal-subtask-item .subtask-move-btn:hover:not(.disabled) {
+.modal-subtask-item .subtask-drag-handle:hover {
   color: var(--primary);
   background: var(--surface2);
 }
-.modal-subtask-item .subtask-move-btn.disabled {
-  opacity: 0.2;
-  cursor: default;
+.modal-subtask-item .subtask-drag-handle:active {
+  cursor: grabbing;
 }
 .modal-subtask-item.done {
   opacity: 0.6;
+}
+.modal-subtask-item.dragging {
+  opacity: 0.35;
+}
+.modal-subtask-item.drop-target-swap {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.modal-subtask-item.drop-target-swap.drop-before {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary);
+}
+.modal-subtask-item.drop-target-swap.drop-after {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary);
 }
 .modal-subtask-item:hover {
   background: var(--surface2);
@@ -3254,6 +3264,11 @@ main.plan-mode, main.search-mode {
 #modalSubtaskSection .subtask-add-btn {
   opacity: 1;
   margin-top: 4px;
+}
+
+body.subtask-drag-active {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .modal-subtask-nested {

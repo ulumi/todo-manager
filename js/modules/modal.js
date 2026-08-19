@@ -251,18 +251,16 @@ function _findModalSubtask(stid, parentStid) {
 // (.modal-subtask-nested), jamais de 3e niveau (le bouton « + » d'ajout
 // imbriqué n'apparaît que sur les lignes de profondeur 1, cf. plus bas).
 function _subtaskRowsHTML(list, parentStid) {
-  const len = list.length;
-  return list.map((s, i) => {
+  return list.map((s) => {
     const args = parentStid ? `,'${parentStid}'` : '';
     const nested = !parentStid && s.subtasks?.length
       ? `<div class="modal-subtask-nested">${_subtaskRowsHTML(s.subtasks, s.id)}</div>`
       : '';
     return `
     <div class="modal-subtask-item${s.completed ? ' done' : ''}" data-stid="${s.id}"${parentStid ? ` data-parent-stid="${parentStid}"` : ''}>
-      <div class="subtask-reorder">
-        <button class="subtask-move-btn${i === 0 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',-1${args})" title="Monter"${i === 0 ? ' disabled' : ''}>&#8593;</button>
-        <button class="subtask-move-btn${i === len - 1 ? ' disabled' : ''}" onclick="window.app.moveModalSubtask('${s.id}',1${args})" title="Descendre"${i === len - 1 ? ' disabled' : ''}>&#8595;</button>
-      </div>
+      <button class="subtask-drag-handle" title="Glisser pour réordonner">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+      </button>
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}'${args})">${esc(s.title)}</span>
       <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="window.app.editModalSubtaskEstimate(this,'${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
@@ -277,6 +275,84 @@ function _renderModalSubtasks() {
   if (!el) return;
   el.innerHTML = _subtaskRowsHTML(_modalSubtasks, null)
     + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
+  // Listener délégué posé une seule fois sur le conteneur (persiste à
+  // travers les innerHTML successifs) — voir _onSubtaskListMouseDown.
+  if (!el.dataset.dragBound) {
+    el.dataset.dragBound = '1';
+    el.addEventListener('mousedown', _onSubtaskListMouseDown);
+  }
+}
+
+// ─── Réordonnancement des sous-tâches par glisser-déposer (modal) ─────────
+// Remplace les anciennes flèches ↑/↓ (1 clic = 1 cran, pénible sur une
+// longue liste). PAS l'API HTML5 draggable/dragover : .modal-overlay et
+// .modal ont un backdrop-filter (blur) sur eux, et un ancêtre filtré/flouté
+// empêche une vraie cible de drop native de recevoir dragover/drop (bug
+// Chromium documenté au niveau du modal Bilan) — implémenté ici à la main
+// via mousedown/mousemove/mouseup, insensible à ce bug. Reprend la même
+// sémantique avant/après que le drag-and-drop de sous-tâches en vue jour
+// (_reorderSubtask, app.js), juste sans la zone centrale d'imbrication
+// (déjà couverte par le bouton dédié « + » imbriqué).
+let _subtaskDrag = null;
+
+function _onSubtaskListMouseDown(e) {
+  const handle = e.target.closest('.subtask-drag-handle');
+  if (!handle) return;
+  e.preventDefault();
+  const row = handle.closest('.modal-subtask-item');
+  const listRoot = document.getElementById('modalSubtaskList');
+  if (!row || !listRoot) return;
+  const parentStid = row.dataset.parentStid || null;
+  // Même niveau seulement : le conteneur DOM est partagé entre les deux
+  // profondeurs (une ligne de niveau 2 vit dans .modal-subtask-nested,
+  // sibling DOM de la ligne de niveau 1 suivante) — filtrer sur
+  // data-parent-stid est indispensable pour ne jamais mélanger les niveaux.
+  const rows = Array.from(listRoot.querySelectorAll('.modal-subtask-item'))
+    .filter(r => (r.dataset.parentStid || null) === parentStid);
+  row.classList.add('dragging');
+  document.body.classList.add('subtask-drag-active');
+  _subtaskDrag = { stid: row.dataset.stid, parentStid, rows, row, target: null, before: true };
+  document.addEventListener('mousemove', _onSubtaskDragMove);
+  document.addEventListener('mouseup', _onSubtaskDragEnd, { once: true });
+}
+
+function _onSubtaskDragMove(e) {
+  if (!_subtaskDrag) return;
+  const { rows, row } = _subtaskDrag;
+  let closest = null, closestDist = Infinity, before = true;
+  for (const r of rows) {
+    if (r === row) continue;
+    const rect = r.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    const dist = Math.abs(e.clientY - mid);
+    if (dist < closestDist) { closestDist = dist; closest = r; before = e.clientY < mid; }
+  }
+  rows.forEach(r => r.classList.remove('drop-target-swap', 'drop-before', 'drop-after'));
+  if (closest) closest.classList.add('drop-target-swap', before ? 'drop-before' : 'drop-after');
+  _subtaskDrag.target = closest;
+  _subtaskDrag.before = before;
+}
+
+function _onSubtaskDragEnd() {
+  document.removeEventListener('mousemove', _onSubtaskDragMove);
+  if (!_subtaskDrag) return;
+  const { stid, parentStid, rows, row, target, before } = _subtaskDrag;
+  rows.forEach(r => r.classList.remove('drop-target-swap', 'drop-before', 'drop-after'));
+  row.classList.remove('dragging');
+  document.body.classList.remove('subtask-drag-active');
+  _subtaskDrag = null;
+  if (!target) return;
+  const arr = parentStid ? _modalSubtasks.find(x => x.id === parentStid)?.subtasks : _modalSubtasks;
+  if (!arr) return;
+  const fromIdx = arr.findIndex(x => x.id === stid);
+  let toIdx = arr.findIndex(x => x.id === target.dataset.stid);
+  if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+  const [item] = arr.splice(fromIdx, 1);
+  if (toIdx > fromIdx) toIdx -= 1; // le retrait a déjà décalé tout ce qui suit
+  arr.splice(before ? toIdx : toIdx + 1, 0, item);
+  _renderModalSubtasks();
+  _scheduleDraftSave();
+  _persistSubtasksIfEditing();
 }
 
 export function populateModalSubtasks(subtasks) {
@@ -316,19 +392,6 @@ export function addModalSubtask(title, parentStid) {
   _scheduleDraftSave();
   _persistSubtasksIfEditing();
   return item;
-}
-
-export function moveModalSubtask(stid, dir, parentStid) {
-  const arr = parentStid ? _modalSubtasks.find(x => x.id === parentStid)?.subtasks : _modalSubtasks;
-  if (!arr) return;
-  const idx = arr.findIndex(x => x.id === stid);
-  if (idx < 0) return;
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= arr.length) return;
-  [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-  _renderModalSubtasks();
-  _scheduleDraftSave();
-  _persistSubtasksIfEditing();
 }
 
 export function editModalSubtask(el, stid, parentStid) {

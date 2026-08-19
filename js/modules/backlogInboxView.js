@@ -65,7 +65,7 @@ export function renderGroupedItems(items, itemTemplateFn) {
       if (members.length > 1) {
         seen.add(t.groupId);
         const ids = members.map(m => m.id).join(',');
-        header = `<div class="task-group-header" data-group="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
+        header = `<div class="task-group-header" data-group="${t.groupId}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
       }
     }
     return header + itemTemplateFn(t);

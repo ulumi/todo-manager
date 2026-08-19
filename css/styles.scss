@@ -3193,36 +3193,44 @@ main {
   padding: 5px 4px;
   border-radius: 5px;
 
-  .subtask-reorder {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+  // Poignée de glisser-déposer (remplace les anciennes flèches ↑/↓ — 1 clic
+  // = 1 cran, pénible sur une longue liste). Voir _onSubtaskListMouseDown
+  // (modal.js) : drag "à la main" (mousedown/mousemove), pas l'API HTML5
+  // draggable, qui serait cassée ici par le backdrop-filter de .modal-
+  // overlay/.modal (bug Chromium — cf. la note sur les cibles de drop
+  // filtrées, section CSS/SCSS de CLAUDE.md).
+  .subtask-drag-handle {
     flex-shrink: 0;
-  }
-
-  .subtask-move-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: none;
     border: none;
-    cursor: pointer;
-    color: var(--text-muted);
-    font-size: 16px;
-    line-height: 1;
-    padding: 0 4px;
     border-radius: 4px;
+    color: var(--text-muted);
+    cursor: grab;
     transition: color .15s, background .15s;
 
-    &:hover:not(.disabled) {
-      color: var(--primary);
-      background: var(--surface2);
-    }
-
-    &.disabled {
-      opacity: .2;
-      cursor: default;
-    }
+    &:hover { color: var(--primary); background: var(--surface2); }
+    &:active { cursor: grabbing; }
   }
 
   &.done { opacity: .6; }
+
+  // Repris tel quel de .subtask-item (vue jour) pour la même sémantique
+  // visuelle avant/après — voir cette règle plus haut dans le fichier.
+  &.dragging { opacity: .35; }
+
+  &.drop-target-swap {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface2));
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent);
+
+    &.drop-before { box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 2px 0 0 var(--primary); }
+    &.drop-after  { box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 25%, transparent), inset 0 -2px 0 0 var(--primary); }
+  }
 
   &:hover {
     background: var(--surface2);
@@ -3321,6 +3329,14 @@ main {
 
 #modalSubtaskSection {
   .subtask-add-btn { opacity: 1; margin-top: 4px; }
+}
+
+// Posé sur le body pendant tout le drag d'une sous-tâche du modal (voir
+// _onSubtaskListMouseDown, modal.js) — empêche de sélectionner du texte en
+// glissant la souris au-dessus des autres lignes.
+body.subtask-drag-active {
+  cursor: grabbing;
+  user-select: none;
 }
 
 // Sous-sous-tâches (modal d'édition) — un seul niveau de plus, jamais
