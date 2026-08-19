@@ -4631,8 +4631,8 @@ body.marquee-active {
 }
 
 .modal-floating {
-  width: min(720px, 100vw - 40px);
-  min-width: 380px;
+  width: min(760px, 100vw - 40px);
+  min-width: 680px;
   padding: 0;
   background: transparent;
   border: none;
@@ -4644,7 +4644,7 @@ body.marquee-active {
 
 .modal-main {
   width: 100%;
-  min-width: 380px;
+  min-width: 680px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -9443,12 +9443,14 @@ body:has(.bottom-panel:not(.hidden))::before {
     gap: 16px;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
   .modal-left {
     width: 100%;
   }
   .modal-main {
     width: 100%;
+    min-width: 0;
   }
   .week-grid {
     flex-wrap: wrap;
@@ -11574,10 +11576,6 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex-wrap: nowrap;
   overflow-x: auto;
   gap: 4px;
-  scrollbar-width: none;
-}
-.schedule-mode-row::-webkit-scrollbar {
-  display: none;
 }
 
 .schedule-mode-context {

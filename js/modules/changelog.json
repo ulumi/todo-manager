@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2808",
+    "date": "2026-08-19",
+    "message": "fix(modal): le bouton Backlog de la rangée Quand pouvait rester invisible (scrollbar masquée sur un débordement réel) — modal élargi (min-width 680px) pour que les 6 puces tiennent sans avoir besoin de scroller, et la scrollbar n'est plus masquée si jamais ça reste nécessaire"
+  },
+  {
     "version": "0.4.2804",
     "date": "2026-08-19",
     "message": "fix(modal): icône SVG cohérente avec la vue jour pour « + sous-tâche » (au lieu d'un simple caractère +), puces Quand jamais sur deux lignes, Date/Heure avant Moment avec plus d'espace entre les deux"

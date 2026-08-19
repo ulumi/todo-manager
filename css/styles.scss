@@ -4662,8 +4662,12 @@ body.marquee-active {
 // ─── New Floating-Label Modal ─────────────────────────────────────────
 
 .modal-floating {
-  width: min(720px, calc(100vw - 40px));
-  min-width: 380px;
+  // min-width relevé (380→680) pour garantir que la rangée de puces
+  // Quand (6 puces, jamais sur 2 lignes ni tronquée) tienne toujours sur
+  // desktop — réinitialisé à mobile (cf. @media max-width:600px), où le
+  // modal repasse de toute façon à width:100%.
+  width: min(760px, calc(100vw - 40px));
+  min-width: 680px;
   padding: 0;
   background: transparent;
   border: none;
@@ -4675,7 +4679,7 @@ body.marquee-active {
 
 .modal-main {
   width: 100%;
-  min-width: 380px;
+  min-width: 680px;
   max-height: calc(100vh - 40px);
   overflow-y: auto;
   overflow-x: hidden;
@@ -8992,9 +8996,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   // Modal
   .modal-two-columns { flex-direction: column; gap: 16px; width: 100%; max-width: 100%; }
-  .modal-floating    { flex-direction: column; gap: 16px; width: 100%; max-width: 100%; }
+  // min-width:680px (desktop, cf. plus haut) écraserait un petit téléphone
+  // — remis à 0 ici, .modal-floating/.modal-main repassent en width:100%.
+  .modal-floating    { flex-direction: column; gap: 16px; width: 100%; max-width: 100%; min-width: 0; }
   .modal-left        { width: 100%; }
-  .modal-main        { width: 100%; }
+  .modal-main        { width: 100%; min-width: 0; }
 
   // Week
   .week-grid { flex-wrap: wrap; }
@@ -10939,16 +10945,17 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Schedule mode selector (Date / Répétitif / Inbox / Backlog)
 .schedule-mode-row {
   display: flex;
-  // Jamais sur deux lignes — un padding/gap resserré (voir .schedule-mode-
-  // option) suffit à faire tenir les 6 puces sur une largeur de modal
-  // normale ; flex-wrap:nowrap + overflow-x:auto en filet de sécurité pour
-  // un viewport exceptionnellement étroit (scroll horizontal plutôt qu'un
-  // retour à la ligne).
+  // Jamais sur deux lignes — le min-width:680px du modal (voir .modal-
+  // floating/.modal-main plus haut) garantit assez de place pour les 6
+  // puces avec le padding/gap resserré de .schedule-mode-option ci-dessous.
+  // flex-wrap:nowrap + overflow-x:auto restent en filet de sécurité pur —
+  // scrollbar volontairement PAS masquée : un débordement invisible et
+  // silencieux se lit exactement comme un bouton tronqué/cassé (c'est ce
+  // qui s'est produit avec `scrollbar-width:none` avant que le modal ne
+  // soit élargi). Si ça doit un jour scroller, ça doit se voir.
   flex-wrap: nowrap;
   overflow-x: auto;
   gap: 4px;
-  scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
 }
 
 .schedule-mode-context {
