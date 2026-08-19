@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2782",
+    "date": "2026-08-19",
+    "message": "fix(vue jour): en grille masonry (≥2 colonnes), saisir une carte la retirait du flux (display:none) et la grille republiait aussitôt une AUTRE carte sous le curseur — tout ciblage de drop (dégroupage, repositionnement précis) devenait imprévisible ; la carte saisie garde maintenant sa cellule réservée (visibility:hidden)"
+  },
+  {
     "version": "0.4.2781",
     "date": "2026-08-19",
     "message": "fix(backlog/inbox): glisser un membre de groupe pour le réordonner ne le détachait jamais du groupe (aucune logique de dégroupage sur ce chemin) — aligné sur la vue jour"

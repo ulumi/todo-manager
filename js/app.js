@@ -4678,7 +4678,7 @@ class TodoApp {
     };
 
     const showDragged = () => {
-      if (draggedEl) { draggedEl.style.display = ''; draggedEl.classList.remove('dragging'); }
+      if (draggedEl) { draggedEl.style.display = ''; draggedEl.style.visibility = ''; draggedEl.classList.remove('dragging'); }
     };
 
     const draggableSel = '.todo-item[draggable], .day-spacer[draggable], .task-group-header[draggable]';
@@ -4714,7 +4714,25 @@ class TodoApp {
       }
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id, groupTitleOverride);
       container.classList.add('dragging-active');
-      requestAnimationFrame(() => { item.style.display = 'none'; });
+      requestAnimationFrame(() => {
+        // En liste masonry (≥2 colonnes), chaque item n'a qu'un --rspan (span
+        // de hauteur) posé par _layoutMasonry() — jamais de grid-row-start
+        // explicite : le positionnement vertical au sein d'une colonne repose
+        // donc sur le placement automatique de la grille. `display:none`
+        // retire l'item du flux, et la grille republie AUSSITÔT les items
+        // suivants de sa colonne pour combler le vide — une AUTRE carte se
+        // retrouve alors sous le curseur dès le pickup, avant même le premier
+        // mouvement de souris, rendant tout ciblage (dégroupage, repositionnement
+        // précis) imprévisible. `visibility:hidden` garde la cellule de grille
+        // réservée (mesurée, donc aucun voisin ne bouge) tout en restant
+        // invisible et hors du hit-test du curseur (elementFromPoint()/les
+        // events pointeur l'ignorent, comme display:none) — seule cette liste
+        // en a besoin ; les autres (flex/1 colonne) gardent display:none pour
+        // fermer visuellement l'espace, effet recherché là où il n'y a pas de
+        // grille à casser.
+        if (item.closest('.todo-list.masonry')) item.style.visibility = 'hidden';
+        else item.style.display = 'none';
+      });
     });
 
     container.addEventListener('dragend', () => {
