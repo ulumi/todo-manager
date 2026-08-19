@@ -4632,6 +4632,12 @@ class TodoApp {
     let dropZone = 'before'; // 'before' | 'after' | 'nest' — zone survolée sur l'item cible
     let dropJoinGroup = null; // { groupId, groupTitle, dayPeriodValue, sectionGroup, firstMemberId } quand un .task-group-header est survolé
     let draggedHeight = 0;
+    // En-tête du groupe emporté avec le drag en cours (posé au dragstart, ci-
+    // dessous) — soit le `.task-group-header` lui-même, soit celui de la
+    // carte qui LE PORTE (son 1er membre, juste en dessous). Distinct de
+    // `null` pour un drag de carte normale (membre non-1er, ou tâche non
+    // groupée) : ce cas ne touche jamais à l'en-tête.
+    let draggedOwnHeader = null;
 
     // Gap placeholder (utilisé pour les zones section-level : séparateurs,
     // libellés de moment/groupe, fin de colonne — pas pour l'échange item↔item)
@@ -4666,6 +4672,7 @@ class TodoApp {
 
     const showDragged = () => {
       if (draggedEl) { draggedEl.style.display = ''; draggedEl.classList.remove('dragging'); }
+      if (draggedOwnHeader) draggedOwnHeader.style.display = '';
     };
 
     const draggableSel = '.todo-item[draggable], .day-spacer[draggable], .task-group-header[draggable]';
@@ -4678,14 +4685,33 @@ class TodoApp {
       draggedHeight = item.offsetHeight;
       e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', item.dataset.id);
-      // Drag du titre d'un groupe (task-group-header) : emporte tous ses
-      // membres (data-ids, posé par todoListHTML() dans render.js) via le
-      // même mécanisme que le drag d'une multi-sélection (_dragMultiIds/
-      // _dropIds) — dropReorder()/le drop plus bas s'appliquent alors à
-      // tout le groupe d'un coup, sans code spécifique supplémentaire.
+      draggedOwnHeader = null;
+      // Drag du titre d'un groupe (task-group-header), OU de la carte qui LE
+      // PORTE (son 1er membre, juste en dessous, même data-id que l'en-tête —
+      // cf. render.js) : les deux gestes emportent tous les membres (data-ids,
+      // posé par todoListHTML()) via le même mécanisme que le drag d'une
+      // multi-sélection (_dragMultiIds/_dropIds) — dropReorder()/le drop plus
+      // bas s'appliquent alors à tout le groupe d'un coup, sans code
+      // spécifique supplémentaire. Traiter les deux gestes pareil est
+      // délibéré : l'en-tête est de toute façon re-rendu juste avant ce
+      // membre à CHAQUE render (todoListHTML), donc le déplacer seul le
+      // faisait déjà « suivre » l'en-tête après coup, de façon imprévisible
+      // (rien ne bougeait pendant le drag, l'en-tête semblait ensuite
+      // téléporté au drop) — source de confusion signalée par Hugues. Rendre
+      // le geste explicite dès le dragstart (ghost + estompage des autres
+      // membres + en-tête masqué comme la carte) élimine la surprise. Pour
+      // déplacer CE membre seul sans le reste du groupe, il faut d'abord le
+      // dégrouper (clic droit → Dégrouper) — un membre non-1er du groupe,
+      // lui, continue de se déplacer seul comme avant.
       let groupTitleOverride = null;
       if (item.classList.contains('task-group-header')) {
-        const memberIds = (item.dataset.ids || '').split(',').filter(Boolean);
+        draggedOwnHeader = item;
+      } else if (item.classList.contains('todo-item')) {
+        const prev = item.previousElementSibling;
+        if (prev?.classList.contains('task-group-header') && prev.dataset.id === item.dataset.id) draggedOwnHeader = prev;
+      }
+      if (draggedOwnHeader) {
+        const memberIds = (draggedOwnHeader.dataset.ids || '').split(',').filter(Boolean);
         this._dragMultiIds = memberIds;
         groupTitleOverride = state.todos.find(x => x.id === memberIds[0])?.groupTitle || null;
         memberIds.forEach(mid => {
@@ -4694,7 +4720,10 @@ class TodoApp {
       }
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id, groupTitleOverride);
       container.classList.add('dragging-active');
-      requestAnimationFrame(() => { item.style.display = 'none'; });
+      requestAnimationFrame(() => {
+        item.style.display = 'none';
+        if (draggedOwnHeader && draggedOwnHeader !== item) draggedOwnHeader.style.display = 'none';
+      });
     });
 
     container.addEventListener('dragend', () => {
@@ -4702,7 +4731,7 @@ class TodoApp {
       removePlaceholder();
       clearItemTarget();
       container.classList.remove('dragging-active');
-      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false; dropZone = 'before'; dropJoinGroup = null;
+      draggedEl = null; draggedGroup = null; dropTarget = null; dropPriority = null; dropPeriod = null; dropBefore = false; dropZone = 'before'; dropJoinGroup = null; draggedOwnHeader = null;
     });
 
     container.addEventListener('dragover', e => {
@@ -4760,7 +4789,7 @@ class TodoApp {
           // 50/50 avant/après dans tous ces cas (dnDZone, utils.js).
           const dropIds = this._dropIds(draggedEl.dataset.id);
           const anyRecurring = dropIds.some(id => { const s = state.todos.find(x => x.id === id); return s?.recurrence && s.recurrence !== 'none'; });
-          const isGroupDrag = draggedEl.classList.contains('task-group-header');
+          const isGroupDrag = !!draggedOwnHeader;
           const allowNest = !anyRecurring && !isGroupDrag && !this._isCopyDrag(e) && !dropIds.includes(todoTarget.dataset.id);
           dropZone = dnDZone(e.clientY, todoTarget.getBoundingClientRect(), { allowNest });
           dropBefore = dropZone !== 'after';

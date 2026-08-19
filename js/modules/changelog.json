@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2748",
+    "date": "2026-08-19",
+    "message": "fix(vue jour): glisser la carte qui porte un en-tête de groupe déplace maintenant tout le groupe de façon explicite (comme glisser l'en-tête lui-même) au lieu de le faire suivre en silence après coup"
+  },
+  {
     "version": "0.4.2747",
     "date": "2026-08-19",
     "message": "fix(vue jour): l'avertissement de sous-tâches incomplètes s'accrochait à l'en-tête de groupe (même data-id) au lieu de la vraie carte, pour une tâche seule dans son groupe — checkbox sans effet visible"
