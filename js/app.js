@@ -3303,11 +3303,16 @@ class TodoApp {
         }
         if (!dragOrigId) { ghost.remove(); return; }
         const isCopy = !!ghost.parentNode;
+        // Backlog/Inbox n'a pas de drag de groupe entier (pas de draggable sur
+        // .task-group-header, cf. renderGroupedItems) : toute tâche glissée ici
+        // est donc forcément un membre isolé — elle quitte son groupe dès
+        // qu'elle est repositionnée, comme en vue jour (_leaveGroupUnlessWhole).
         if (isCopy) {
           const t = state.todos.find(x => x.id === dragOrigId);
           if (t) {
             snapshot(state.todos);
             const clone = this._insertClone(t);
+            this._leaveGroupUnlessWhole(clone, [clone.id]);
             // Le placeholder prend l'id du clone : sa position dans le DOM
             // (celle du drop) devient directement l'ordre final à persister.
             ghost.dataset.id = clone.id;
@@ -3319,8 +3324,10 @@ class TodoApp {
             ghost.remove();
           }
         } else {
+          const t = state.todos.find(x => x.id === dragOrigId);
           const ids = [...list.querySelectorAll('.inbox-item')].map(el => el.dataset.id);
           saveManualOrder(view, ids);
+          if (t?.groupId) { this._leaveGroupUnlessWhole(t, [dragOrigId]); saveTodos(state.todos); }
         }
         dragEl = null; dragOrigId = null; origParent = null; origNext = null;
         this._saveConfigChange();
