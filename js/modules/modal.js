@@ -96,21 +96,65 @@ function _commitDurationDisplay(display) {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.dur-btn');
-  if (!btn) return;
-  const stepper = btn.closest('.duration-stepper');
-  if (!stepper) return;
+function _applyDurationStep(stepper, isPlus) {
   const inputId = stepper.dataset.target;
   const input = document.getElementById(inputId);
   if (!input) return;
-  const isPlus = btn.classList.contains('dur-btn--plus');
   const current = parseInt(input.value) || 0;
   const next = _stepDuration(current, isPlus);
   input.value = next || '';
   _syncDurationStepper(inputId);
   input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+// Clic simple : géré ici (couvre aussi l'activation clavier Entrée/Espace sur
+// le bouton, qui ne déclenche jamais pointerdown). `_skipClick` avale le click
+// de souris/tactile qui suit systématiquement un appui déjà traité ci-dessous.
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.dur-btn');
+  if (!btn) return;
+  if (btn._skipClick) { btn._skipClick = false; return; }
+  const stepper = btn.closest('.duration-stepper');
+  if (!stepper) return;
+  _applyDurationStep(stepper, btn.classList.contains('dur-btn--plus'));
 });
+
+// Appui maintenu : incrémente en continu tant que le bouton reste enfoncé,
+// avec accélération progressive (utile pour atteindre de grandes durées sans
+// dizaines de clics). Un seul minuteur global suffit : un seul bouton peut
+// être maintenu à la fois.
+const DUR_HOLD_START_DELAY = 400; // avant le 1er tick répété
+const DUR_HOLD_MIN_INTERVAL = 45;
+let _durHold = null; // { stepper, isPlus, count, timer }
+
+function _stopDurHold() {
+  if (!_durHold) return;
+  clearTimeout(_durHold.timer);
+  _durHold = null;
+}
+
+function _tickDurHold() {
+  if (!_durHold) return;
+  _applyDurationStep(_durHold.stepper, _durHold.isPlus);
+  _durHold.count++;
+  const delay = Math.max(DUR_HOLD_MIN_INTERVAL, 140 - _durHold.count * 12);
+  _durHold.timer = setTimeout(_tickDurHold, delay);
+}
+
+document.addEventListener('pointerdown', e => {
+  if (e.button !== 0 && e.pointerType === 'mouse') return; // clic gauche seulement
+  const btn = e.target.closest('.dur-btn');
+  if (!btn) return;
+  const stepper = btn.closest('.duration-stepper');
+  if (!stepper) return;
+  e.preventDefault(); // pas de sélection de texte pendant l'appui maintenu
+  _applyDurationStep(stepper, btn.classList.contains('dur-btn--plus'));
+  btn._skipClick = true;
+  _stopDurHold();
+  _durHold = { stepper, isPlus: btn.classList.contains('dur-btn--plus'), count: 0, timer: setTimeout(_tickDurHold, DUR_HOLD_START_DELAY) };
+});
+
+['pointerup', 'pointercancel'].forEach(evt => document.addEventListener(evt, _stopDurHold));
 
 // Édition directe : au focus, affiche la valeur brute (minutes) sélectionnée
 // pour taper une valeur exacte ; au blur/Entrée, on committe vers l'input caché.

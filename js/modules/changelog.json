@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2848",
+    "date": "2026-08-19",
+    "message": "feat(modal): stepper de durée — maintenir le clic sur +/- répète l'incrément en continu avec accélération progressive"
+  },
+  {
     "version": "0.4.2809",
     "date": "2026-08-19",
     "message": "feat(modal): stepper de durée sans plafond — paliers de 30 min de 1h à 3h puis d'1h au-delà de 3h"
