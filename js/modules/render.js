@@ -1382,18 +1382,6 @@ export function getCloudsHTML(date, todos) {
   return html;
 }
 
-export function renderQACloud(todos) {
-  const el = document.getElementById('qaCloud');
-  if (!el) return; // Quick add panel doesn't exist
-  const d = state.quickAddTarget==='today' ? new Date() : state.navDate;
-  const html = getCloudsHTML(d, todos);
-  if (html) {
-    el.innerHTML = `<div class="qa-cloud-title">${state.T.qaTitle}</div>${html}`;
-    el.classList.add('visible');
-  } else {
-    el.classList.remove('visible');
-  }
-}
 
 export function renderCategoriesView(todos) {
   const categories = getCategories();

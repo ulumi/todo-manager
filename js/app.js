@@ -48,7 +48,7 @@ import {
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
   renderCategoriesView, renderInboxView, renderBacklogView, getInboxCount, getBacklogCount,
-  getPeriodLabel, getCloudsHTML, renderQACloud, setupTodoItemHoverAnimations,
+  getPeriodLabel, getCloudsHTML, setupTodoItemHoverAnimations,
   renderSidebar, renderWeekSidebar, renderYearSidebar,
   renderPlanInboxList, renderProjectsView, renderSearchView,
   renderIntentionsView, renderAnalyseView, renderCountersView,
@@ -945,13 +945,10 @@ class TodoApp {
     document.querySelectorAll('[data-i18n]').forEach(el => {
       if (state.T[el.dataset.i18n]) el.textContent = state.T[el.dataset.i18n];
     });
-    const quickAddInput = document.getElementById('quickAddInput');
-    if (quickAddInput) quickAddInput.placeholder = state.T.quickAddPlaceholder;
     document.getElementById('taskTitle').placeholder = state.T.taskPlaceholder;
+    document.getElementById('quickInsertInput').placeholder = state.T.quickInsertPlaceholder;
     const zoomGroup = document.querySelector('.zoom-group');
     if (zoomGroup) zoomGroup.title = state.T.zoomButtonTitle;
-    const quickAddSubmit = document.getElementById('quickAddSubmit');
-    if (quickAddSubmit) quickAddSubmit.textContent = state.T.addMore;
     document.getElementById('deleteOneTitle').textContent = state.T.deleteOneOccurrence;
     document.getElementById('deleteOneDesc').textContent = state.T.deleteOneDesc;
     document.getElementById('deleteFutureTitle').textContent = state.T.deleteFutureOccurrences;
@@ -3423,18 +3420,45 @@ class TodoApp {
   }
 
   // ═══════════════════════════════════════════════════
-  // QUICK ADD
+  // QUICK INSERT — raccourci 'n' : ajout ultra-rapide (titre seul, jour
+  // affiché, sans récurrence) sans ouvrir la modale complète. La modale
+  // reste accessible via le bouton rond +/clic droit pour un ajout détaillé.
   // ═══════════════════════════════════════════════════
-  quickAdd() {
-    const input = document.getElementById('quickAddInput');
-    if (!input) return; // Quick add panel doesn't exist
-    const title = input.value.trim();
-    const d = state.quickAddTarget==='today' ? today() : state.navDate;
-    openModal(d, state.todos);
-    if (state.quickAddTarget !== 'today') selectRecurrence('daily');
-    if (title) {
-      document.getElementById('taskTitle').value = title;
-      input.value = '';
+  openQuickInsert() {
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+    const bar = document.getElementById('quickInsertBar');
+    const input = document.getElementById('quickInsertInput');
+    if (!bar || !input) return;
+    bar.classList.remove('hidden');
+    input.value = '';
+    input.focus();
+  }
+
+  closeQuickInsert() {
+    const bar = document.getElementById('quickInsertBar');
+    if (!bar || bar.classList.contains('hidden')) return;
+    const input = document.getElementById('quickInsertInput');
+    if (input) input.value = ''; // vide avant le blur() pour que confirmQuickInsert(false) ne crée rien
+    bar.classList.add('hidden');
+    input?.blur();
+  }
+
+  // reopen=true (Entrée) : enchaîne aussitôt sur un nouvel input (rafale,
+  // même convention que addSubtaskInline). reopen=false (blur) : referme.
+  confirmQuickInsert(reopen) {
+    const input = document.getElementById('quickInsertInput');
+    const title = input?.value.trim();
+    if (!title) { this.closeQuickInsert(); return; }
+    snapshot(state.todos);
+    addTask({ title, date: DS(state.navDate), recurrence: 'none' }, state.todos);
+    saveTodos(state.todos);
+    this.render();
+    if (reopen) {
+      const fresh = document.getElementById('quickInsertInput');
+      fresh.value = '';
+      fresh.focus();
+    } else {
+      this.closeQuickInsert();
     }
   }
 
@@ -4984,15 +5008,6 @@ class TodoApp {
     });
   }
 
-  setQuickAddTarget(target) {
-    state.setQuickAddTarget(target);
-    const qaToday = document.getElementById('qaToday');
-    const qaNav = document.getElementById('qaNav');
-    if (qaToday) qaToday.classList.toggle('active', target==='today');
-    if (qaNav) qaNav.classList.toggle('active', target==='nav');
-    this.renderQACloud();
-  }
-
   reorderTask(id, dateStr, direction) {
     const date = parseDS(dateStr);
     const otherItems = getTodosForDate(date, state.todos).filter(t => t.recurrence !== 'daily');
@@ -5012,8 +5027,7 @@ class TodoApp {
 
   openModalWithTitle(title) {
     if (document.getElementById('modalOverlay').classList.contains('hidden')) {
-      const d = state.quickAddTarget==='today' ? today() : state.navDate;
-      openModal(d, state.todos);
+      openModal(state.navDate, state.todos);
     }
     document.getElementById('taskTitle').value = title;
     document.getElementById('taskTitle').select();
@@ -5027,8 +5041,7 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     if (document.getElementById('modalOverlay').classList.contains('hidden')) {
-      const d = state.quickAddTarget==='today' ? today() : state.navDate;
-      openModal(d, state.todos);
+      openModal(state.navDate, state.todos);
     }
     document.getElementById('taskTitle').value = t.title;
     selectRecurrence(t.recurrence || 'none');
@@ -5215,7 +5228,6 @@ class TodoApp {
     renderFocusPip(this);
     document.querySelector('.focus-tab')?.classList.toggle('active', state.view === 'focus');
     this.initHeaderDropZones();
-    this.renderQACloud();
     this._animateQuickAddBtn();
     this._applyMultilineClasses();
     if (state.view === 'day') { setupTodoItemHoverAnimations(); this._layoutMasonry(); }
@@ -7503,10 +7515,6 @@ class TodoApp {
         onComplete: () => gsap.set(btn, { clearProps: 'left,bottom,xPercent,right,width' })
       });
     }
-  }
-
-  renderQACloud() {
-    renderQACloud(state.todos);
   }
 
   getCloudsHTML(date) {

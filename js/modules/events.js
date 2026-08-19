@@ -37,23 +37,14 @@ export function setupEventListeners(app) {
     o.addEventListener('click', () => app.selectPriority(o.dataset.priority));
   });
 
-  // Quick add
-  const quickAddInput = document.getElementById('quickAddInput');
-  if (quickAddInput) {
-    quickAddInput.addEventListener('keydown', e => {
-      if (e.key==='Enter') app.quickAdd();
+  // Quick insert — barre de saisie flottante ouverte par le raccourci 'n'
+  const quickInsertInput = document.getElementById('quickInsertInput');
+  if (quickInsertInput) {
+    quickInsertInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); app.confirmQuickInsert(true); }
     });
+    quickInsertInput.addEventListener('blur', () => app.confirmQuickInsert(false));
   }
-  const quickAddSubmit = document.getElementById('quickAddSubmit');
-  if (quickAddSubmit) {
-    quickAddSubmit.addEventListener('click', () => app.quickAdd());
-  }
-
-  // Quick add target toggle
-  const qaToday = document.getElementById('qaToday');
-  const qaNav = document.getElementById('qaNav');
-  if (qaToday) qaToday.addEventListener('click', () => app.setQuickAddTarget('today'));
-  if (qaNav) qaNav.addEventListener('click', () => app.setQuickAddTarget('nav'));
 
   // Task date change (for modal clouds)
   document.getElementById('taskDate').addEventListener('change', e => {
@@ -66,6 +57,7 @@ export function setupEventListeners(app) {
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     const visible = id => !document.getElementById(id)?.classList.contains('hidden');
+    if (visible('quickInsertBar'))       { app.closeQuickInsert();   return; }
     if (visible('modalOverlay'))         { app.closeModal();         return; }
     if (visible('deleteModalOverlay'))   { app.closeDeleteModal();   return; }
     if (visible('reviewModalOverlay'))   { app.closeReviewModal();   return; }
@@ -111,7 +103,7 @@ export function setupEventListeners(app) {
     if (e.key==='m') app.setView('month');
     if (e.key==='y') app.setView('year');
     if (e.key==='t') app.todayNav();
-    if (e.key==='n') app.openModal();
+    if (e.key==='n') app.openQuickInsert();
   });
 
 }

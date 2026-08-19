@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2691",
+    "date": "2026-08-18",
+    "message": "feat(raccourci): 'n' ouvre une barre de saisie rapide (ajout sans ouvrir la modale) au lieu de la modale complète"
+  },
+  {
     "version": "0.4.2675",
     "date": "2026-08-18",
     "message": "fix(vue jour): Colonnes du Quotidien en grille N-par-ligne stricte (le masonry anti-vide empilait les tâches courtes ensemble au lieu d'une par colonne)"

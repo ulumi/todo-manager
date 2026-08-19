@@ -23,7 +23,6 @@ export let selectedMonthDays = [];
 export let selectedMonthLastDay = false;
 export let selectedYearMonth = 0;
 export let selectedYearDay = 1;
-export let quickAddTarget = 'today'; // 'today' | 'nav'
 export let selectedPriority = '';
 export let editingId = null;
 export let editingDate = null; // ds de l'occurrence en cours d'édition (openEditModal) — cf. calendar.js resolveOccurrence
@@ -86,10 +85,6 @@ export function setSelectedYearMonth(m) {
 
 export function setSelectedYearDay(d) {
   selectedYearDay = d;
-}
-
-export function setQuickAddTarget(target) {
-  quickAddTarget = target;
 }
 
 export function setSelectedPriority(p) {
