@@ -1802,12 +1802,12 @@ class TodoApp {
     });
   }
 
-  // Menu contextuel « Créer un en-tête de groupe » : pose un groupId/
-  // groupTitle neuf sur la tâche visée, qui reste une tâche autonome à part
-  // entière (contrairement à « Ajouter une tâche parente » ci-dessus, qui la
-  // fait disparaître en sous-tâche). D'autres tâches rejoignent ce chapeau
-  // ensuite via la multi-sélection → « Grouper », ou en réutilisant le même
-  // groupId. L'en-tête s'affiche dès ce seul membre (cf. todoListHTML).
+  // Menu contextuel « Créer un groupe » : pose un groupId/groupTitle neuf sur
+  // la tâche visée, qui reste une tâche autonome à part entière (contrairement
+  // à « Ajouter une tâche parente » ci-dessus, qui la fait disparaître en
+  // sous-tâche). D'autres tâches rejoignent ce groupe ensuite via la
+  // multi-sélection → « Grouper », ou en réutilisant le même groupId.
+  // L'en-tête s'affiche dès ce seul membre (cf. todoListHTML).
   addGroupHeader(id) {
     const t = state.todos.find(x => x.id === id);
     if (!t || t.groupId) return;
@@ -1847,10 +1847,10 @@ class TodoApp {
     return holder;
   }
 
-  // Clic droit sur un moment → « Créer un en-tête de groupe ». Un groupe
-  // n'existe que par ses membres (groupId/groupTitle dénormalisés sur chaque
-  // tâche, pas de collection séparée) : un en-tête vide est impossible à
-  // stocker, d'où l'enchaînement direct titre du groupe → 1re tâche.
+  // Clic droit sur un moment → « Créer un groupe ». Un groupe n'existe que
+  // par ses membres (groupId/groupTitle dénormalisés sur chaque tâche, pas de
+  // collection séparée) : un en-tête vide est impossible à stocker, d'où
+  // l'enchaînement direct titre du groupe → 1re tâche.
   addSectionGroupHeader(period) {
     const list = this._sectionListEl(period);
     if (!list) return;
@@ -2619,10 +2619,10 @@ class TodoApp {
   // tri Chrono, Backlog/Inbox en tri Manuel) puisqu'elles partagent la même
   // classe/structure DOM (todoListHTML() / renderGroupedItems()).
 
-  // Supprime l'en-tête : dissout TOUS les membres d'un coup (contrairement à
+  // Supprime le groupe : dissout TOUS les membres d'un coup (contrairement à
   // ungroupTask(), qui n'en retire qu'un seul). Les tâches elles-mêmes ne
   // sont jamais touchées, seulement leur étiquette de groupe — symétrique de
-  // « Créer un en-tête de groupe ».
+  // « Créer un groupe ».
   dissolveGroup(groupId) {
     const members = state.todos.filter(x => x.groupId === groupId);
     if (!members.length) return;
@@ -4632,11 +4632,11 @@ class TodoApp {
     let dropZone = 'before'; // 'before' | 'after' | 'nest' — zone survolée sur l'item cible
     let dropJoinGroup = null; // { groupId, groupTitle, dayPeriodValue, sectionGroup, firstMemberId } quand un .task-group-header est survolé
     let draggedHeight = 0;
-    // En-tête du groupe emporté avec le drag en cours (posé au dragstart, ci-
-    // dessous) — soit le `.task-group-header` lui-même, soit celui de la
-    // carte qui LE PORTE (son 1er membre, juste en dessous). Distinct de
-    // `null` pour un drag de carte normale (membre non-1er, ou tâche non
-    // groupée) : ce cas ne touche jamais à l'en-tête.
+    // Posé au dragstart quand l'élément glissé EST le chip d'en-tête du
+    // groupe (`.task-group-header` lui-même) — seul geste qui déplace tout
+    // le groupe d'un bloc. `null` pour un drag de carte membre (même la 1re,
+    // qui porte l'en-tête juste au-dessus) : ce cas ne touche jamais à
+    // l'en-tête, la carte se déplace seule et quitte le groupe au drop.
     let draggedOwnHeader = null;
 
     // Gap placeholder (utilisé pour les zones section-level : séparateurs,
@@ -4672,7 +4672,6 @@ class TodoApp {
 
     const showDragged = () => {
       if (draggedEl) { draggedEl.style.display = ''; draggedEl.classList.remove('dragging'); }
-      if (draggedOwnHeader) draggedOwnHeader.style.display = '';
     };
 
     const draggableSel = '.todo-item[draggable], .day-spacer[draggable], .task-group-header[draggable]';
@@ -4686,31 +4685,19 @@ class TodoApp {
       e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', item.dataset.id);
       draggedOwnHeader = null;
-      // Drag du titre d'un groupe (task-group-header), OU de la carte qui LE
-      // PORTE (son 1er membre, juste en dessous, même data-id que l'en-tête —
-      // cf. render.js) : les deux gestes emportent tous les membres (data-ids,
-      // posé par todoListHTML()) via le même mécanisme que le drag d'une
-      // multi-sélection (_dragMultiIds/_dropIds) — dropReorder()/le drop plus
-      // bas s'appliquent alors à tout le groupe d'un coup, sans code
-      // spécifique supplémentaire. Traiter les deux gestes pareil est
-      // délibéré : l'en-tête est de toute façon re-rendu juste avant ce
-      // membre à CHAQUE render (todoListHTML), donc le déplacer seul le
-      // faisait déjà « suivre » l'en-tête après coup, de façon imprévisible
-      // (rien ne bougeait pendant le drag, l'en-tête semblait ensuite
-      // téléporté au drop) — source de confusion signalée par Hugues. Rendre
-      // le geste explicite dès le dragstart (ghost + estompage des autres
-      // membres + en-tête masqué comme la carte) élimine la surprise. Pour
-      // déplacer CE membre seul sans le reste du groupe, il faut d'abord le
-      // dégrouper (clic droit → Dégrouper) — un membre non-1er du groupe,
-      // lui, continue de se déplacer seul comme avant.
+      // SEUL le chip d'en-tête (.task-group-header) déplace tout le groupe
+      // d'un bloc (data-ids, posé par todoListHTML(), même mécanisme que le
+      // drag d'une multi-sélection — _dragMultiIds/_dropIds). Glisser une
+      // carte membre — même la 1re, qui porte l'en-tête juste au-dessus —
+      // reste un déplacement de CETTE tâche seule : elle quitte le groupe au
+      // drop si elle n'y reste pas entière (cf. _leaveGroupUnlessWhole,
+      // appelé côté drop). Poser tout le groupe sur l'en-tête reste le seul
+      // geste pour le déplacer en bloc — ajouter/retrancher un membre passe
+      // par le drag de sa propre carte (retrancher) ou un drop sur l'en-tête
+      // (ajouter, cf. dropJoinGroup plus bas).
       let groupTitleOverride = null;
       if (item.classList.contains('task-group-header')) {
         draggedOwnHeader = item;
-      } else if (item.classList.contains('todo-item')) {
-        const prev = item.previousElementSibling;
-        if (prev?.classList.contains('task-group-header') && prev.dataset.id === item.dataset.id) draggedOwnHeader = prev;
-      }
-      if (draggedOwnHeader) {
         const memberIds = (draggedOwnHeader.dataset.ids || '').split(',').filter(Boolean);
         this._dragMultiIds = memberIds;
         groupTitleOverride = state.todos.find(x => x.id === memberIds[0])?.groupTitle || null;
@@ -4720,10 +4707,7 @@ class TodoApp {
       }
       if (!item.classList.contains('day-spacer')) this._setDragGhost(e, item.dataset.id, groupTitleOverride);
       container.classList.add('dragging-active');
-      requestAnimationFrame(() => {
-        item.style.display = 'none';
-        if (draggedOwnHeader && draggedOwnHeader !== item) draggedOwnHeader.style.display = 'none';
-      });
+      requestAnimationFrame(() => { item.style.display = 'none'; });
     });
 
     container.addEventListener('dragend', () => {
@@ -5061,13 +5045,13 @@ class TodoApp {
         const occ = this._resolveOccurrences(ids);
         if (occ.length) {
           occ.forEach(({ t, ds }) => {
-            // Détacher seulement si le moment change vraiment — un simple
-            // réordonnancement au sein du même moment (dropPeriod déjà égal
-            // à l'actuel) ne doit jamais détacher un membre groupé.
-            const changed = (resolveOccurrence(t, ds).dayPeriod || '') !== (dropPeriod || '');
             setOccurrenceField(t, ds, 'dayPeriod', dropPeriod || null);
             t.updatedAt = Date.now();
-            if (changed) this._leaveGroupUnlessWhole(t, ids);
+            // Glisser sa propre carte (jamais l'en-tête, cf. draggedOwnHeader)
+            // détache un membre groupé — que le moment change réellement ou
+            // que ce soit un simple réordonnancement au sein du même moment :
+            // seul le chip d'en-tête déplace le groupe entier sans le rompre.
+            if (!draggedOwnHeader) this._leaveGroupUnlessWhole(t, ids);
           });
           saveTodos(state.todos);
         }
@@ -5094,6 +5078,19 @@ class TodoApp {
           occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'priority', dropPriority === 'none' ? null : dropPriority); t.updatedAt = Date.now(); });
           saveTodos(state.todos);
         }
+      }
+
+      // Même règle que la branche moment ci-dessus : glisser sa propre carte
+      // (jamais l'en-tête) détache un membre groupé, y compris pour un simple
+      // réordonnancement manuel/priorité sans changement de moment.
+      if (!draggedOwnHeader) {
+        const left = ids.filter(id => {
+          const t = state.todos.find(x => x.id === id);
+          if (!t?.groupId) return false;
+          this._leaveGroupUnlessWhole(t, ids);
+          return !t.groupId;
+        });
+        if (left.length) saveTodos(state.todos);
       }
 
       this.dropReorder(ids, draggedGroup, dropTarget, dropBefore);
@@ -9100,8 +9097,8 @@ function _renderSubtaskCtxMenu() {
 
 // Menu d'une SECTION de la colonne Aujourd'hui (un moment de la journée, ou
 // la zone sans moment) : le clic droit doit être actif partout, y compris
-// dans le vide d'un moment — c'est là qu'on veut créer un en-tête de groupe
-// ou poser une tâche, pas seulement sur une tâche existante.
+// dans le vide d'un moment — c'est là qu'on veut créer un groupe ou poser
+// une tâche, pas seulement sur une tâche existante.
 const _PERIOD_LABELS = { morning: 'Matin', afternoon: 'Après-midi', evening: 'Soir', '': 'Sans moment' };
 
 function _renderSectionCtxMenu() {
@@ -9109,15 +9106,15 @@ function _renderSectionCtxMenu() {
   _todoCtxMenu.innerHTML = `
     <div class="ctx-section-label">${esc(label)}</div>
     <div class="ctx-item" data-action="section-add-task"><span>＋</span> Ajouter une tâche</div>
-    <div class="ctx-item" data-action="section-group-header"><span>⊞</span> Créer un en-tête de groupe</div>
+    <div class="ctx-item" data-action="section-group-header"><span>⊞</span> Créer un groupe</div>
   `;
 }
 
 // Menu du clic droit sur un .task-group-header lui-même (kind:'group-header').
-// « Supprimer l'en-tête » dissout TOUT le groupe (tous les membres, pas un
+// « Supprimer le groupe » dissout TOUT le groupe (tous les membres, pas un
 // seul comme « Dégrouper » sur une tâche) — pas de confirm(), symétrique de
-// « Créer un en-tête de groupe » et cohérent avec ungroupTask() qui n'en a pas
-// non plus (les tâches elles-mêmes ne sont jamais perdues, seulement l'étiquette).
+// « Créer un groupe » et cohérent avec ungroupTask() qui n'en a pas non plus
+// (les tâches elles-mêmes ne sont jamais perdues, seulement l'étiquette).
 function _renderGroupHeaderCtxMenu() {
   const { groupTitle } = _ctxTarget;
   _todoCtxMenu.innerHTML = `
@@ -9126,7 +9123,7 @@ function _renderGroupHeaderCtxMenu() {
     <div class="ctx-item" data-action="group-rename"><span>✎</span> Renommer</div>
     <div class="ctx-item" data-action="group-duplicate"><span>⧉</span> Dupliquer le groupe</div>
     <div class="ctx-sep"></div>
-    <div class="ctx-item danger" data-action="group-dissolve"><span>×</span> Supprimer l'en-tête</div>
+    <div class="ctx-item danger" data-action="group-dissolve"><span>×</span> Supprimer le groupe</div>
   `;
 }
 
@@ -9149,7 +9146,7 @@ function _renderCtxMenu() {
   const canUngroupify = !!single && !!single.groupId;
   // « Regrouper en sous-tâches » exige ≥2 membres (convertGroupToTask sort
   // sinon sans rien faire) — un groupe d'un seul membre est un état normal
-  // depuis « Créer un en-tête de groupe », l'item serait mort silencieusement
+  // depuis « Créer un groupe », l'item serait mort silencieusement
   const canGroupToTask = canUngroupify && state.todos.filter(x => x.groupId === single.groupId).length > 1;
   // Les deux actions ci-dessous ouvrent un input inline ancré à l'item dans
   // le DOM (_inlineTitlePrompt) : ne les proposer que là où cet ancrage
@@ -9198,7 +9195,7 @@ function _renderCtxMenu() {
   const groupSubmenu = !canGroupCluster ? '' : `
     <div class="ctx-item has-submenu"><span>⊞</span> Grouper<span class="ctx-caret">›</span>
       <div class="ctx-submenu">
-        ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un en-tête de groupe</div>` : ''}
+        ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un groupe</div>` : ''}
         ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Promouvoir en tâche parente</div>` : ''}
         ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Voir comme groupe</div>` : ''}
         ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task">Regrouper en sous-tâches</div>` : ''}

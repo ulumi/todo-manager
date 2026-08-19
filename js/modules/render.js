@@ -273,7 +273,7 @@ function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge 
     if (t.groupId && !seen.has(t.groupId)) {
       const members = items.filter(x => x.groupId === t.groupId);
       // Un groupe volontairement créé sur une seule tâche (menu contextuel
-      // « Créer un en-tête de groupe ») n'a qu'un membre AU TOTAL : son
+      // « Créer un groupe ») n'a qu'un membre AU TOTAL : son
       // en-tête doit s'afficher, sinon l'action semble sans effet. Distinct
       // du membre isolé d'un groupe qui en compte plusieurs (déplacé à un
       // autre jour/moment) : celui-là reste une tâche normale sans en-tête,
