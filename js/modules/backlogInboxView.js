@@ -7,6 +7,10 @@
 
 import { esc } from './utils.js';
 
+// Icône de l'en-tête de groupe (« commissions ») — mêmes conventions que
+// render.js (_groupHeaderIconSVG) : trait monochrome, currentColor.
+const _groupHeaderIconSVG = `<svg class="task-group-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+
 // { sort: 'date'|'priority'|'title'|'category'|'manual', cols: '1'|'2'|'3'|'4'|'auto' }
 // Défaut : Récentes, 1 colonne. Synchronisée via getAppConfig()/_applyBackup
 // (clés `backlogQueueView`/`inboxQueueView`).
@@ -65,7 +69,7 @@ export function renderGroupedItems(items, itemTemplateFn) {
       if (members.length > 1) {
         seen.add(t.groupId);
         const ids = members.map(m => m.id).join(',');
-        header = `<div class="task-group-header" data-group="${t.groupId}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
+        header = `<div class="task-group-header" data-group="${t.groupId}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-chip">${_groupHeaderIconSVG}<span class="task-group-title">${esc(t.groupTitle || '')}</span></span></div>`;
       }
     }
     return header + itemTemplateFn(t);

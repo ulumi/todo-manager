@@ -1,5 +1,15 @@
 [
   {
+    "version": "0.4.2741",
+    "date": "2026-08-18",
+    "message": "refactor(modal): fusionne le mode guidé et le formulaire dense en un seul flux progressif (puces Quand compactes, priorité en pastilles, reste replié derrière « Plus d'options »)"
+  },
+  {
+    "version": "0.4.2735",
+    "date": "2026-08-18",
+    "message": "feat(groupes de tâches): supprimer un en-tête de groupe (clic droit ou glisser un membre hors du groupe), renommer/dupliquer/ajouter une tâche depuis l'en-tête, distinction visuelle avec les moments"
+  },
+  {
     "version": "0.4.2716",
     "date": "2026-08-18",
     "message": "feat(sous-tâches): réordonnancement par glisser-déposer dans le modal, remplace les flèches ↑/↓"

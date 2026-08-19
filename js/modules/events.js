@@ -47,13 +47,6 @@ export function setupEventListeners(app) {
     quickInsertInput.addEventListener('blur', () => app.confirmQuickInsert());
   }
 
-  // Task date change (for modal clouds)
-  document.getElementById('taskDate').addEventListener('change', e => {
-    const d = e.target.value ? app.parseDS(e.target.value) : app.getNavDate();
-    document.getElementById('modalClouds').innerHTML = app.getCloudsHTML(d);
-  });
-
-
   // Global Escape — close whichever modal is open
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;

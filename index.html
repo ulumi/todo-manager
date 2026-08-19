@@ -300,7 +300,7 @@
 </div>
 
 
-<!-- ═══ NEW Add Task Modal (Floating Labels + Contextual Sidebar) ═══ -->
+<!-- ═══ Add/Edit Task Modal — flux unique progressif (titre + puces Quand + priorité, reste derrière « Plus d'options ») ═══ -->
 <div class="modal-overlay hidden" id="modalOverlay" onclick="if(event.target===this)window.app.closeModal()">
   <div class="modal modal-floating">
     <!-- ── Main form ── -->
@@ -308,8 +308,6 @@
       <div class="modal-header">
         <div class="modal-title-wrap">
           <div class="modal-title" id="modalTitleEl" data-i18n="newTask">New Task</div>
-          <a class="guided-link" id="guidedCardsLink" onclick="window.app.openGuidedCards()">Besoin d'aide ?</a>
-          <button class="modal-guided-pill" id="guidedPillBtn" onclick="window.app.openGuidedCards()">✦ Mode guidé</button>
         </div>
         <button class="modal-close-btn" onclick="window.app.closeModal()" title="Fermer" aria-label="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
       </div>
@@ -319,194 +317,183 @@
         <button class="draft-banner-clear" onclick="window.app.discardDraft()">Effacer</button>
       </div>
 
-      <!-- ═══ Section 1: QUOI ═══ -->
-      <div class="modal-section">
-        <div class="modal-section-label">Quoi</div>
-        <div class="fl-group fl-title-group" style="position:relative">
-          <input type="text" class="form-input fl-input" id="taskTitle" maxlength="200" autocomplete="off" spellcheck="false" placeholder=" ">
-          <label class="fl-label" for="taskTitle">Quoi faire ?</label>
-          <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
+      <!-- ═══ Titre ═══ -->
+      <div class="fl-group fl-title-group" style="position:relative">
+        <input type="text" class="form-input fl-input" id="taskTitle" maxlength="200" autocomplete="off" spellcheck="false" placeholder=" ">
+        <label class="fl-label" for="taskTitle">Quoi faire ?</label>
+        <div class="title-combobox hidden" id="titleCombobox" role="listbox"></div>
+      </div>
+
+      <!-- ═══ Quand ═══ -->
+      <div id="scheduleModeGroup">
+        <div class="schedule-mode-row">
+          <div class="schedule-mode-option" data-mode="today" onclick="window.app.selectBigMode('today')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <span>Aujourd'hui</span>
+          </div>
+          <div class="schedule-mode-option" data-mode="tomorrow" onclick="window.app.selectBigMode('tomorrow')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
+            <span>Demain</span>
+          </div>
+          <div class="schedule-mode-option" data-mode="date" onclick="window.app.selectBigMode('date')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Date</span>
+          </div>
+          <div class="schedule-mode-option" data-mode="recurring" onclick="window.app.selectBigMode('recurring')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Répète</span>
+          </div>
+          <div class="schedule-mode-option" data-mode="inbox" onclick="window.app.selectBigMode('inbox')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            <span>Inbox</span>
+          </div>
+          <div class="schedule-mode-option" data-mode="backlog" onclick="window.app.selectBigMode('backlog')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>Backlog</span>
+          </div>
         </div>
-        <div class="fl-group">
-          <textarea class="form-input fl-input" id="taskDescription" autocomplete="off" rows="2" placeholder=" " style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
-          <label class="fl-label fl-label-textarea">Notes, détails...</label>
-        </div>
-        <!-- Subtasks -->
-        <div id="modalSubtaskSection" style="display:none">
-          <div class="modal-section-label" style="margin-top:8px">Sous-tâches</div>
-          <div id="modalSubtaskList"></div>
+
+        <!-- Contextual: rec sub-options + date/time/moment -->
+        <div class="schedule-mode-context" id="dateTimeGroup">
+          <!-- Recurrence sub-options -->
+          <div class="rec-sub-options" id="recSubOptions" style="display:none">
+            <div class="rec-sub-option" data-rec="daily" onclick="window.app.selectRecurrence('daily')">Quotidien</div>
+            <div class="rec-sub-option" data-rec="weekly" onclick="window.app.selectRecurrence('weekly')">Hebdo</div>
+            <div class="rec-sub-option" data-rec="monthly" onclick="window.app.selectRecurrence('monthly')">Mensuel</div>
+            <div class="rec-sub-option" data-rec="yearly" onclick="window.app.selectRecurrence('yearly')">Annuel</div>
+          </div>
+          <div class="rec-detail" id="recDetail"></div>
+          <!-- Date + Time on same row -->
+          <div class="form-group" id="dateGroup">
+            <label class="form-label">Date / Heure</label>
+            <div class="date-time-row" id="dateInputRow">
+              <div class="date-trigger-wrap">
+                <button type="button" class="date-trigger-btn is-empty" id="taskDateBtn">DATE</button>
+                <input type="date" id="taskDate" autocomplete="off">
+              </div>
+              <input type="text" class="form-input" id="taskStartTime" autocomplete="off" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
+              <label class="timing-flex">
+                <input type="checkbox" id="taskFlexibleTime">
+                <span class="timing-flex-label">Flexible</span>
+                <span class="timing-flex-hint" title="L'heure est approximative — la tâche peut glisser dans la journée">?</span>
+              </label>
+            </div>
+          </div>
+          <!-- Duration -->
+          <div class="duration-row">
+            <div class="timing-field">
+              <label class="form-label">Durée estimée</label>
+              <div class="duration-stepper" data-target="taskDurationEstimated">
+                <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <input type="text" inputmode="numeric" class="dur-display is-empty" placeholder="—" aria-label="Durée estimée (minutes)">
+                <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <input type="hidden" id="taskDurationEstimated">
+              </div>
+            </div>
+            <div class="timing-field" id="durationRealField">
+              <label class="form-label">Durée réelle</label>
+              <div class="duration-stepper" data-target="taskDurationReal">
+                <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <input type="text" inputmode="numeric" class="dur-display is-empty" placeholder="—" aria-label="Durée réelle (minutes)">
+                <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                <input type="hidden" id="taskDurationReal">
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="taskEndTime" value="">
         </div>
       </div>
 
-      <!-- ═══ Section 2: QUAND ═══ -->
-      <div class="modal-section">
-        <div class="modal-section-label">Quand</div>
-        <div id="scheduleModeGroup">
-          <!-- Row 0: Aujourd'hui + Demain -->
-          <div class="schedule-mode-row">
-            <div class="schedule-mode-option schedule-mode-quick" data-mode="today" onclick="window.app.selectBigMode('today')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">C'est</span><span class="smo-key">Aujourd'hui</span></span><span class="smo-line2"><span class="smo-suf">que ça se passe</span></span></span>
-            </div>
-            <div class="schedule-mode-option schedule-mode-quick" data-mode="tomorrow" onclick="window.app.selectBigMode('tomorrow')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">Promis,</span><span class="smo-key">Demain</span></span><span class="smo-line2"><span class="smo-suf">c'est fait</span></span></span>
-            </div>
-          </div>
-
-          <!-- Row 1: Date + Répétitif -->
-          <div class="schedule-mode-row" style="margin-top:8px">
-            <div class="schedule-mode-option" data-mode="date" onclick="window.app.selectBigMode('date')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">À une</span><span class="smo-key">Date</span></span><span class="smo-line2"><span class="smo-suf">précise</span></span></span>
-            </div>
-            <div class="schedule-mode-option" data-mode="recurring" onclick="window.app.selectBigMode('recurring')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">Ça se</span><span class="smo-key">Répète</span></span><span class="smo-line2"><span class="smo-suf">toujours</span></span></span>
-            </div>
-          </div>
-
-          <!-- Contextual: rec sub-options + date/time/moment -->
-          <div class="schedule-mode-context" id="dateTimeGroup">
-            <!-- Recurrence sub-options -->
-            <div class="rec-sub-options" id="recSubOptions" style="display:none">
-              <div class="rec-sub-option" data-rec="daily" onclick="window.app.selectRecurrence('daily')">Quotidien</div>
-              <div class="rec-sub-option" data-rec="weekly" onclick="window.app.selectRecurrence('weekly')">Hebdo</div>
-              <div class="rec-sub-option" data-rec="monthly" onclick="window.app.selectRecurrence('monthly')">Mensuel</div>
-              <div class="rec-sub-option" data-rec="yearly" onclick="window.app.selectRecurrence('yearly')">Annuel</div>
-            </div>
-            <div class="rec-detail" id="recDetail"></div>
-            <!-- Date + Time on same row -->
-            <div class="form-group" id="dateGroup">
-              <label class="form-label">Date / Heure</label>
-              <div class="date-time-row" id="dateInputRow">
-                <div class="date-trigger-wrap">
-                  <button type="button" class="date-trigger-btn is-empty" id="taskDateBtn">DATE</button>
-                  <input type="date" id="taskDate" autocomplete="off">
-                </div>
-                <input type="text" class="form-input" id="taskStartTime" autocomplete="off" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
-                <label class="timing-flex">
-                  <input type="checkbox" id="taskFlexibleTime">
-                  <span class="timing-flex-label">Flexible</span>
-                  <span class="timing-flex-hint" title="L'heure est approximative — la tâche peut glisser dans la journée">?</span>
-                </label>
-              </div>
-            </div>
-            <!-- Duration -->
-            <div class="duration-row">
-              <div class="timing-field">
-                <label class="form-label">Durée estimée</label>
-                <div class="duration-stepper" data-target="taskDurationEstimated">
-                  <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                  <input type="text" inputmode="numeric" class="dur-display is-empty" placeholder="—" aria-label="Durée estimée (minutes)">
-                  <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                  <input type="hidden" id="taskDurationEstimated">
-                </div>
-              </div>
-              <div class="timing-field" id="durationRealField">
-                <label class="form-label">Durée réelle</label>
-                <div class="duration-stepper" data-target="taskDurationReal">
-                  <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                  <input type="text" inputmode="numeric" class="dur-display is-empty" placeholder="—" aria-label="Durée réelle (minutes)">
-                  <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-                  <input type="hidden" id="taskDurationReal">
-                </div>
-              </div>
-            </div>
-            <input type="hidden" id="taskEndTime" value="">
-          </div>
-
-          <!-- Row 2: Inbox + Backlog -->
-          <div class="schedule-mode-row" style="margin-top:8px">
-            <div class="schedule-mode-option" data-mode="inbox" onclick="window.app.selectBigMode('inbox')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">Droit à l'</span><span class="smo-key">Inbox</span></span><span class="smo-line2"><span class="smo-suf">pour l'instant</span></span></span>
-            </div>
-            <div class="schedule-mode-option" data-mode="backlog" onclick="window.app.selectBigMode('backlog')">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              <span class="smo-phrase"><span class="smo-line1"><span class="smo-pre">Dans le</span><span class="smo-key">Backlog</span></span><span class="smo-line2"><span class="smo-suf">un jour</span></span></span>
-            </div>
-          </div>
-        </div>
+      <!-- ═══ Priorité ═══ -->
+      <div class="priority-pastille-row" id="priorityPastilleRow">
+        <button type="button" class="priority-pastille active" data-priority="" onclick="window.app.selectPriority('')" title="Aucune priorité"><span>Aucune</span></button>
+        <button type="button" class="priority-pastille priority-pastille--low" data-priority="low" onclick="window.app.selectPriority('low')" title="Priorité basse"><span>Basse</span></button>
+        <button type="button" class="priority-pastille priority-pastille--medium" data-priority="medium" onclick="window.app.selectPriority('medium')" title="Priorité moyenne"><span>Moyenne</span></button>
+        <button type="button" class="priority-pastille priority-pastille--high" data-priority="high" onclick="window.app.selectPriority('high')" title="Priorité haute"><span>Haute</span></button>
       </div>
 
-      <!-- ═══ Section 3: DÉTAILS ═══ -->
-      <div class="modal-section modal-context-fields" id="contextFields">
-        <div class="modal-section-label">Détails</div>
+      <!-- Hidden recurrence select (for JS compatibility) -->
+      <select id="taskRecurrence" style="display:none">
+        <option value="none">Aucune</option>
+        <option value="daily">Quotidien</option>
+        <option value="weekly">Hebdomadaire</option>
+        <option value="monthly">Mensuel</option>
+        <option value="yearly">Annuel</option>
+      </select>
 
-        <!-- Priority -->
-        <div class="fl-group">
-          <select class="form-input modal-select fl-input" id="taskPriority" onchange="window.app.selectPriority(this.value)">
-            <option value="">— Aucune</option>
-            <option value="low">Basse</option>
-            <option value="medium">Moyenne</option>
-            <option value="high">Haute</option>
-          </select>
-          <label class="fl-label">Priorité</label>
-        </div>
+      <!-- ═══ Plus d'options (dépliant) ═══ -->
+      <button type="button" class="modal-more-toggle" id="modalMoreToggle" onclick="window.app.toggleMoreOptions()">
+        <span>Plus d'options</span>
+        <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
+      </button>
+      <div class="modal-more-options" id="modalMoreOptions">
+        <div class="modal-more-options-inner">
 
-        <!-- Hidden recurrence select (for JS compatibility) -->
-        <select id="taskRecurrence" style="display:none">
-          <option value="none">Aucune</option>
-          <option value="daily">Quotidien</option>
-          <option value="weekly">Hebdomadaire</option>
-          <option value="monthly">Mensuel</option>
-          <option value="yearly">Annuel</option>
-        </select>
-
-        <!-- Tags: Catégories / Projets / Intentions -->
-        <div class="tag-tabs">
-          <button class="tag-tab active" data-tab="categories" onclick="window.app.switchTagTab('categories')" title="Regrouper et filtrer les tâches par thème">Catégories</button>
-          <button class="tag-tab" data-tab="projects" onclick="window.app.switchTagTab('projects')" title="Suivre l'avancement d'un objectif concret">Projets</button>
-          <button class="tag-tab" data-tab="intentions" onclick="window.app.switchTagTab('intentions')" title="Aligner tes tâches sur tes grandes intentions de vie">Intentions</button>
-        </div>
-        <div class="tag-tab-panel" data-tab="categories">
-          <div class="tag-picker" id="taskCategoryTags"></div>
-          <div class="tag-picker-add" id="newCatRow" style="display:none">
-            <input class="form-input tag-picker-input" id="newCatInput" autocomplete="off" placeholder="Nouvelle catégorie..."
-              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addCategoryInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
+          <div class="fl-group">
+            <textarea class="form-input fl-input" id="taskDescription" autocomplete="off" rows="2" placeholder=" " style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
+            <label class="fl-label fl-label-textarea">Notes, détails...</label>
           </div>
-        </div>
-        <div class="tag-tab-panel" data-tab="projects" style="display:none">
-          <div class="tag-picker" id="taskProjectTags"></div>
-          <div class="tag-picker-add" id="newProjectRow" style="display:none">
-            <input class="form-input tag-picker-input" id="newProjectInput" autocomplete="off" placeholder="Nouveau projet..."
-              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addProjectInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
-          </div>
-        </div>
-        <div class="tag-tab-panel" data-tab="intentions" style="display:none">
-          <div class="tag-picker" id="taskIntentionTags"></div>
-          <div class="tag-picker-add" id="newIntentionRow" style="display:none">
-            <input class="form-input tag-picker-input" id="newIntentionInput" autocomplete="off" placeholder="Nouvelle intention..."
-              onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addIntentionInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
-          </div>
-        </div>
 
-        <!-- Counter -->
-        <div class="counter-field-section" id="counterSection">
-          <label class="counter-toggle-row">
-            <input type="checkbox" id="taskCounterEnabled" onchange="window.app.toggleCounterFields(this.checked)">
-            <span class="counter-toggle-label">Compteur de progression</span>
-          </label>
-          <div class="counter-fields" id="counterFields" style="display:none">
-            <div class="counter-fields-row">
-              <div class="fl-group counter-fl-group">
-                <input type="number" class="form-input fl-input" id="taskCountFrom" placeholder=" " min="0" step="1" value="0">
-                <label class="fl-label">De</label>
-              </div>
-              <div class="fl-group counter-fl-group">
-                <input type="number" class="form-input fl-input" id="taskCountTo" placeholder=" " min="1" step="1">
-                <label class="fl-label">Objectif</label>
-              </div>
-              <div class="fl-group counter-fl-group counter-fl-group--unit">
-                <input type="text" class="form-input fl-input" id="taskCountUnit" placeholder=" " maxlength="20" autocomplete="off">
-                <label class="fl-label">Unité (km, pages…)</label>
+          <!-- Subtasks -->
+          <div id="modalSubtaskSection" style="display:none">
+            <div class="modal-section-label" style="margin-top:8px">Sous-tâches</div>
+            <div id="modalSubtaskList"></div>
+          </div>
+
+          <!-- Tags: Catégories / Projets / Intentions -->
+          <div class="tag-tabs">
+            <button class="tag-tab active" data-tab="categories" onclick="window.app.switchTagTab('categories')" title="Regrouper et filtrer les tâches par thème">Catégories</button>
+            <button class="tag-tab" data-tab="projects" onclick="window.app.switchTagTab('projects')" title="Suivre l'avancement d'un objectif concret">Projets</button>
+            <button class="tag-tab" data-tab="intentions" onclick="window.app.switchTagTab('intentions')" title="Aligner tes tâches sur tes grandes intentions de vie">Intentions</button>
+          </div>
+          <div class="tag-tab-panel" data-tab="categories">
+            <div class="tag-picker" id="taskCategoryTags"></div>
+            <div class="tag-picker-add" id="newCatRow" style="display:none">
+              <input class="form-input tag-picker-input" id="newCatInput" autocomplete="off" placeholder="Nouvelle catégorie..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addCategoryInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
+            </div>
+          </div>
+          <div class="tag-tab-panel" data-tab="projects" style="display:none">
+            <div class="tag-picker" id="taskProjectTags"></div>
+            <div class="tag-picker-add" id="newProjectRow" style="display:none">
+              <input class="form-input tag-picker-input" id="newProjectInput" autocomplete="off" placeholder="Nouveau projet..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addProjectInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
+            </div>
+          </div>
+          <div class="tag-tab-panel" data-tab="intentions" style="display:none">
+            <div class="tag-picker" id="taskIntentionTags"></div>
+            <div class="tag-picker-add" id="newIntentionRow" style="display:none">
+              <input class="form-input tag-picker-input" id="newIntentionInput" autocomplete="off" placeholder="Nouvelle intention..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addIntentionInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
+            </div>
+          </div>
+
+          <!-- Counter -->
+          <div class="counter-field-section" id="counterSection">
+            <label class="counter-toggle-row">
+              <input type="checkbox" id="taskCounterEnabled" onchange="window.app.toggleCounterFields(this.checked)">
+              <span class="counter-toggle-label">Compteur de progression</span>
+            </label>
+            <div class="counter-fields" id="counterFields" style="display:none">
+              <div class="counter-fields-row">
+                <div class="fl-group counter-fl-group">
+                  <input type="number" class="form-input fl-input" id="taskCountFrom" placeholder=" " min="0" step="1" value="0">
+                  <label class="fl-label">De</label>
+                </div>
+                <div class="fl-group counter-fl-group">
+                  <input type="number" class="form-input fl-input" id="taskCountTo" placeholder=" " min="1" step="1">
+                  <label class="fl-label">Objectif</label>
+                </div>
+                <div class="fl-group counter-fl-group counter-fl-group--unit">
+                  <input type="text" class="form-input fl-input" id="taskCountUnit" placeholder=" " maxlength="20" autocomplete="off">
+                  <label class="fl-label">Unité (km, pages…)</label>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-      </div><!-- /contextFields -->
+        </div>
+      </div>
 
       <!-- Footer -->
       <div class="modal-footer">
@@ -527,174 +514,6 @@
         </div>
       </div>
     </div>
-
-
-    <!-- ═══ Guided Cards overlay ═══ -->
-    <div class="guided-overlay" id="guidedOverlay" style="display:none">
-      <div class="guided-container">
-        <div class="guided-header">
-          <span class="guided-step-indicator" id="guidedStepIndicator">1 / 4</span>
-          <button class="modal-close-btn" onclick="window.app.closeGuidedCards()" title="Fermer"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="2" y1="2" x2="14" y2="14"/><line x1="14" y1="2" x2="2" y2="14"/></svg></button>
-        </div>
-
-        <div class="guided-cards-track" id="guidedTrack">
-
-          <!-- Card 1: Title -->
-          <div class="guided-card active" data-step="0">
-            <h3>Que veux-tu faire ?</h3>
-            <p class="guided-hint">Décris ta tâche en quelques mots</p>
-            <input type="text" class="form-input guided-input" id="guidedTitle" placeholder="Ex: Appeler le dentiste..." maxlength="200" autocomplete="off">
-            <div class="guided-nav">
-              <span></span>
-              <button class="btn btn-primary guided-next" onclick="window.app.guidedNext()">Suivant</button>
-            </div>
-          </div>
-
-          <!-- Card 2: When -->
-          <div class="guided-card" data-step="1">
-            <h3>Quand ?</h3>
-            <p class="guided-hint">Où ranger cette tâche</p>
-
-            <!-- 3 destination choices -->
-            <div class="guided-dest-options">
-              <button class="guided-dest-btn" data-mode="inbox" onclick="window.app.guidedSelectWhen('inbox')">
-                <div class="guided-dest-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
-                </div>
-                <div class="guided-dest-text">
-                  <strong>Inbox</strong>
-                  <span>À trier plus tard</span>
-                </div>
-              </button>
-              <button class="guided-dest-btn" data-mode="date" onclick="window.app.guidedSelectWhen('date')">
-                <div class="guided-dest-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                </div>
-                <div class="guided-dest-text">
-                  <strong>Date</strong>
-                  <span>Planifier un jour précis</span>
-                </div>
-              </button>
-              <button class="guided-dest-btn" data-mode="backlog" onclick="window.app.guidedSelectWhen('backlog')">
-                <div class="guided-dest-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-                </div>
-                <div class="guided-dest-text">
-                  <strong>Backlog</strong>
-                  <span>Un jour peut-être</span>
-                </div>
-              </button>
-            </div>
-
-            <!-- Date extras — only when "date" is selected -->
-            <div class="guided-date-extras" id="guidedDateExtras" style="display:none">
-              <div class="guided-separator"></div>
-
-              <div class="guided-section">
-                <div class="guided-date-row" id="guidedDateRow">
-                  <input class="form-input" type="date" id="guidedDate" autocomplete="off" onclick="this.showPicker()">
-                  <button type="button" class="today-btn" onclick="window.app.guidedSetToday()">Aujourd'hui</button>
-                  <button type="button" class="today-btn" onclick="window.app.guidedSetTomorrow()">Demain</button>
-                </div>
-              </div>
-
-              <div class="guided-section">
-                <div class="guided-section-label">Répétition <span class="guided-tip" data-tip="La tâche se recrée automatiquement à la fréquence choisie.">?</span></div>
-                <select class="form-input" id="guidedRecurrence" onchange="window.app.guidedSelectRecurrence(this.value)">
-                  <option value="none">Aucune</option>
-                  <option value="daily">Quotidien</option>
-                  <option value="weekly">Hebdomadaire</option>
-                  <option value="monthly">Mensuel</option>
-                  <option value="yearly">Annuel</option>
-                </select>
-                <div id="guidedRecDetail" class="guided-rec-detail"></div>
-              </div>
-
-              <div class="guided-section">
-                <div class="guided-section-label">Horaire & durée <span class="guided-tip" data-tip="Optionnel — précise une heure et une durée pour bloquer un créneau.">?</span></div>
-                <div class="guided-detail-grid">
-                  <div class="guided-detail-item">
-                    <label>Heure <span class="guided-tip" data-tip="L'heure à laquelle tu prévois commencer.">?</span></label>
-                    <input type="text" class="form-input" id="guidedStartTime" placeholder="HH:MM" maxlength="5" inputmode="numeric" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
-                  </div>
-                  <div class="guided-detail-item">
-                    <label>Durée <span class="guided-tip" data-tip="Combien de minutes tu penses que ça prendra.">?</span></label>
-                    <input type="number" class="form-input" id="guidedDuration" min="0" placeholder="min">
-                  </div>
-                </div>
-                <label class="guided-flex-label">
-                  <input type="checkbox" id="guidedFlexibleTime">
-                  <span>Heure flexible <span class="guided-tip" data-tip="Si coché, l'heure est approximative et peut bouger.">?</span></span>
-                </label>
-              </div>
-            </div>
-
-            <div class="guided-nav">
-              <button class="btn btn-ghost guided-back" onclick="window.app.guidedBack()">Retour</button>
-              <button class="btn btn-primary guided-next" onclick="window.app.guidedNext()">Suivant</button>
-            </div>
-          </div>
-
-          <!-- Card 3: Priority + Category + Notes -->
-          <div class="guided-card" data-step="2">
-            <h3>Organisation</h3>
-            <p class="guided-hint">Tout est optionnel — passe ce que tu veux</p>
-
-            <div class="guided-detail-grid">
-              <div class="guided-detail-item">
-                <label>Priorité <span class="guided-tip" data-tip="Haute = urgente et importante. Moyenne = importante. Basse = peut attendre.">?</span></label>
-                <select class="form-input" id="guidedPriority">
-                  <option value="">Aucune</option>
-                  <option value="low">Basse</option>
-                  <option value="medium">Moyenne</option>
-                  <option value="high">Haute</option>
-                </select>
-              </div>
-              <div class="guided-detail-item">
-                <label>Catégorie <span class="guided-tip" data-tip="Regroupe tes tâches par contexte (ex: Travail, Maison, Santé).">?</span></label>
-                <div class="guided-cat-row">
-                  <select class="form-input" id="guidedCategory"></select>
-                  <button type="button" class="add-cat-btn" onclick="window.app.guidedToggleNewCat()" title="Nouvelle catégorie">+</button>
-                </div>
-                <div id="guidedNewCatRow" style="display:none">
-                  <input class="form-input" id="guidedNewCatInput" autocomplete="off" placeholder="Nom de la catégorie..."
-                    onkeydown="if(event.key==='Enter'){event.stopPropagation();window.app.guidedAddCategory()}if(event.key==='Escape')window.app.guidedToggleNewCat()">
-                </div>
-              </div>
-              <div class="guided-detail-item">
-                <label>Projet <span class="guided-tip" data-tip="Associe cette tâche à un projet avec un livrable concret.">?</span></label>
-                <select class="form-input" id="guidedProject"></select>
-              </div>
-            </div>
-
-            <div class="guided-detail-item" style="margin-top:12px">
-              <label>Notes <span class="guided-tip" data-tip="Ajoute des détails, liens, ou informations utiles pour cette tâche.">?</span></label>
-              <textarea class="form-input guided-input" id="guidedDescription" placeholder="Détails, liens, infos..." rows="3" style="resize:vertical;min-height:60px;font-family:inherit"></textarea>
-            </div>
-
-            <div class="guided-nav">
-              <button class="btn btn-ghost guided-back" onclick="window.app.guidedBack()">Retour</button>
-              <button class="btn btn-primary guided-next" onclick="window.app.guidedNext()">Suivant</button>
-            </div>
-          </div>
-
-          <!-- Card 4: Résumé -->
-          <div class="guided-card" data-step="3">
-            <h3>Résumé</h3>
-            <p class="guided-hint">Vérifie avant d'ajouter</p>
-            <div class="guided-summary" id="guidedSummary"></div>
-            <div class="guided-nav">
-              <button class="btn btn-ghost guided-back" onclick="window.app.guidedBack()">Retour</button>
-              <button class="btn btn-primary" onclick="window.app.guidedFinish()">Ajouter la tâche</button>
-            </div>
-          </div>
-
-        </div>
-
-        <a class="guided-switch-link" onclick="window.app.closeGuidedCards()">Retour au mode complet</a>
-      </div>
-    </div>
-
   </div>
 </div>
 

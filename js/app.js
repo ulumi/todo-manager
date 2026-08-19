@@ -37,10 +37,7 @@ import {
   toggleCategoryTag, toggleProjectTag, toggleIntentionTag, switchTagTab,
   toggleNewIntentionRow, addIntentionInline,
   selectScheduleMode, selectBigMode, toggleDetailSection,
-  cancelModal, clearDraft, discardDraft,
-  openGuidedCards, closeGuidedCards, guidedNext, guidedBack, guidedFinish,
-  guidedSelectWhen, guidedSelectRecurrence, guidedSetToday, guidedSetTomorrow,
-  guidedToggleNewCat, guidedAddCategory,
+  cancelModal, clearDraft, discardDraft, toggleMoreOptions,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask,
   editModalSubtaskEstimate,
   consumeModalSubtasksDirty
@@ -3200,6 +3197,7 @@ class TodoApp {
     snapshot(state.todos);
     t.date = DS(today());
     t.updatedAt = Date.now();
+    this._leaveGroupUnlessWhole(t, [id]);
     saveTodos(state.todos);
     this.render();
   }
@@ -3215,7 +3213,7 @@ class TodoApp {
     const isCopy = this._isCopyDrag(event);
     targets.forEach(t => {
       if (isCopy) this._insertClone(t, { date: dateStr, backlog: false });
-      else { t.date = dateStr; t.backlog = false; t.updatedAt = Date.now(); }
+      else { t.date = dateStr; t.backlog = false; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -3507,17 +3505,7 @@ class TodoApp {
     toggleModalRight();
   }
 
-  openGuidedCards() { openGuidedCards(); }
-  closeGuidedCards() { closeGuidedCards(); }
-  guidedNext() { guidedNext(); }
-  guidedBack() { guidedBack(); }
-  guidedFinish() { guidedFinish(); }
-  guidedSelectWhen(mode) { guidedSelectWhen(mode); }
-  guidedSelectRecurrence(val) { guidedSelectRecurrence(val); }
-  guidedSetToday() { guidedSetToday(); }
-  guidedSetTomorrow() { guidedSetTomorrow(); }
-  guidedToggleNewCat() { guidedToggleNewCat(); }
-  guidedAddCategory() { guidedAddCategory(); }
+  toggleMoreOptions() { toggleMoreOptions(); }
 
   // andFocus (raccourci Alt+Entrée) : sauve puis bascule directement en mode
   // Focus sur la tâche (nouvelle ou éditée) — id capturé avant closeModal()
@@ -3782,7 +3770,15 @@ class TodoApp {
     const occ = this._resolveOccurrences(ids);
     if (!occ.length) return;
     snapshot(state.todos);
-    occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'dayPeriod', period || null); t.updatedAt = Date.now(); });
+    occ.forEach(({ t, ds }) => {
+      // Détacher seulement si le moment change réellement (sinon un simple
+      // clic sur le moment déjà actif détacherait à tort un membre groupé,
+      // cf. _leaveGroupUnlessWhole).
+      const changed = (resolveOccurrence(t, ds).dayPeriod || '') !== (period || '');
+      setOccurrenceField(t, ds, 'dayPeriod', period || null);
+      t.updatedAt = Date.now();
+      if (changed) this._leaveGroupUnlessWhole(t, ids);
+    });
     saveTodos(state.todos);
     this.render();
   }
@@ -4170,6 +4166,7 @@ class TodoApp {
     t.date = ds;
     t.backlog = false;
     t.updatedAt = Date.now();
+    this._leaveGroupUnlessWhole(t, [id]);
     saveTodos(state.todos);
     if (mode === 'focus') { focusSetCurrent(id); clearTimerState(); }
     this.render();
@@ -4432,7 +4429,7 @@ class TodoApp {
     snapshot(state.todos);
     targets.forEach(t => {
       if (isCopy) this._insertClone(t, { date: newDateStr });
-      else { t.date = newDateStr; t.updatedAt = Date.now(); }
+      else { t.date = newDateStr; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -5015,7 +5012,15 @@ class TodoApp {
         // que pour SON occurrence affichée — les autres jours ne bougent pas.
         const occ = this._resolveOccurrences(ids);
         if (occ.length) {
-          occ.forEach(({ t, ds }) => { setOccurrenceField(t, ds, 'dayPeriod', dropPeriod || null); t.updatedAt = Date.now(); });
+          occ.forEach(({ t, ds }) => {
+            // Détacher seulement si le moment change vraiment — un simple
+            // réordonnancement au sein du même moment (dropPeriod déjà égal
+            // à l'actuel) ne doit jamais détacher un membre groupé.
+            const changed = (resolveOccurrence(t, ds).dayPeriod || '') !== (dropPeriod || '');
+            setOccurrenceField(t, ds, 'dayPeriod', dropPeriod || null);
+            t.updatedAt = Date.now();
+            if (changed) this._leaveGroupUnlessWhole(t, ids);
+          });
           saveTodos(state.todos);
         }
         // Lâché sur un item → réordonner aussi dans ce moment
@@ -5840,7 +5845,7 @@ class TodoApp {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
     snapshot(state.todos);
-    this._postpone(t, DS(today()));
+    this._postpone(t, DS(today()), [id]);
     saveTodos(state.todos);
     this.render();
   }
@@ -5852,6 +5857,7 @@ class TodoApp {
     t.date = null;
     t.backlog = true;
     t.updatedAt = Date.now();
+    this._leaveGroupUnlessWhole(t, [id]);
     saveTodos(state.todos);
     this.render();
   }
@@ -5863,7 +5869,8 @@ class TodoApp {
     );
     if (!overdue.length) return;
     snapshot(state.todos);
-    overdue.forEach(t => this._postpone(t, todayStr));
+    const movingIds = overdue.map(t => t.id);
+    overdue.forEach(t => this._postpone(t, todayStr, movingIds));
     saveTodos(state.todos);
     this.render();
   }
@@ -5875,7 +5882,8 @@ class TodoApp {
     );
     if (!overdue.length) return;
     snapshot(state.todos);
-    overdue.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+    const movingIds = overdue.map(t => t.id);
+    overdue.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, movingIds); });
     saveTodos(state.todos);
     this._overdueSelected = new Set();
     this.render();
@@ -5915,7 +5923,8 @@ class TodoApp {
       const targets = state.todos.filter(t => sel.has(t.id));
       if (!targets.length) return;
       snapshot(state.todos);
-      targets.forEach(t => this._postpone(t, todayStr));
+      const movingIds = targets.map(t => t.id);
+      targets.forEach(t => this._postpone(t, todayStr, movingIds));
       saveTodos(state.todos);
       this._overdueSelected = new Set();
       this.render();
@@ -5930,7 +5939,8 @@ class TodoApp {
       const targets = state.todos.filter(t => sel.has(t.id));
       if (!targets.length) return;
       snapshot(state.todos);
-      targets.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+      const movingIds = targets.map(t => t.id);
+      targets.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, movingIds); });
       saveTodos(state.todos);
       this._overdueSelected = new Set();
       this.render();
@@ -5941,8 +5951,12 @@ class TodoApp {
 
   // ── Bilan / Review — tâches laissées pour compte ─────────────────────────
   // Report d'une ponctuelle vers une nouvelle date en gardant la trace
-  // (postponedCount / originalDate) — signal de procrastination pour le bilan
-  _postpone(t, newDateStr) {
+  // (postponedCount / originalDate) — signal de procrastination pour le bilan.
+  // `movingIds` (défaut : t seul) — voir _leaveGroupUnlessWhole() : les
+  // appelants qui reportent plusieurs tâches d'un coup (bilan, sélection,
+  // report auto) doivent passer l'id de TOUTES pour que déplacer un groupe
+  // entier ensemble ne le détache pas.
+  _postpone(t, newDateStr, movingIds = [t.id]) {
     if (t.date && t.date !== newDateStr) {
       if (!t.originalDate) t.originalDate = t.date;
       t.postponedCount = (t.postponedCount || 0) + 1;
@@ -5956,6 +5970,7 @@ class TodoApp {
     // juste après avoir appelé _postpone(), donc rien ne change pour lui.
     delete t.dayPeriod;
     t.updatedAt = Date.now();
+    this._leaveGroupUnlessWhole(t, movingIds);
   }
 
   _autoPostponePass() {
@@ -5964,7 +5979,8 @@ class TodoApp {
       (!t.recurrence || t.recurrence === 'none') && t.date && t.date < todayStr && !t.completed && !t.cancelled
     );
     if (!overdue.length) return;
-    overdue.forEach(t => this._postpone(t, todayStr));
+    const movingIds = overdue.map(t => t.id);
+    overdue.forEach(t => this._postpone(t, todayStr, movingIds));
     saveTodos(state.todos);
     this._autoPostponedCount = overdue.length;
   }
@@ -6004,8 +6020,8 @@ class TodoApp {
   }
 
   // Dictée vocale — pose le bouton micro sur les champs statiques du modal
-  // (titre + notes, mode normal ET mode guidé). Les champs de sous-tâche,
-  // créés à la volée, sont équipés à leur création (addSubtaskInline,
+  // (titre + notes). Les champs de sous-tâche, créés à la volée, sont
+  // équipés à leur création (addSubtaskInline,
   // focusAddSubtask, addModalSubtaskInline). Sans support navigateur, rien
   // n'est injecté du tout — pas de bouton mort à l'écran.
   _initDictation() {
@@ -6015,10 +6031,6 @@ class TodoApp {
     // cette fratrie. Leur .fl-group est déjà en position:relative.
     attachMic(document.getElementById('taskTitle'));
     attachMic(document.getElementById('taskDescription'));
-    // Mode guidé : pas de label flottant, un wrapper est plus simple que de
-    // rendre .guided-card / .guided-detail-item positionnés.
-    attachMic(document.getElementById('guidedTitle'), { wrap: true });
-    attachMic(document.getElementById('guidedDescription'), { wrap: true });
     // #quickInsertInput : même raison que taskTitle — PAS de wrapper, son
     // hint (.quick-insert-hint) dépend de `:not(:placeholder-shown) ~`, un
     // sélecteur de fratrie directe qu'un wrapper romprait. .quick-insert-field
@@ -6076,7 +6088,7 @@ class TodoApp {
         // Copie : la mutation (postpone/complete/cancel/backlog…) s'applique
         // au clone, l'original reste intouché — même snapshot() unique que
         // le reste (_reviewMutate en prend une avant tout ceci).
-        mutateEach(isCopy ? this._insertClone(t) : t);
+        mutateEach(isCopy ? this._insertClone(t) : t, ids);
       });
     });
     if (ids.length > 1) msClear();
@@ -6087,21 +6099,21 @@ class TodoApp {
   }
 
   overdueDropToday(event) {
-    this._reviewDrop(event, t => this._postpone(t, DS(today())));
+    this._reviewDrop(event, (t, ids) => this._postpone(t, DS(today()), ids));
   }
 
   // Sous-cible « moment » de la zone Aujourd'hui (révélées pendant tout
   // drag via body.is-dragging-task — voir renderOverdueDropZones, review.js)
   overdueDropTodayPeriod(event, period) {
-    this._reviewDrop(event, t => { this._postpone(t, DS(today())); t.dayPeriod = period; });
+    this._reviewDrop(event, (t, ids) => { this._postpone(t, DS(today()), ids); t.dayPeriod = period; });
   }
 
   overdueDropTomorrow(event) {
-    this._reviewDrop(event, t => this._postpone(t, DS(addDays(today(), 1))));
+    this._reviewDrop(event, (t, ids) => this._postpone(t, DS(addDays(today(), 1)), ids));
   }
 
   overdueDropBacklog(event) {
-    this._reviewDrop(event, t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+    this._reviewDrop(event, (t, ids) => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); });
   }
 
   // « Abandonner » dans le Bilan = annuler (trace conservée), pas supprimer
@@ -6112,13 +6124,17 @@ class TodoApp {
   reviewAllToday() {
     this._reviewMutate(() => {
       const todayStr = DS(today());
-      getOverduePunctual(state.todos).forEach(t => this._postpone(t, todayStr));
+      const overdue = getOverduePunctual(state.todos);
+      const movingIds = overdue.map(t => t.id);
+      overdue.forEach(t => this._postpone(t, todayStr, movingIds));
     });
   }
 
   reviewAllBacklog() {
     this._reviewMutate(() => {
-      getOverduePunctual(state.todos).forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); });
+      const overdue = getOverduePunctual(state.todos);
+      const movingIds = overdue.map(t => t.id);
+      overdue.forEach(t => { t.date = null; t.backlog = true; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, movingIds); });
     });
   }
 
@@ -6131,7 +6147,8 @@ class TodoApp {
     if (!targets.length) return;
     snapshot(state.todos);
     const todayStr = DS(today());
-    targets.forEach(t => this._postpone(t, todayStr));
+    const movingIds = targets.map(t => t.id);
+    targets.forEach(t => this._postpone(t, todayStr, movingIds));
     saveTodos(state.todos);
     this._showToast(`↪ ${targets.length} tâche${targets.length > 1 ? 's' : ''} reportée${targets.length > 1 ? 's' : ''} à aujourd'hui`);
     this.render();
@@ -9048,11 +9065,29 @@ function _renderSectionCtxMenu() {
   `;
 }
 
+// Menu du clic droit sur un .task-group-header lui-même (kind:'group-header').
+// « Supprimer l'en-tête » dissout TOUT le groupe (tous les membres, pas un
+// seul comme « Dégrouper » sur une tâche) — pas de confirm(), symétrique de
+// « Créer un en-tête de groupe » et cohérent avec ungroupTask() qui n'en a pas
+// non plus (les tâches elles-mêmes ne sont jamais perdues, seulement l'étiquette).
+function _renderGroupHeaderCtxMenu() {
+  const { groupTitle } = _ctxTarget;
+  _todoCtxMenu.innerHTML = `
+    <div class="ctx-section-label">${esc(groupTitle || 'Groupe')}</div>
+    <div class="ctx-item" data-action="group-add-task"><span>＋</span> Ajouter une tâche</div>
+    <div class="ctx-item" data-action="group-rename"><span>✎</span> Renommer</div>
+    <div class="ctx-item" data-action="group-duplicate"><span>⧉</span> Dupliquer le groupe</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" data-action="group-dissolve"><span>×</span> Supprimer l'en-tête</div>
+  `;
+}
+
 // Contenu dynamique selon la cible : groupe (N > 1) ou item seul,
 // état complété, présence de tâches déplaçables (non récurrentes)
 function _renderCtxMenu() {
   if (_ctxTarget.kind === 'subtask') { _renderSubtaskCtxMenu(); return; }
   if (_ctxTarget.kind === 'section') { _renderSectionCtxMenu(); return; }
+  if (_ctxTarget.kind === 'group-header') { _renderGroupHeaderCtxMenu(); return; }
   const { ids } = _ctxTarget;
   const group = ids.length > 1;
   const occ = window.app._resolveOccurrences(ids);
@@ -9227,6 +9262,17 @@ _todoCtxMenu.addEventListener('click', e => {
     if (item.dataset.action === 'section-group-header') window.app.addSectionGroupHeader(period);
     return;
   }
+  if (_ctxTarget?.kind === 'group-header') {
+    const item = e.target.closest('.ctx-item');
+    if (!item) return;
+    const { groupId } = _ctxTarget;
+    _hideTodoCtxMenu();
+    if (item.dataset.action === 'group-add-task')  window.app.addTaskToGroup(groupId);
+    if (item.dataset.action === 'group-rename')    window.app.renameGroupPrompt(groupId);
+    if (item.dataset.action === 'group-duplicate') window.app.duplicateGroup(groupId);
+    if (item.dataset.action === 'group-dissolve')  window.app.dissolveGroup(groupId);
+    return;
+  }
   const prioBtn = e.target.closest('.ctx-prio-btn');
   const periodBtn = e.target.closest('.ctx-period-btn');
   // .ctx-item:not(.has-submenu) cible la feuille cliquée — closest() s'arrête
@@ -9286,6 +9332,19 @@ document.addEventListener('contextmenu', e => {
   if (subEl) {
     e.preventDefault();
     _ctxTarget = { kind: 'subtask', todoId: subEl.dataset.todoId, stid: subEl.dataset.stid, ds: subEl.dataset.ds, parentStid: subEl.dataset.parentStid || null };
+    _renderCtxMenu();
+    _todoCtxMenu.classList.remove('hidden');
+    _positionCtxMenu(e.clientX + 4, e.clientY);
+    return;
+  }
+  // Clic droit directement sur l'en-tête d'un groupe (« commissions ») —
+  // pas sur un membre : menu dédié (renommer/ajouter/dupliquer/supprimer
+  // l'en-tête), cf. _renderGroupHeaderCtxMenu. Partagé entre la vue jour et
+  // Backlog/Inbox (même classe/structure, cf. todoListHTML()/renderGroupedItems()).
+  const groupHeaderEl = e.target.closest('.task-group-header');
+  if (groupHeaderEl) {
+    e.preventDefault();
+    _ctxTarget = { kind: 'group-header', groupId: groupHeaderEl.dataset.groupId, groupTitle: groupHeaderEl.querySelector('.task-group-title')?.textContent || '' };
     _renderCtxMenu();
     _todoCtxMenu.classList.remove('hidden');
     _positionCtxMenu(e.clientX + 4, e.clientY);

@@ -21,6 +21,11 @@ function _hasInt(t, id) { return _getIntIds(t).includes(id); }
 
 const _dragHandleSVG = `<svg width="12" height="10" viewBox="0 0 12 10" fill="currentColor"><rect y="0" width="12" height="2" rx="1"/><rect y="4" width="12" height="2" rx="1"/><rect y="8" width="12" height="2" rx="1"/></svg>`;
 
+// Icône de l'en-tête de groupe de tâches (« commissions ») — trait
+// monochrome, currentColor (jamais de couleur figée, cf. CLAUDE.md), la
+// distingue visuellement des en-têtes de moment/type qui n'en ont pas.
+const _groupHeaderIconSVG = `<svg class="task-group-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`;
+
 // Badge de la zone « imbriquer » (glisser-déposer, voir app.js
 // initDayDragDrop/initQueueListDnD/initSubtaskDragDrop) — toujours présent
 // dans le DOM, visibilité pilotée uniquement par .drop-nest en CSS (jamais
@@ -277,7 +282,7 @@ function todoListHTML(items, navDate, group, dayView = false, hideCategoryBadge 
       if (members.length > 1 || totalMembers === 1) {
         seen.add(t.groupId);
         const ids = members.map(m => m.id).join(',');
-        header = `<div class="task-group-header" draggable="true" data-group="${group}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-title">${esc(t.groupTitle || '')}</span></div>`;
+        header = `<div class="task-group-header" draggable="true" data-group="${group}" data-group-id="${t.groupId}" data-id="${members[0].id}" data-ids="${ids}"><span class="task-group-chip">${_groupHeaderIconSVG}<span class="task-group-title">${esc(t.groupTitle || '')}</span></span></div>`;
       }
     }
     return header + todoItemHTML(t, navDate, group, dayView, hideCategoryBadge);
