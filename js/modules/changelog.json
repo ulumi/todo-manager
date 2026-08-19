@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2747",
+    "date": "2026-08-19",
+    "message": "fix(vue jour): l'avertissement de sous-tâches incomplètes s'accrochait à l'en-tête de groupe (même data-id) au lieu de la vraie carte, pour une tâche seule dans son groupe — checkbox sans effet visible"
+  },
+  {
     "version": "0.4.2746",
     "date": "2026-08-19",
     "message": "fix(vue jour): l'avertissement « sous-tâches incomplètes » se rendait hors de l'écran pour une tâche tout en haut de colonne — checkbox visiblement sans effet"

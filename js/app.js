@@ -1425,7 +1425,9 @@ class TodoApp {
   // ceci participe au flux normal de la ligne et ne peut donc jamais
   // chevaucher un item voisin. Ignoré silencieusement si laissé vide.
   _showCompletionDurationPrompt(id, ds) {
-    const item = document.querySelector(`[data-id="${id}"]`);
+    // Exclusion .task-group-header : voir _showSubtaskWarning() — même
+    // data-id partagé pour une tâche seule dans son groupe.
+    const item = document.querySelector(`[data-id="${id}"]:not(.task-group-header):not(.day-spacer)`);
     if (!item || item.querySelector('.todo-duration-prompt')) return;
     if (item.offsetParent === null) return; // masquée (ex. mode stats) — inutile d'inviter dans le vide
     const content = item.querySelector('.todo-content');
@@ -1477,7 +1479,15 @@ class TodoApp {
   _showSubtaskWarning(id, d, count) {
     document.querySelectorAll('.subtask-warning-popover').forEach(el => el.remove());
     const ds = DS(d);
-    const item = document.querySelector(`[data-id="${id}"]`);
+    // `.task-group-header` porte le même data-id que le 1er membre du
+    // groupe (voir render.js/backlogInboxView.js todoListHTML/
+    // renderGroupedItems) — sans cette exclusion, une tâche seule dans son
+    // groupe (visible car unique membre) matchait l'en-tête à la place de
+    // la vraie carte : le popover s'accrochait à un conteneur non
+    // positionné, atterrissait n'importe où (souvent hors du viewport) et
+    // semblait ne rien faire au clic. `.day-spacer` (placeholder de drag)
+    // porte aussi ce data-id, exclu par la même précaution.
+    const item = document.querySelector(`[data-id="${id}"]:not(.task-group-header):not(.day-spacer)`);
     if (!item) return;
     const label = count === 1 ? '1 sous-tâche incomplète' : `${count} sous-tâches incomplètes`;
     const popover = document.createElement('div');
@@ -2801,7 +2811,9 @@ class TodoApp {
   }
 
   _animateDeleteAndRefresh(id, callback) {
-    const item = document.querySelector(`[data-id="${id}"]`);
+    // Exclusion .task-group-header : voir _showSubtaskWarning() — même
+    // data-id partagé pour une tâche seule dans son groupe.
+    const item = document.querySelector(`[data-id="${id}"]:not(.task-group-header):not(.day-spacer)`);
     if (item) {
       gsap.to(item, {
         opacity: 0, x: 24, height: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0,
