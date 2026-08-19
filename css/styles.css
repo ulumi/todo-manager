@@ -6085,11 +6085,13 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--text);
   font-size: 17px;
   font-weight: 500;
+  padding-right: 34px;
 }
 
 .quick-insert-hint {
   position: absolute;
   inset: 0;
+  right: 34px;
   display: flex;
   align-items: center;
   gap: 10px;

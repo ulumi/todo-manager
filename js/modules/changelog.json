@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2703",
+    "date": "2026-08-18",
+    "message": "feat(raccourci): la dictée vocale démarre automatiquement dans la saisie rapide ; Entrée crée la tâche puis ferme le champ (plus de rafale)"
+  },
+  {
     "version": "0.4.2701",
     "date": "2026-08-18",
     "message": "style(raccourci): la saisie rapide assombrit tout le reste (overlay plein écran, comme les modales) et centre le champ de façon absolue"

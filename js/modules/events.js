@@ -37,13 +37,15 @@ export function setupEventListeners(app) {
     o.addEventListener('click', () => app.selectPriority(o.dataset.priority));
   });
 
-  // Quick insert — barre de saisie flottante ouverte par le raccourci 'n'
+  // Quick insert — barre de saisie flottante ouverte par le raccourci 'n'.
+  // Entrée et blur font strictement la même chose (créer si non-vide, puis
+  // fermer) — cf. commentaire de confirmQuickInsert() dans app.js.
   const quickInsertInput = document.getElementById('quickInsertInput');
   if (quickInsertInput) {
     quickInsertInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); app.confirmQuickInsert(true); }
+      if (e.key === 'Enter') { e.preventDefault(); app.confirmQuickInsert(); }
     });
-    quickInsertInput.addEventListener('blur', () => app.confirmQuickInsert(false));
+    quickInsertInput.addEventListener('blur', () => app.confirmQuickInsert());
   }
 
   // Task date change (for modal clouds)

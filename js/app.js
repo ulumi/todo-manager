@@ -19,7 +19,7 @@ import {
 } from './modules/storage.js';
 import * as state from './modules/state.js';
 import {
-  attachMic, autoStartDictation, stopIfDetached,
+  attachMic, autoStartDictation, stopDictation, stopIfDetached,
   isDictationSupported, isAutoDictate, setAutoDictate
 } from './modules/dictation.js';
 import {
@@ -3432,34 +3432,33 @@ class TodoApp {
     overlay.classList.remove('hidden');
     input.value = '';
     input.focus();
+    autoStartDictation(input); // champ toujours vierge à l'ouverture — même convention que openModal()
   }
 
   closeQuickInsert() {
     const overlay = document.getElementById('quickInsertOverlay');
     if (!overlay || overlay.classList.contains('hidden')) return;
+    stopDictation();
     const input = document.getElementById('quickInsertInput');
-    if (input) input.value = ''; // vide avant le blur() pour que confirmQuickInsert(false) ne crée rien
+    if (input) input.value = ''; // vide avant le blur() pour que confirmQuickInsert() ne crée rien en double
     overlay.classList.add('hidden');
     input?.blur();
   }
 
-  // reopen=true (Entrée) : enchaîne aussitôt sur un nouvel input (rafale,
-  // même convention que addSubtaskInline). reopen=false (blur) : referme.
-  confirmQuickInsert(reopen) {
+  // Entrée et blur font tous deux la même chose : créer (si un titre a été
+  // saisi/dicté) puis fermer. Pas de rafale — Entrée referme le champ plutôt
+  // que d'en réarmer un nouveau (qui relancerait la dictée automatique à
+  // chaque tâche, donc un bip Chrome à la suite).
+  confirmQuickInsert() {
     const input = document.getElementById('quickInsertInput');
     const title = input?.value.trim();
-    if (!title) { this.closeQuickInsert(); return; }
-    snapshot(state.todos);
-    addTask({ title, date: DS(state.navDate), recurrence: 'none' }, state.todos);
-    saveTodos(state.todos);
-    this.render();
-    if (reopen) {
-      const fresh = document.getElementById('quickInsertInput');
-      fresh.value = '';
-      fresh.focus();
-    } else {
-      this.closeQuickInsert();
+    if (title) {
+      snapshot(state.todos);
+      addTask({ title, date: DS(state.navDate), recurrence: 'none' }, state.todos);
+      saveTodos(state.todos);
+      this.render();
     }
+    this.closeQuickInsert();
   }
 
   addTaskAfter(id, ds) {
@@ -5891,6 +5890,11 @@ class TodoApp {
     // rendre .guided-card / .guided-detail-item positionnés.
     attachMic(document.getElementById('guidedTitle'), { wrap: true });
     attachMic(document.getElementById('guidedDescription'), { wrap: true });
+    // #quickInsertInput : même raison que taskTitle — PAS de wrapper, son
+    // hint (.quick-insert-hint) dépend de `:not(:placeholder-shown) ~`, un
+    // sélecteur de fratrie directe qu'un wrapper romprait. .quick-insert-field
+    // est déjà en position:relative.
+    attachMic(document.getElementById('quickInsertInput'));
     const section = document.getElementById('settingsDictationSection');
     if (section) section.style.display = '';
   }
