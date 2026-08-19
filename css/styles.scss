@@ -2525,6 +2525,33 @@ main {
   }
 }
 
+// Suppression directe depuis la ligne — même visibilité que .todo-focus-btn/
+// .todo-menu-btn (overlay .todo-actions, hover-reveal du conteneur), juste
+// en 28px pour s'aligner avec ses voisins de cette rangée (contrairement au
+// .todo-delete générique de 24px utilisé dans Inbox/Backlog/Planifier).
+.todo-delete-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: background .15s, color .15s;
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover {
+    background: rgba(239, 68, 68, .15);
+    color: var(--danger);
+  }
+}
+
 .todo-ctx-menu {
   position: fixed;
   background: var(--surface);

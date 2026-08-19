@@ -2528,6 +2528,30 @@ main.plan-mode, main.search-mode {
   color: var(--primary);
 }
 
+.todo-delete-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: background 0.15s, color 0.15s;
+}
+.todo-delete-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.todo-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
 .todo-ctx-menu {
   position: fixed;
   background: var(--surface);
