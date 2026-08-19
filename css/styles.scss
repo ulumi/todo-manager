@@ -2504,7 +2504,15 @@ main {
   box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s;
+  // pointer-events DANS la même transition qu'opacity (pas juste dans la
+  // règle :hover) : sinon, propriété discrète non concernée par le délai
+  // d'opacity, il bascule à `auto` INSTANTANÉMENT au survol — la zone
+  // intercepte alors les clics pendant les ~750ms où elle reste invisible.
+  // Repéré via Playwright : un clic rapide sur la checkbox d'une carte
+  // étroite (peu de colonnes) atterrissait sur ce overlay fantôme au lieu
+  // du checkbox en dessous.
+  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s,
+              pointer-events .25s cubic-bezier(.25, .46, .45, .94) .5s;
 }
 
 .todo-meta {
@@ -3021,7 +3029,10 @@ main {
   box-shadow: 0 1px 6px rgba(0, 0, 0, .12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s;
+  // Voir .todo-actions (même bug) : pointer-events doit suivre le même
+  // délai qu'opacity, sinon la zone intercepte les clics avant d'être visible.
+  transition: opacity .25s cubic-bezier(.25, .46, .45, .94) .5s,
+              pointer-events .25s cubic-bezier(.25, .46, .45, .94) .5s;
 }
 
 .subtask-item:hover > .subtask-action-slot,
@@ -3390,6 +3401,13 @@ body.subtask-drag-active {
 
 
 .todo-check {
+  // position+z-index : sur une carte étroite, .todo-actions (overlay
+  // position:absolute au coin haut-droit) peut géométriquement recouvrir le
+  // checkbox (1er enfant, coin haut-gauche) — sans ça, l'overlay (plus tard
+  // dans le DOM) empile naturellement par-dessus et avale le clic une fois
+  // révélé au survol. Le checkbox, action primaire, doit toujours gagner.
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   width: 22px;
   height: 22px;
@@ -11389,7 +11407,10 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow:    0 1px 6px rgba(0,0,0,.12);
   opacity:       0;
   pointer-events: none;
-  transition:    opacity .25s cubic-bezier(.25,.46,.45,.94) .5s;
+  // Voir .todo-actions (même bug) : pointer-events doit suivre le même
+  // délai qu'opacity, sinon la zone intercepte les clics avant d'être visible.
+  transition:    opacity .25s cubic-bezier(.25,.46,.45,.94) .5s,
+                 pointer-events .25s cubic-bezier(.25,.46,.45,.94) .5s;
 }
 
 .inbox-assign-today {

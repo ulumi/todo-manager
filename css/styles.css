@@ -2495,7 +2495,7 @@ main.plan-mode, main.search-mode {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .todo-meta {
@@ -2974,7 +2974,7 @@ main.plan-mode, main.search-mode {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .subtask-item:hover > .subtask-action-slot,
@@ -3300,6 +3300,8 @@ body.subtask-drag-active {
 }
 
 .todo-check {
+  position: relative;
+  z-index: 2;
   flex-shrink: 0;
   width: 22px;
   height: 22px;
@@ -12085,7 +12087,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .inbox-assign-today {
