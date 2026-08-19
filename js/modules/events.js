@@ -103,7 +103,7 @@ export function setupEventListeners(app) {
     if (e.key==='m') app.setView('month');
     if (e.key==='y') app.setView('year');
     if (e.key==='t') app.todayNav();
-    if (e.key==='n') app.openQuickInsert();
+    if (e.key==='n') { e.preventDefault(); app.openQuickInsert(); }
   });
 
 }
