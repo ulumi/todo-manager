@@ -2130,6 +2130,7 @@ main.plan-mode, main.search-mode {
 .todo-list.masonry {
   grid-auto-rows: 4px;
   row-gap: 0;
+  grid-auto-flow: dense;
 }
 .todo-list.masonry > * {
   grid-row: span var(--rspan, 1);
@@ -2978,6 +2979,9 @@ main.plan-mode, main.search-mode {
 }
 
 .subtask-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   opacity: 0;
   background: none;
   border: 1.5px dashed var(--border);
@@ -2990,6 +2994,11 @@ main.plan-mode, main.search-mode {
   width: 100%;
   column-span: all;
   transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.subtask-add-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 .subtask-add-btn:hover {
   color: var(--primary);
@@ -3199,16 +3208,21 @@ main.plan-mode, main.search-mode {
 }
 .modal-subtask-item .subtask-add-nested-btn {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 15px;
-  line-height: 1;
   padding: 0 3px;
   border-radius: 3px;
   transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.modal-subtask-item .subtask-add-nested-btn svg {
+  width: 12px;
+  height: 12px;
 }
 .modal-subtask-item .subtask-add-nested-btn:hover {
   color: var(--primary);
@@ -5392,6 +5406,10 @@ select.fl-input ~ .fl-label {
 
 .rec-detail {
   margin-top: 12px;
+}
+
+#dateGroup {
+  margin-bottom: 18px;
 }
 
 .day-checkboxes {
@@ -11553,8 +11571,13 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 .schedule-mode-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 4px;
+  scrollbar-width: none;
+}
+.schedule-mode-row::-webkit-scrollbar {
+  display: none;
 }
 
 .schedule-mode-context {
@@ -11564,8 +11587,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 .schedule-mode-option {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 6px 9px;
   border-radius: 20px;
   border: 1.5px solid var(--border);
   font-size: 12px;

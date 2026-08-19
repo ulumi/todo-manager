@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2804",
+    "date": "2026-08-19",
+    "message": "fix(modal): icône SVG cohérente avec la vue jour pour « + sous-tâche » (au lieu d'un simple caractère +), puces Quand jamais sur deux lignes, Date/Heure avant Moment avec plus d'espace entre les deux"
+  },
+  {
     "version": "0.4.2792",
     "date": "2026-08-19",
     "message": "fix(menu): renomme « Voir comme groupe » en « Transformer en groupe » — l'ancien libellé laissait croire à un simple mode d'affichage alors que l'action convertit réellement la tâche (elle disparaît, ses sous-tâches deviennent des tâches indépendantes)"

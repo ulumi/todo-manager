@@ -195,6 +195,10 @@ const _PERIOD_ICONS = {
 };
 const _PERIOD_LABELS = { 'morning': 'Matin', 'afternoon': 'Après-midi', 'evening': 'Soir' };
 
+// Même glyphe que _plusSVG (render.js, .todo-subtask-add-btn en vue jour) —
+// jamais un simple caractère « + », pour rester cohérent visuellement.
+const _SUBTASK_PLUS_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
 function _dayPeriodHTML(currentPeriod) {
   const periods = ['morning', 'afternoon', 'evening'];
   const buttons = periods.map(p =>
@@ -265,7 +269,7 @@ function _subtaskRowsHTML(list, parentStid) {
       <div class="subtask-check${s.completed ? ' done' : ''}" onclick="window.app.toggleModalSubtask('${s.id}'${args})"></div>
       <span class="subtask-title${s.completed ? ' done' : ''}" onclick="window.app.editModalSubtask(this,'${s.id}'${args})">${esc(s.title)}</span>
       <span class="subtask-estimate-badge${effectiveEstimate(s) ? '' : ' ghost'}" onclick="window.app.editModalSubtaskEstimate(this,'${s.id}'${args})" title="${s.durationEstimated ? 'Durée estimée — cliquer pour modifier' : 'Ajouter une durée estimée'}">${effectiveEstimate(s) ? (s.durationEstimated ? `${s.durationEstimated} min` : `~${effectiveEstimate(s)} min`) : '+ durée'}</span>
-      ${!parentStid ? `<button class="subtask-add-nested-btn" onclick="window.app.addModalSubtaskInline('${s.id}')" title="Ajouter une sous-tâche">+</button>` : ''}
+      ${!parentStid ? `<button class="subtask-add-nested-btn" onclick="window.app.addModalSubtaskInline('${s.id}')" title="Ajouter une sous-tâche">${_SUBTASK_PLUS_SVG}</button>` : ''}
       <button class="subtask-del" onclick="window.app.removeModalSubtask('${s.id}'${args})">×</button>
     </div>${nested}`;
   }).join('');
@@ -275,7 +279,7 @@ function _renderModalSubtasks() {
   const el = document.getElementById('modalSubtaskList');
   if (!el) return;
   el.innerHTML = _subtaskRowsHTML(_modalSubtasks, null)
-    + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">+ sous-tâche</button>`;
+    + `<button class="subtask-add-btn" onclick="window.app.addModalSubtaskInline()">${_SUBTASK_PLUS_SVG}<span>sous-tâche</span></button>`;
   // Listener délégué posé une seule fois sur le conteneur (persiste à
   // travers les innerHTML successifs) — voir _onSubtaskListMouseDown.
   if (!el.dataset.dragBound) {

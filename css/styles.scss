@@ -2093,6 +2093,12 @@ main {
 .todo-list.masonry {
   grid-auto-rows: 4px;
   row-gap: 0;
+  // dense : colonne déjà EXPLICITE par item (_packColumns()), seule la
+  // rangée est automatique — en sparse (défaut), le curseur de placement
+  // n'avance que vers l'avant, donc le 1er item de la 2e colonne hérite du
+  // curseur déjà poussé par la 1re colonne et laisse un vide au-dessus de
+  // lui. dense recule pour combler cette rangée libre sans toucher la colonne.
+  grid-auto-flow: dense;
 
   > * { grid-row: span var(--rspan, 1); }
 }
@@ -3036,6 +3042,9 @@ main {
 }
 
 .subtask-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   opacity: 0;
   background: none;
   border: 1.5px dashed var(--border);
@@ -3048,6 +3057,10 @@ main {
   width: 100%;
   column-span: all; // toujours pleine largeur, même en deux colonnes
   transition: opacity .15s, color .15s, border-color .15s;
+
+  // Même glyphe SVG trait que .todo-subtask-add-btn (vue jour) — jamais un
+  // simple caractère « + », pour rester cohérent visuellement dans toute l'app.
+  svg { width: 12px; height: 12px; flex-shrink: 0; }
 
   &:hover {
     color: var(--primary);
@@ -3298,16 +3311,19 @@ main {
   // modal.js) : une sous-sous-tâche ne peut pas elle-même avoir d'enfant.
   .subtask-add-nested-btn {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 15px;
-    line-height: 1;
     padding: 0 3px;
     border-radius: 3px;
     transition: opacity .15s, color .15s, background .15s;
+
+    svg { width: 12px; height: 12px; }
 
     &:hover { color: var(--primary); background: var(--surface2); }
   }
@@ -5397,6 +5413,12 @@ select.fl-input ~ .fl-label {
 }
 
 .rec-detail { margin-top: 12px; }
+
+// Date/Heure précède désormais Moment (index.html) : le .modal-main
+// .form-group { margin-bottom: 32px } générique (pensé pour un autre
+// contexte) est trop large ici, un ID l'emporte pour ne resserrer que ce
+// cas précis sans toucher les autres .form-group du modal.
+#dateGroup { margin-bottom: 18px; }
 
 .day-checkboxes {
   display: flex;
@@ -10917,8 +10939,16 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Schedule mode selector (Date / Répétitif / Inbox / Backlog)
 .schedule-mode-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  // Jamais sur deux lignes — un padding/gap resserré (voir .schedule-mode-
+  // option) suffit à faire tenir les 6 puces sur une largeur de modal
+  // normale ; flex-wrap:nowrap + overflow-x:auto en filet de sécurité pour
+  // un viewport exceptionnellement étroit (scroll horizontal plutôt qu'un
+  // retour à la ligne).
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 4px;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
 }
 
 .schedule-mode-context {
@@ -10931,8 +10961,9 @@ body:has(.bottom-panel:not(.hidden))::before {
 .schedule-mode-option {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
+  flex-shrink: 0;
+  gap: 4px;
+  padding: 6px 9px;
   border-radius: 20px;
   border: 1.5px solid var(--border);
   font-size: 12px;
