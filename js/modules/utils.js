@@ -55,6 +55,14 @@ export function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Nom d'hôte affichable d'un lien (badge/aperçu du modal, popover vue jour) —
+// jamais l'URL complète, trop longue pour une pastille. Repli sur l'URL brute
+// si elle n'est pas parseable (saisie incomplète, protocole exotique).
+export function linkHostname(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); }
+  catch { return url; }
+}
+
 // Repli/dépli des sous-tâches en vue jour — état purement local (comme
 // calSidebarCollapsed/pastDueBannerCollapsed), pas synchronisé entre
 // appareils. Dépliées par défaut (comportement historique inchangé).

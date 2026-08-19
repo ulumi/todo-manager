@@ -87,17 +87,25 @@ export function setupEventListeners(app) {
       if (e.key === 'p') app.focusPauseResume();
       return;
     }
-    if (e.key==='f') { app.enterFocus(); return; }
     if (!document.getElementById('planMonthScroll')) {
       if (e.key==='ArrowLeft')  app.navigate(-1);
       if (e.key==='ArrowRight') app.navigate(1);
     }
-    if (e.key==='d') app.setView('day');
-    if (e.key==='w') app.setView('week');
-    if (e.key==='m') app.setView('month');
-    if (e.key==='y') app.setView('year');
-    if (e.key==='t') app.todayNav();
-    if (e.key==='n') { e.preventDefault(); app.openQuickInsert(); }
+    // Navigation/vues/actions rapides : Alt+lettre, jamais une lettre nue —
+    // une lettre seule tapée dans un champ non reconnu comme INPUT (ex. un
+    // futur contentEditable non couvert par le garde-fou ci-dessus) ne doit
+    // jamais faire sauter de vue en pleine saisie. Ctrl/Cmd écarté : Ctrl/Cmd+N
+    // (nouvelle fenêtre) et +W (fermer l'onglet) sont réservés par le
+    // navigateur et inutilisables depuis la page.
+    if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const key = e.key.toLowerCase();
+    if (key==='f') { e.preventDefault(); app.enterFocus(); return; }
+    if (key==='d') { e.preventDefault(); app.setView('day'); }
+    if (key==='w') { e.preventDefault(); app.setView('week'); }
+    if (key==='m') { e.preventDefault(); app.setView('month'); }
+    if (key==='y') { e.preventDefault(); app.setView('year'); }
+    if (key==='t') { e.preventDefault(); app.todayNav(); }
+    if (key==='n') { e.preventDefault(); app.openQuickInsert(); }
   });
 
 }

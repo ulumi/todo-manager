@@ -104,6 +104,11 @@ export function subtaskListHTML(subtasks, todoId, ds, parentStid = null) {
 
 const _plusSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 
+// Icône « lien » — même glyphe que le modal (modal.js, section Liens), vue
+// jour uniquement (todo.links, voir todoItemHTML) : ouvre le lien en un clic
+// s'il n'y en a qu'un, sinon un petit menu (app.handleLinksBadgeClick).
+const _linkIconSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+
 // Trois morceaux, partagés entre la vue jour (todoItemHTML) et les cartes
 // Inbox/Backlog pour que les sous-tâches s'affichent partout de la même façon :
 // - `toggle` : badge chevron + compteur « fait/total », posé dans .todo-meta ;
@@ -231,8 +236,19 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <span class="todo-counter-target">/ ${to}${unit}</span>
     </div>`;
   })();
+  // Badge « lien » — vue jour uniquement, comme focusTimeBadge : todo.links
+  // est déjà résolu par occurrence (getTodosForDate → resolveOccurrence),
+  // donc lu directement ici sans re-résolution.
+  const linksBadge = (() => {
+    if (!dayView) return '';
+    const links = (todo.links || []).filter(Boolean);
+    if (!links.length) return '';
+    const multi = links.length > 1;
+    const badgeTitle = multi ? `${links.length} liens` : links[0];
+    return `<button class="todo-links-badge${multi ? ' multi' : ''}" title="${esc(badgeTitle)}" onclick="event.stopPropagation();window.app.handleLinksBadgeClick(event,'${todo.id}')">${_linkIconSVG}${multi ? `<span class="todo-links-badge-cnt">${links.length}</span>` : ''}</button>`;
+  })();
   const { toggle: subtaskToggleHTML, block: expandedHTML, addBtn: subtaskAddBtnHTML } = subtaskParts(todo, ds);
-  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || subtaskToggleHTML;
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || linksBadge || subtaskToggleHTML;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
@@ -241,7 +257,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${linksBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
         ${counterBar}
       </div>
       <div class="todo-actions">

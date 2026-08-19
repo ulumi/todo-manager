@@ -479,6 +479,34 @@
           </div>
         </div>
 
+        <!-- Endroit -->
+        <div class="modal-cat-section" id="catSection-location" data-cat="location">
+          <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('location')">
+            <span class="modal-cat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+            <span class="modal-cat-label">Endroit</span>
+            <span class="modal-cat-preview" id="catPreview-location"></span>
+            <svg class="modal-cat-chevron" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
+          </button>
+          <div class="modal-cat-body">
+            <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
+              <label class="location-toggle-row">
+                <input type="checkbox" id="taskLocationVirtual" onchange="window.app.toggleLocationVirtual(this.checked)">
+                <span class="location-toggle-label">Virtuel (visio, en ligne...)</span>
+              </label>
+              <div class="fl-group location-address-group" id="locationAddressField">
+                <input type="text" class="form-input fl-input" id="taskLocationAddress" autocomplete="off" placeholder=" "
+                  oninput="clearTimeout(window.app._locMapTimer);window.app._locMapTimer=setTimeout(()=>window.app.updateLocationMap(),600)">
+                <label class="fl-label">Adresse</label>
+              </div>
+              <div class="location-map-wrap" id="locationMapWrap" style="display:none">
+                <iframe id="locationMapFrame" class="location-map-frame" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Notes -->
         <div class="modal-cat-section" id="catSection-notes" data-cat="notes">
           <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('notes')">
@@ -493,6 +521,25 @@
               <div class="fl-group" style="margin-bottom:0">
                 <textarea class="form-input fl-input" id="taskDescription" autocomplete="off" rows="2" placeholder=" " style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
                 <label class="fl-label fl-label-textarea">Notes, détails...</label>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liens -->
+        <div class="modal-cat-section" id="catSection-links" data-cat="links">
+          <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('links')">
+            <span class="modal-cat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
+            <span class="modal-cat-label">Liens</span>
+            <span class="modal-cat-preview" id="catPreview-links"></span>
+            <svg class="modal-cat-chevron" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
+          </button>
+          <div class="modal-cat-body">
+            <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
+              <div id="modalLinkSection">
+                <div id="modalLinkList"></div>
               </div>
               </div>
             </div>

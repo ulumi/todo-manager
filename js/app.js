@@ -6,7 +6,7 @@ import { TRANSLATIONS, ZOOM_SIZES } from './modules/config.js';
 import { initLowPolyBg, setPalette as _setBgPalette, setBgColor as _setBgColor, PALETTE_OPTIONS } from './modules/lowpoly-bg.js';
 import {
   DS, p2, parseDS, today, addDays, startOfWeek,
-  daysInMonth, firstDayOfMonth, esc,
+  daysInMonth, firstDayOfMonth, esc, linkHostname,
   toggleSubtaskCollapsed, expandSubtask, safeParseJSON,
   dnDZone, needsSplit, splitIntoPromotedChildren
 } from './modules/utils.js';
@@ -40,7 +40,8 @@ import {
   cancelModal, clearDraft, discardDraft, toggleCatSection,
   toggleModalSubtask, removeModalSubtask, addModalSubtaskInline, editModalSubtask,
   editModalSubtaskEstimate,
-  consumeModalSubtasksDirty
+  consumeModalSubtasksDirty,
+  addModalLinkInline, updateModalLink, normalizeModalLink, removeModalLink,
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -2759,6 +2760,12 @@ class TodoApp {
   editModalSubtask(el, stid, parentStid)  { editModalSubtask(el, stid, parentStid); }
   editModalSubtaskEstimate(badgeEl, stid, parentStid) { editModalSubtaskEstimate(badgeEl, stid, parentStid); }
 
+  // ── Modal link delegates (called via window.app from modal HTML) ───────
+  addModalLinkInline()          { addModalLinkInline(); }
+  updateModalLink(idx, value)   { updateModalLink(idx, value); }
+  normalizeModalLink(idx)       { normalizeModalLink(idx); }
+  removeModalLink(idx)          { removeModalLink(idx); }
+
   _trackDeletion(id) {
     const dels = safeParseJSON(localStorage.getItem('_deletions'), {});
     dels[id] = Date.now();
@@ -3646,6 +3653,21 @@ class TodoApp {
 
   showTodoMenu(e, id, ds) {
     _showTodoCtxMenu(e.currentTarget, id, ds);
+  }
+
+  // Badge lien (.todo-links-badge, vue jour) : todo.links est déjà résolu
+  // par occurrence au rendu, mais on relit ici via resolveOccurrence (id+ds)
+  // plutôt que de faire transiter les URLs à travers l'attribut onclick —
+  // même convention que editEstimateBadge()/_editEstimateLabel(). Un seul
+  // lien s'ouvre directement ; plusieurs ouvrent le petit menu dédié.
+  handleLinksBadgeClick(e, id) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    const ds = e.currentTarget.closest('[data-date]')?.dataset.date;
+    const links = (resolveOccurrence(t, ds).links || []).filter(Boolean);
+    if (!links.length) return;
+    if (links.length === 1) { window.open(links[0], '_blank', 'noopener'); return; }
+    _toggleLinksMenu(e.currentTarget, links);
   }
 
   // ── Actions de lot (menu contextuel, sélection simple ou multiple) ──────
@@ -5624,6 +5646,30 @@ class TodoApp {
   toggleCounterFields(checked) {
     const fields = document.getElementById('counterFields');
     if (fields) fields.style.display = checked ? '' : 'none';
+  }
+
+  // ── Endroit (modal) : toggle virtuel / adresse + mini carte Google Maps ─
+  toggleLocationVirtual(checked) {
+    const field = document.getElementById('locationAddressField');
+    if (field) field.style.display = checked ? 'none' : '';
+    this.updateLocationMap();
+  }
+
+  // Embed sans clé API (`output=embed`) — pas d'intégration Google Maps
+  // existante dans le projet (gcal-* concerne Google Calendar, pas Maps).
+  updateLocationMap() {
+    const virtual = document.getElementById('taskLocationVirtual')?.checked;
+    const address = document.getElementById('taskLocationAddress')?.value.trim();
+    const wrap  = document.getElementById('locationMapWrap');
+    const frame = document.getElementById('locationMapFrame');
+    if (!wrap || !frame) return;
+    if (virtual || !address) {
+      wrap.style.display = 'none';
+      frame.src = '';
+      return;
+    }
+    wrap.style.display = '';
+    frame.src = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
   }
 
   incrementCount(id) {
@@ -9089,6 +9135,41 @@ class TodoApp {
   getNavDate() { return state.navDate; }
 }
 
+// ── Popover « liens » (badge .todo-links-badge, vue jour, ≥2 liens) ─────
+// Élément unique appendé à body, positionné en fixed (comme _todoCtxMenu
+// ci-dessous), pour ne jamais être clippé/recouvert par les .todo-item
+// suivants dans le DOM (position:relative + z-index:auto sur .todo-item —
+// un enfant absolute nesté dedans se ferait dépasser par les cartes
+// suivantes). Fermeture au clic extérieur, comme le menu contextuel.
+const _linksMenu = document.createElement('div');
+_linksMenu.className = 'todo-links-menu hidden';
+document.body.appendChild(_linksMenu);
+
+function _hideLinksMenu() { _linksMenu.classList.add('hidden'); }
+
+function _toggleLinksMenu(anchor, links) {
+  const wasOpenForThisAnchor = !_linksMenu.classList.contains('hidden') && _linksMenu._anchor === anchor;
+  _hideLinksMenu();
+  if (wasOpenForThisAnchor) return;
+  _linksMenu._anchor = anchor;
+  _linksMenu.innerHTML = links.map(url =>
+    `<a class="todo-links-menu-item" href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(linkHostname(url))}</a>`
+  ).join('');
+  _linksMenu.classList.remove('hidden');
+  const rect = anchor.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let x = rect.left, y = rect.bottom + 4;
+  const mw = _linksMenu.offsetWidth, mh = _linksMenu.offsetHeight;
+  if (x + mw > vw - 8) x = Math.max(8, vw - mw - 8);
+  if (y + mh > vh - 8) y = Math.max(8, rect.top - mh - 4);
+  _linksMenu.style.left = x + 'px';
+  _linksMenu.style.top = y + 'px';
+}
+
+document.addEventListener('click', e => {
+  if (!_linksMenu.contains(e.target) && !e.target.closest('.todo-links-badge')) _hideLinksMenu();
+});
+
 // ── Global todo context menu (item seul ou sélection multiple) ──────────
 const _todoCtxMenu = document.createElement('div');
 _todoCtxMenu.className = 'todo-ctx-menu hidden';
@@ -9529,10 +9610,6 @@ document.addEventListener('keydown', e => {
   };
 
   if (e.altKey && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
-    if (e.code === 'KeyD') {
-      e.preventDefault();
-      window.app.toggleTheme();
-    }
     if (e.code === 'KeyG') {
       e.preventDefault();
       const next = localStorage.getItem('glassMode') !== '1';
@@ -9542,6 +9619,11 @@ document.addEventListener('keydown', e => {
       e.preventDefault();
       window.app.toggleBgMode();
     }
+  }
+  // Alt+Maj+D — Alt+D seul est réservé à la navigation (Jour), voir events.js
+  if (e.altKey && e.shiftKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyD') {
+    e.preventDefault();
+    window.app.toggleTheme();
   }
 
   if (e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {

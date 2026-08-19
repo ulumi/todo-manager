@@ -1053,6 +1053,45 @@ main.plan-mode, main.search-mode {
   flex: 2;
 }
 
+.location-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  user-select: none;
+  margin-bottom: 14px;
+}
+.location-toggle-row input[type=checkbox] {
+  accent-color: var(--primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.location-toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.location-address-group {
+  margin-bottom: 14px;
+}
+
+.location-map-wrap {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.location-map-frame {
+  display: block;
+  width: 100%;
+  height: 160px;
+  border: 0;
+}
+
 .counters-view {
   padding: 24px;
   max-width: 900px;
@@ -2759,6 +2798,40 @@ main.plan-mode, main.search-mode {
   color: #fff;
 }
 
+.todo-links-menu {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  min-width: 160px;
+  max-width: 260px;
+}
+.todo-links-menu.hidden {
+  display: none;
+}
+.todo-links-menu .todo-links-menu-item {
+  display: block;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+.todo-links-menu .todo-links-menu-item:hover {
+  background: var(--surface2);
+  color: var(--primary);
+}
+
 .todo-subtask-toggle {
   display: inline-flex;
   align-items: center;
@@ -3302,6 +3375,98 @@ main.plan-mode, main.search-mode {
   margin-top: 4px;
 }
 
+.modal-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 5px;
+}
+.modal-link-row:hover {
+  background: var(--surface2);
+}
+.modal-link-row:hover .modal-link-del {
+  opacity: 1;
+}
+
+.modal-link-icon {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+.modal-link-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.modal-link-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid transparent;
+  padding: 2px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-link-input:focus {
+  border-bottom-color: var(--primary);
+}
+.modal-link-input::placeholder {
+  color: var(--text-muted);
+}
+
+.modal-link-del {
+  flex-shrink: 0;
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.modal-link-del:hover {
+  color: #ef4444;
+  background: var(--surface);
+}
+
+.modal-link-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 1;
+  background: none;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 3px 4px;
+  text-align: left;
+  width: 100%;
+  margin-top: 4px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.modal-link-add-btn svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.modal-link-add-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 body.subtask-drag-active {
   cursor: grabbing;
   user-select: none;
@@ -3454,6 +3619,31 @@ body.subtask-drag-active {
 .todo-focustime-input::-webkit-outer-spin-button, .todo-focustime-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+.todo-links-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.todo-links-badge svg {
+  width: 11px;
+  height: 11px;
+}
+.todo-links-badge:hover {
+  color: var(--primary);
+}
+.todo-links-badge .todo-links-badge-cnt {
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .todo-estimate-hover-input {

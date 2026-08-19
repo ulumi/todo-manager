@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2849",
+    "date": "2026-08-19",
+    "message": "feat(modal): nouvelle section Liens — ajouter un ou plusieurs URLs à une tâche, badge cliquable en vue jour"
+  },
+  {
     "version": "0.4.2848",
     "date": "2026-08-19",
     "message": "feat(modal): stepper de durée — maintenir le clic sur +/- répète l'incrément en continu avec accélération progressive"

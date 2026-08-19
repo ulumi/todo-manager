@@ -2,7 +2,7 @@
 //  MODAL MANAGEMENT
 // ════════════════════════════════════════════════════════
 
-import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate } from './utils.js';
+import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate, linkHostname } from './utils.js';
 import { getTodosForDate, addTask, getSuggestions, getRecentTasks, resolveOccurrence, occurrenceOverride } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
@@ -610,6 +610,90 @@ export function addModalSubtaskInline(parentStid) {
   autoStartDictation(input);
 }
 
+// ─── Modal links ────────────────────────────────────────────────────────
+// De simples URLs, jamais un système de checklist comme les sous-tâches :
+// un champ texte par lien, appliqué seulement au Save — même comportement
+// que Notes/Priorité/Durée, pas de persistance immédiate par mutation.
+// Affichés ensuite en vue jour via un badge dédié (render.js/app.js).
+let _modalLinks = [];
+
+export function getModalLinks() { return _modalLinks; }
+
+function _normalizeUrl(v) {
+  const t = v.trim();
+  if (!t) return '';
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(t) ? t : `https://${t}`;
+}
+
+const _LINK_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+
+function _renderModalLinks() {
+  const el = document.getElementById('modalLinkList');
+  if (!el) return;
+  el.innerHTML = _modalLinks.map((url, idx) => `
+    <div class="modal-link-row">
+      <span class="modal-link-icon">${_LINK_ICON_SVG}</span>
+      <input type="url" class="modal-link-input" value="${esc(url)}" placeholder="https://..." autocomplete="off"
+        oninput="window.app.updateModalLink(${idx}, this.value)"
+        onblur="window.app.normalizeModalLink(${idx})"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();if(this.value.trim())window.app.addModalLinkInline();}">
+      <button type="button" class="modal-link-del" onclick="window.app.removeModalLink(${idx})" title="Supprimer">×</button>
+    </div>`).join('')
+    + `<button type="button" class="modal-link-add-btn" onclick="window.app.addModalLinkInline()">${_LINK_ICON_SVG}<span>lien</span></button>`;
+}
+
+export function populateModalLinks(links) {
+  _modalLinks = links ? [...links] : [];
+  _renderModalLinks();
+}
+
+export function addModalLinkInline() {
+  _modalLinks.push('');
+  _renderModalLinks();
+  const inputs = document.querySelectorAll('#modalLinkList .modal-link-input');
+  inputs[inputs.length - 1]?.focus();
+}
+
+export function updateModalLink(idx, value) {
+  if (_modalLinks[idx] === undefined) return;
+  _modalLinks[idx] = value;
+  _scheduleDraftSave();
+}
+
+export function normalizeModalLink(idx) {
+  if (_modalLinks[idx] === undefined) return;
+  const normalized = _normalizeUrl(_modalLinks[idx]);
+  _modalLinks[idx] = normalized;
+  const input = document.querySelectorAll('#modalLinkList .modal-link-input')[idx];
+  if (input) input.value = normalized;
+  _scheduleDraftSave();
+}
+
+export function removeModalLink(idx) {
+  _modalLinks.splice(idx, 1);
+  _renderModalLinks();
+  _scheduleDraftSave();
+}
+
+// ─── Modal location (Endroit) ──────────────────────────────────────────────
+// Deux représentations mutuellement exclusives : virtuel (toggle) ou adresse
+// (input) — l'affichage de la carte/le repli du champ adresse au toggle sont
+// gérés côté app.js (toggleLocationVirtual/updateLocationMap), à côté des
+// autres réglages simples (cf. toggleCounterFields).
+
+function _resetLocationFields() {
+  const virtualEl = document.getElementById('taskLocationVirtual');
+  const addressEl = document.getElementById('taskLocationAddress');
+  const addressField = document.getElementById('locationAddressField');
+  const mapWrap = document.getElementById('locationMapWrap');
+  const mapFrame = document.getElementById('locationMapFrame');
+  if (virtualEl) virtualEl.checked = false;
+  if (addressEl) addressEl.value = '';
+  if (addressField) addressField.style.display = '';
+  if (mapWrap) mapWrap.style.display = 'none';
+  if (mapFrame) mapFrame.src = '';
+}
+
 // ─── Draft management ─────────────────────────────────────────────────────
 
 const DRAFT_KEY = 'modalDraft';
@@ -647,6 +731,9 @@ function _saveDraft() {
     yearMonth: state.selectedYearMonth,
     yearDay: state.selectedYearDay,
     subtasks: _modalSubtasks.length ? _modalSubtasks : undefined,
+    links: _modalLinks.length ? _modalLinks : undefined,
+    locationVirtual: document.getElementById('taskLocationVirtual')?.checked || false,
+    location: document.getElementById('taskLocationAddress')?.value || '',
     counterEnabled: document.getElementById('taskCounterEnabled')?.checked || false,
     countFrom: document.getElementById('taskCountFrom')?.value || '',
     countTo: document.getElementById('taskCountTo')?.value || '',
@@ -680,6 +767,8 @@ export function discardDraft() {
   populateIntentionTags([]);
   switchTagTab('categories');
   populateModalSubtasks([]);
+  populateModalLinks([]);
+  _resetLocationFields();
   selectScheduleMode('date');
   state.setSelectedRecurrence('none');
   document.querySelectorAll('.rec-option').forEach(o => o.classList.toggle('active', o.dataset.rec === 'none'));
@@ -729,6 +818,15 @@ function _tryRestoreDraft() {
   }
   if (d.dayPeriod) window.app?.selectDayPeriod(d.dayPeriod);
   if (d.subtasks?.length) populateModalSubtasks(d.subtasks);
+  if (d.links?.length) populateModalLinks(d.links);
+  if (d.locationVirtual) {
+    const lv = document.getElementById('taskLocationVirtual');
+    if (lv) lv.checked = true;
+    const lf = document.getElementById('locationAddressField');
+    if (lf) lf.style.display = 'none';
+  }
+  if (d.location) document.getElementById('taskLocationAddress').value = d.location;
+  if (d.location || d.locationVirtual) window.app?.updateLocationMap();
   if (d.counterEnabled) {
     const cEl = document.getElementById('taskCounterEnabled');
     const fEl = document.getElementById('counterFields');
@@ -1018,7 +1116,7 @@ export function selectPriority(p) {
 // une tâche neuve tous les champs sont vides, donc tout reste replié
 // (départ minimaliste), sans avoir besoin d'un cas séparé pour la création.
 
-const CAT_KEYS = ['subtasks', 'when', 'duration', 'priority', 'notes', 'tags', 'counter'];
+const CAT_KEYS = ['subtasks', 'when', 'duration', 'priority', 'location', 'notes', 'links', 'tags', 'counter'];
 
 export function setCatSectionOpen(key, open) {
   document.getElementById(`catSection-${key}`)?.classList.toggle('open', !!open);
@@ -1048,8 +1146,12 @@ function _hasCatData(key) {
       return !!(document.getElementById('taskDurationEstimated')?.value || document.getElementById('taskDurationReal')?.value);
     case 'priority':
       return !!state.selectedPriority;
+    case 'location':
+      return !!(document.getElementById('taskLocationVirtual')?.checked || document.getElementById('taskLocationAddress')?.value.trim());
     case 'notes':
       return !!document.getElementById('taskDescription')?.value.trim();
+    case 'links':
+      return _modalLinks.some(u => u.trim());
     case 'tags':
       return !!(_selectedCategoryIds.length || _selectedProjectIds.length || _selectedIntentionIds.length);
     case 'counter':
@@ -1118,6 +1220,19 @@ function _fmtNotesPreview() {
   return v.length > 42 ? v.slice(0, 42) + '…' : v;
 }
 
+function _fmtLocationPreview() {
+  if (document.getElementById('taskLocationVirtual')?.checked) return 'Virtuel';
+  const v = document.getElementById('taskLocationAddress')?.value.trim();
+  if (!v) return 'Aucun';
+  return v.length > 42 ? v.slice(0, 42) + '…' : v;
+}
+
+function _fmtLinksPreview() {
+  const links = _modalLinks.filter(u => u.trim());
+  if (!links.length) return 'Aucun';
+  return links.length === 1 ? linkHostname(links[0]) : `${links.length} liens`;
+}
+
 function _fmtTagsPreview() {
   const names = [];
   const cats = getCategories();
@@ -1143,7 +1258,9 @@ function _refreshCollapsePreviews() {
   _setCatPreview('when', _fmtWhenPreview());
   _setCatPreview('duration', _fmtDurationPreview());
   _setCatPreview('priority', _fmtPriorityPreview());
+  _setCatPreview('location', _fmtLocationPreview());
   _setCatPreview('notes', _fmtNotesPreview());
+  _setCatPreview('links', _fmtLinksPreview());
   _setCatPreview('tags', _fmtTagsPreview());
   _setCatPreview('counter', _fmtCounterPreview());
 }
@@ -1234,6 +1351,8 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   populateIntentionTags([]);
   switchTagTab('categories');
   populateModalSubtasks([]);
+  populateModalLinks([]);
+  _resetLocationFields();
   // Restore draft only on page refresh (not on explicit "new task" click)
   const draftBanner = document.getElementById('draftBanner');
   const hadDraft = restoreDraft ? _tryRestoreDraft() : false;
@@ -1332,6 +1451,14 @@ export function openEditModal(id, dateStr, todos) {
   populateProjectTags(effT.projectIds || (effT.projectId ? [effT.projectId] : []));
   populateIntentionTags(effT.intentionIds || (effT.intentionId ? [effT.intentionId] : []));
   selectPriority(effT.priority || '');
+  // Location fields
+  const locVirtualEl = document.getElementById('taskLocationVirtual');
+  const locAddressEl = document.getElementById('taskLocationAddress');
+  const locAddressField = document.getElementById('locationAddressField');
+  if (locVirtualEl) locVirtualEl.checked = !!effT.locationVirtual;
+  if (locAddressEl) locAddressEl.value = effT.location || '';
+  if (locAddressField) locAddressField.style.display = effT.locationVirtual ? 'none' : '';
+  window.app?.updateLocationMap();
   // Counter fields
   const counterEnabledEl = document.getElementById('taskCounterEnabled');
   const counterFieldsEl  = document.getElementById('counterFields');
@@ -1407,6 +1534,7 @@ export function openEditModal(id, dateStr, todos) {
   // Subtasks — peuplées AVANT _autoExpandCatSections() ci-dessous, dont
   // l'aperçu replié (« done/total ») lit _modalSubtasks au moment de l'appel.
   populateModalSubtasks(effT.subtasks || []);
+  populateModalLinks(effT.links || []);
 
   const modalBox = document.getElementById('modalOverlay').querySelector('.modal');
   // Sections thématiques : seules celles qui contiennent déjà une valeur
@@ -1663,6 +1791,10 @@ export function saveTaskLogic(todos) {
     : undefined;
 
   const subtasks = _modalSubtasks.length ? getModalSubtasks() : undefined;
+  const links = _modalLinks.map(_normalizeUrl).filter(Boolean);
+
+  const locationVirtual = document.getElementById('taskLocationVirtual')?.checked || undefined;
+  const location = !locationVirtual ? (document.getElementById('taskLocationAddress')?.value.trim() || undefined) : undefined;
 
   const data = {
     title,
@@ -1683,6 +1815,9 @@ export function saveTaskLogic(todos) {
     countTo,
     countUnit,
     subtasks,
+    links: links.length ? links : undefined,
+    location,
+    locationVirtual,
   };
 
   if (state.selectedRecurrence==='none') {
@@ -1769,6 +1904,9 @@ export function saveTaskLogic(todos) {
         ov.intentionIds      = data.intentionIds || [];
         ov.priority          = data.priority ?? null;
         ov.subtasks          = getModalSubtasks();
+        ov.links             = links;
+        ov.location          = data.location ?? null;
+        ov.locationVirtual   = data.locationVirtual ?? false;
       } else {
         t.title = data.title;
         delete t.startTime; delete t.endTime; delete t.flexibleTime;
@@ -1785,6 +1923,10 @@ export function saveTaskLogic(todos) {
         t.priority    = data.priority;
         t.description = data.description;
         t.subtasks    = getModalSubtasks();
+        t.links       = links;
+        delete t.location; delete t.locationVirtual;
+        if (data.location) t.location = data.location;
+        if (data.locationVirtual) t.locationVirtual = data.locationVirtual;
       }
       t.updatedAt = Date.now();
     }
