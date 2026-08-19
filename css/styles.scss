@@ -5143,8 +5143,19 @@ select.fl-input ~ .fl-label {
 }
 
 .modal-cat-body-inner {
+  // Jamais de padding ici : c'est CET élément que la grille écrase à une
+  // hauteur de 0 quand la section est repliée, et overflow:hidden ne masque
+  // que le débordement d'un ENFANT — pas son propre padding, qui resterait
+  // donc visible en permanence (le « début de tiroir » qui perçait derrière
+  // le titre replié). Le padding vit un cran plus bas, sur
+  // .modal-cat-body-pad — un vrai enfant, dont le rendu déborde alors de
+  // cette boîte à 0 et se fait couper net par cet overflow:hidden. Même
+  // découplage que .subtask-collapse → .subtask-collapse-inner.
   overflow: hidden;
   min-height: 0;
+}
+
+.modal-cat-body-pad {
   padding: 10px 12px 14px;
 }
 
@@ -10914,7 +10925,7 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 .schedule-mode-context {
-  // Le bas est déjà couvert par le padding de .modal-cat-body-inner qui
+  // Le bas est déjà couvert par le padding de .modal-cat-body-pad qui
   // l'englobe désormais — seul l'écart avec la rangée de puces au-dessus
   // reste à charge d'ici.
   padding: 12px 0 0;

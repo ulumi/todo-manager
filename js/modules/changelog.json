@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2780",
+    "date": "2026-08-19",
+    "message": "fix(modal): les sections thématiques repliées n'affichent plus le padding de leur tiroir en permanence (padding déplacé d'un cran, jamais sur l'élément que la grille écrase à 0)"
+  },
+  {
     "version": "0.4.2768",
     "date": "2026-08-19",
     "message": "fix(menu): renomme « Promouvoir en tâche parente » en « Créer une tâche parente »"

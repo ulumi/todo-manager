@@ -342,6 +342,7 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div id="scheduleModeGroup">
                 <div class="schedule-mode-row">
                   <div class="schedule-mode-option" data-mode="today" onclick="window.app.selectBigMode('today')">
@@ -399,6 +400,7 @@
                   <input type="hidden" id="taskEndTime" value="">
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -413,6 +415,7 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div class="duration-row">
                 <div class="timing-field">
                   <label class="form-label">Durée estimée</label>
@@ -433,6 +436,7 @@
                   </div>
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -447,11 +451,13 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div class="priority-pastille-row" id="priorityPastilleRow">
                 <button type="button" class="priority-pastille active" data-priority="" onclick="window.app.selectPriority('')" title="Aucune priorité"><span>Aucune</span></button>
                 <button type="button" class="priority-pastille priority-pastille--low" data-priority="low" onclick="window.app.selectPriority('low')" title="Priorité basse"><span>Basse</span></button>
                 <button type="button" class="priority-pastille priority-pastille--medium" data-priority="medium" onclick="window.app.selectPriority('medium')" title="Priorité moyenne"><span>Moyenne</span></button>
                 <button type="button" class="priority-pastille priority-pastille--high" data-priority="high" onclick="window.app.selectPriority('high')" title="Priorité haute"><span>Haute</span></button>
+              </div>
               </div>
             </div>
           </div>
@@ -467,9 +473,11 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div class="fl-group" style="margin-bottom:0">
                 <textarea class="form-input fl-input" id="taskDescription" autocomplete="off" rows="2" placeholder=" " style="resize:vertical;min-height:50px;font-family:inherit"></textarea>
                 <label class="fl-label fl-label-textarea">Notes, détails...</label>
+              </div>
               </div>
             </div>
           </div>
@@ -485,6 +493,7 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div class="tag-tabs">
                 <button class="tag-tab active" data-tab="categories" onclick="window.app.switchTagTab('categories')" title="Regrouper et filtrer les tâches par thème">Catégories</button>
                 <button class="tag-tab" data-tab="projects" onclick="window.app.switchTagTab('projects')" title="Suivre l'avancement d'un objectif concret">Projets</button>
@@ -511,6 +520,7 @@
                     onkeydown="if(event.key==='Enter'){event.preventDefault();window.app.addIntentionInline();}if(event.key==='Escape')this.parentElement.style.display='none'">
                 </div>
               </div>
+              </div>
             </div>
           </div>
         </div>
@@ -525,6 +535,7 @@
           </button>
           <div class="modal-cat-body">
             <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
               <div class="counter-field-section" id="counterSection">
                 <label class="counter-toggle-row">
                   <input type="checkbox" id="taskCounterEnabled" onchange="window.app.toggleCounterFields(this.checked)">
@@ -546,6 +557,7 @@
                     </div>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>

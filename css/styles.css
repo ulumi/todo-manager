@@ -5137,6 +5137,9 @@ select.fl-input ~ .fl-label {
 .modal-cat-body-inner {
   overflow: hidden;
   min-height: 0;
+}
+
+.modal-cat-body-pad {
   padding: 10px 12px 14px;
 }
 
