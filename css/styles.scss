@@ -5960,40 +5960,51 @@ body:has(.bottom-panel:not(.hidden))::before {
 
 
 // ─── 17. Quick Insert Bar ────────────────────────────────────────────────
-// Barre flottante ouverte par le raccourci clavier 'n' (events.js) — ajout
-// ultra-rapide sans passer par la modale complète. Style command-palette,
-// centrée, plus bas que le header (sticky, hauteur variable) pour ne jamais
-// le recouvrir plutôt que de dépendre de sa hauteur exacte.
+// Barre ouverte par le raccourci clavier 'n' (events.js) — ajout ultra-rapide
+// sans passer par la modale complète. #quickInsertOverlay assombrit tout le
+// reste (même recette que .modal-overlay : dim + blur) et centre la barre de
+// façon absolue (horizontale ET verticale), plutôt qu'un simple positionnement
+// fixed sur la barre elle-même.
 //
-// Ouverture/fermeture en transition opacity+transform (pas @keyframes) pour
-// que les deux sens soient symétriquement smooth — un simple display:none
-// à la fermeture aurait fait disparaître la barre d'un coup sec. La barre
-// reste toujours display:flex (position:fixed, donc zéro coût de layout
-// pendant qu'elle est invisible) ; .hidden ne fait plus que retomber à
-// opacity 0 + pointer-events none.
-.quick-insert-bar {
+// Ouverture/fermeture en transition opacity/transform (pas @keyframes) pour
+// que les deux sens soient symétriquement smooth — un simple display:none à
+// la fermeture aurait fait disparaître le tout d'un coup sec. L'overlay reste
+// toujours display:flex (position:fixed, donc zéro coût de layout pendant
+// qu'il est invisible) ; .hidden ne fait plus que retomber à opacity 0 +
+// pointer-events none, sur l'overlay ET la barre (transform scale/translate).
+.quick-insert-overlay {
   position: fixed;
-  top: 18vh;
-  left: 50%;
-  width: min(460px, calc(100vw - 32px));
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .5);
+  backdrop-filter: blur(8px);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity .2s cubic-bezier(.25, .46, .45, .94);
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+
+    .quick-insert-bar { transform: scale(.96) translateY(-10px); }
+  }
+}
+
+.quick-insert-bar {
+  width: min(460px, 100%);
   padding: 16px 20px;
   background: var(--surface);
   border: 1.5px solid var(--primary);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, .22);
-  z-index: 9500;
   display: flex;
   align-items: center;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, 0) scale(1);
-  transition: opacity .2s cubic-bezier(.25, .46, .45, .94), transform .2s cubic-bezier(.25, .46, .45, .94);
-
-  &.hidden {
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, -10px) scale(.96);
-  }
+  transform: scale(1) translateY(0);
+  transition: transform .2s cubic-bezier(.25, .46, .45, .94);
 }
 
 // Champ + hint superposés (même case) : le hint (icône + texte) recouvre

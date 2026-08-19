@@ -6034,28 +6034,39 @@ body:has(.bottom-panel:not(.hidden))::before {
   flex-shrink: 0;
 }
 
-.quick-insert-bar {
+.quick-insert-overlay {
   position: fixed;
-  top: 18vh;
-  left: 50%;
-  width: min(460px, 100vw - 32px);
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.quick-insert-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.quick-insert-overlay.hidden .quick-insert-bar {
+  transform: scale(0.96) translateY(-10px);
+}
+
+.quick-insert-bar {
+  width: min(460px, 100%);
   padding: 16px 20px;
   background: var(--surface);
   border: 1.5px solid var(--primary);
   border-radius: 14px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
-  z-index: 9500;
   display: flex;
   align-items: center;
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, 0) scale(1);
-  transition: opacity 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.quick-insert-bar.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -10px) scale(0.96);
+  transform: scale(1) translateY(0);
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .quick-insert-field {

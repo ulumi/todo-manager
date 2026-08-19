@@ -57,7 +57,7 @@ export function setupEventListeners(app) {
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape') return;
     const visible = id => !document.getElementById(id)?.classList.contains('hidden');
-    if (visible('quickInsertBar'))       { app.closeQuickInsert();   return; }
+    if (visible('quickInsertOverlay'))   { app.closeQuickInsert();   return; }
     if (visible('modalOverlay'))         { app.closeModal();         return; }
     if (visible('deleteModalOverlay'))   { app.closeDeleteModal();   return; }
     if (visible('reviewModalOverlay'))   { app.closeReviewModal();   return; }

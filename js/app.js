@@ -3426,20 +3426,20 @@ class TodoApp {
   // ═══════════════════════════════════════════════════
   openQuickInsert() {
     if (document.querySelector('.modal-overlay:not(.hidden)')) return;
-    const bar = document.getElementById('quickInsertBar');
+    const overlay = document.getElementById('quickInsertOverlay');
     const input = document.getElementById('quickInsertInput');
-    if (!bar || !input) return;
-    bar.classList.remove('hidden');
+    if (!overlay || !input) return;
+    overlay.classList.remove('hidden');
     input.value = '';
     input.focus();
   }
 
   closeQuickInsert() {
-    const bar = document.getElementById('quickInsertBar');
-    if (!bar || bar.classList.contains('hidden')) return;
+    const overlay = document.getElementById('quickInsertOverlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
     const input = document.getElementById('quickInsertInput');
     if (input) input.value = ''; // vide avant le blur() pour que confirmQuickInsert(false) ne crée rien
-    bar.classList.add('hidden');
+    overlay.classList.add('hidden');
     input?.blur();
   }
 
