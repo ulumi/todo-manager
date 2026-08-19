@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2792",
+    "date": "2026-08-19",
+    "message": "fix(menu): renomme « Voir comme groupe » en « Transformer en groupe » — l'ancien libellé laissait croire à un simple mode d'affichage alors que l'action convertit réellement la tâche (elle disparaît, ses sous-tâches deviennent des tâches indépendantes)"
+  },
+  {
     "version": "0.4.2791",
     "date": "2026-08-19",
     "message": "refactor(modal): Sous-tâches rejoint les sections thématiques repliables (icône + aperçu N/N comme les autres) — seule section dépliée par défaut, y compris sur une tâche neuve"

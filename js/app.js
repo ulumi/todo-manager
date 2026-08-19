@@ -9222,7 +9222,7 @@ function _renderCtxMenu() {
       <div class="ctx-submenu">
         ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un groupe</div>` : ''}
         ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Créer une tâche parente</div>` : ''}
-        ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Voir comme groupe</div>` : ''}
+        ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Transformer en groupe</div>` : ''}
         ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task">Regrouper en sous-tâches</div>` : ''}
         ${canUngroupify ? `<div class="ctx-item" data-action="ungroup">Dégrouper</div>` : ''}
       </div>
