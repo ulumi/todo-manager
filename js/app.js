@@ -1748,7 +1748,7 @@ class TodoApp {
     return input;
   }
 
-  // Menu contextuel → Grouper → « Promouvoir en tâche parente » : crée une nouvelle tâche
+  // Menu contextuel → Grouper → « Créer une tâche parente » : crée une nouvelle tâche
   // qui hérite du contexte de la tâche visée (date/backlog, moment, heure,
   // priorité, tag/projet/intention, groupe) et l'absorbe comme 1re
   // sous-tâche — inverse exact d'« Ajouter une sous-tâche ». La tâche visée
@@ -9196,7 +9196,7 @@ function _renderCtxMenu() {
     <div class="ctx-item has-submenu"><span>⊞</span> Grouper<span class="ctx-caret">›</span>
       <div class="ctx-submenu">
         ${canAddGroupHeader ? `<div class="ctx-item" data-action="group-header">Créer un groupe</div>` : ''}
-        ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Promouvoir en tâche parente</div>` : ''}
+        ${canAddParent ? `<div class="ctx-item" data-action="add-parent">Créer une tâche parente</div>` : ''}
         ${canGroupify ? `<div class="ctx-item" data-action="task-to-group">Voir comme groupe</div>` : ''}
         ${canGroupToTask ? `<div class="ctx-item" data-action="group-to-task">Regrouper en sous-tâches</div>` : ''}
         ${canUngroupify ? `<div class="ctx-item" data-action="ungroup">Dégrouper</div>` : ''}

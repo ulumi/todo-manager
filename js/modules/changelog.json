@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2768",
+    "date": "2026-08-19",
+    "message": "fix(menu): renomme « Promouvoir en tâche parente » en « Créer une tâche parente »"
+  },
+  {
     "version": "0.4.2767",
     "date": "2026-08-19",
     "message": "refactor(modal): remplace « Plus d'options » par 6 sections thématiques dépliables indépendantes (Quand/Durée/Priorité/Notes/Étiquettes/Compteur) avec aperçu de la valeur courante ; titre + sous-tâches seuls toujours visibles, départ minimaliste"
