@@ -33,6 +33,7 @@ const LANGS = { fr: 'fr-FR', en: 'en-US', es: 'es-ES' };
 const IDLE_STOP_MS  = 12000; // silence après la dernière transcription
 const TIGHT_RUN_MS  = 500;   // un run plus court que ça sans résultat = boucle
 const MAX_TIGHT_RUNS = 3;    // garde-fou anti-boucle serrée (micro indisponible)
+const AUTO_START_DELAY_MS = 1000; // laisse une chance de taper au clavier avant d'armer le micro
 
 const MIC_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
 
@@ -45,6 +46,7 @@ let _applying = false;  // garde : distingue nos propres écritures d'une frappe
 let _stopping = false;  // arrêt explicite → onend ne relance pas
 let _lastActivity = 0;
 let _tightRuns = 0;
+let _pendingAutoStart = null; // { el, timer, onType } — démarrage automatique en attente (voir autoStartDictation)
 
 export function isDictationSupported() { return !!SR; }
 
@@ -82,13 +84,15 @@ function _apply() {
   if (_target.tagName === 'TEXTAREA') _target.scrollTop = _target.scrollHeight;
 }
 
-// L'utilisateur tape pendant que le micro écoute : sa frappe fait foi, on
-// repart de ce qu'il voit à l'écran. Sans ça, le prochain résultat final
-// réécrirait _base (capturé au démarrage) par-dessus ce qu'il vient d'écrire.
+// L'utilisateur tape pendant que le micro écoute : sa frappe fait foi, la
+// dictée s'arrête plutôt que de continuer à écouter en parallèle — sinon la
+// prochaine hypothèse voix viendrait réécrire par-dessus ce qu'il tape.
+// _interim vidée AVANT stopDictation() pour que son propre commit de fin de
+// session n'écrase pas la valeur que l'utilisateur vient de taper.
 function _onUserInput(e) {
   if (_applying || e.target !== _target) return;
-  _base = _target.value;
   _interim = '';
+  stopDictation();
 }
 
 // Signale l'écoute à l'extension navigateur optionnelle (browser-extension/),
@@ -99,6 +103,14 @@ function _onUserInput(e) {
 // postMessage n'a strictement aucun effet et aucun coût.
 function _notifyExtension(stateName) {
   try { window.postMessage({ __2fukoi: 'dictation', state: stateName }, window.location.origin); } catch {}
+}
+
+function _cancelPendingAutoStart() {
+  if (!_pendingAutoStart) return;
+  clearTimeout(_pendingAutoStart.timer);
+  _pendingAutoStart.el.removeEventListener('keydown', _pendingAutoStart.onType);
+  _pendingAutoStart.el.removeEventListener('input', _pendingAutoStart.onType);
+  _pendingAutoStart = null;
 }
 
 function _cleanup() {
@@ -112,6 +124,7 @@ function _cleanup() {
 }
 
 export function stopDictation() {
+  _cancelPendingAutoStart();
   if (!_rec) return;
   _stopping = true;
   // Ne jamais perdre l'hypothèse en cours : la committer avant de couper.
@@ -131,6 +144,7 @@ export function stopIfDetached() {
 
 export function startDictation(el) {
   if (!SR || !el) return false;
+  _cancelPendingAutoStart();
   if (_rec && _target === el) { stopDictation(); return false; }
   stopDictation();
 
@@ -255,7 +269,11 @@ export function attachMic(el, { wrap = false, compact = false } = {}) {
     // ce remove() vers le wrapper, sinon micro et wrapper resteraient
     // orphelins dans la liste après chaque saisie.
     const origRemove = el.remove.bind(el);
-    el.remove = () => { if (isDictating(el)) stopDictation(); origRemove(); w.remove(); };
+    el.remove = () => {
+      if (isDictating(el)) stopDictation();
+      else if (_pendingAutoStart?.el === el) _cancelPendingAutoStart();
+      origRemove(); w.remove();
+    };
   } else {
     el.insertAdjacentElement('afterend', btn);
   }
@@ -282,10 +300,28 @@ if (SR) {
   }, true);
 }
 
-// Démarre la dictée sur un champ SI le réglage automatique est actif.
-// Utilisé aux points d'entrée « on vient d'ouvrir un champ vierge pour
-// écrire une tâche » — jamais à l'édition d'un contenu existant.
+// Démarre la dictée sur un champ SI le réglage automatique est actif —
+// après un délai d'1s, pour laisser à l'utilisateur la chance de taper au
+// clavier à la place (auquel cas le micro ne s'arme jamais du tout, pas de
+// bip Chrome dans le vide). N'importe quelle frappe dans le champ pendant ce
+// délai annule le démarrage. Utilisé aux points d'entrée « on vient d'ouvrir
+// un champ vierge pour écrire une tâche » — jamais à l'édition d'un contenu
+// existant.
 export function autoStartDictation(el) {
   if (!el || !isAutoDictate()) return false;
-  return startDictation(el);
+  _cancelPendingAutoStart();
+  const onType = () => _cancelPendingAutoStart();
+  const timer = setTimeout(() => {
+    _pendingAutoStart = null;
+    el.removeEventListener('keydown', onType);
+    el.removeEventListener('input', onType);
+    // Le champ a pu être fermé/retiré ou perdre le focus entre-temps (modal
+    // fermée, saisie annulée) — ne pas armer un micro sur un champ qu'on ne
+    // regarde plus.
+    if (el.isConnected && document.activeElement === el) startDictation(el);
+  }, AUTO_START_DELAY_MS);
+  el.addEventListener('keydown', onType);
+  el.addEventListener('input', onType);
+  _pendingAutoStart = { el, timer, onType };
+  return true;
 }
