@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2873",
+    "date": "2026-08-24",
+    "message": "feat(backlog): rail de classement par glisser-déposer — étiquette, priorité, échéance, planification"
+  },
+  {
     "version": "0.4.2872",
     "date": "2026-08-24",
     "message": "feat(modal): nouvelle section Échéance — date et heure limite, type dure/souple, alerte X jours avant"
@@ -193,10 +198,5 @@
     "version": "0.4.2663",
     "date": "2026-08-18",
     "message": "fix(vue jour): les sous-tâches complétées sont aussi masquées quand les tâches complétées sont cachées"
-  },
-  {
-    "version": "0.4.2662",
-    "date": "2026-08-18",
-    "message": "fix(vue jour): les tâches courtes s'empilent dans la même colonne d'une grille masonry au lieu de laisser un vide sous chacune"
   }
 ]

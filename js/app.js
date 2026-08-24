@@ -6324,6 +6324,78 @@ class TodoApp {
     this._reviewDrop(event, t => { t.cancelled = true; t.completed = false; t.updatedAt = Date.now(); });
   }
 
+  // ── Backlog : rail de classement (renderBacklogRail, backlogInboxView.js) ─
+  // Même geste que le Bilan, donc même plomberie : tout passe par
+  // _reviewDrop(), qui résout la sélection multiple (_dropIds), gère la copie
+  // sur Alt/Ctrl/Cmd (_insertClone) et ne prend qu'UN snapshot d'annulation
+  // par geste. Seule la mutation change d'une zone à l'autre.
+  //
+  // Les zones Aujourd'hui / Demain / Fait / Abandonner du rail réutilisent
+  // directement les handlers overdueDrop* ci-dessus, sans variante : vérifié
+  // que _postpone() n'incrémente postponedCount que si la tâche avait DÉJÀ
+  // une date — un item de backlog n'en a jamais, il ne repart donc pas avec
+  // un faux compteur de reports, et repasse bien backlog=false.
+
+  backlogDropCategory(event, catId) {
+    this._reviewDrop(event, t => {
+      const cur = t.categoryIds || (t.categoryId ? [t.categoryId] : []);
+      // Ajout, jamais remplacement : une tâche peut porter plusieurs
+      // étiquettes (le modal en pose plusieurs), classer par glisser ne doit
+      // pas en effacer une au passage. La zone « Sans étiquette » (catId
+      // vide) est la seule à retirer quoi que ce soit.
+      const next = catId ? (cur.includes(catId) ? cur : [...cur, catId]) : [];
+      if (next.length) t.categoryIds = next; else delete t.categoryIds;
+      delete t.categoryId; // format mono-id legacy, déjà migré au démarrage
+      t.updatedAt = Date.now();
+    });
+  }
+
+  backlogDropPriority(event, prio) {
+    this._reviewDrop(event, t => {
+      if (prio) t.priority = prio; else delete t.priority;
+      t.updatedAt = Date.now();
+    });
+  }
+
+  // Horizon → date d'échéance concrète (t.deadline, propre aux items de
+  // backlog). Calculée UNE fois avant le drop et pas par item : tout le lot
+  // déposé reçoit exactement la même échéance.
+  _deadlineHorizonDS(horizon) {
+    const d = today();
+    if (horizon === 'week')  return DS(addDays(startOfWeek(d), 6)); // dimanche (semaine lundi→dimanche, cf. startOfWeek)
+    if (horizon === 'month') return DS(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+    if (horizon === 'quarter') return DS(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + 3, 0));
+    return null;
+  }
+
+  backlogDropDeadline(event, horizon) {
+    const ds = this._deadlineHorizonDS(horizon);
+    this._reviewDrop(event, t => {
+      if (ds) t.deadline = ds; else delete t.deadline;
+      t.updatedAt = Date.now();
+    });
+  }
+
+  // Sortir du backlog sans planifier : redevient une tâche d'Inbox (sans date)
+  backlogDropInbox(event) {
+    this._reviewDrop(event, (t, ids) => {
+      t.backlog = false;
+      t.date = null;
+      t.updatedAt = Date.now();
+      this._leaveGroupUnlessWhole(t, ids);
+    });
+  }
+
+  // Accordéon « Abandonnées » du Backlog — un item annulé y est la SEULE
+  // trace visible (sans date, il n'apparaît sur aucun jour). Patch DOM ciblé
+  // comme toggleDoneAccordion(), pas de render() complet.
+  toggleBacklogCancelled() {
+    const isOpen = localStorage.getItem('backlogCancelledOpen') === '1';
+    localStorage.setItem('backlogCancelledOpen', isOpen ? '0' : '1');
+    const acc = document.querySelector('.backlog-cancelled');
+    if (acc) acc.classList.toggle('open', !isOpen);
+  }
+
   reviewAllToday() {
     this._reviewMutate(() => {
       const todayStr = DS(today());

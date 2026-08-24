@@ -9,7 +9,7 @@ import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
-import { getListPrefs, applyManualOrder, renderGroupedItems } from './backlogInboxView.js';
+import { getListPrefs, applyManualOrder, renderGroupedItems, renderBacklogRail } from './backlogInboxView.js';
 import { renderAgendaBody, agendaSwitchButtonHTML, getDayLayout } from './agendaView.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -1705,8 +1705,39 @@ export function renderBacklogView(todos) {
     ? 'grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));'
     : `--cols:${prefs.cols};`;
 
+  // Items abandonnés (t.cancelled) : filtrés de la liste principale ET sans
+  // date, ils ne réapparaîtraient nulle part ailleurs dans l'app (aucun jour
+  // ne peut les afficher, contrairement à une ponctuelle datée annulée qui
+  // reste visible barrée sur son jour) — d'où cet accordéon, replié par
+  // défaut, qui reste leur seule porte de sortie : restaurer via la case ✕,
+  // ou supprimer. C'est ce qui rend la zone « Abandonner » du rail sûre.
+  const cancelledItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && t.cancelled);
+  let cancelledAccordion = '';
+  if (cancelledItems.length) {
+    const isOpen = localStorage.getItem('backlogCancelledOpen') === '1';
+    const chevron = `<svg class="day-done-chevron" viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4 6 7 9 4"/></svg>`;
+    const rows = cancelledItems.map(t => `
+        <div class="inbox-item cancelled" data-id="${t.id}" onclick="window.app.clickInboxItem(event,'${t.id}')">
+          <div class="todo-check" title="Abandonnée — cliquer pour restaurer" onclick="event.stopPropagation();window.app.cancelTodo('${t.id}', null)"></div>
+          <div class="inbox-item-body"><span class="todo-text">${esc(t.title)}</span></div>
+          <div class="inbox-item-actions">
+            <button class="todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}', null)">×</button>
+          </div>
+        </div>`).join('');
+    cancelledAccordion = `<div class="day-done-accordion backlog-cancelled${isOpen ? ' open' : ''}">
+        <button class="day-done-accordion-hd" onclick="window.app.toggleBacklogCancelled()">
+          ${chevron}<span class="day-done-accordion-lbl">Abandonnées</span><span class="day-done-accordion-cnt">${cancelledItems.length}</span>
+        </button>
+        <div class="day-done-accordion-bd"><div class="inbox-list" style="--cols:1">${rows}</div></div>
+      </div>`;
+  }
+
+  // .backlog-layout : liste à gauche (largeur inchangée), rail de classement
+  // collant à droite. Le rail est une vraie cible de drop native — ne jamais
+  // poser filter/backdrop-filter/transform sur un de ses ancêtres (cf.
+  // renderBacklogRail, backlogInboxView.js).
   return `
-    <div class="inbox-view">
+    <div class="inbox-view inbox-view--rail">
       <div class="inbox-view-header">
         <div class="inbox-view-title-block">
           <h1 class="inbox-view-title">Backlog</h1>
@@ -1719,8 +1750,14 @@ export function renderBacklogView(todos) {
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
         </div>
       </div>
-      ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
+      <div class="backlog-layout${sorted.length ? '' : ' backlog-layout--norail'}">
+        <div class="backlog-main">
+          ${empty}
+          ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
+          ${cancelledAccordion}
+        </div>
+        ${sorted.length ? renderBacklogRail(prefs, categories) : ''}
+      </div>
     </div>`;
 }
 
