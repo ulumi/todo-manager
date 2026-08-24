@@ -53,6 +53,11 @@ import {
   renderIntentionsView, renderAnalyseView, renderCountersView,
   subtaskListHTML,
 } from './modules/render.js';
+import {
+  getAgendaPrefs, saveAgendaPrefs, getDayLayout,
+  parseHM, fmtHM, snapMin, periodForMinutes, blockMinutes,
+  SNAP_MIN, FINE_SNAP_MIN, MIN_BLOCK_MIN, DEFAULT_BLOCK_MIN,
+} from './modules/agendaView.js';
 import { setupEventListeners } from './modules/events.js';
 import { celebrate, celebrateSpecial, celebrateWithQuote, celebrateSlideshow, getBannedQuotes, banQuote, unbanQuote, getCustomQuotes, addCustomQuote, updateCustomQuote, removeCustomQuote, getGlobalQuotes, setGlobalQuotes, DEFAULT_QUOTES_EN, DEFAULT_QUOTES_FR, onQuoteSave, onCelebrateDebug, getBannedFonts, banFont, getBannedMascots, banMascot } from './modules/celebrate.js';
 import { VERSION } from './modules/version.js';
@@ -5357,6 +5362,8 @@ class TodoApp {
         if (data.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', data.config.focusBreakMinutes);
         if (data.config.backlogQueueView) localStorage.setItem('backlogQueueView', data.config.backlogQueueView);
         if (data.config.inboxQueueView)   localStorage.setItem('inboxQueueView',   data.config.inboxQueueView);
+        if (data.config.dayLayout)   localStorage.setItem('dayLayout',   data.config.dayLayout);
+        if (data.config.agendaPrefs) localStorage.setItem('agendaPrefs', data.config.agendaPrefs);
         const _bPal1 = data.config.bgPalette;
         if (_bPal1)  this.setPalette(_bPal1);
         if (data.config.bgColor && (!_bPal1 || _bPal1 === 'none'))  _setBgColor(data.config.bgColor);
@@ -5454,6 +5461,10 @@ class TodoApp {
       }
     }
     if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); this.initTagSectionDragDrop(); this.initDayColResize(); }
+    // Grille horaire (mode Agenda) — initDayDragDrop()/initDayColResize()
+    // ci-dessus sont des no-op dans ce mode (.day-columns n'existe pas), et
+    // réciproquement initAgendaView() ne fait rien en mode Liste.
+    if (state.view === 'day' && getDayLayout() === 'agenda') this.initAgendaView(); else this._stopAgendaTick();
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'search') this.initSearchDragDrop();
@@ -7543,6 +7554,414 @@ class TodoApp {
     if (el.style.getPropertyValue('--rspan') !== String(span)) el.style.setProperty('--rspan', span);
   }
 
+
+  // ═══════════════════════════════════════════════════
+  // VUE AGENDA (vue jour, grille horaire — agendaView.js)
+  // ═══════════════════════════════════════════════════
+
+  // Bascule Liste ⇄ Agenda. Réglage synchronisé (getAppConfig/_applyBackup) :
+  // c'est une préférence d'affichage durable, pas un état de session.
+  toggleDayLayout() {
+    const next = getDayLayout() === 'agenda' ? 'list' : 'agenda';
+    localStorage.setItem('dayLayout', next);
+    this._saveConfigChange();
+    if (state.view !== 'day') {
+      // setNavDateAndView est async (elle rend elle-même) : on centre sur
+      // l'heure une fois son rendu passé, pas avant que la grille existe.
+      Promise.resolve(this.setNavDateAndView(state.navDate, 'day'))
+        .then(() => { if (next === 'agenda') this.agendaScrollToNow({ smooth: false }); });
+      return;
+    }
+    this.render();
+    if (next === 'agenda') this.agendaScrollToNow({ smooth: false });
+  }
+
+  setAgendaZoom(px) {
+    saveAgendaPrefs({ zoom: px });
+    this._saveConfigChange();
+    this.render();
+    this.agendaScrollToNow({ smooth: false });
+  }
+
+  toggleAgendaNight() {
+    const p = getAgendaPrefs();
+    saveAgendaPrefs({ night: !p.night });
+    this._saveConfigChange();
+    this.render();
+  }
+
+  toggleAgendaRec(key) {
+    const p = getAgendaPrefs();
+    saveAgendaPrefs({ rec: { ...p.rec, [key]: p.rec[key] === false } });
+    this._saveConfigChange();
+    this.render();
+  }
+
+  // Centre la ligne « maintenant » dans le conteneur défilant. Sans elle
+  // (jour passé/futur, ou heure hors des bandes affichées), remonte en haut.
+  agendaScrollToNow(opts = {}) {
+    const scroll = document.getElementById('agendaScroll');
+    if (!scroll) return;
+    const now = document.getElementById('agendaNow');
+    if (!now) { scroll.scrollTop = 0; return; }
+    const top = now.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+    scroll.scrollTo({ top: Math.max(0, top - scroll.clientHeight / 3), behavior: opts.smooth === false ? 'auto' : 'smooth' });
+  }
+
+  // Résout la cible sous le curseur pendant un drag : une plage horaire dans
+  // une bande (calage 15 min, 5 min avec Alt) ou une bande « sans heure ».
+  // Le hit-test remonte depuis e.target, donc survoler un autre bloc renvoie
+  // quand même la position horaire correspondante dans son canevas.
+  _agendaHit(e) {
+    const canvas = e.target.closest?.('.agenda-canvas');
+    if (canvas) {
+      const r = canvas.getBoundingClientRect();
+      const px = parseFloat(canvas.dataset.px) || 72;
+      const from = parseInt(canvas.dataset.from, 10);
+      const to = parseInt(canvas.dataset.to, 10);
+      const step = e.altKey ? FINE_SNAP_MIN : SNAP_MIN;
+      const raw = from + ((e.clientY - r.top) / px) * 60;
+      const minutes = Math.max(from, Math.min(to - MIN_BLOCK_MIN, snapMin(raw, step)));
+      return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from };
+    }
+    const strip = e.target.closest?.('.agenda-flex-strip');
+    if (strip) return { kind: 'flex', strip, period: strip.dataset.period || '' };
+    return null;
+  }
+
+  // Déplacement (drag natif) : pose l'heure d'arrivée et DÉRIVE le moment de
+  // cette heure — c'est ce qui garantit que la vue Liste (groupée par
+  // dayPeriod) et l'agenda racontent toujours la même chose. La durée est
+  // préservée ; `endTime` n'est réécrit que si la tâche en avait déjà un
+  // (ne jamais inventer une heure de fin qui n'existait pas).
+  _agendaMoveTo(ids, minutes, event) {
+    const period = periodForMinutes(minutes);
+    let occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    snapshot(state.todos);
+    if (this._isCopyDrag(event)) {
+      occ = occ.map(({ t, ds }) => ({ t: this._insertClone(t), ds }));
+    }
+    const targetDs = DS(state.navDate);
+    occ.forEach(({ t, ds }) => {
+      // eff EST t lui-même pour une ponctuelle (resolveOccurrence renvoie la
+      // même référence sans override) : tout ce qu'on lit dessus doit l'être
+      // AVANT la moindre mutation, sinon on relit ce qu'on vient d'écrire.
+      const eff = resolveOccurrence(t, ds);
+      const hadEnd = parseHM(eff.endTime) != null;
+      const dur = blockMinutes(eff);
+      const changed = (eff.dayPeriod || '') !== period;
+      // Tâche venue d'ailleurs (bandeau des retards, onglet Inbox/Backlog) :
+      // lui poser une heure sans la DATER la laisserait sur son ancien jour,
+      // donc invisible juste après le drop. Même chemin que la zone
+      // « Aujourd'hui » du Bilan (postponedCount, originalDate, sortie de
+      // backlog, détachement du groupe) — jamais une simple affectation de date.
+      const moved = this._agendaLandOnDay(t, targetDs, ids);
+      setOccurrenceField(t, ds, 'startTime', fmtHM(minutes));
+      if (hadEnd) setOccurrenceField(t, ds, 'endTime', fmtHM(Math.min(24 * 60 - 1, minutes + dur)));
+      setOccurrenceField(t, ds, 'dayPeriod', period);
+      t.updatedAt = Date.now();
+      if (changed && !moved) this._leaveGroupUnlessWhole(t, ids);
+    });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Ramène une ponctuelle sur le jour affiché si elle n'y était pas (drag
+  // entrant depuis le bandeau des retards ou un onglet du header). Renvoie
+  // true si un report a réellement eu lieu — _postpone() ayant déjà fait le
+  // détachement de groupe, l'appelant ne doit pas le refaire.
+  _agendaLandOnDay(t, targetDs, ids) {
+    if (t.recurrence && t.recurrence !== 'none') return false;
+    if (t.date === targetDs && !t.backlog) return false;
+    this._postpone(t, targetDs, ids);
+    return true;
+  }
+
+  // Dépôt dans une bande « sans heure » : l'heure est retirée, le moment
+  // devient celui de la bande (ou disparaît pour « Sans moment »).
+  _agendaUnschedule(ids, period, event) {
+    let occ = this._resolveOccurrences(ids);
+    if (!occ.length) return;
+    snapshot(state.todos);
+    if (this._isCopyDrag(event)) {
+      occ = occ.map(({ t, ds }) => ({ t: this._insertClone(t), ds }));
+    }
+    const targetDs = DS(state.navDate);
+    occ.forEach(({ t, ds }) => {
+      const changed = (resolveOccurrence(t, ds).dayPeriod || '') !== (period || '');
+      const moved = this._agendaLandOnDay(t, targetDs, ids);
+      setOccurrenceField(t, ds, 'startTime', null);
+      setOccurrenceField(t, ds, 'endTime', null);
+      setOccurrenceField(t, ds, 'dayPeriod', period || null);
+      t.updatedAt = Date.now();
+      if (changed && !moved) this._leaveGroupUnlessWhole(t, ids);
+    });
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Redimensionnement : écrit endTime ET durationEstimated, pour que le
+  // badge de durée de la vue jour, l'objectif du mode Focus et la hauteur du
+  // bloc parlent toujours du même nombre (décision produit assumée).
+  _agendaResizeCommit(id, ds, minutes) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    const eff = resolveOccurrence(t, ds);
+    const start = parseHM(eff.startTime);
+    if (start == null) return;
+    const dur = Math.max(MIN_BLOCK_MIN, Math.min(24 * 60 - 1 - start, minutes));
+    if (dur === blockMinutes(eff) && parseHM(eff.endTime) != null) return;
+    snapshot(state.todos);
+    setOccurrenceField(t, ds, 'endTime', fmtHM(start + dur));
+    setOccurrenceField(t, ds, 'durationEstimated', dur);
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Création par glisser sur une plage vide (ou double-clic → 30 min) :
+  // saisie inline du titre à l'emplacement dessiné, jamais un prompt() natif.
+  _agendaCreateAt(period, startMin, endMin) {
+    const canvas = document.querySelector(`.agenda-canvas[data-period="${period}"]`);
+    if (!canvas) return;
+    const px = parseFloat(canvas.dataset.px) || 72;
+    const from = parseInt(canvas.dataset.from, 10);
+    const dur = Math.max(MIN_BLOCK_MIN, endMin - startMin);
+    const holder = document.createElement('div');
+    holder.className = 'agenda-create-input';
+    holder.style.setProperty('--top', `${((startMin - from) / 60) * px}px`);
+    holder.style.setProperty('--h', `${Math.max(24, (dur / 60) * px)}px`);
+    const label = document.createElement('span');
+    label.className = 'agenda-create-time';
+    label.textContent = `${fmtHM(startMin)} – ${fmtHM(startMin + dur)}`;
+    holder.appendChild(label);
+    canvas.appendChild(holder);
+    this._inlineInput('Titre de la tâche…', title => {
+      snapshot(state.todos);
+      addTask({
+        title,
+        date: DS(state.navDate),
+        recurrence: 'none',
+        dayPeriod: periodForMinutes(startMin),
+        startTime: fmtHM(startMin),
+        endTime: fmtHM(startMin + dur),
+        durationEstimated: dur,
+      }, state.todos);
+      saveTodos(state.todos);
+      this.render();
+    }, el => holder.appendChild(el));
+    // Le champ retiré (Entrée/Échap/blur) laisse sinon l'esquisse à l'écran :
+    // _inlineInput ne connaît que son <input>, pas le cadre qui l'entoure.
+    const obs = new MutationObserver(() => {
+      if (!holder.querySelector('.ctx-title-input')) { holder.remove(); obs.disconnect(); }
+    });
+    obs.observe(holder, { childList: true });
+  }
+
+  // Rafraîchit la ligne « maintenant » sans re-render (un render() complet
+  // toutes les minutes détruirait un drag/resize en cours et remonterait le
+  // scroll). Tick d'une minute, arrêté dès qu'on quitte l'agenda.
+  _agendaTickNow() {
+    const line = document.getElementById('agendaNow');
+    if (!line) return;
+    const canvas = line.closest('.agenda-canvas');
+    if (!canvas) return;
+    const px = parseFloat(canvas.dataset.px) || 72;
+    const from = parseInt(canvas.dataset.from, 10);
+    const to = parseInt(canvas.dataset.to, 10);
+    const n = new Date();
+    const mins = n.getHours() * 60 + n.getMinutes();
+    // Sorti de la bande affichée (on a passé minuit, ou franchi une frontière
+    // de moment) → un render() complet remettra la ligne dans la bonne bande.
+    if (mins < from || mins > to) { this.render(); return; }
+    line.style.setProperty('--t', `${((mins - from) / 60) * px}px`);
+    const lbl = line.querySelector('.agenda-now-label');
+    if (lbl) lbl.textContent = fmtHM(mins);
+  }
+
+  _stopAgendaTick() {
+    if (this._agendaTimer) { clearInterval(this._agendaTimer); this._agendaTimer = null; }
+  }
+
+  // ── Câblage des gestes de la grille ────────────────────────────────────
+  // Déplacement = drag natif HTML5 (comme partout dans l'app : garde le
+  // copier-sur-Alt, le drag d'une multi-sélection, les dépôts vers les
+  // onglets du header et les drags entrants du bandeau des retards).
+  // Redimensionnement et création = pointer events (aucun besoin de sortir
+  // de la grille, et le drag natif est trop grossier pour ces deux gestes-là).
+  initAgendaView() {
+    this._stopAgendaTick();
+    const wrap = document.querySelector('.agenda-wrap');
+    if (!wrap) return;
+    this._agendaTimer = setInterval(() => this._agendaTickNow(), 60000);
+
+    let ghost = null;
+    const clearGhost = () => { ghost?.remove(); ghost = null; wrap.querySelectorAll('.agenda-flex-strip.drop-target').forEach(el => el.classList.remove('drop-target')); };
+
+    wrap.addEventListener('dragstart', e => {
+      const el = e.target.closest('.agenda-block[data-id], .agenda-chip[data-id]');
+      if (!el) return;
+      e.dataTransfer.effectAllowed = 'copyMove';
+      e.dataTransfer.setData('text/plain', el.dataset.id);
+      this._setDragGhost(e, el.dataset.id);
+      wrap.classList.add('agenda-dragging');
+      requestAnimationFrame(() => el.classList.add('dragging'));
+    });
+
+    wrap.addEventListener('dragend', () => {
+      wrap.classList.remove('agenda-dragging');
+      wrap.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+      clearGhost();
+    });
+
+    wrap.addEventListener('dragover', e => {
+      const hit = this._agendaHit(e);
+      if (!hit) { clearGhost(); return; }
+      e.preventDefault();
+      e.dataTransfer.dropEffect = this._isCopyDrag(e) ? 'copy' : 'move';
+      if (hit.kind === 'flex') {
+        clearGhost();
+        hit.strip.classList.add('drop-target');
+        return;
+      }
+      wrap.querySelectorAll('.agenda-flex-strip.drop-target').forEach(el => el.classList.remove('drop-target'));
+      if (!ghost || ghost.parentElement !== hit.canvas) {
+        ghost?.remove();
+        ghost = document.createElement('div');
+        ghost.className = 'agenda-drop-ghost';
+        ghost.innerHTML = '<span></span>';
+        hit.canvas.appendChild(ghost);
+      }
+      ghost.style.setProperty('--top', `${((hit.minutes - hit.from) / 60) * hit.px}px`);
+      ghost.firstChild.textContent = fmtHM(hit.minutes);
+    });
+
+    wrap.addEventListener('dragleave', e => {
+      if (!wrap.contains(e.relatedTarget)) clearGhost();
+    });
+
+    wrap.addEventListener('drop', e => {
+      e.preventDefault();
+      const hit = this._agendaHit(e);
+      clearGhost();
+      wrap.classList.remove('agenda-dragging');
+      const taskId = e.dataTransfer.getData('text/plain');
+      // Même garde-fou que la vue jour : un drag de section de tag pose lui
+      // aussi du text/plain (un tagId). On ne mute que sur un vrai id.
+      if (!hit || !taskId || !state.todos.some(t => t.id === taskId)) return;
+      const ids = this._dropIds(taskId);
+      if (hit.kind === 'time') this._agendaMoveTo(ids, hit.minutes, e);
+      else this._agendaUnschedule(ids, hit.period, e);
+    });
+
+    // ── Resize (pointer) ────────────────────────────────
+    wrap.addEventListener('pointerdown', e => {
+      const handle = e.target.closest('.agenda-block-resize');
+      if (!handle || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const block = handle.closest('.agenda-block');
+      const canvas = block.closest('.agenda-canvas');
+      const px = parseFloat(canvas.dataset.px) || 72;
+      const to = parseInt(canvas.dataset.to, 10);
+      const start = parseInt(block.dataset.start, 10);
+      const startY = e.clientY;
+      const startDur = parseInt(block.dataset.dur, 10);
+      let dur = startDur;
+      block.classList.add('resizing');
+      handle.setPointerCapture(e.pointerId);
+      const onMove = ev => {
+        const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
+        const raw = startDur + ((ev.clientY - startY) / px) * 60;
+        dur = Math.max(MIN_BLOCK_MIN, Math.min(24 * 60 - start, snapMin(raw, step)));
+        block.style.setProperty('--h', `${Math.max(18, (Math.min(dur, to - start) / 60) * px)}px`);
+        const lbl = block.querySelector('.agenda-block-time');
+        if (lbl) lbl.innerHTML = `${fmtHM(start)}<span class="agenda-block-dash">–</span>${fmtHM(start + dur)}`;
+      };
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        block.classList.remove('resizing');
+        if (dur !== startDur) this._agendaResizeCommit(block.dataset.id, block.dataset.date, dur);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+
+    // ── Créer par glisser sur une plage vide (pointer) ──
+    wrap.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      if (e.target.closest('.agenda-block, .agenda-chip, button, input, .ctx-title-input')) return;
+      const canvas = e.target.closest('.agenda-canvas');
+      if (!canvas) return;
+      const r = canvas.getBoundingClientRect();
+      const px = parseFloat(canvas.dataset.px) || 72;
+      const from = parseInt(canvas.dataset.from, 10);
+      const to = parseInt(canvas.dataset.to, 10);
+      const yToMin = y => Math.max(from, Math.min(to, from + ((y - r.top) / px) * 60));
+      const anchor = yToMin(e.clientY);
+      let sketch = null, moved = false;
+      const onMove = ev => {
+        if (!moved && Math.abs(ev.clientY - e.clientY) < 8) return;
+        moved = true;
+        const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
+        const a = snapMin(anchor, step), b = snapMin(yToMin(ev.clientY), step);
+        const s = Math.min(a, b), en = Math.max(a, b, s + MIN_BLOCK_MIN);
+        if (!sketch) {
+          sketch = document.createElement('div');
+          sketch.className = 'agenda-create-sketch';
+          sketch.innerHTML = '<span></span>';
+          canvas.appendChild(sketch);
+        }
+        sketch.style.setProperty('--top', `${((s - from) / 60) * px}px`);
+        sketch.style.setProperty('--h', `${((en - s) / 60) * px}px`);
+        sketch.firstChild.textContent = `${fmtHM(s)} – ${fmtHM(en)}`;
+        sketch.dataset.start = s;
+        sketch.dataset.end = en;
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        if (moved && sketch) {
+          const s = parseInt(sketch.dataset.start, 10), en = parseInt(sketch.dataset.end, 10);
+          sketch.remove();
+          this._agendaCreateAt(canvas.dataset.period, s, en);
+        } else sketch?.remove();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+
+    // Double-clic sur une plage vide → créneau de 30 min (geste sûr, alors
+    // qu'un simple clic créerait des tâches par accident).
+    wrap.addEventListener('dblclick', e => {
+      if (e.target.closest('.agenda-block, .agenda-chip, button, input')) return;
+      const canvas = e.target.closest('.agenda-canvas');
+      if (!canvas) return;
+      const r = canvas.getBoundingClientRect();
+      const px = parseFloat(canvas.dataset.px) || 72;
+      const from = parseInt(canvas.dataset.from, 10);
+      const to = parseInt(canvas.dataset.to, 10);
+      const s = Math.max(from, Math.min(to - MIN_BLOCK_MIN, snapMin(from + ((e.clientY - r.top) / px) * 60)));
+      this._agendaCreateAt(canvas.dataset.period, s, Math.min(to, s + DEFAULT_BLOCK_MIN));
+    });
+
+    // Clic sur un bloc/une pastille → exactement le même arbitrage que la
+    // vue liste : clickTodo() distingue clic simple (édition) et double-clic
+    // (Focus) via sa fenêtre de 220 ms, plutôt qu'un 2e listener 'dblclick'
+    // qui laisserait le clic simple ouvrir le modal AVANT d'entrer en Focus.
+    // Posé ici et non en onclick inline pour rester hors du chemin du drag.
+    wrap.addEventListener('click', e => {
+      if (e.target.closest('button, input, .todo-check, .agenda-block-resize, .ctx-title-input')) return;
+      const el = e.target.closest('.agenda-block[data-id], .agenda-chip[data-id]');
+      if (!el) return;
+      this.clickTodo(e, el.dataset.id, el.dataset.date);
+    });
+  }
+
   setDayColCount(n) {
     localStorage.setItem('dayColCount', n);
     this.render();
@@ -8617,6 +9036,8 @@ class TodoApp {
       if (backup.config.focusBreakMinutes) localStorage.setItem('focusBreakMinutes', backup.config.focusBreakMinutes);
       if (backup.config.backlogQueueView) localStorage.setItem('backlogQueueView', backup.config.backlogQueueView);
       if (backup.config.inboxQueueView)   localStorage.setItem('inboxQueueView',   backup.config.inboxQueueView);
+      if (backup.config.dayLayout)   localStorage.setItem('dayLayout',   backup.config.dayLayout);
+      if (backup.config.agendaPrefs) localStorage.setItem('agendaPrefs', backup.config.agendaPrefs);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);

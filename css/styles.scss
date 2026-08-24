@@ -15752,3 +15752,618 @@ body.view-focus header { display: none; }
 // .todo-item ciblé qui a des sous-tâches visibles n'allume ainsi QUE son
 // propre badge, jamais celui de chacune de ses sous-tâches imbriquées.
 .drop-nest > .dnd-nest-badge { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+
+// ═══════════════════════════════════════════════════════════════════════
+//  VUE AGENDA (vue jour, mode grille horaire — js/modules/agendaView.js)
+//
+//  ⚠ AUCUN conteneur de cette section ne doit recevoir `filter`,
+//  `backdrop-filter`, `transform` ou `will-change` : .agenda-canvas et
+//  .agenda-flex-strip sont de vraies cibles de drop natives, qu'un ancêtre
+//  filtré casse silencieusement (bug Chromium — voir la section CSS/SCSS de
+//  CLAUDE.md). Seuls les blocs/pastilles (sources de drag) peuvent en avoir.
+// ═══════════════════════════════════════════════════════════════════════
+
+.agenda-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  min-height: 0;
+  flex: 1;
+}
+
+// ── Barre d'outils ────────────────────────────────────────────────────
+.agenda-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.agenda-tool-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+}
+
+.agenda-tool-btn,
+.agenda-tool-pill,
+.agenda-layout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .18s cubic-bezier(.25,.46,.45,.94),
+              color .18s cubic-bezier(.25,.46,.45,.94),
+              border-color .18s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover { background: var(--surface2); color: var(--text); }
+  &.active { background: var(--primary); color: #fff; }
+}
+
+// Hors d'un .agenda-tool-group, les boutons autonomes portent leur bordure
+.agenda-toolbar > .agenda-tool-btn { border-color: var(--border); background: var(--surface); }
+.agenda-toolbar > .agenda-tool-btn.active { border-color: var(--primary); }
+
+.agenda-tool-pills { padding: 2px 3px; }
+
+.agenda-tool-pill {
+  padding: 4px 9px;
+  font-size: 10.5px;
+  opacity: .5;
+  &.active { opacity: 1; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
+}
+
+.agenda-layout-btn {
+  color: var(--text);
+  svg { flex-shrink: 0; }
+}
+
+.agenda-tool-count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+.agenda-tool-btn.active .agenda-tool-count { background: rgba(255,255,255,.28); color: #fff; }
+
+// ── Zone défilante + bandes ───────────────────────────────────────────
+.agenda-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.agenda-band { display: flex; flex-direction: column; gap: 6px; }
+
+.agenda-band-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+
+  svg { flex-shrink: 0; opacity: .85; }
+}
+
+.agenda-band-count {
+  min-width: 17px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.agenda-band-line { flex: 1; height: 1px; background: var(--border); }
+
+.agenda-band-add {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: filter .15s cubic-bezier(.25,.46,.45,.94);
+  &:hover { filter: brightness(1.15); }
+}
+
+// ── Bande flexible : les tâches du moment SANS heure ──────────────────
+.agenda-flex-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 5px 8px;
+  border: 1.5px dashed var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface2) 55%, transparent);
+  transition: border-color .18s cubic-bezier(.25,.46,.45,.94),
+              background .18s cubic-bezier(.25,.46,.45,.94);
+
+  &.drop-target {
+    border-color: var(--primary);
+    border-style: solid;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
+.agenda-flex-label {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  opacity: .65;
+}
+
+.agenda-flex-items {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.agenda-flex-empty { font-size: 11.5px; font-style: italic; color: var(--text-muted); opacity: .55; }
+
+.agenda-flex-add {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--text-muted);
+  color: var(--surface);
+  cursor: pointer;
+  transition: background .12s cubic-bezier(.25,.46,.45,.94);
+  &:hover { background: var(--primary); color: #fff; }
+}
+
+// ── Pastille d'une tâche sans heure ───────────────────────────────────
+.agenda-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: grab;
+  font-size: 12.5px;
+  color: var(--text);
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: border-color .15s cubic-bezier(.25,.46,.45,.94),
+              box-shadow .15s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover { border-color: var(--primary); box-shadow: 0 3px 10px var(--shadow); }
+  &.dragging { opacity: .35; }
+  &.done .agenda-chip-title { text-decoration: line-through; opacity: .5; }
+  &.cancelled { opacity: .5; .agenda-chip-title { text-decoration: line-through; } }
+  &.prio-high  { border-left-color: var(--danger); }
+  &.prio-medium { border-left-color: #f59e0b; }
+
+  .todo-check { width: 16px; height: 16px; border-width: 1.6px; }
+  .todo-check.checked::after { font-size: 9px; }
+}
+
+.agenda-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-chip-rec { flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
+.agenda-chip-est { flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: var(--text-muted); opacity: .8; }
+
+// ── Grille horaire ────────────────────────────────────────────────────
+.agenda-grid {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 0;
+}
+
+.agenda-rail {
+  position: relative;
+  height: var(--h);
+  border-right: 1px solid var(--border);
+}
+
+.agenda-hour {
+  position: absolute;
+  top: var(--t);
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: .7;
+  white-space: nowrap;
+  // Le premier libellé (top:0) déborderait au-dessus de la bande
+  &:first-child { transform: none; }
+}
+
+.agenda-canvas {
+  position: relative;
+  height: var(--h);
+  overflow: hidden;
+  border-radius: 0 8px 8px 0;
+  background: color-mix(in srgb, var(--surface2) 32%, transparent);
+}
+
+.agenda-line {
+  position: absolute;
+  top: var(--t);
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+  opacity: .55;
+  pointer-events: none;
+
+  &--half { opacity: .22; }
+}
+
+// Ligne « maintenant »
+.agenda-now {
+  position: absolute;
+  top: var(--t);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--danger);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.agenda-now-dot {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.agenda-now-label {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+// ── Bloc de tâche ─────────────────────────────────────────────────────
+.agenda-block {
+  position: absolute;
+  top: var(--top);
+  height: var(--h);
+  left: calc(var(--col) * (100% / var(--cols)) + 3px);
+  width: calc((100% / var(--cols)) - 6px);
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent, var(--primary));
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--shadow);
+  cursor: grab;
+  overflow: hidden;
+  z-index: 3;
+  transition: box-shadow .15s cubic-bezier(.25,.46,.45,.94),
+              border-color .15s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover { box-shadow: 0 6px 16px var(--shadow); z-index: 5; }
+  &.dragging { opacity: .3; }
+  &.resizing { z-index: 8; box-shadow: 0 10px 24px var(--shadow); cursor: ns-resize; }
+
+  &.prio-high   { border-left-color: var(--danger); }
+  &.prio-medium { border-left-color: #f59e0b; }
+
+  // Heure approximative (flexibleTime) — bordure pointillée, jamais un
+  // rendez-vous ferme. Donne enfin un sens visible à la case « Flexible »
+  // du modal, stockée depuis toujours mais jamais rendue nulle part.
+  &.flexible {
+    border-style: dashed;
+    border-left-style: solid;
+    background: repeating-linear-gradient(
+      135deg,
+      var(--surface) 0 7px,
+      color-mix(in srgb, var(--surface2) 70%, transparent) 7px 14px
+    );
+  }
+
+  // Le bloc déborde de sa bande de moment (ex. 11:30 → 13:00) : coupé net
+  // au bas de la bande, avec un liseré qui signale la continuation.
+  &.is-clipped::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, var(--text-muted) 0 4px, transparent 4px 8px);
+    opacity: .5;
+  }
+
+  &.done {
+    opacity: .55;
+    .agenda-block-title { text-decoration: line-through; }
+  }
+
+  &.cancelled {
+    opacity: .45;
+    .agenda-block-title { text-decoration: line-through; }
+  }
+
+  .todo-check { width: 17px; height: 17px; border-width: 1.7px; margin-top: 1px; }
+  .todo-check.checked::after { font-size: 10px; }
+}
+
+.agenda-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.agenda-block-time {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.agenda-block-dash { padding: 0 2px; opacity: .6; }
+
+.agenda-block-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: break-word;
+}
+
+.agenda-block-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 1px; }
+
+.agenda-block-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 5px;
+  height: 15px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.agenda-block-cat { border: none; color: #fff; }
+.agenda-block-link { cursor: pointer; &:hover { color: var(--primary); border-color: var(--primary); } }
+.agenda-block-flex { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, transparent); }
+
+// Blocs courts : on ne garde que l'essentiel plutôt que de tasser
+.agenda-block.is-short {
+  padding: 3px 6px;
+  .agenda-block-meta { display: none; }
+  .agenda-block-title { -webkit-line-clamp: 1; line-clamp: 1; }
+}
+
+.agenda-block.is-tiny {
+  align-items: center;
+  padding: 2px 6px;
+  gap: 5px;
+  .agenda-block-body { flex-direction: row; align-items: center; gap: 6px; }
+  .agenda-block-meta { display: none; }
+  .agenda-block-title { -webkit-line-clamp: 1; line-clamp: 1; font-size: 11.5px; }
+  .todo-check { width: 14px; height: 14px; margin-top: 0; }
+  .todo-check.checked::after { font-size: 8px; }
+}
+
+// Actions en overlay au coin haut-droit — même recette que .todo-actions /
+// .inbox-item-actions : hors flux (ne dispute jamais la largeur du titre) et
+// révélées au survol avec le délai « hover intent » de 500 ms dans les deux
+// sens (jamais écrasé dans :hover).
+.agenda-block-actions {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 2px 6px var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s;
+  z-index: 4;
+}
+
+.agenda-block:hover .agenda-block-actions { opacity: 1; pointer-events: auto; }
+.agenda-block.is-tiny .agenda-block-actions { top: 1px; }
+
+.agenda-block-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .12s cubic-bezier(.25,.46,.45,.94), color .12s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 11px; height: 11px; }
+  &:hover { background: var(--surface2); color: var(--primary); }
+}
+
+// Poignée de durée — bord bas du bloc
+.agenda-block-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 7px;
+  cursor: ns-resize;
+  z-index: 5;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 22px;
+    height: 2px;
+    margin-left: -11px;
+    border-radius: 2px;
+    background: var(--text-muted);
+    opacity: 0;
+    transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s;
+  }
+}
+.agenda-block:hover .agenda-block-resize::after { opacity: .55; }
+
+// ── Aperçus pendant les gestes ────────────────────────────────────────
+.agenda-drop-ghost {
+  position: absolute;
+  top: var(--top);
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+  pointer-events: none;
+  z-index: 7;
+
+  span {
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+  }
+}
+
+.agenda-create-sketch,
+.agenda-create-input {
+  position: absolute;
+  top: var(--top);
+  height: var(--h);
+  left: 3px;
+  right: 3px;
+  border: 2px dashed var(--primary);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  pointer-events: none;
+  z-index: 7;
+
+  span {
+    position: absolute;
+    top: 3px;
+    left: 7px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+}
+
+.agenda-create-input {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px 6px;
+
+  .agenda-create-time { position: static; margin-right: 6px; line-height: 24px; }
+  .ctx-title-input { flex: 1; min-width: 0; }
+}
+
+.agenda-hint {
+  padding: 4px 2px 12px;
+  font-size: 11px;
+  font-style: italic;
+  color: var(--text-muted);
+  opacity: .5;
+  text-align: center;
+}
+
+.agenda-refill { margin-top: 6px; }
+
+// Le mode Agenda occupe toute la hauteur disponible : la grille défile en
+// interne (.agenda-scroll) au lieu d'allonger la page.
+.day-view.day-agenda-mode { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+
+// Mode glass : seuls les blocs/pastilles (SOURCES de drag) reçoivent le
+// backdrop-filter — jamais .agenda-canvas ni .agenda-flex-strip, qui sont
+// des cibles de drop natives (un ancêtre filtré les casserait, cf. en-tête).
+.glass-mode {
+  .agenda-block, .agenda-chip { @include glass-surface(45%, 12px); color: #f1f5f9; }
+  .agenda-block-title, .agenda-chip-title { color: #f1f5f9; }
+  .agenda-tool-btn, .agenda-tool-pill, .agenda-layout-btn { color: #f1f5f9; }
+}
+
+@media (max-width: 720px) {
+  .agenda-grid { grid-template-columns: 40px 1fr; }
+  .agenda-hour { right: 5px; font-size: 9.5px; }
+  .agenda-toolbar { gap: 6px; }
+  .agenda-chip { max-width: 100%; }
+}

@@ -98,14 +98,23 @@ export function setupEventListeners(app) {
     // (nouvelle fenêtre) et +W (fermer l'onglet) sont réservés par le
     // navigateur et inutilisables depuis la page.
     if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    const key = e.key.toLowerCase();
-    if (key==='f') { e.preventDefault(); app.enterFocus(); return; }
-    if (key==='d') { e.preventDefault(); app.setView('day'); }
-    if (key==='w') { e.preventDefault(); app.setView('week'); }
-    if (key==='m') { e.preventDefault(); app.setView('month'); }
-    if (key==='y') { e.preventDefault(); app.setView('year'); }
-    if (key==='t') { e.preventDefault(); app.todayNav(); }
-    if (key==='n') { e.preventDefault(); app.openQuickInsert(); }
+    // Sur macOS, Option+lettre remplace `e.key` par le caractère spécial de la
+    // touche morte (Option+D → « ∂ », Option+N → « ˜ »…) : la lettre attendue
+    // n'y est plus. `e.code` ('KeyD') reste, lui, la touche physique quel que
+    // soit le modificateur. On accepte les DEUX (union, jamais un remplacement)
+    // pour ne rien casser là où `e.key` suffisait déjà.
+    const codeLetter = /^Key([A-Za-z])$/.exec(e.code || '')?.[1]?.toLowerCase() || '';
+    const hit = l => e.key.toLowerCase() === l || codeLetter === l;
+    if (hit('f')) { e.preventDefault(); app.enterFocus(); return; }
+    if (hit('d')) { e.preventDefault(); app.setView('day'); }
+    if (hit('w')) { e.preventDefault(); app.setView('week'); }
+    if (hit('m')) { e.preventDefault(); app.setView('month'); }
+    if (hit('y')) { e.preventDefault(); app.setView('year'); }
+    if (hit('t')) { e.preventDefault(); app.todayNav(); }
+    if (hit('n')) { e.preventDefault(); app.openQuickInsert(); }
+    // Bascule Liste ⇄ Agenda de la vue jour (ramène sur la vue jour si on est
+    // ailleurs — cf. app.toggleDayLayout).
+    if (hit('a')) { e.preventDefault(); app.toggleDayLayout(); }
   });
 
 }

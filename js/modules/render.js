@@ -10,6 +10,7 @@ import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './pro
 import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
 import { getListPrefs, applyManualOrder, renderGroupedItems } from './backlogInboxView.js';
+import { renderAgendaBody, agendaSwitchButtonHTML, getDayLayout } from './agendaView.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
 function _getCatIds(t) { return t.categoryIds || (t.categoryId ? [t.categoryId] : []); }
@@ -896,6 +897,7 @@ export function renderDayView(todos) {
         ${isStatsMode && hiddenAll > 0 ? `<span class="day-ctrl-count">${hiddenAll}</span>` : ''}
       </button>
       ${doneBottomToggle}
+      ${agendaSwitchButtonHTML()}
 
       <div class="day-ctrl-other${ctrlsCollapsed ? ' hidden' : ''}">
         ${spacerBtn}
@@ -908,6 +910,13 @@ export function renderDayView(todos) {
   </div>`;
 
   const actionBar = '';
+
+  // ── Vue jour en mode AGENDA (grille horaire) ──────────────────────────
+  // Bascule `dayLayout` : le corps de la vue (les 2 colonnes de cartes) est
+  // remplacé par la grille horaire de agendaView.js. Tout ce qui l'entoure —
+  // en-tête de date, mini-semaine, bandeau des retards, panneau de relance —
+  // reste identique : seul le corps change.
+  const dayLayout = getDayLayout();
 
   // Journée bouclée → 3e colonne : piocher dans le backlog ou créer une tâche
   const refillCol = hasRefill
@@ -953,6 +962,17 @@ export function renderDayView(todos) {
   // queries tablette/mobile doivent pouvoir reprendre la main sur le gabarit,
   // ce qu'un style inline leur interdirait quelle que soit leur spécificité.
   const colResize = `<div class="day-col-resize" id="dayColResize"><div class="day-col-resize-grip" title="Glisser pour redimensionner — double-clic pour réinitialiser"><svg viewBox="0 0 12 28" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2.2" height="20" rx="1.1"/><rect x="7.8" y="4" width="2.2" height="20" rx="1.1"/></svg></div></div>`;
+
+  if (dayLayout === 'agenda') {
+    const agendaBody = renderAgendaBody(todos, navDate, {
+      isToday,
+      isStatsMode,
+      hiddenAll,
+      nowMinutes: now.getHours() * 60 + now.getMinutes(),
+      refillHTML: hasRefill ? `<div class="agenda-refill">${renderRefillPanel({ ds: dateStr, mode: 'day', doneCount: doneAll })}</div>` : '',
+    });
+    return `<div class="day-view day-agenda-mode${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}${agendaBody}</div>`;
+  }
 
   return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}" style="${daySplitVars()}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div>${colResize}<div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${actionBar}</div>`;
 }

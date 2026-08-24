@@ -163,6 +163,8 @@ export function getAppConfig() {
     focusBreakMinutes: localStorage.getItem('focusBreakMinutes'),
     backlogQueueView: localStorage.getItem('backlogQueueView'),
     inboxQueueView: localStorage.getItem('inboxQueueView'),
+    dayLayout: localStorage.getItem('dayLayout'),
+    agendaPrefs: localStorage.getItem('agendaPrefs'),
   };
 }
 

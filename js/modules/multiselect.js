@@ -18,6 +18,8 @@ export const MS_SELECTABLE = [
   '.focus-queue-item[data-id]',
   '.focus-current-item[data-id]',
   '.review-item[data-id]',
+  '.agenda-block[data-id]',
+  '.agenda-chip[data-id]',
 ].join(', ');
 
 const selected = new Set();
@@ -183,6 +185,10 @@ const MARQUEE_EXCLUDE = [
   'button, input, textarea, select, a, [contenteditable="true"]',
   '.modal-overlay', '.plan-resize-handle', '.day-col-resize', '.multi-select-bar',
   '.day-mini-week',
+  // Grille de la vue Agenda : un cliquer-glisser sur une plage vide y CRÉE
+  // une tâche (cf. app.initAgendaView) — le lasso y est donc désactivé.
+  // Ctrl/Cmd+clic et Maj+clic continuent de sélectionner les blocs.
+  '.agenda-canvas',
 ].join(', ');
 
 let _suppressClick = false;
