@@ -11982,6 +11982,167 @@ body:has(.bottom-panel:not(.hidden))::before {
   opacity: 1;
 }
 
+.deadline-quick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.deadline-quick {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.deadline-quick:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.deadline-quick.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.deadline-quick--clear {
+  flex: 0 0 auto;
+}
+
+.deadline-main-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.deadline-time-input {
+  flex: 0 0 92px;
+  text-align: center;
+}
+
+.deadline-detail {
+  margin-top: 12px;
+}
+
+.deadline-opts-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.deadline-type-row {
+  display: flex;
+  gap: 6px;
+}
+
+.deadline-type-btn {
+  flex: 1;
+  padding: 9px 4px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.deadline-type-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.deadline-type-btn.active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.deadline-lead-stepper {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.deadline-lead-stepper .dur-btn {
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.deadline-lead-stepper .dur-btn svg {
+  pointer-events: none;
+}
+.deadline-lead-stepper .dur-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.deadline-lead-stepper .dur-btn--minus {
+  border-right: 1px solid var(--border);
+}
+.deadline-lead-stepper .dur-btn--plus {
+  border-left: 1px solid var(--border);
+}
+
+.deadline-lead-display {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  padding: 9px 4px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.deadline-info {
+  margin-top: 10px;
+}
+
+.deadline-info-line {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border-left: 3px solid var(--border);
+}
+.deadline-info-line.is-soon {
+  color: var(--warning);
+  border-left-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+}
+.deadline-info-line.is-late {
+  color: var(--danger);
+  border-left-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.deadline-info-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 .duration-row {
   display: flex;
   gap: 12px;
@@ -12499,10 +12660,19 @@ body:has(.bottom-panel:not(.hidden))::before {
   background: transparent;
   border-style: dashed;
 }
+.backlog-deadline-badge.soon {
+  color: var(--warning);
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
 .backlog-deadline-badge.overdue {
   color: var(--danger);
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.backlog-deadline-badge.hard {
+  border-width: 1.5px;
+  font-weight: 700;
 }
 
 .backlog-deadline-input {
@@ -15893,6 +16063,206 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   letter-spacing: 0.03em;
 }
 
+.inbox-view--rail {
+  max-width: 888px;
+}
+
+.backlog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 18px;
+  align-items: start;
+}
+
+.backlog-main {
+  min-width: 0;
+}
+
+.backlog-layout--norail {
+  grid-template-columns: 1fr;
+}
+
+.backlog-rail {
+  position: sticky;
+  top: calc(var(--header-h) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  max-height: calc(100vh - var(--header-h) - 48px);
+  overflow-y: auto;
+}
+
+.backlog-rail-axes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.backlog-axis-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.backlog-axis-btn svg {
+  display: block;
+}
+.backlog-axis-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.backlog-axis-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.backlog-rail-title {
+  padding: 2px 2px 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.backlog-rail-zones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.backlog-rail-hint,
+.backlog-rail-empty {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+
+.backlog-zone {
+  flex: 0 0 auto;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  font-size: 12px;
+  text-align: left;
+}
+.backlog-zone.overdue-drop-zone--today {
+  flex-direction: column;
+  align-items: stretch;
+}
+.backlog-zone .today-zone-default {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.backlog-zone-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-zone--tag {
+  border-color: color-mix(in srgb, var(--zone-color) 45%, var(--border));
+  color: var(--zone-color);
+}
+.backlog-zone--tag.drag-over {
+  border-color: var(--zone-color);
+  background: color-mix(in srgb, var(--zone-color) 16%, var(--surface));
+  color: var(--zone-color);
+}
+
+.backlog-zone--prio-high {
+  color: var(--danger);
+}
+.backlog-zone--prio-high.drag-over {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+  color: var(--danger);
+}
+
+.backlog-zone--prio-medium {
+  color: var(--warning);
+}
+.backlog-zone--prio-medium.drag-over {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 16%, var(--surface));
+  color: var(--warning);
+}
+
+.backlog-zone--prio-low {
+  color: var(--primary);
+}
+.backlog-zone--prio-low.drag-over {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+  color: var(--primary);
+}
+
+.backlog-zone--clear {
+  color: var(--text-muted);
+}
+
+.inbox-item.cancelled {
+  opacity: 0.6;
+}
+.inbox-item.cancelled .todo-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.inbox-item.cancelled .todo-check {
+  border-color: var(--text-muted);
+  background: var(--surface2);
+  color: var(--text-muted);
+}
+.inbox-item.cancelled .todo-check::after {
+  content: "✕";
+  font-size: 10px;
+  font-weight: 700;
+}
+.inbox-item.cancelled .todo-check:hover {
+  border-color: var(--primary);
+  background: var(--surface2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+@media (max-width: 900px) {
+  .inbox-view--rail {
+    max-width: 680px;
+  }
+  .backlog-layout {
+    grid-template-columns: 1fr;
+  }
+  .backlog-rail {
+    position: static;
+    order: -1;
+    max-height: none;
+    overflow: visible;
+  }
+  .backlog-rail-zones {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .backlog-zone {
+    flex: 1 1 130px;
+  }
+}
 .review-bulk {
   display: flex;
   gap: 8px;

@@ -86,30 +86,87 @@ export function ageBadge(t) {
   return `<span class="review-age-badge" title="Créée ${days <= 0 ? "aujourd'hui" : `il y a ${days} jour${days > 1 ? 's' : ''}`}">${label}</span>`;
 }
 
-// Échéance optionnelle d'un item de backlog (t.deadline, YYYY-MM-DD) —
-// badge cliquable qui devient un <input type=date> en place au clic
-// (app.editBacklogDeadline(), app.js) ; rouge (.overdue) si dépassée.
-// Exportée : partagée entre renderBacklogView() (render.js, ghostIfEmpty
-// activé — invite à en poser une) et _itemRow() ci-dessous (ghostIfEmpty
-// désactivé par défaut — sans intérêt hors de la vue Backlog elle-même).
-export function deadlineBadge(t, { ghostIfEmpty = false } = {}) {
-  const hasDeadline = !!t.deadline;
-  if (!hasDeadline && !ghostIfEmpty) return '';
-  const overdue = hasDeadline && t.deadline < DS(today());
-  const d = hasDeadline ? parseDS(t.deadline) : null;
-  const label = hasDeadline ? `${d.getDate()} ${state.MONTHS[d.getMonth()]}` : '+ Échéance';
-  const title = hasDeadline ? 'Échéance — cliquer pour modifier' : 'Ajouter une échéance';
-  return `<span class="backlog-deadline-badge${hasDeadline ? '' : ' ghost'}${overdue ? ' overdue' : ''}" title="${title}" onclick="event.stopPropagation();window.app.editBacklogDeadline(this,'${t.id}')"><span class="backlog-deadline-label">${label}</span></span>`;
+// ─── Échéance (t.deadline / deadlineTime / deadlineHard / deadlineLeadDays) ──
+// Champs posés par la section « Échéance » du modal (modal.js) — jamais sur
+// une tâche récurrente (la section y est masquée : une date limite absolue
+// n'a aucun sens sur une série). Master uniquement, jamais dans overrides.
+//
+// deadlineLeadDays = à partir de combien de jours AVANT l'échéance elle
+// devient « chaude ». C'est ce seuil, et lui seul, qui fait passer le badge
+// de gris à orange (.soon) partout où il est rendu — vue jour, Backlog,
+// Inbox, Bilan — puis à rouge (.overdue) une fois la date passée.
+export const DEADLINE_DEFAULT_LEAD = 3;
+
+const _DL_MONTHS_SHORT = ['jan','fév','mar','avr','mai','juin','juil','août','sept','oct','nov','déc'];
+
+export function deadlineLead(t) {
+  const n = parseInt(t?.deadlineLeadDays);
+  return Number.isFinite(n) ? n : DEADLINE_DEFAULT_LEAD;
 }
 
-// Items de backlog dont l'échéance auto-imposée est dépassée — les items
-// de backlog n'ont pas de date propre, donc pas couverts par
-// getOverduePunctual() ; plus ancienne échéance d'abord.
-export function getBacklogPastDeadline(todos) {
+// null si pas d'échéance. `short` = libellé de badge (compact),
+// `text` = phrase complète (tooltip + ligne d'info du modal).
+export function deadlineInfo(t) {
+  if (!t?.deadline) return null;
+  const d = parseDS(t.deadline);
+  if (!d) return null;
+  const days = Math.round((d - today()) / 86400000);
+  const lead = deadlineLead(t);
+  const level = days < 0 ? 'late' : days === 0 ? 'today' : days <= lead ? 'soon' : 'far';
+  const dateLabel = `${d.getDate()} ${_DL_MONTHS_SHORT[d.getMonth()]}`;
+  const time = t.deadlineTime || '';
+  const at = time ? ` à ${time}` : '';
+  let short, text;
+  if (level === 'late') {
+    const n = -days;
+    short = `En retard ${n} j`;
+    text  = `Échéance dépassée depuis ${n} jour${n > 1 ? 's' : ''} (${dateLabel})`;
+  } else if (level === 'today') {
+    short = "Aujourd'hui";
+    text  = `Échéance aujourd'hui${at}`;
+  } else if (days === 1) {
+    short = 'Demain';
+    text  = `Échéance demain${at}`;
+  } else if (level === 'soon') {
+    short = `J-${days}`;
+    text  = `Échéance dans ${days} jours (${dateLabel}${at})`;
+  } else {
+    short = dateLabel;
+    text  = `Échéance dans ${days} jours (${dateLabel}${at})`;
+  }
+  return { days, lead, level, hard: !!t.deadlineHard, time, date: d, dateLabel, short, text };
+}
+
+// Badge cliquable qui devient un <input type=date> en place au clic
+// (app.editBacklogDeadline(), app.js). Rendu partout où une tâche peut
+// porter une échéance : vue jour (todoItemHTML), Backlog/Inbox
+// (ghostIfEmpty activé — invite à en poser une), Bilan (_itemRow).
+export function deadlineBadge(t, { ghostIfEmpty = false } = {}) {
+  const info = deadlineInfo(t);
+  if (!info && !ghostIfEmpty) return '';
+  const label = info ? `${info.short}${info.time ? ` ${info.time}` : ''}` : '+ Échéance';
+  const title = info
+    ? `${info.text}${info.hard ? ' — échéance dure' : ''} — cliquer pour modifier`
+    : 'Ajouter une échéance';
+  const cls = [
+    'backlog-deadline-badge',
+    info ? '' : 'ghost',
+    info?.level === 'late' ? 'overdue' : '',
+    info && (info.level === 'soon' || info.level === 'today') ? 'soon' : '',
+    info?.hard ? 'hard' : '',
+  ].filter(Boolean).join(' ');
+  return `<span class="${cls}" title="${esc(title)}" onclick="event.stopPropagation();window.app.editBacklogDeadline(this,'${t.id}')"><span class="backlog-deadline-label">${label}</span></span>`;
+}
+
+// Ponctuelles (datées ou non) dont l'échéance est dépassée — plus ancienne
+// échéance d'abord. `excludeIds` sert au Bilan à ne pas répéter une tâche
+// déjà listée dans « Laissées pour compte » (ponctuelles en retard par leur
+// DATE, un axe différent de l'échéance).
+export function getPastDeadline(todos, excludeIds = []) {
   const todayStr = DS(today());
   return todos
-    .filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && !t.cancelled
-      && t.deadline && t.deadline < todayStr)
+    .filter(t => (!t.recurrence || t.recurrence === 'none') && !t.completed && !t.cancelled
+      && t.deadline && t.deadline < todayStr && !excludeIds.includes(t.id))
     .sort((a, b) => a.deadline.localeCompare(b.deadline));
 }
 
@@ -334,7 +391,7 @@ export function renderOverdueGroups(overdue, { hideSingleGroupLabel = false } = 
 export function renderReviewBody(todos) {
   const overdue      = getOverduePunctual(todos);
   const postponed    = getFrequentlyPostponed(todos);
-  const backlogDue   = getBacklogPastDeadline(todos);
+  const pastDue      = getPastDeadline(todos, overdue.map(t => t.id));
   const adherence    = renderAdherenceRows(todos, { limit: 6 });
 
   let html = '';
@@ -362,11 +419,11 @@ export function renderReviewBody(todos) {
     </div>`;
   }
 
-  // ── Backlog : échéances auto-imposées dépassées ──
-  if (backlogDue.length) {
+  // ── Échéances dépassées (toutes ponctuelles, datées ou non) ──
+  if (pastDue.length) {
     html += `<div class="review-section">
-      <div class="review-section-title">Échéances de backlog dépassées <span class="review-section-badge">${backlogDue.length}</span></div>
-      <div class="review-group-items">${backlogDue.map(t => _itemRow(t)).join('')}</div>
+      <div class="review-section-title">Échéances dépassées <span class="review-section-badge">${pastDue.length}</span></div>
+      <div class="review-group-items">${pastDue.map(t => _itemRow(t)).join('')}</div>
     </div>`;
   }
 

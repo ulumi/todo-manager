@@ -248,8 +248,14 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
     const badgeTitle = multi ? `${links.length} liens` : links[0];
     return `<button class="todo-links-badge${multi ? ' multi' : ''}" title="${esc(badgeTitle)}" onclick="event.stopPropagation();window.app.handleLinksBadgeClick(event,'${todo.id}')">${_linkIconSVG}${multi ? `<span class="todo-links-badge-cnt">${links.length}</span>` : ''}</button>`;
   })();
+  // Badge échéance (t.deadline) — vue jour uniquement, comme focusTimeBadge
+  // et linksBadge. Jamais sur une récurrente : la section « Échéance » du
+  // modal y est masquée, une date limite absolue n'ayant pas de sens sur une
+  // série. Gris au repos, orange dans la fenêtre deadlineLeadDays, rouge une
+  // fois dépassée (voir deadlineBadge/deadlineInfo, review.js).
+  const deadlineBadgeHTML = (dayView && !isRec) ? deadlineBadge(todo) : '';
   const { toggle: subtaskToggleHTML, block: expandedHTML, addBtn: subtaskAddBtnHTML } = subtaskParts(todo, ds);
-  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || linksBadge || subtaskToggleHTML;
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || linksBadge || deadlineBadgeHTML || subtaskToggleHTML;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
@@ -258,7 +264,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${focusTimeBadge}${linksBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${timeBadge}${deadlineBadgeHTML}${focusTimeBadge}${linksBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
         ${counterBar}
       </div>
       <div class="todo-actions">

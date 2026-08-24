@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2872",
+    "date": "2026-08-24",
+    "message": "feat(modal): nouvelle section Échéance — date et heure limite, type dure/souple, alerte X jours avant"
+  },
+  {
     "version": "0.4.2871",
     "date": "2026-08-23",
     "message": "feat(vue jour): nouveau mode Agenda — grille horaire par moment, glisser-déposer et redimensionnement des tâches"
@@ -193,10 +198,5 @@
     "version": "0.4.2662",
     "date": "2026-08-18",
     "message": "fix(vue jour): les tâches courtes s'empilent dans la même colonne d'une grille masonry au lieu de laisser un vide sous chacune"
-  },
-  {
-    "version": "0.4.2661",
-    "date": "2026-08-18",
-    "message": "feat(vue jour): bouton d'ajout de tâche toujours visible en tête de colonne, à côté du titre"
   }
 ]

@@ -43,6 +43,7 @@ import {
   editModalSubtaskEstimate,
   consumeModalSubtasksDirty,
   addModalLinkInline, updateModalLink, normalizeModalLink, removeModalLink,
+  setDeadlineQuick, setDeadlineHard, stepDeadlineLead,
 } from './modules/modal.js';
 import {
   todoItemHTML, renderDayView, renderWeekView, renderMonthView, renderYearView,
@@ -2766,6 +2767,11 @@ class TodoApp {
   editModalSubtask(el, stid, parentStid)  { editModalSubtask(el, stid, parentStid); }
   editModalSubtaskEstimate(badgeEl, stid, parentStid) { editModalSubtaskEstimate(badgeEl, stid, parentStid); }
 
+  // ── Modal deadline delegates (called via window.app from modal HTML) ──
+  setDeadlineQuick(kind)  { setDeadlineQuick(kind); }
+  setDeadlineHard(hard)   { setDeadlineHard(hard); }
+  stepDeadlineLead(plus)  { stepDeadlineLead(plus); }
+
   // ── Modal link delegates (called via window.app from modal HTML) ───────
   addModalLinkInline()          { addModalLinkInline(); }
   updateModalLink(idx, value)   { updateModalLink(idx, value); }
@@ -3416,7 +3422,14 @@ class TodoApp {
       const val = input.value;
       if (val !== (t.deadline || '')) {
         snapshot(state.todos);
-        if (val) t.deadline = val; else delete t.deadline;
+        if (val) {
+          t.deadline = val;
+        } else {
+          // Retirer l'échéance retire aussi ses réglages : les laisser
+          // traîner les ferait ressurgir sur une échéance posée plus tard
+          delete t.deadline; delete t.deadlineTime;
+          delete t.deadlineHard; delete t.deadlineLeadDays;
+        }
         t.updatedAt = Date.now();
         saveTodos(state.todos);
         this.render();

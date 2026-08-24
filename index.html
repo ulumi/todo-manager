@@ -421,6 +421,60 @@
           </div>
         </div>
 
+        <!-- Échéance — date limite réelle, distincte de la date de travail
+             ci-dessus. Masquée en entier sur une tâche récurrente
+             (_syncDeadlineVisibility(), modal.js) -->
+        <div class="modal-cat-section" id="catSection-deadline" data-cat="deadline">
+          <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('deadline')">
+            <span class="modal-cat-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12"/><path d="M6 22h12"/><path d="M6 2c0 4 3 5 3 7s-3 3-3 7"/><path d="M18 2c0 4-3 5-3 7s3 3 3 7"/></svg></span>
+            <span class="modal-cat-label">Échéance</span>
+            <span class="modal-cat-preview" id="catPreview-deadline"></span>
+            <svg class="modal-cat-chevron" width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
+          </button>
+          <div class="modal-cat-body">
+            <div class="modal-cat-body-inner">
+              <div class="modal-cat-body-pad">
+              <div class="deadline-quick-row">
+                <button type="button" class="deadline-quick" data-quick="today" onclick="window.app.setDeadlineQuick('today')">Auj.</button>
+                <button type="button" class="deadline-quick" data-quick="tomorrow" onclick="window.app.setDeadlineQuick('tomorrow')">Demain</button>
+                <button type="button" class="deadline-quick" data-quick="friday" onclick="window.app.setDeadlineQuick('friday')">Vendredi</button>
+                <button type="button" class="deadline-quick" data-quick="eom" onclick="window.app.setDeadlineQuick('eom')">Fin du mois</button>
+                <button type="button" class="deadline-quick deadline-quick--clear" data-quick="none" onclick="window.app.setDeadlineQuick('none')">Aucune</button>
+              </div>
+              <div class="deadline-main-row">
+                <div class="date-trigger-wrap">
+                  <button type="button" class="date-trigger-btn is-empty" id="taskDeadlineBtn">DATE LIMITE</button>
+                  <input type="date" id="taskDeadline" autocomplete="off">
+                </div>
+                <input type="text" class="form-input deadline-time-input" id="taskDeadlineTime" autocomplete="off" placeholder="HH:MM" maxlength="5" inputmode="numeric" aria-label="Heure limite" oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+':'+v.slice(2,4);this.value=v" onblur="let p=this.value.split(':');if(p.length===2&&p[0].length===1)this.value='0'+this.value">
+              </div>
+              <div class="deadline-detail" id="deadlineDetail" style="display:none">
+                <div class="deadline-opts-row">
+                  <div class="timing-field">
+                    <label class="form-label">Type <span class="timing-flex-hint" title="Dure : passé la date, la tâche n'a plus lieu d'être (billet, inscription, déclaration). Souple : un objectif, on peut dépasser et reporter.">?</span></label>
+                    <div class="deadline-type-row">
+                      <button type="button" class="deadline-type-btn active" data-hard="0" onclick="window.app.setDeadlineHard(false)">Souple</button>
+                      <button type="button" class="deadline-type-btn" data-hard="1" onclick="window.app.setDeadlineHard(true)">Dure</button>
+                    </div>
+                  </div>
+                  <div class="timing-field">
+                    <label class="form-label">Prévenir <span class="timing-flex-hint" title="À partir de combien de jours avant l'échéance le badge passe en orange, en vue jour comme dans le Backlog">?</span></label>
+                    <div class="deadline-lead-stepper">
+                      <button type="button" class="dur-btn dur-btn--minus" aria-label="Moins" onclick="window.app.stepDeadlineLead(false)"><svg width="12" height="2" viewBox="0 0 12 2" fill="none"><line x1="0" y1="1" x2="12" y2="1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                      <span class="deadline-lead-display" id="deadlineLeadDisplay">3 j avant</span>
+                      <button type="button" class="dur-btn dur-btn--plus" aria-label="Plus" onclick="window.app.stepDeadlineLead(true)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><line x1="6" y1="0" x2="6" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="0" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+                      <input type="hidden" id="taskDeadlineLead" value="">
+                    </div>
+                  </div>
+                </div>
+                <div class="deadline-info" id="deadlineInfo"></div>
+              </div>
+              <input type="hidden" id="taskDeadlineHard" value="0">
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Durée -->
         <div class="modal-cat-section" id="catSection-duration" data-cat="duration">
           <button type="button" class="modal-cat-header" onclick="window.app.toggleCatSection('duration')">

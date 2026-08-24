@@ -2,13 +2,14 @@
 //  MODAL MANAGEMENT
 // ════════════════════════════════════════════════════════
 
-import { DS, today, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate, linkHostname } from './utils.js';
+import { DS, today, addDays, parseDS, esc, daysInMonth, firstDayOfMonth, effectiveEstimate, linkHostname } from './utils.js';
 import { getTodosForDate, addTask, getSuggestions, getRecentTasks, resolveOccurrence, occurrenceOverride } from './calendar.js';
 import * as state from './state.js';
 import { getSuggestedTasks, getCategories, saveCategories, CATEGORY_COLORS } from './admin.js';
 import { getProjects, saveProjects } from './projectManager.js';
 import { pushNow, saveTodos } from './storage.js';
 import { attachMic, autoStartDictation, stopDictation } from './dictation.js';
+import { deadlineInfo, fmtMinutes, DEADLINE_DEFAULT_LEAD } from './review.js';
 
 // ─── Smooth reveal / hide helpers ──────────────────────────────────────────
 
@@ -720,6 +721,10 @@ function _saveDraft() {
     flexibleTime: document.getElementById('taskFlexibleTime')?.checked || false,
     durationEstimated: document.getElementById('taskDurationEstimated')?.value || '',
     durationReal: document.getElementById('taskDurationReal')?.value || '',
+    deadline: document.getElementById('taskDeadline')?.value || '',
+    deadlineTime: document.getElementById('taskDeadlineTime')?.value || '',
+    deadlineHard: document.getElementById('taskDeadlineHard')?.value === '1',
+    deadlineLead: document.getElementById('taskDeadlineLead')?.value || '',
     categoryIds: [..._selectedCategoryIds],
     projectIds: [..._selectedProjectIds],
     intentionIds: [..._selectedIntentionIds],
@@ -761,6 +766,7 @@ export function discardDraft() {
   document.getElementById('taskDurationReal').value = '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  _populateDeadline(null);
   selectPriority('');
   populateCategoryTags([]);
   populateProjectTags([]);
@@ -798,6 +804,12 @@ function _tryRestoreDraft() {
   if (d.durationReal) document.getElementById('taskDurationReal').value = d.durationReal;
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  if (d.deadline || d.deadlineTime || d.deadlineHard || d.deadlineLead) {
+    _populateDeadline({
+      deadline: d.deadline, deadlineTime: d.deadlineTime,
+      deadlineHard: d.deadlineHard, deadlineLeadDays: d.deadlineLead,
+    });
+  }
   if (d.priority !== undefined) selectPriority(d.priority);
   if (d.categoryIds?.length) populateCategoryTags(d.categoryIds);
   if (d.projectIds?.length) populateProjectTags(d.projectIds);
@@ -849,6 +861,7 @@ function _initDraftListeners() {
   const listeners = [];
   [['taskTitle','input'],['taskDescription','input'],['taskDate','change'],
    ['taskStartTime','change'],['taskEndTime','change'],['taskFlexibleTime','change'],
+   ['taskDeadline','change'],['taskDeadlineTime','change'],
    ['taskDurationEstimated','input'],['taskDurationReal','input'],['taskCategory','change'],['taskProject','change']
   ].forEach(([id, evt]) => {
     const el = document.getElementById(id);
@@ -948,6 +961,7 @@ export function selectBigMode(mode) {
     _slideOut(dateTimeGroup);
     if (recSubOptions) recSubOptions.style.display = 'none';
   }
+  _syncDeadlineVisibility();
   _scheduleDraftSave();
 }
 
@@ -1108,6 +1122,170 @@ export function selectPriority(p) {
   _scheduleDraftSave();
 }
 
+// ─── Échéance ─────────────────────────────────────────────────────────────
+// Date LIMITE de la tâche (t.deadline), à ne pas confondre avec sa date de
+// travail (t.date, section « Quand ») : « quand je compte la faire » vs
+// « après quoi c'est trop tard ». Trois réglages autour : heure limite
+// (deadlineTime), dure/souple (deadlineHard) et fenêtre d'alerte
+// (deadlineLeadDays, cf. deadlineInfo/review.js). Tous master-only, jamais
+// dans overrides — la section est masquée sur une récurrente.
+
+const DEADLINE_LEAD_STEPS = [0, 1, 2, 3, 5, 7, 14, 30];
+
+function _quickDeadlineDate(kind) {
+  const d = today();
+  if (kind === 'today')    return d;
+  if (kind === 'tomorrow') return addDays(d, 1);
+  // Vendredi : le PROCHAIN — un vendredi, ça pointe sur celui d'après
+  if (kind === 'friday')   return addDays(d, (5 - d.getDay() + 7) % 7 || 7);
+  if (kind === 'eom')      return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return null;
+}
+
+function _quickKindFor(val) {
+  if (!val) return 'none';
+  return ['today', 'tomorrow', 'friday', 'eom'].find(k => DS(_quickDeadlineDate(k)) === val) || '';
+}
+
+// Objet minimal aux mêmes noms de champs qu'une Tâche, pour réutiliser
+// deadlineInfo() (review.js) directement sur l'état du formulaire.
+function _deadlineDraft() {
+  return {
+    deadline:        document.getElementById('taskDeadline')?.value || '',
+    deadlineTime:    document.getElementById('taskDeadlineTime')?.value || '',
+    deadlineHard:    document.getElementById('taskDeadlineHard')?.value === '1',
+    deadlineLeadDays: _currentLead(),
+  };
+}
+
+function _currentLead() {
+  const n = parseInt(document.getElementById('taskDeadlineLead')?.value);
+  return Number.isFinite(n) ? n : DEADLINE_DEFAULT_LEAD;
+}
+
+// Masquée en entier sur une récurrente : une date limite absolue n'a pas de
+// sens sur une série (et rien ne l'écrit — saveTaskLogic n'enregistre les
+// champs deadline* que si recurrence === 'none').
+function _syncDeadlineVisibility() {
+  const sec = document.getElementById('catSection-deadline');
+  if (!sec) return;
+  const isRec = state.selectedRecurrence && state.selectedRecurrence !== 'none';
+  sec.style.display = isRec ? 'none' : '';
+  if (isRec) setCatSectionOpen('deadline', false);
+}
+
+function _syncDeadlineUI() {
+  const input = document.getElementById('taskDeadline');
+  if (!input) return;
+  const val = input.value;
+  const d = val ? parseDS(val) : null;
+
+  const btn = document.getElementById('taskDeadlineBtn');
+  if (btn) {
+    if (!d) { btn.textContent = 'DATE LIMITE'; btn.classList.add('is-empty'); }
+    else {
+      btn.classList.remove('is-empty');
+      btn.textContent = val === DS(today()) ? 'Auj.' : `${d.getDate()} ${_MONTHS_SHORT[d.getMonth()]}`;
+    }
+  }
+
+  const activeQuick = _quickKindFor(val);
+  document.querySelectorAll('.deadline-quick').forEach(b =>
+    b.classList.toggle('active', b.dataset.quick === activeQuick));
+
+  // Type + fenêtre d'alerte + info n'ont rien à régler tant qu'aucune date
+  // limite n'est posée
+  const detail = document.getElementById('deadlineDetail');
+  if (detail) detail.style.display = val ? '' : 'none';
+
+  const hard = document.getElementById('taskDeadlineHard')?.value === '1';
+  document.querySelectorAll('.deadline-type-btn').forEach(b =>
+    b.classList.toggle('active', (b.dataset.hard === '1') === hard));
+
+  const leadDisp = document.getElementById('deadlineLeadDisplay');
+  if (leadDisp) {
+    const lead = _currentLead();
+    leadDisp.textContent = lead === 0 ? 'le jour même' : `${lead} j avant`;
+  }
+
+  const infoEl = document.getElementById('deadlineInfo');
+  if (infoEl) infoEl.innerHTML = _deadlineInfoHTML();
+}
+
+// Compte à rebours + marge réelle : le seul calcul que l'app peut faire à la
+// place de l'utilisateur, puisqu'elle connaît déjà la durée estimée (propre
+// ou somme des sous-tâches, cf. effectiveEstimate/utils.js).
+function _deadlineInfoHTML() {
+  const info = deadlineInfo(_deadlineDraft());
+  if (!info) return '';
+  const est = effectiveEstimate({
+    durationEstimated: parseInt(document.getElementById('taskDurationEstimated')?.value) || 0,
+    subtasks: _modalSubtasks,
+  });
+  const parts = [info.text];
+  if (est) {
+    parts.push(info.days > 0
+      ? `${info.days} jour${info.days > 1 ? 's' : ''} pour ≈ ${fmtMinutes(est)} de travail`
+      : `≈ ${fmtMinutes(est)} de travail estimé`);
+  }
+  const cls = info.level === 'late' ? ' is-late' : (info.level === 'far' ? '' : ' is-soon');
+  const hardNote = info.hard && info.level !== 'far'
+    ? `<div class="deadline-info-note">Échéance dure — passé la date, la tâche n'aura plus lieu d'être.</div>`
+    : '';
+  return `<div class="deadline-info-line${cls}">${esc(parts.join(' · '))}</div>${hardNote}`;
+}
+
+export function setDeadlineQuick(kind) {
+  const input = document.getElementById('taskDeadline');
+  if (!input) return;
+  const d = _quickDeadlineDate(kind);
+  input.value = d ? DS(d) : '';
+  if (!input.value) {
+    const timeEl = document.getElementById('taskDeadlineTime');
+    if (timeEl) timeEl.value = '';
+  }
+  _syncDeadlineUI();
+  _scheduleDraftSave();
+  _scheduleCollapsePreviewRefresh();
+}
+
+export function setDeadlineHard(hard) {
+  const el = document.getElementById('taskDeadlineHard');
+  if (el) el.value = hard ? '1' : '0';
+  _syncDeadlineUI();
+  _scheduleDraftSave();
+  _scheduleCollapsePreviewRefresh();
+}
+
+export function stepDeadlineLead(isPlus) {
+  const cur = _currentLead();
+  const next = isPlus
+    ? (DEADLINE_LEAD_STEPS.find(v => v > cur) ?? DEADLINE_LEAD_STEPS[DEADLINE_LEAD_STEPS.length - 1])
+    : ([...DEADLINE_LEAD_STEPS].reverse().find(v => v < cur) ?? DEADLINE_LEAD_STEPS[0]);
+  const el = document.getElementById('taskDeadlineLead');
+  if (el) el.value = String(next);
+  _syncDeadlineUI();
+  _scheduleDraftSave();
+}
+
+// Peuple le formulaire depuis le master `t` (jamais resolveOccurrence : ces
+// champs ne sont pas overridables) — t === null ⇒ remise à zéro.
+function _populateDeadline(t) {
+  const input = document.getElementById('taskDeadline');
+  const timeEl = document.getElementById('taskDeadlineTime');
+  const hardEl = document.getElementById('taskDeadlineHard');
+  const leadEl = document.getElementById('taskDeadlineLead');
+  if (input) input.value = t?.deadline || '';
+  if (timeEl) timeEl.value = t?.deadlineTime || '';
+  if (hardEl) hardEl.value = t?.deadlineHard ? '1' : '0';
+  if (leadEl) leadEl.value = Number.isFinite(parseInt(t?.deadlineLeadDays)) ? String(t.deadlineLeadDays) : '';
+  _syncDeadlineUI();
+}
+
+['change', 'input'].forEach(evt => document.addEventListener(evt, e => {
+  if (e.target.id === 'taskDeadline' || e.target.id === 'taskDeadlineTime') _syncDeadlineUI();
+}));
+
 // ─── Sections thématiques dépliables (Quand/Durée/Priorité/Notes/
 // Étiquettes/Compteur) — remplace l'ancien dépliant unique « Plus
 // d'options ». Chaque section se replie/déplie indépendamment (pas un
@@ -1116,7 +1294,7 @@ export function selectPriority(p) {
 // une tâche neuve tous les champs sont vides, donc tout reste replié
 // (départ minimaliste), sans avoir besoin d'un cas séparé pour la création.
 
-const CAT_KEYS = ['subtasks', 'when', 'duration', 'priority', 'location', 'notes', 'links', 'tags', 'counter'];
+const CAT_KEYS = ['subtasks', 'when', 'deadline', 'duration', 'priority', 'location', 'notes', 'links', 'tags', 'counter'];
 
 export function setCatSectionOpen(key, open) {
   document.getElementById(`catSection-${key}`)?.classList.toggle('open', !!open);
@@ -1142,6 +1320,8 @@ function _hasCatData(key) {
       if (document.getElementById('taskFlexibleTime')?.checked) return true;
       if (document.getElementById('taskDayPeriod')?.value) return true;
       return false;
+    case 'deadline':
+      return !!document.getElementById('taskDeadline')?.value;
     case 'duration':
       return !!(document.getElementById('taskDurationEstimated')?.value || document.getElementById('taskDurationReal')?.value);
     case 'priority':
@@ -1163,6 +1343,7 @@ function _hasCatData(key) {
 
 function _autoExpandCatSections() {
   CAT_KEYS.forEach(key => setCatSectionOpen(key, _hasCatData(key)));
+  _syncDeadlineVisibility();
   _refreshCollapsePreviews();
 }
 
@@ -1198,6 +1379,12 @@ function _fmtWhenPreview() {
   const period = document.getElementById('taskDayPeriod')?.value;
   if (period) parts.push(_PERIOD_LABELS[period]);
   return parts.join(' · ') || 'Non planifiée';
+}
+
+function _fmtDeadlinePreview() {
+  const info = deadlineInfo(_deadlineDraft());
+  if (!info) return 'Aucune';
+  return `${info.short}${info.time ? ` ${info.time}` : ''}${info.hard ? ' · dure' : ''}`;
 }
 
 function _fmtDurationPreview() {
@@ -1254,8 +1441,13 @@ function _fmtCounterPreview() {
 }
 
 function _refreshCollapsePreviews() {
+  // La ligne d'info de l'échéance dépend aussi de la durée estimée et des
+  // sous-tâches (marge) — recalculée par le même chemin délégué que les
+  // aperçus, plutôt que filetée dans chaque mutateur
+  _syncDeadlineUI();
   _setCatPreview('subtasks', _fmtSubtasksPreview());
   _setCatPreview('when', _fmtWhenPreview());
+  _setCatPreview('deadline', _fmtDeadlinePreview());
   _setCatPreview('duration', _fmtDurationPreview());
   _setCatPreview('priority', _fmtPriorityPreview());
   _setCatPreview('location', _fmtLocationPreview());
@@ -1313,6 +1505,7 @@ export function openModal(date, todos, scheduleMode = 'date', { restoreDraft = f
   document.getElementById('taskDurationReal').value = '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  _populateDeadline(null);
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = 'none';
   // Reset counter fields
@@ -1445,6 +1638,9 @@ export function openEditModal(id, dateStr, todos) {
   document.getElementById('taskDurationReal').value = t.durationReal || '';
   _syncDurationStepper('taskDurationEstimated');
   _syncDurationStepper('taskDurationReal');
+  // Échéance : master uniquement (jamais resolveOccurrence — ces champs ne
+  // sont pas overridables, et la section est masquée sur une récurrente)
+  _populateDeadline(t);
   const durationRealField = document.getElementById('durationRealField');
   if (durationRealField) durationRealField.style.display = '';
   populateCategoryTags(effT.categoryIds || (effT.categoryId ? [effT.categoryId] : []));
@@ -1556,6 +1752,7 @@ export function openEditModal(id, dateStr, todos) {
 
 export function selectRecurrence(rec) {
   state.setSelectedRecurrence(rec);
+  _syncDeadlineVisibility();
   const sel = document.getElementById('taskRecurrence');
   if (sel) sel.value = rec;
   // Highlight rec sub-option buttons with punch
@@ -1793,6 +1990,18 @@ export function saveTaskLogic(todos) {
   const subtasks = _modalSubtasks.length ? getModalSubtasks() : undefined;
   const links = _modalLinks.map(_normalizeUrl).filter(Boolean);
 
+  // Échéance — jamais sur une récurrente (section masquée) : les champs du
+  // formulaire peuvent encore porter la valeur d'une édition précédente, on
+  // ne les lit donc pas du tout dans ce cas, et les `delete` plus bas
+  // nettoient une échéance devenue caduque si la tâche vient de basculer en
+  // récurrente. deadlineLeadDays n'est stocké que s'il diffère du défaut.
+  const _isRec = state.selectedRecurrence !== 'none';
+  const deadline = !_isRec ? (document.getElementById('taskDeadline')?.value || undefined) : undefined;
+  const deadlineTime = deadline ? (document.getElementById('taskDeadlineTime')?.value || undefined) : undefined;
+  const deadlineHard = deadline && document.getElementById('taskDeadlineHard')?.value === '1' ? true : undefined;
+  const _leadRaw = parseInt(document.getElementById('taskDeadlineLead')?.value);
+  const deadlineLeadDays = (deadline && Number.isFinite(_leadRaw) && _leadRaw !== DEADLINE_DEFAULT_LEAD) ? _leadRaw : undefined;
+
   const locationVirtual = document.getElementById('taskLocationVirtual')?.checked || undefined;
   const location = !locationVirtual ? (document.getElementById('taskLocationAddress')?.value.trim() || undefined) : undefined;
 
@@ -1818,6 +2027,10 @@ export function saveTaskLogic(todos) {
     links: links.length ? links : undefined,
     location,
     locationVirtual,
+    deadline,
+    deadlineTime,
+    deadlineHard,
+    deadlineLeadDays,
   };
 
   if (state.selectedRecurrence==='none') {
@@ -1865,6 +2078,7 @@ export function saveTaskLogic(todos) {
       t.recurrence = data.recurrence;
       delete t.date; delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
       delete t.backlog; delete t.durationReal;
+      delete t.deadline; delete t.deadlineTime; delete t.deadlineHard; delete t.deadlineLeadDays;
       if (data.date !== undefined) t.date = data.date;
       if (data.recDays !== undefined) t.recDays = data.recDays;
       if (data.recDay !== undefined) t.recDay = data.recDay;
@@ -1873,6 +2087,12 @@ export function saveTaskLogic(todos) {
       if (data.recurrence !== 'none' && !t.startDate) t.startDate = DS(today());
       if (data.backlog) t.backlog = true;
       if (data.durationReal) t.durationReal = data.durationReal;
+      if (data.deadline) {
+        t.deadline = data.deadline;
+        if (data.deadlineTime) t.deadlineTime = data.deadlineTime;
+        if (data.deadlineHard) t.deadlineHard = true;
+        if (data.deadlineLeadDays !== undefined) t.deadlineLeadDays = data.deadlineLeadDays;
+      }
       // Counter: update config but preserve countCurrent
       delete t.counterEnabled; delete t.countFrom; delete t.countTo; delete t.countUnit;
       if (data.counterEnabled) {
