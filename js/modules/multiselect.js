@@ -181,7 +181,7 @@ const MARQUEE_EXCLUDE = [
   '.focus-queue-item',
   '.review-item',
   'button, input, textarea, select, a, [contenteditable="true"]',
-  '.modal-overlay', '.plan-resize-handle', '.multi-select-bar',
+  '.modal-overlay', '.plan-resize-handle', '.day-col-resize', '.multi-select-bar',
   '.day-mini-week',
 ].join(', ');
 

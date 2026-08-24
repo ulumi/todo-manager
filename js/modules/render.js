@@ -2,7 +2,7 @@
 //  RENDERING FUNCTIONS
 // ════════════════════════════════════════════════════════
 
-import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed, effectiveEstimate } from './utils.js';
+import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskCollapsed, effectiveEstimate, daySplitVars } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
@@ -946,7 +946,15 @@ export function renderDayView(todos) {
     }
   }
 
-  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div><div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${actionBar}</div>`;
+  // Poignée de partage Ponctuel ↔ Quotidien : colonne de grille de largeur 0
+  // (elle ne coûte rien au gabarit), sa zone de saisie déborde en absolu dans
+  // la gouttière. Le partage lui-même passe par les variables --day-punct/
+  // --day-rec et JAMAIS par un grid-template-columns inline : les media
+  // queries tablette/mobile doivent pouvoir reprendre la main sur le gabarit,
+  // ce qu'un style inline leur interdirait quelle que soit leur spécificité.
+  const colResize = `<div class="day-col-resize" id="dayColResize"><div class="day-col-resize-grip" title="Glisser pour redimensionner — double-clic pour réinitialiser"><svg viewBox="0 0 12 28" fill="currentColor" aria-hidden="true"><rect x="2" y="4" width="2.2" height="20" rx="1.1"/><rect x="7.8" y="4" width="2.2" height="20" rx="1.1"/></svg></div></div>`;
+
+  return `<div class="day-view${isStatsMode ? ' stats-mode' : ''}${isPastDay ? ' day-past' : ''}"><div class="day-top-sticky">${_renderDayMiniWeek()}${header}</div>${pastDueBanner}<div class="day-columns${hasRefill ? ' day-columns--three' : ''}" style="${daySplitVars()}"><div class="day-col day-col--punctual">${punctualHeader}${rightColItems}${doneAccordion}</div>${colResize}<div class="day-col day-col--recurring">${leftCol}</div>${refillCol}</div>${actionBar}</div>`;
 }
 
 function viewNavHeader(title, prevAction, nextAction, prevBigAction = null, nextBigAction = null) {

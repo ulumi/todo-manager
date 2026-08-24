@@ -1276,12 +1276,87 @@ main {
 .day-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 28px;
+  // 3 pistes : Ponctuel / poignée (0px) / Quotidien. Les deux gouttières de
+  // 14px de part et d'autre de la poignée reconstituent exactement le gap de
+  // 28px d'origine entre les deux colonnes.
+  grid-template-columns: var(--day-punct, 1.3333fr) 0px var(--day-rec, .6667fr);
+  column-gap: 14px;
+  row-gap: 28px;
   margin-top: 14px;
 
-  &--three { grid-template-columns: 1fr 1fr 1fr; }
+  // La 3e colonne (panneau de relance) reste à 1fr : --day-punct + --day-rec
+  // valant toujours 2, elle garde son tiers quel que soit le partage réglé
+  // par la poignée.
+  &--three {
+    grid-template-columns: var(--day-punct, 1.3333fr) 0px var(--day-rec, .6667fr) 1fr;
+    .day-col--refill { margin-left: 14px; }
+  }
 }
+
+// ── Poignée de redimensionnement Ponctuel ↔ Quotidien ──────────────────────
+// Piste de grille de largeur 0 : ne coûte rien au gabarit, quel que soit son
+// état. Toute la zone de saisie est portée par .day-col-resize-grip, en
+// absolu dans la gouttière — jamais dans le flux.
+.day-col-resize {
+  position: relative;
+  width: 0;
+  align-self: stretch;
+}
+
+.day-col-resize-grip {
+  position: absolute;
+  inset: 0 auto 0 -13px;
+  width: 26px;
+  cursor: col-resize;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 2;
+
+  // Filet vertical toujours visible (discret) : c'est lui qui signale que la
+  // séparation est saisissable. Au survol, seules la couleur et l'opacité
+  // changent — jamais la taille.
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    margin-left: -1px;
+    border-radius: 2px;
+    background: var(--border);
+    opacity: .55;
+    transition: background .15s, opacity .15s;
+  }
+
+  svg {
+    position: sticky;
+    top: 50vh;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 28px;
+    color: var(--text-muted);
+    opacity: .55;
+    transition: color .15s, opacity .15s;
+  }
+
+  &:hover svg { color: var(--primary); opacity: 1; }
+  &:hover::before { background: var(--primary); opacity: .85; }
+}
+
+.day-col-resize.dragging .day-col-resize-grip {
+  &::before { background: var(--primary); opacity: 1; }
+  svg { color: var(--primary); opacity: 1; }
+}
+
+// Pendant le glissement : curseur cohérent partout et pas de sélection de
+// texte dans les colonnes qu'on survole.
+body.day-col-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
 
 .day-col {
   display: flex;
@@ -9061,8 +9136,12 @@ body:has(.bottom-panel:not(.hidden))::before {
   // Day mini-week: hidden on tablet/mobile
   .day-mini-week { display: none; }
 
-  // Day view: equal columns, single-col cards
+  // Day view: equal columns, single-col cards. La poignée de partage est
+  // retirée (display:none la sort de la grille — les gabarits ci-dessous
+  // comptent donc bien 2 et 3 pistes, sans piste de 0px pour elle).
   .day-columns         { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .day-columns--three  { grid-template-columns: 1fr 1fr 1fr; .day-col--refill { margin-left: 0; } }
+  .day-col-resize      { display: none; }
   .day-col--punctual .todo-list { grid-template-columns: 1fr !important; }
 
   // Day header

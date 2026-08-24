@@ -144,3 +144,38 @@ export function needsSplit(targetDepth, source) {
 export function splitIntoPromotedChildren(source) {
   return (source.subtasks || []).map(child => ({ ...child, title: `${source.title} - ${child.title}` }));
 }
+
+// ── Partage Ponctuel ↔ Quotidien de la vue jour ─────────────────────────────
+// Fraction de la largeur disponible prise par la colonne Ponctuelle, réglée
+// par la poignée entre les deux colonnes. État purement local (comme
+// planInboxWidth / calSidebarCollapsed) : dépend de la taille de l'écran, pas
+// du compte — jamais dans getAppConfig().
+const DAY_SPLIT_KEY = 'daySplit';
+export const DAY_SPLIT_DEFAULT = 2 / 3;   // = l'historique 2fr / 1fr
+const DAY_SPLIT_MIN = 0.25;
+const DAY_SPLIT_MAX = 0.8;
+
+export function clampDaySplit(r) {
+  return Math.min(DAY_SPLIT_MAX, Math.max(DAY_SPLIT_MIN, r));
+}
+
+export function getDaySplit() {
+  const raw = parseFloat(localStorage.getItem(DAY_SPLIT_KEY));
+  return Number.isFinite(raw) ? clampDaySplit(raw) : DAY_SPLIT_DEFAULT;
+}
+
+export function setDaySplit(r) {
+  localStorage.setItem(DAY_SPLIT_KEY, clampDaySplit(r).toFixed(4));
+}
+
+export function resetDaySplit() {
+  localStorage.removeItem(DAY_SPLIT_KEY);
+}
+
+// Les deux valeurs `fr` de .day-columns (--day-punct / --day-rec). Leur somme
+// vaut toujours 2 : la 3e colonne (panneau de relance, .day-columns--three)
+// reste figée à 1fr et garde donc son tiers quel que soit le partage des deux
+// premières.
+export function daySplitVars(r = getDaySplit()) {
+  return `--day-punct:${(2 * r).toFixed(4)}fr;--day-rec:${(2 * (1 - r)).toFixed(4)}fr`;
+}

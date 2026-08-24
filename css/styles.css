@@ -1343,12 +1343,78 @@ main.plan-mode, main.search-mode {
 .day-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 28px;
+  grid-template-columns: var(--day-punct, 1.3333fr) 0px var(--day-rec, 0.6667fr);
+  column-gap: 14px;
+  row-gap: 28px;
   margin-top: 14px;
 }
 .day-columns--three {
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: var(--day-punct, 1.3333fr) 0px var(--day-rec, 0.6667fr) 1fr;
+}
+.day-columns--three .day-col--refill {
+  margin-left: 14px;
+}
+
+.day-col-resize {
+  position: relative;
+  width: 0;
+  align-self: stretch;
+}
+
+.day-col-resize-grip {
+  position: absolute;
+  inset: 0 auto 0 -13px;
+  width: 26px;
+  cursor: col-resize;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 2;
+}
+.day-col-resize-grip::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--border);
+  opacity: 0.55;
+  transition: background 0.15s, opacity 0.15s;
+}
+.day-col-resize-grip svg {
+  position: sticky;
+  top: 50vh;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 28px;
+  color: var(--text-muted);
+  opacity: 0.55;
+  transition: color 0.15s, opacity 0.15s;
+}
+.day-col-resize-grip:hover svg {
+  color: var(--primary);
+  opacity: 1;
+}
+.day-col-resize-grip:hover::before {
+  background: var(--primary);
+  opacity: 0.85;
+}
+
+.day-col-resize.dragging .day-col-resize-grip::before {
+  background: var(--primary);
+  opacity: 1;
+}
+.day-col-resize.dragging .day-col-resize-grip svg {
+  color: var(--primary);
+  opacity: 1;
+}
+
+body.day-col-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .day-col {
@@ -9440,6 +9506,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   .day-columns {
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+  }
+  .day-columns--three {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .day-columns--three .day-col--refill {
+    margin-left: 0;
+  }
+  .day-col-resize {
+    display: none;
   }
   .day-col--punctual .todo-list {
     grid-template-columns: 1fr !important;

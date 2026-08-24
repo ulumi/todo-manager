@@ -8,7 +8,8 @@ import {
   DS, p2, parseDS, today, addDays, startOfWeek,
   daysInMonth, firstDayOfMonth, esc, linkHostname,
   toggleSubtaskCollapsed, expandSubtask, safeParseJSON,
-  dnDZone, needsSplit, splitIntoPromotedChildren
+  dnDZone, needsSplit, splitIntoPromotedChildren,
+  getDaySplit, setDaySplit, resetDaySplit, clampDaySplit, DAY_SPLIT_DEFAULT
 } from './modules/utils.js';
 import {
   saveTodos, loadTodos, getAppConfig, downloadJSON,
@@ -5452,7 +5453,7 @@ class TodoApp {
         }
       }
     }
-    if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); this.initTagSectionDragDrop(); }
+    if (state.view === 'day') { this.initDayDragDrop(); this.initDayMiniWeekDragDrop(); this.initTagSectionDragDrop(); this.initDayColResize(); }
     if (state.view === 'week') this.initWeekDragDrop();
     if (state.view === 'month') this.initMonthDragDrop();
     if (state.view === 'search') this.initSearchDragDrop();
@@ -5895,6 +5896,59 @@ class TodoApp {
     document.querySelectorAll('.plan-week-day.drag-over, .plan-inbox-section.drag-over, .plan-backlog-section.drag-over')
       .forEach(el => el.classList.remove('drag-over'));
     this.initPlanResizeHandle();
+  }
+
+  // Poignée de partage Ponctuel ↔ Quotidien de la vue jour. N'écrit QUE les
+  // variables --day-punct/--day-rec de .day-columns : un grid-template-columns
+  // inline gagnerait sur les media queries tablette/mobile (un style inline
+  // l'emporte quelle que soit la spécificité), qui doivent au contraire
+  // reprendre la main sur le gabarit — cf. .day-col-resize { display:none }.
+  initDayColResize() {
+    const grid   = document.querySelector('.day-columns');
+    const handle = document.getElementById('dayColResize');
+    if (!grid || !handle) return;
+    const punct = grid.querySelector('.day-col--punctual');
+    const rec   = grid.querySelector('.day-col--recurring');
+    if (!punct || !rec) return;
+
+    let startX = 0, startW = 0, total = 0, ratio = getDaySplit(), raf = 0;
+    // --day-punct + --day-rec == 2 : la 3e colonne (relance, figée à 1fr)
+    // garde son tiers, et la somme en pixels des deux premières ne bouge pas
+    // pendant le glissement — d'où le ratio calculé sur elles seules.
+    const apply = (r) => {
+      ratio = clampDaySplit(r);
+      grid.style.setProperty('--day-punct', (2 * ratio).toFixed(4) + 'fr');
+      grid.style.setProperty('--day-rec',   (2 * (1 - ratio)).toFixed(4) + 'fr');
+      // Le nombre de colonnes tenables par .todo-list change avec la largeur :
+      // sans ce recalcul les tranches masonry resteraient calées sur
+      // l'ancienne hauteur des cartes et les items se recouvriraient.
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; this._layoutMasonry(); });
+    };
+    const onMove = (e) => apply((startW + e.clientX - startX) / total);
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.body.classList.remove('day-col-resizing');
+      handle.classList.remove('dragging');
+      setDaySplit(ratio);
+      this._layoutMasonry();
+    };
+    handle.addEventListener('mousedown', (e) => {
+      total  = punct.offsetWidth + rec.offsetWidth;
+      if (total <= 0) return;
+      startX = e.clientX;
+      startW = punct.offsetWidth;
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.body.classList.add('day-col-resizing');
+      handle.classList.add('dragging');
+      e.preventDefault();
+    });
+    handle.addEventListener('dblclick', () => {
+      resetDaySplit();
+      apply(DAY_SPLIT_DEFAULT);
+      this._layoutMasonry();
+    });
   }
 
   initPlanResizeHandle() {
