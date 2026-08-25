@@ -9,7 +9,7 @@ import { getCategories, categoryIconSVG } from './admin.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
-import { getListPrefs, applyManualOrder, renderGroupedItems, renderBacklogRail } from './backlogInboxView.js';
+import { getListPrefs, applyManualOrder, renderGroupedItems, renderBacklogRail, getRailFilter, railFilterFn, railFilterLabel } from './backlogInboxView.js';
 import { renderAgendaBody, agendaSwitchButtonHTML, getDayLayout } from './agendaView.js';
 
 // Helper: get category/project/intention IDs (back-compat with old single-ID format)
@@ -1639,8 +1639,17 @@ export function renderBacklogView(todos) {
   const backlogItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.backlog && !t.date && !t.completed && !t.cancelled);
 
   const prefs = getListPrefs('backlog');
+  // Contexte du rail : les compteurs de zones et les piles se calculent
+  // toujours sur le backlog COMPLET (backlogItems), jamais sur la liste déjà
+  // filtrée — sinon cliquer un filtre remettrait tous les autres compteurs à
+  // zéro et on ne saurait plus où aller ensuite.
+  const railCtx = { categories: getCategories(), projects: getProjects(), intentions: _getIntentions(), items: backlogItems };
+  const railFilter = getRailFilter();
+  const filterFn = railFilterFn(railFilter, railCtx);
+  const visibleItems = filterFn ? backlogItems.filter(filterFn) : backlogItems;
+
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
-  const sorted = prefs.sort === 'manual' ? applyManualOrder('backlog', backlogItems) : [...backlogItems].sort((a, b) => {
+  const sorted = prefs.sort === 'manual' ? applyManualOrder('backlog', visibleItems) : [...visibleItems].sort((a, b) => {
     if (prefs.sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
     if (prefs.sort === 'title')    return a.title.localeCompare(b.title);
     if (prefs.sort === 'category') return (_getCatIds(a)[0] || '').localeCompare(_getCatIds(b)[0] || '');
@@ -1648,7 +1657,7 @@ export function renderBacklogView(todos) {
   });
   const canDrag = prefs.sort === 'manual' && prefs.cols === '1';
 
-  const categories = getCategories();
+  const categories = railCtx.categories;
   const itemTemplate = t => {
     const cat = t.categoryId ? categories.find(c => c.id === t.categoryId) : null;
     const catBadge = cat
@@ -1685,14 +1694,21 @@ export function renderBacklogView(todos) {
   };
   const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
 
-  const empty = sorted.length === 0 ? `
+  const backlogIcon = `<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>`;
+  // Deux états vides bien distincts : un backlog réellement vide (on propose
+  // d'ajouter) vs un filtre du rail qui ne ramène rien (on propose de le
+  // retirer — sinon la vue a l'air cassée alors qu'il y a bien des tâches)
+  const empty = sorted.length > 0 ? '' : (filterFn ? `
     <div class="inbox-empty">
-      <div class="inbox-empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
-      </div>
+      <div class="inbox-empty-icon">${backlogIcon}</div>
+      <p>Aucune tâche dans « ${esc(railFilterLabel(railFilter, railCtx))} ».</p>
+      <button class="btn btn-primary" onclick="window.app.railFilter(null)">Retirer le filtre</button>
+    </div>` : `
+    <div class="inbox-empty">
+      <div class="inbox-empty-icon">${backlogIcon}</div>
       <p>Backlog vide — rien en attente !</p>
       <button class="btn btn-primary" onclick="window.app.openModalForBacklog()">＋ Ajouter au backlog</button>
-    </div>` : '';
+    </div>`);
 
   const sortLabels = [['date', 'Récentes'], ['priority', 'Priorité'], ['title', 'A–Z'], ['category', 'Catégorie'], ['manual', 'Manuel']];
   const sortBtns = sortLabels.map(([v, l]) =>
@@ -1744,19 +1760,20 @@ export function renderBacklogView(todos) {
           <p class="inbox-view-desc">Tâches mises de côté <br>— à reprendre quand le moment est venu.</p>
         </div>
         <div class="inbox-view-controls">
-          <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+          <span class="inbox-count-label">${filterFn ? `${sorted.length} sur ${backlogItems.length}` : `${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}`}</span>
+          ${filterFn ? `<button class="backlog-filter-chip" onclick="window.app.railFilter(null)" title="Retirer le filtre du rail">${esc(railFilterLabel(railFilter, railCtx))}<span class="backlog-filter-chip-x">✕</span></button>` : ''}
           <div class="inbox-sort-group">${sortBtns}</div>
           <div class="inbox-sort-group">${colBtns}</div>
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
         </div>
       </div>
-      <div class="backlog-layout${sorted.length ? '' : ' backlog-layout--norail'}">
+      <div class="backlog-layout${backlogItems.length ? '' : ' backlog-layout--norail'}">
         <div class="backlog-main">
           ${empty}
           ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
           ${cancelledAccordion}
         </div>
-        ${sorted.length ? renderBacklogRail(prefs, categories) : ''}
+        ${backlogItems.length ? renderBacklogRail(prefs, railCtx) : ''}
       </div>
     </div>`;
 }

@@ -85,7 +85,9 @@ import {
   getBreakTargetMinutes, setBreakTargetMinutes, startEditBreakTarget, applyFocusBreakTarget,
   resolveFocusRef, focusSubtaskId,
 } from './modules/focus.js';
-import { getListPrefs, saveListPrefs, saveManualOrder } from './modules/backlogInboxView.js';
+import { getListPrefs, saveListPrefs, saveManualOrder,
+  getRailPins, getRailFolds, getRailFilter, setRailFilter, deadlineHorizonDS,
+} from './modules/backlogInboxView.js';
 import {
   initAuth, onUserChange, isGuest, getCurrentUser,
   signInGuest, signInWithEmail, registerWithEmail,
@@ -5483,6 +5485,7 @@ class TodoApp {
     if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
     if (state.view === 'backlog' || state.view === 'inbox') this.initQueueListDnD(state.view);
+    if (state.view === 'backlog') this.initBacklogRailDnD();
     if (state.view === 'focus' || this._focusMinimized) this.initFocusView(); else this._stopFocusTick();
     renderFocusPip(this);
     document.querySelector('.focus-tab')?.classList.toggle('active', state.view === 'focus');
@@ -6283,6 +6286,11 @@ class TodoApp {
     const taskId = event.dataTransfer.getData('text/plain');
     if (!taskId) return;
     const ids = this._dropIds(taskId);
+    // Un drop dont aucun id ne correspond à une vraie tâche (module du rail
+    // réordonné, section de tag…) ne doit ni créer une entrée d'annulation
+    // vide, ni déclencher un render inutile : _reviewMutate() prend son
+    // snapshot AVANT de savoir si quoi que ce soit va muter.
+    if (!ids.some(id => state.todos.some(t => t.id === id))) return;
     const isCopy = this._isCopyDrag(event);
     this._reviewMutate(() => {
       ids.forEach(id => {
@@ -6357,19 +6365,13 @@ class TodoApp {
     });
   }
 
-  // Horizon → date d'échéance concrète (t.deadline, propre aux items de
-  // backlog). Calculée UNE fois avant le drop et pas par item : tout le lot
-  // déposé reçoit exactement la même échéance.
-  _deadlineHorizonDS(horizon) {
-    const d = today();
-    if (horizon === 'week')  return DS(addDays(startOfWeek(d), 6)); // dimanche (semaine lundi→dimanche, cf. startOfWeek)
-    if (horizon === 'month') return DS(new Date(d.getFullYear(), d.getMonth() + 1, 0));
-    if (horizon === 'quarter') return DS(new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3 + 3, 0));
-    return null;
-  }
-
+  // Horizon → date d'échéance concrète. `deadlineHorizonDS()` vit dans
+  // backlogInboxView.js et sert AUSSI aux compteurs/filtres des zones : une
+  // seule définition, sinon un item déposé sur « Ce mois-ci » pourrait ne pas
+  // apparaître dans le compte de cette même zone. Calculée une fois avant le
+  // drop, pas par item : tout le lot reçoit la même échéance.
   backlogDropDeadline(event, horizon) {
-    const ds = this._deadlineHorizonDS(horizon);
+    const ds = deadlineHorizonDS(horizon);
     this._reviewDrop(event, t => {
       if (ds) t.deadline = ds; else delete t.deadline;
       t.updatedAt = Date.now();
@@ -6394,6 +6396,124 @@ class TodoApp {
     localStorage.setItem('backlogCancelledOpen', isOpen ? '0' : '1');
     const acc = document.querySelector('.backlog-cancelled');
     if (acc) acc.classList.toggle('open', !isOpen);
+  }
+
+  backlogDropProject(event, id) {
+    this._reviewDrop(event, t => {
+      const cur = t.projectIds || (t.projectId ? [t.projectId] : []);
+      const next = id ? (cur.includes(id) ? cur : [...cur, id]) : [];
+      if (next.length) t.projectIds = next; else delete t.projectIds;
+      delete t.projectId; // format mono-id legacy, déjà migré au démarrage
+      t.updatedAt = Date.now();
+    });
+  }
+
+  backlogDropIntention(event, id) {
+    this._reviewDrop(event, t => {
+      const cur = t.intentionIds || (t.intentionId ? [t.intentionId] : []);
+      const next = id ? (cur.includes(id) ? cur : [...cur, id]) : [];
+      if (next.length) t.intentionIds = next; else delete t.intentionIds;
+      delete t.intentionId;
+      t.updatedAt = Date.now();
+    });
+  }
+
+  // 0 = zone « Sans estimation » (retire la valeur)
+  backlogDropEstimate(event, minutes) {
+    this._reviewDrop(event, t => {
+      if (minutes > 0) t.durationEstimated = minutes; else delete t.durationEstimated;
+      t.updatedAt = Date.now();
+    });
+  }
+
+  // ── Rail : épinglage, repli, ordre, filtre ───────────────────────────────
+  // `prefs.rail` porte à lui seul l'épinglage ET l'ordre (cf.
+  // backlogInboxView.js), et vit dans backlogQueueView : déjà persisté et
+  // synchronisé entre appareils, aucune clé supplémentaire.
+  toggleRailPin(key) {
+    const p = getListPrefs('backlog');
+    const pins = getRailPins(p);
+    const next = pins.includes(key) ? pins.filter(k => k !== key) : [...pins, key];
+    p.rail = next;
+    p.railFold = getRailFolds(p).filter(k => next.includes(k)); // un module détaché ne garde pas son repli
+    saveListPrefs('backlog', p);
+    this._saveConfigChange();
+    // Le filtre actif n'a plus de zone où se lire NI se retirer si son module
+    // quitte le rail — on le lève plutôt que de laisser une liste filtrée
+    // sans aucun moyen visible de revenir en arrière.
+    const f = getRailFilter();
+    if (f && !next.includes(f.mod)) setRailFilter(null);
+    this.render();
+  }
+
+  toggleRailFold(key) {
+    const p = getListPrefs('backlog');
+    const folds = getRailFolds(p);
+    p.rail = getRailPins(p);
+    p.railFold = folds.includes(key) ? folds.filter(k => k !== key) : [...folds, key];
+    saveListPrefs('backlog', p);
+    this._saveConfigChange();
+    // Patch DOM ciblé (pas de render()) pour profiter de la transition CSS
+    document.querySelector(`.rail-mod[data-mod="${key}"]`)?.classList.toggle('folded');
+  }
+
+  // Clic sur une zone = filtrer la liste sur cette valeur ; re-clic = retirer.
+  // `railFilter(null)` (chip d'en-tête, état vide) lève le filtre.
+  // Volontairement NON synchronisé entre appareils — voir setRailFilter().
+  railFilter(mod, val) {
+    const cur = getRailFilter();
+    const same = !!cur && !!mod && cur.mod === mod && cur.val === val;
+    setRailFilter(mod && !same ? { mod, val } : null);
+    msClear(); // une sélection faite avant le filtre ne correspond plus à l'écran
+    this.render();
+  }
+
+  // Réordonnancement des modules du rail (glisser leur en-tête). Ne pose
+  // JAMAIS de `text/plain` : _reviewDrop() sort immédiatement sur un id vide,
+  // donc lâcher un module sur une zone de classement ne peut rien muter. Le
+  // stopPropagation() du dragstart empêche aussi body.is-dragging-task d'être
+  // posé par le listener global (sinon la zone Aujourd'hui basculerait sur
+  // ses sous-cibles pendant qu'on réorganise le rail).
+  initBacklogRailDnD() {
+    const wrap = document.getElementById('backlogRailMods');
+    if (!wrap || wrap.dataset.dndBound) return;
+    wrap.dataset.dndBound = '1';
+    let dragEl = null;
+
+    wrap.addEventListener('dragstart', e => {
+      const hd = e.target.closest('.rail-mod-hd');
+      if (!hd) return;
+      e.stopPropagation();
+      dragEl = hd.closest('.rail-mod');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-rail-mod', dragEl.dataset.mod);
+      requestAnimationFrame(() => dragEl?.classList.add('rail-mod--dragging'));
+    });
+
+    wrap.addEventListener('dragover', e => {
+      if (!dragEl) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const over = e.target.closest('.rail-mod');
+      if (!over || over === dragEl) return;
+      const r = over.getBoundingClientRect();
+      wrap.insertBefore(dragEl, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
+    });
+
+    wrap.addEventListener('drop', e => { if (dragEl) { e.preventDefault(); e.stopPropagation(); } });
+
+    wrap.addEventListener('dragend', () => {
+      if (!dragEl) return;
+      dragEl.classList.remove('rail-mod--dragging');
+      dragEl = null;
+      // L'ordre du DOM EST l'ordre final (déplacé en direct au survol) —
+      // rien à re-rendre, juste à persister.
+      const p = getListPrefs('backlog');
+      p.rail = [...wrap.querySelectorAll('.rail-mod')].map(el => el.dataset.mod);
+      p.railFold = getRailFolds(p);
+      saveListPrefs('backlog', p);
+      this._saveConfigChange();
+    });
   }
 
   reviewAllToday() {

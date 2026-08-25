@@ -16064,12 +16064,12 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .inbox-view--rail {
-  max-width: 888px;
+  max-width: 918px;
 }
 
 .backlog-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 190px;
+  grid-template-columns: minmax(0, 1fr) 220px;
   gap: 18px;
   align-items: start;
 }
@@ -16127,19 +16127,118 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   color: var(--primary);
 }
 
-.backlog-rail-title {
-  padding: 2px 2px 0;
+.backlog-rail-mods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rail-mod {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+.rail-mod--dragging {
+  opacity: 0.45;
+}
+
+.rail-mod-hd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 7px;
+  cursor: grab;
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, background 0.15s;
+}
+.rail-mod-hd:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.rail-mod-hd:active {
+  cursor: grabbing;
 }
 
-.backlog-rail-zones {
+.rail-mod-grip {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  opacity: 0.45;
+}
+.rail-mod-grip svg {
+  display: block;
+}
+
+.rail-mod-icon {
+  display: flex;
+}
+.rail-mod-icon svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.rail-mod-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-mod-chevron {
+  display: flex;
+  opacity: 0.6;
+  transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.rail-mod.folded .rail-mod-chevron {
+  transform: rotate(-90deg);
+}
+.rail-mod-chevron svg {
+  display: block;
+}
+
+.rail-mod-unpin {
+  display: flex;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+.rail-mod-unpin svg {
+  display: block;
+}
+.rail-mod-unpin:hover {
+  opacity: 1;
+  color: var(--danger);
+  background: var(--surface);
+}
+
+.rail-mod-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.rail-mod.folded .rail-mod-body {
+  grid-template-rows: 0fr;
+}
+
+.rail-mod-body-inner {
+  overflow: hidden;
+}
+
+.rail-zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 7px;
 }
 
 .backlog-rail-hint,
@@ -16151,14 +16250,21 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   opacity: 0.85;
 }
 
+.backlog-rail-empty {
+  padding: 7px;
+}
+
 .backlog-zone {
   flex: 0 0 auto;
   flex-direction: row;
   justify-content: flex-start;
-  gap: 8px;
-  padding: 9px 10px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 7px 8px;
+  font-size: 11px;
   text-align: left;
+}
+.backlog-zone--wide {
+  grid-column: 1/-1;
 }
 .backlog-zone.overdue-drop-zone--today {
   flex-direction: column;
@@ -16167,7 +16273,27 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .backlog-zone .today-zone-default {
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+}
+.backlog-zone .overdue-drop-zone-icon svg {
+  width: 13px;
+  height: 13px;
+}
+.backlog-zone.is-clickable {
+  cursor: pointer;
+}
+.backlog-zone.is-clickable:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.backlog-zone.is-filtered {
+  border-style: solid;
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+.backlog-zone.is-empty:not(.is-filtered) {
+  opacity: 0.45;
 }
 
 .backlog-zone-label {
@@ -16178,11 +16304,27 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   white-space: nowrap;
 }
 
+.backlog-zone-count {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+.backlog-zone--pile {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: var(--surface);
+}
+
 .backlog-zone--tag {
   border-color: color-mix(in srgb, var(--zone-color) 45%, var(--border));
   color: var(--zone-color);
 }
-.backlog-zone--tag.drag-over {
+.backlog-zone--tag.drag-over, .backlog-zone--tag.is-filtered {
   border-color: var(--zone-color);
   background: color-mix(in srgb, var(--zone-color) 16%, var(--surface));
   color: var(--zone-color);
@@ -16191,7 +16333,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .backlog-zone--prio-high {
   color: var(--danger);
 }
-.backlog-zone--prio-high.drag-over {
+.backlog-zone--prio-high.drag-over, .backlog-zone--prio-high.is-filtered {
   border-color: var(--danger);
   background: color-mix(in srgb, var(--danger) 16%, var(--surface));
   color: var(--danger);
@@ -16200,7 +16342,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .backlog-zone--prio-medium {
   color: var(--warning);
 }
-.backlog-zone--prio-medium.drag-over {
+.backlog-zone--prio-medium.drag-over, .backlog-zone--prio-medium.is-filtered {
   border-color: var(--warning);
   background: color-mix(in srgb, var(--warning) 16%, var(--surface));
   color: var(--warning);
@@ -16209,7 +16351,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .backlog-zone--prio-low {
   color: var(--primary);
 }
-.backlog-zone--prio-low.drag-over {
+.backlog-zone--prio-low.drag-over, .backlog-zone--prio-low.is-filtered {
   border-color: var(--primary);
   background: color-mix(in srgb, var(--primary) 16%, var(--surface));
   color: var(--primary);
@@ -16217,6 +16359,30 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .backlog-zone--clear {
   color: var(--text-muted);
+}
+
+.backlog-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1.5px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.backlog-filter-chip:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.backlog-filter-chip-x {
+  opacity: 0.7;
+  font-size: 10px;
 }
 
 .inbox-item.cancelled {
@@ -16255,12 +16421,15 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
     max-height: none;
     overflow: visible;
   }
-  .backlog-rail-zones {
+  .backlog-rail-axes {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  .backlog-rail-mods {
     flex-direction: row;
     flex-wrap: wrap;
   }
-  .backlog-zone {
-    flex: 1 1 130px;
+  .rail-mod {
+    flex: 1 1 260px;
   }
 }
 .review-bulk {

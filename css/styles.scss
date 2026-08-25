@@ -15346,18 +15346,18 @@ body.view-focus header { display: none; }
 }
 
 // ── BACKLOG : rail de classement (renderBacklogRail, backlogInboxView.js) ──
-// Mêmes zones que le Bilan (.overdue-drop-zone ci-dessus, donc mêmes états
-// drag-over), mais empilées dans un rail collant à droite de la liste : le
-// Backlog se lit sur toute la hauteur de la page, un bandeau horizontal
-// aurait défilé hors de vue au premier scroll.
+// Modules épinglables empilés dans un rail collant à droite de la liste : le
+// Backlog se lit sur toute la hauteur de la page, un bandeau horizontal aurait
+// défilé hors de vue au premier scroll. Les zones réutilisent .overdue-drop-zone
+// (mêmes états drag-over que le Bilan) via la variante compacte .backlog-zone.
 //
-// La liste elle-même garde sa largeur d'origine : c'est la VUE qui s'élargit
-// de la largeur du rail, pour ne pas rétrécir les cartes.
-.inbox-view--rail { max-width: 888px; }
+// La liste garde sa largeur d'origine : c'est la VUE qui s'élargit de la
+// largeur du rail, pour ne pas rétrécir les cartes.
+.inbox-view--rail { max-width: 918px; }
 
 .backlog-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 190px;
+  grid-template-columns: minmax(0, 1fr) 220px;
   gap: 18px;
   align-items: start;
 }
@@ -15388,6 +15388,7 @@ body.view-focus header { display: none; }
   overflow-y: auto;
 }
 
+// Pastilles de pin : une par module du catalogue, allumée = épinglé au rail
 .backlog-rail-axes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -15412,19 +15413,100 @@ body.view-focus header { display: none; }
   &.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
 }
 
-.backlog-rail-title {
-  padding: 2px 2px 0;
+.backlog-rail-mods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// ── Un module épinglé ──
+.rail-mod {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  overflow: hidden;
+
+  &--dragging { opacity: .45; }
+}
+
+.rail-mod-hd {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 7px;
+  cursor: grab;
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .05em;
+  letter-spacing: .04em;
+  transition: color .15s, background .15s;
+
+  &:hover { color: var(--text); background: var(--surface); }
+  &:active { cursor: grabbing; }
 }
 
-.backlog-rail-zones {
+.rail-mod-grip {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  opacity: .45;
+  svg { display: block; }
+}
+
+.rail-mod-icon {
+  display: flex;
+  svg { display: block; width: 12px; height: 12px; }
+}
+
+.rail-mod-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-mod-chevron {
+  display: flex;
+  opacity: .6;
+  transition: transform .2s cubic-bezier(.25,.46,.45,.94);
+  .rail-mod.folded & { transform: rotate(-90deg); }
+  svg { display: block; }
+}
+
+.rail-mod-unpin {
+  display: flex;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .15s, color .15s, background .15s;
+
+  svg { display: block; }
+  &:hover { opacity: 1; color: var(--danger); background: var(--surface); }
+}
+
+// Repli : grid-template-rows 1fr↔0fr (jamais max-height — s'adapte à
+// n'importe quelle hauteur de contenu). Le padding vit sur .rail-zones, PAS
+// sur -inner : c'est -inner que la grille écrase à 0, et overflow:hidden ne
+// masque que le débordement d'un enfant, jamais le padding de sa propre boîte.
+.rail-mod-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows .22s cubic-bezier(.25,.46,.45,.94);
+  .rail-mod.folded & { grid-template-rows: 0fr; }
+}
+
+.rail-mod-body-inner { overflow: hidden; }
+
+// Grille 2 colonnes : sans elle, 4 modules épinglés dépassent l'écran
+.rail-zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 7px;
 }
 
 .backlog-rail-hint,
@@ -15436,18 +15518,22 @@ body.view-focus header { display: none; }
   opacity: .85;
 }
 
-// Variante compacte des zones du Bilan : rangée icône+libellé, hauteur
-// libre. Le `flex: 1 1 100px` de .overdue-drop-zone est calibré pour une
-// rangée horizontale — dans un conteneur en colonne, ces 100px deviendraient
-// une hauteur de base, d'où le flex: 0 0 auto.
+.backlog-rail-empty { padding: 7px; }
+
+// Variante compacte des zones du Bilan : rangée icône+libellé+compteur,
+// hauteur libre. Le `flex: 1 1 100px` de .overdue-drop-zone est calibré pour
+// une rangée horizontale — dans une grille, ces 100px deviendraient une base
+// de hauteur, d'où le flex: 0 0 auto.
 .backlog-zone {
   flex: 0 0 auto;
   flex-direction: row;
   justify-content: flex-start;
-  gap: 8px;
-  padding: 9px 10px;
-  font-size: 12px;
+  gap: 6px;
+  padding: 7px 8px;
+  font-size: 11px;
   text-align: left;
+
+  &--wide { grid-column: 1 / -1; }
 
   // Zone Aujourd'hui : redevient une colonne pour empiler ses 4 sous-cibles
   // de moment (révélées pendant tout drag par body.is-dragging-task)
@@ -15459,8 +15545,26 @@ body.view-focus header { display: none; }
   .today-zone-default {
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
+
+  .overdue-drop-zone-icon svg { width: 13px; height: 13px; }
+
+  // Clic = filtrer la liste sur cette valeur
+  &.is-clickable { cursor: pointer; }
+  &.is-clickable:hover { border-color: var(--primary); color: var(--primary); }
+
+  // Filtre actif : plein, pour se distinguer d'un simple survol
+  &.is-filtered {
+    border-style: solid;
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  // Zone sans aucun item : l'information « c'est vide » vaut la peine d'être
+  // affichée (pile traitée, étiquette inutilisée), juste en retrait
+  &.is-empty:not(.is-filtered) { opacity: .45; }
 }
 
 .backlog-zone-label {
@@ -15471,13 +15575,32 @@ body.view-focus header { display: none; }
   white-space: nowrap;
 }
 
-// Zone d'étiquette : teintée de la couleur du tag (donnée utilisateur,
-// passée en --zone-color), jamais d'une couleur inventée hors thème.
+.backlog-zone-count {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 15px;
+}
+
+// Piles (constats calculés) : jamais de cible de drop, d'où le contour plein
+// plutôt que pointillé — on ne peut pas « poser » l'ancienneté d'une tâche
+.backlog-zone--pile {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: var(--surface);
+}
+
+// Zone d'étiquette / projet / intention : teintée de la couleur de l'entité
+// (donnée utilisateur, passée en --zone-color), jamais d'une couleur inventée
 .backlog-zone--tag {
   border-color: color-mix(in srgb, var(--zone-color) 45%, var(--border));
   color: var(--zone-color);
 
-  &.drag-over {
+  &.drag-over,
+  &.is-filtered {
     border-color: var(--zone-color);
     background: color-mix(in srgb, var(--zone-color) 16%, var(--surface));
     color: var(--zone-color);
@@ -15486,7 +15609,8 @@ body.view-focus header { display: none; }
 
 @mixin backlog-zone-tint($c) {
   color: $c;
-  &.drag-over {
+  &.drag-over,
+  &.is-filtered {
     border-color: $c;
     background: color-mix(in srgb, #{$c} 16%, var(--surface));
     color: $c;
@@ -15500,6 +15624,27 @@ body.view-focus header { display: none; }
 // Zones « retirer » (sans étiquette / aucune priorité / sans échéance) :
 // volontairement neutres, ce ne sont pas des destinations mais des remises à zéro
 .backlog-zone--clear { color: var(--text-muted); }
+
+// Chip de filtre actif dans l'en-tête de la vue — le rail peut être scrollé
+// hors de vue, il faut un moyen de lever le filtre toujours visible
+.backlog-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1.5px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+
+  &:hover { background: var(--primary); color: #fff; }
+}
+
+.backlog-filter-chip-x { opacity: .7; font-size: 10px; }
 
 // Items abandonnés du Backlog (accordéon « Abandonnées », renderBacklogView) :
 // même traitement que .todo-item.cancelled en vue jour — la case devient un ✕
@@ -15527,9 +15672,10 @@ body.view-focus header { display: none; }
   }
 }
 
-// Sous 900px le rail repasse au-dessus de la liste en rangée horizontale
-// (le glisser-déposer HTML5 n'existe de toute façon pas au doigt : c'est la
-// souris d'un petit écran / d'une fenêtre étroite qui est visée ici)
+// Sous 900px le rail repasse au-dessus de la liste (le glisser-déposer HTML5
+// n'existe de toute façon pas au doigt : c'est la souris d'un petit écran ou
+// d'une fenêtre étroite qui est visée ici — et le clic-pour-filtrer, lui,
+// marche partout)
 @media (max-width: 900px) {
   .inbox-view--rail { max-width: 680px; }
 
@@ -15542,12 +15688,14 @@ body.view-focus header { display: none; }
     overflow: visible;
   }
 
-  .backlog-rail-zones {
+  .backlog-rail-axes { grid-template-columns: repeat(8, 1fr); }
+
+  .backlog-rail-mods {
     flex-direction: row;
     flex-wrap: wrap;
   }
 
-  .backlog-zone { flex: 1 1 130px; }
+  .rail-mod { flex: 1 1 260px; }
 }
 
 .review-bulk {
