@@ -16063,42 +16063,100 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   letter-spacing: 0.03em;
 }
 
-.inbox-view--rail {
-  max-width: 918px;
+.inbox-view--backlog {
+  max-width: 1180px;
+  padding-top: 20px;
 }
 
-.backlog-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 18px;
-  align-items: start;
+.backlog-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
-.backlog-main {
+.backlog-title {
+  flex-shrink: 0;
+  margin: 0;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.backlog-subtitle {
+  flex: 0 1 auto;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
 }
 
-.backlog-layout--norail {
-  grid-template-columns: 1fr;
+.backlog-head-tools {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.inbox-sort-group--seg {
+  gap: 0;
+  margin-left: 0;
+  flex-wrap: nowrap;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.inbox-sort-group--seg .inbox-sort-btn {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 9px;
+  font-size: 10.5px;
+}
+.inbox-sort-group--seg .inbox-sort-btn + .inbox-sort-btn {
+  border-left: 1px solid var(--border);
+}
+.inbox-sort-group--seg .inbox-sort-btn:hover {
+  background: var(--surface2);
+}
+.inbox-sort-group--seg .inbox-sort-btn.active {
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 .backlog-rail {
-  position: sticky;
-  top: calc(var(--header-h) + 24px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 9px 11px 11px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
-  max-height: calc(100vh - var(--header-h) - 48px);
-  overflow-y: auto;
+}
+
+.backlog-rail-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.backlog-rail-lbl {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .backlog-rail-axes {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 
@@ -16106,7 +16164,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 0;
+  width: 30px;
+  padding: 5px 0;
   border: 1.5px solid var(--border);
   border-radius: 7px;
   background: var(--surface2);
@@ -16128,9 +16187,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .backlog-rail-mods {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 9px;
+  align-items: start;
 }
 
 .rail-mod {
@@ -16141,6 +16201,9 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 .rail-mod--dragging {
   opacity: 0.45;
+}
+.rail-mod--piles {
+  grid-column: span 2;
 }
 
 .rail-mod-hd {
@@ -16236,22 +16299,30 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .rail-zones {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
   gap: 5px;
-  padding: 7px;
+  padding: 0 7px 7px;
 }
 
 .backlog-rail-hint,
 .backlog-rail-empty {
-  margin: 2px 0 0;
+  margin: 0;
   color: var(--text-muted);
   font-size: 10.5px;
   line-height: 1.35;
-  opacity: 0.85;
+  opacity: 0.8;
+}
+
+.backlog-rail-hint {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .backlog-rail-empty {
-  padding: 7px;
+  padding: 0 7px 7px;
 }
 
 .backlog-zone {
@@ -16409,27 +16480,31 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 @media (max-width: 900px) {
-  .inbox-view--rail {
+  .inbox-view--backlog {
     max-width: 680px;
   }
-  .backlog-layout {
-    grid-template-columns: 1fr;
-  }
-  .backlog-rail {
-    position: static;
-    order: -1;
-    max-height: none;
-    overflow: visible;
-  }
-  .backlog-rail-axes {
-    grid-template-columns: repeat(8, 1fr);
-  }
-  .backlog-rail-mods {
-    flex-direction: row;
+  .backlog-head {
     flex-wrap: wrap;
   }
-  .rail-mod {
-    flex: 1 1 260px;
+  .backlog-subtitle {
+    display: none;
+  }
+  .backlog-head-tools {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+  .backlog-rail-bar {
+    flex-wrap: wrap;
+  }
+  .backlog-rail-hint {
+    margin-left: 0;
+    white-space: normal;
+  }
+  .backlog-rail-mods {
+    grid-template-columns: 1fr;
+  }
+  .rail-mod--piles {
+    grid-column: auto;
   }
 }
 .review-bulk {

@@ -1748,32 +1748,33 @@ export function renderBacklogView(todos) {
       </div>`;
   }
 
-  // .backlog-layout : liste à gauche (largeur inchangée), rail de classement
-  // collant à droite. Le rail est une vraie cible de drop native — ne jamais
-  // poser filter/backdrop-filter/transform sur un de ses ancêtres (cf.
-  // renderBacklogRail, backlogInboxView.js).
+  // En-tête sur UNE seule ligne (titre + sous-titre + tous les contrôles) puis
+  // le rail de classement en bandeau pleine largeur AU-DESSUS de la liste :
+  // en colonne de droite, 220px ne laissaient pas la place d'afficher les
+  // zones de plusieurs modules épinglés. Le rail est une vraie cible de drop
+  // native — ne jamais poser filter/backdrop-filter/transform sur un de ses
+  // ancêtres (cf. renderBacklogRail, backlogInboxView.js).
+  const countTxt = filterFn
+    ? `${sorted.length} sur ${backlogItems.length}`
+    : `${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}`;
   return `
-    <div class="inbox-view inbox-view--rail">
-      <div class="inbox-view-header">
-        <div class="inbox-view-title-block">
-          <h1 class="inbox-view-title">Backlog</h1>
-          <p class="inbox-view-desc">Tâches mises de côté <br>— à reprendre quand le moment est venu.</p>
-        </div>
-        <div class="inbox-view-controls">
-          <span class="inbox-count-label">${filterFn ? `${sorted.length} sur ${backlogItems.length}` : `${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}`}</span>
+    <div class="inbox-view inbox-view--backlog">
+      <div class="backlog-head">
+        <h1 class="backlog-title">Backlog</h1>
+        <span class="backlog-subtitle">Tâches mises de côté — à reprendre quand le moment est venu.</span>
+        <div class="backlog-head-tools">
+          <span class="inbox-count-label">${countTxt}</span>
           ${filterFn ? `<button class="backlog-filter-chip" onclick="window.app.railFilter(null)" title="Retirer le filtre du rail">${esc(railFilterLabel(railFilter, railCtx))}<span class="backlog-filter-chip-x">✕</span></button>` : ''}
-          <div class="inbox-sort-group">${sortBtns}</div>
-          <div class="inbox-sort-group">${colBtns}</div>
+          <div class="inbox-sort-group inbox-sort-group--seg" title="Tri">${sortBtns}</div>
+          <div class="inbox-sort-group inbox-sort-group--seg" title="Colonnes">${colBtns}</div>
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForBacklog()">＋ Ajouter</button>
         </div>
       </div>
-      <div class="backlog-layout${backlogItems.length ? '' : ' backlog-layout--norail'}">
-        <div class="backlog-main">
-          ${empty}
-          ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
-          ${cancelledAccordion}
-        </div>
-        ${backlogItems.length ? renderBacklogRail(prefs, railCtx) : ''}
+      ${backlogItems.length ? renderBacklogRail(prefs, railCtx) : ''}
+      <div class="backlog-main">
+        ${empty}
+        ${sorted.length > 0 ? `<div class="inbox-list" id="backlogList" style="${colsStyle}">${items}</div>` : ''}
+        ${cancelledAccordion}
       </div>
     </div>`;
 }

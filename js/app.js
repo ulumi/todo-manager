@@ -6497,7 +6497,13 @@ class TodoApp {
       const over = e.target.closest('.rail-mod');
       if (!over || over === dragEl) return;
       const r = over.getBoundingClientRect();
-      wrap.insertBefore(dragEl, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
+      // Le rail est un bandeau : les modules sont côte à côte (comparer X),
+      // sauf en écran étroit où ils s'empilent en pleine largeur (comparer Y).
+      // La largeur du module survolé suffit à distinguer les deux cas — pas
+      // besoin d'un état ni d'un media query dupliqué en JS.
+      const horiz = r.width < wrap.clientWidth * 0.85;
+      const after = horiz ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
+      wrap.insertBefore(dragEl, after ? over.nextSibling : over);
     });
 
     wrap.addEventListener('drop', e => { if (dragEl) { e.preventDefault(); e.stopPropagation(); } });

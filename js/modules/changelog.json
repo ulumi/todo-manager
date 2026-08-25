@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2875",
+    "date": "2026-08-25",
+    "message": "refonte(backlog): rail de classement en bandeau pleine largeur au-dessus de la liste, en-tête et contrôles resserrés sur une ligne"
+  },
+  {
     "version": "0.4.2874",
     "date": "2026-08-25",
     "message": "feat(backlog): rail en modules épinglables et réordonnables + piles (quick wins, qui traînent…) et clic pour filtrer"
@@ -193,10 +198,5 @@
     "version": "0.4.2670",
     "date": "2026-08-18",
     "message": "feat(vue jour): bouton d'ajout rond et jaune, repris sur le header Quotidien pour créer une tâche récurrente quotidienne en un clic"
-  },
-  {
-    "version": "0.4.2667",
-    "date": "2026-08-18",
-    "message": "style(vue jour): compteur de sous-tâches dans un badge rond coloré, icône timer retirée du badge de durée estimée"
   }
 ]

@@ -411,7 +411,7 @@ export function renderBacklogRail(prefs, ctx) {
     const body = empty
       ? `<p class="backlog-rail-empty">${esc(empty)}</p>`
       : `<div class="rail-zones">${zones.map(z => z.today ? _todayZoneHTML() : _zoneHTML(key, z, items, filter)).join('')}</div>`;
-    return `<div class="rail-mod${folded ? ' folded' : ''}" data-mod="${key}">
+    return `<div class="rail-mod rail-mod--${key}${folded ? ' folded' : ''}" data-mod="${key}">
         <div class="rail-mod-hd" draggable="true" onclick="if(!event.target.closest('.rail-mod-unpin'))window.app.toggleRailFold('${key}')" title="Glisser pour réordonner · clic pour replier">
           <span class="rail-mod-grip">${_RI.grip}</span>
           <span class="rail-mod-icon">${m.icon}</span>
@@ -423,13 +423,20 @@ export function renderBacklogRail(prefs, ctx) {
       </div>`;
   }).join('');
 
+  // Bandeau pleine largeur AU-DESSUS de la liste (et non plus une colonne de
+  // 220px à droite, trop étroite dès que deux modules sont épinglés) : les
+  // pastilles de pin et l'aide tiennent sur une ligne, les modules s'étalent
+  // en grille en dessous.
   const hint = pins.length
-    ? `<p class="backlog-rail-hint">Glissez une tâche sur une zone pour la classer. Alt/⌘ pour classer une copie. Clic sur une zone = filtrer.</p>`
-    : `<p class="backlog-rail-hint">Aucun module épinglé — activez-en un ci-dessus.</p>`;
+    ? `<p class="backlog-rail-hint">Glisser = classer · clic = filtrer · Alt/⌘ = classer une copie</p>`
+    : `<p class="backlog-rail-hint">Aucun module épinglé — activez-en un à gauche.</p>`;
 
   return `<aside class="backlog-rail" id="backlogRail">
-    <div class="backlog-rail-axes">${pinBtns}</div>
-    <div class="backlog-rail-mods" id="backlogRailMods">${mods}</div>
-    ${hint}
+    <div class="backlog-rail-bar">
+      <span class="backlog-rail-lbl">Classer</span>
+      <div class="backlog-rail-axes">${pinBtns}</div>
+      ${hint}
+    </div>
+    ${pins.length ? `<div class="backlog-rail-mods" id="backlogRailMods">${mods}</div>` : ''}
   </aside>`;
 }
