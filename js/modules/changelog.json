@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2877",
+    "date": "2026-08-26",
+    "message": "fix(backlog): une pastille de classement seule sur sa ligne ne s'étire plus sur toute la largeur"
+  },
+  {
     "version": "0.4.2876",
     "date": "2026-08-26",
     "message": "refonte(backlog): un module de classement = une rangée pleine largeur — pastilles dimensionnées au libellé, plus aucune troncature ni décalage au drag"
@@ -193,10 +198,5 @@
     "version": "0.4.2672",
     "date": "2026-08-18",
     "message": "fix(vue jour): le + Quotidien bascule vraiment le modal en mode Récurrent (bouton Date restait actif, récurrence pas visible)"
-  },
-  {
-    "version": "0.4.2671",
-    "date": "2026-08-18",
-    "message": "fix(vue jour): le bouton d'ajout rond reprend la couleur d'accent du compte (var(--primary)) au lieu d'un jaune fixe"
   }
 ]

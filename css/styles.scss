@@ -15615,6 +15615,12 @@ body.view-focus header { display: none; }
 // de hauteur, d'où le flex: 0 0 auto.
 .backlog-zone {
   flex: 1 1 auto;
+  // Plafond à un tiers de la rangée : sans lui, une pastille seule qui passe
+  // à la ligne (les 7 « piles » ne tiennent pas sur une rangée) s'étirait sur
+  // toute la largeur, très déséquilibré à côté de la rangée pleine du dessus.
+  // Vérifié au navigateur : les rangées complètes remplissent toujours 96-98%.
+  max-width: 34%;
+  overflow: hidden; // dernier recours si un libellé dépasse ce plafond
   flex-direction: row;
   justify-content: flex-start;
   gap: 6px;
@@ -15641,9 +15647,15 @@ body.view-focus header { display: none; }
   &.is-empty:not(.is-filtered) { opacity: .45; }
 }
 
-// Jamais d'ellipse : c'est la pastille qui s'adapte au libellé, pas l'inverse
+// La pastille s'adapte au libellé, jamais l'inverse : l'ellipse n'apparaît
+// qu'en dernier recours, quand un libellé à lui seul dépasse le plafond de
+// 34% ci-dessus (nom d'étiquette à rallonge). Le flex-wrap fait passer les
+// pastilles à la ligne bien avant d'en arriver là.
 .backlog-zone-label {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

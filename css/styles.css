@@ -16329,6 +16329,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .backlog-zone {
   flex: 1 1 auto;
+  max-width: 34%;
+  overflow: hidden;
   flex-direction: row;
   justify-content: flex-start;
   gap: 6px;
@@ -16358,7 +16360,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .backlog-zone-label {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
