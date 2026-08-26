@@ -16187,13 +16187,14 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .backlog-rail-mods {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
-  gap: 9px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .rail-mod {
+  display: flex;
+  align-items: stretch;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface2);
@@ -16202,18 +16203,19 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .rail-mod--dragging {
   opacity: 0.45;
 }
-.rail-mod--piles {
-  grid-column: span 2;
-}
 
 .rail-mod-hd {
+  flex: 0 0 106px;
+  align-self: stretch;
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 7px;
+  padding: 4px 8px;
+  border-right: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.1);
   cursor: grab;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -16254,6 +16256,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .rail-mod-chevron {
   display: flex;
+  align-self: center;
   opacity: 0.6;
   transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
@@ -16285,12 +16288,11 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .rail-mod-body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  flex: 1;
+  min-width: 0;
 }
 .rail-mod.folded .rail-mod-body {
-  grid-template-rows: 0fr;
+  display: none;
 }
 
 .rail-mod-body-inner {
@@ -16298,10 +16300,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .rail-zones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
-  gap: 5px;
-  padding: 0 7px 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 5px;
 }
 
 .backlog-rail-hint,
@@ -16326,29 +16328,17 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .backlog-zone {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   flex-direction: row;
   justify-content: flex-start;
   gap: 6px;
-  padding: 7px 8px;
-  font-size: 11px;
+  padding: 4px 9px;
+  font-size: 10.5px;
   text-align: left;
 }
-.backlog-zone--wide {
-  grid-column: 1/-1;
-}
-.backlog-zone.overdue-drop-zone--today {
-  flex-direction: column;
-  align-items: stretch;
-}
-.backlog-zone .today-zone-default {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-}
 .backlog-zone .overdue-drop-zone-icon svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 .backlog-zone.is-clickable {
   cursor: pointer;
@@ -16368,21 +16358,19 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .backlog-zone-label {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
 .backlog-zone-count {
   flex-shrink: 0;
-  padding: 0 5px;
+  margin-left: auto;
+  padding: 0 4px;
   border-radius: 999px;
   background: color-mix(in srgb, currentColor 14%, transparent);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  line-height: 15px;
+  line-height: 13px;
 }
 
 .backlog-zone--pile {
@@ -16500,11 +16488,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
     margin-left: 0;
     white-space: normal;
   }
-  .backlog-rail-mods {
-    grid-template-columns: 1fr;
-  }
-  .rail-mod--piles {
-    grid-column: auto;
+  .rail-mod-hd {
+    flex-basis: 88px;
   }
 }
 .review-bulk {

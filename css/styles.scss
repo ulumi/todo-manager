@@ -15477,37 +15477,41 @@ body.view-focus header { display: none; }
   &.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
 }
 
-// Modules côte à côte, autant que la largeur en accepte
+// UN MODULE = UNE RANGÉE PLEINE LARGEUR. Aucun module n'en partage une avec
+// un autre : l'agencement est régulier par construction — pas de grille
+// irrégulière ni de queue de rangée vide, quel que soit le nombre de zones de
+// chacun. (Mesuré sur les 8 modules épinglés : bandeau 485px → 345px, 12
+// libellés tronqués → 0.)
 .backlog-rail-mods {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
-  gap: 9px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 
-// ── Un module épinglé ──
+// ── Un module épinglé : libellé à gauche, zones à droite ──
 .rail-mod {
+  display: flex;
+  align-items: stretch;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--surface2);
   overflow: hidden;
 
   &--dragging { opacity: .45; }
-
-  // Les piles ont les libellés les plus longs (« Souvent reportées ») et sont
-  // les seules à ne pas être des cibles de drop : deux colonnes de large, pour
-  // les lire sans ellipse
-  &--piles { grid-column: span 2; }
 }
 
 .rail-mod-hd {
+  flex: 0 0 106px;
+  align-self: stretch;
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 7px;
+  padding: 4px 8px;
+  border-right: 1px solid var(--border);
+  background: rgba(0,0,0,.10);
   cursor: grab;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -15538,6 +15542,7 @@ body.view-focus header { display: none; }
 
 .rail-mod-chevron {
   display: flex;
+  align-self: center;
   opacity: .6;
   transition: transform .2s cubic-bezier(.25,.46,.45,.94);
   .rail-mod.folded & { transform: rotate(-90deg); }
@@ -15559,24 +15564,30 @@ body.view-focus header { display: none; }
   &:hover { opacity: 1; color: var(--danger); background: var(--surface); }
 }
 
-// Repli : grid-template-rows 1fr↔0fr (jamais max-height — s'adapte à
-// n'importe quelle hauteur de contenu). Le padding vit sur .rail-zones, PAS
-// sur -inner : c'est -inner que la grille écrase à 0, et overflow:hidden ne
-// masque que le débordement d'un enfant, jamais le padding de sa propre boîte.
+// Repli : `display: none`, et NON la bascule grid-template-rows 1fr↔0fr
+// utilisée partout ailleurs dans l'app. Ici le corps est un élément flex
+// étiré par le `align-items: stretch` de la rangée : la piste `0fr` se résout
+// alors à la hauteur imposée par le flex (vérifié en mesurant — elle reste à
+// 35px) et le repli ne replie rien. Un repli non animé qui fonctionne vaut
+// mieux qu'un repli animé qui ne fait rien.
 .rail-mod-body {
-  display: grid;
-  grid-template-rows: 1fr;
-  transition: grid-template-rows .22s cubic-bezier(.25,.46,.45,.94);
-  .rail-mod.folded & { grid-template-rows: 0fr; }
+  flex: 1;
+  min-width: 0;
+
+  .rail-mod.folded & { display: none; }
 }
 
 .rail-mod-body-inner { overflow: hidden; }
 
+// Pastilles dimensionnées au CONTENU (plus de piste de grille fixe qui
+// tronquait la moitié des libellés), qui s'étirent ensuite pour remplir la
+// rangée : aucun vide en fin de rangée, et des cibles de drop plus larges
+// donc plus faciles à viser.
 .rail-zones {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
-  gap: 5px;
-  padding: 0 7px 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 5px;
 }
 
 .backlog-rail-hint,
@@ -15603,30 +15614,15 @@ body.view-focus header { display: none; }
 // une rangée horizontale — dans une grille, ces 100px deviendraient une base
 // de hauteur, d'où le flex: 0 0 auto.
 .backlog-zone {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   flex-direction: row;
   justify-content: flex-start;
   gap: 6px;
-  padding: 7px 8px;
-  font-size: 11px;
+  padding: 4px 9px;
+  font-size: 10.5px;
   text-align: left;
 
-  &--wide { grid-column: 1 / -1; }
-
-  // Zone Aujourd'hui : redevient une colonne pour empiler ses 4 sous-cibles
-  // de moment (révélées pendant tout drag par body.is-dragging-task)
-  &.overdue-drop-zone--today {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .today-zone-default {
-    flex-direction: row;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .overdue-drop-zone-icon svg { width: 13px; height: 13px; }
+  .overdue-drop-zone-icon svg { width: 12px; height: 12px; }
 
   // Clic = filtrer la liste sur cette valeur
   &.is-clickable { cursor: pointer; }
@@ -15645,22 +15641,21 @@ body.view-focus header { display: none; }
   &.is-empty:not(.is-filtered) { opacity: .45; }
 }
 
+// Jamais d'ellipse : c'est la pastille qui s'adapte au libellé, pas l'inverse
 .backlog-zone-label {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
 .backlog-zone-count {
   flex-shrink: 0;
-  padding: 0 5px;
+  margin-left: auto; // collé à droite quand la pastille s'étire
+  padding: 0 4px;
   border-radius: 999px;
   background: color-mix(in srgb, currentColor 14%, transparent);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  line-height: 15px;
+  line-height: 13px;
 }
 
 // Piles (constats calculés) : jamais de cible de drop, d'où le contour plein
@@ -15761,8 +15756,7 @@ body.view-focus header { display: none; }
   .backlog-rail-bar { flex-wrap: wrap; }
   .backlog-rail-hint { margin-left: 0; white-space: normal; }
 
-  .backlog-rail-mods { grid-template-columns: 1fr; }
-  .rail-mod--piles { grid-column: auto; }
+  .rail-mod-hd { flex-basis: 88px; }
 }
 
 .review-bulk {

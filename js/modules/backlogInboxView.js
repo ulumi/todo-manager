@@ -323,16 +323,30 @@ function _moduleZones(modKey, ctx) {
 
   if (modKey === 'piles') {
     // Aucun `drop` : on ne pose pas un constat sur une tâche (cf. en-tête)
-    return { zones: RAIL_PILES.map(p => ({ ...p, wide: true, cls: 'backlog-zone--pile' })) };
+    return { zones: RAIL_PILES.map(p => ({ ...p, cls: 'backlog-zone--pile' })) };
   }
 
-  // 'plan' — des ACTIONS, pas des états : ni compteur ni filtre possible
+  // 'plan' — des ACTIONS, pas des états : ni compteur ni filtre possible.
+  //
+  // Les 4 cibles « aujourd'hui » sont TOUJOURS visibles, contrairement au
+  // Bilan où une seule zone bascule sur ses moments pendant le drag. Dans une
+  // rangée horizontale, cette bascule change la LARGEUR du module, ce qui fait
+  // re-wrapper ses pastilles et décale la mise en page sous le curseur au
+  // moment précis où l'on commence à glisser (mesuré : +41 px). Quatre
+  // pastilles fixes coûtent un peu de largeur au repos et ne bougent jamais.
+  const auj = (label, period, hint) => ({
+    key: 'today-' + (period || 'none'), label, icon: _RI.today, hint: "Aujourd'hui — " + hint,
+    drop: period ? `window.app.overdueDropTodayPeriod(event,'${period}')` : `window.app.overdueDropToday(event)`,
+  });
   return { zones: [
-    { key: 'today', label: "Aujourd'hui", icon: _RI.today, wide: true, today: true },
-    { key: 'tomorrow', label: 'Demain', icon: _RI.send, drop: `window.app.overdueDropTomorrow(event)` },
-    { key: 'inbox', label: 'Inbox', icon: _RI.inbox, drop: `window.app.backlogDropInbox(event)` },
-    { key: 'done', label: 'Fait', icon: _RI.done, cls: 'overdue-drop-zone--done', drop: `window.app.overdueDropDone(event)` },
-    { key: 'cancel', label: 'Abandonner', icon: _RI.none, cls: 'overdue-drop-zone--cancel', drop: `window.app.overdueDropCancel(event)` },
+    auj("Aujourd'hui", '', 'sans moment'),
+    auj('Matin', 'morning', 'matin'),
+    auj('Après-midi', 'afternoon', 'après-midi'),
+    auj('Soir', 'evening', 'soir'),
+    { key: 'tomorrow', label: 'Demain', icon: _RI.send, drop: `window.app.overdueDropTomorrow(event)`, hint: 'Planifier demain' },
+    { key: 'inbox', label: 'Inbox', icon: _RI.inbox, drop: `window.app.backlogDropInbox(event)`, hint: "Sortir du backlog vers l'Inbox (sans date)" },
+    { key: 'done', label: 'Fait', icon: _RI.done, cls: 'overdue-drop-zone--done', drop: `window.app.overdueDropDone(event)`, hint: 'Marquer comme faite' },
+    { key: 'cancel', label: 'Abandonner', icon: _RI.none, cls: 'overdue-drop-zone--cancel', drop: `window.app.overdueDropCancel(event)`, hint: 'Abandonner — retrouvable dans « Abandonnées » sous la liste' },
   ] };
 }
 
@@ -369,26 +383,6 @@ function _zoneHTML(modKey, z, items, filter) {
     </div>`;
 }
 
-// Zone Aujourd'hui : bascule libellé ↔ Matin/Après-midi/Soir pendant TOUT drag
-// dans l'app (body.is-dragging-task, posé par app.planDragStart) — mêmes
-// classes et mêmes handlers que le Bilan, pour ne pas dupliquer le CSS.
-function _todayZoneHTML() {
-  const sub = (label, call, extra = '') =>
-    `<div class="today-period-btn${extra}" ${_DZ_COMMON} ondrop="event.stopPropagation();this.closest('.overdue-drop-zone--today').classList.remove('drag-over');${call}" title="Aujourd'hui — ${esc(label.toLowerCase())}">${label}</div>`;
-  return `<div class="overdue-drop-zone backlog-zone backlog-zone--wide overdue-drop-zone--today" ${_DZ_COMMON}
-      ondrop="window.app.overdueDropToday(event)" title="Planifier aujourd'hui">
-      <div class="today-zone-default">
-        <span class="overdue-drop-zone-icon">${_RI.today}</span><span class="backlog-zone-label">Aujourd'hui</span>
-      </div>
-      <div class="today-zone-periods">
-        ${sub('Sans moment', 'window.app.overdueDropToday(event)', ' today-period-btn--none')}
-        ${sub('Matin', "window.app.overdueDropTodayPeriod(event,'morning')")}
-        ${sub('Après-midi', "window.app.overdueDropTodayPeriod(event,'afternoon')")}
-        ${sub('Soir', "window.app.overdueDropTodayPeriod(event,'evening')")}
-      </div>
-    </div>`;
-}
-
 export function renderBacklogRail(prefs, ctx) {
   const pins   = getRailPins(prefs);
   const folds  = getRailFolds(prefs);
@@ -410,7 +404,7 @@ export function renderBacklogRail(prefs, ctx) {
     const { zones, empty } = _moduleZones(key, ctx);
     const body = empty
       ? `<p class="backlog-rail-empty">${esc(empty)}</p>`
-      : `<div class="rail-zones">${zones.map(z => z.today ? _todayZoneHTML() : _zoneHTML(key, z, items, filter)).join('')}</div>`;
+      : `<div class="rail-zones">${zones.map(z => _zoneHTML(key, z, items, filter)).join('')}</div>`;
     return `<div class="rail-mod rail-mod--${key}${folded ? ' folded' : ''}" data-mod="${key}">
         <div class="rail-mod-hd" draggable="true" onclick="if(!event.target.closest('.rail-mod-unpin'))window.app.toggleRailFold('${key}')" title="Glisser pour réordonner · clic pour replier">
           <span class="rail-mod-grip">${_RI.grip}</span>
