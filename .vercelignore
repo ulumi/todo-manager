@@ -37,3 +37,9 @@ month-view-verification.png
 reviews/
 supabase/
 browser-extension/
+
+# Playwright MCP output (page snapshots, console logs, screenshots). Gitignored,
+# which — see the header above — does NOT stop `vercel --prod` from uploading it.
+# These snapshots contain rendered page content, including whatever account was
+# open during the test.
+.playwright-mcp/

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2878",
+    "date": "2026-08-26",
+    "message": "chore: exclut la sortie Playwright du déploiement (.vercelignore)"
+  },
+  {
     "version": "0.4.2877",
     "date": "2026-08-26",
     "message": "fix(backlog): une pastille de classement seule sur sa ligne ne s'étire plus sur toute la largeur"
@@ -193,10 +198,5 @@
     "version": "0.4.2674",
     "date": "2026-08-18",
     "message": "feat(vue jour): glisser-déposer une tâche quotidienne sur Matin/Après-midi/Soir pour changer son moment (sections toujours visibles, comme côté ponctuel)"
-  },
-  {
-    "version": "0.4.2672",
-    "date": "2026-08-18",
-    "message": "fix(vue jour): le + Quotidien bascule vraiment le modal en mode Récurrent (bouton Date restait actif, récurrence pas visible)"
   }
 ]
