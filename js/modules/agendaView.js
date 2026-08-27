@@ -194,12 +194,45 @@ export function blockMinutes(t) {
 
 function recKey(t) { return (!t.recurrence || t.recurrence === 'none') ? 'none' : t.recurrence; }
 
+// Géométrie d'un bloc : ce qu'il occupe VRAIMENT à l'écran. Extraite ici pour
+// que le calcul des chevauchements et le rendu partent du même nombre — les
+// faire diverger, c'est exactement ce qui a laissé un bloc étiré recouvrir son
+// voisin (le voisin était placé comme si l'étirement n'existait pas).
+export function blockGeometry(b, px) {
+  const subsAll = b.t.subtasks || [];
+  const shownSubs = subsAll.slice(0, SUB_MAX_ROWS);
+  const hiddenSubs = subsAll.length - shownSubs.length;
+  const timeH = Math.max(MIN_BLOCK_PX, ((b.end - b.start) / 60) * px);
+  const needH = subsAll.length
+    ? SUB_HEAD_PX + (shownSubs.length + (hiddenSubs ? 1 : 0)) * SUB_ROW_PX
+    : 0;
+  const h = Math.max(timeH, needH);
+  // `layoutH` sert au calcul des chevauchements et diffère de `h` sur un point
+  // décisif : il ignore le plancher de lisibilité MIN_BLOCK_PX. Deux causes
+  // d'agrandissement, deux traitements —
+  //  • le PLANCHER (quelques pixels sur une tâche très courte) ne doit PAS
+  //    provoquer de mise en colonnes : c'est lui qui renverrait la routine du
+  //    matin en demi-largeur, exactement ce que Hugues avait fait corriger ;
+  //    un léger recouvrement est ici assumé (il l'a explicitement accepté) ;
+  //  • l'ÉTIREMENT pour montrer les sous-tâches, lui, peut valoir 65px et
+  //    masquer complètement le bloc suivant : il doit compter.
+  const layoutH = Math.max(((b.end - b.start) / 60) * px, needH);
+  return { subsAll, shownSubs, hiddenSubs, timeH, h, layoutH, overflows: h > timeH + 0.5 };
+}
+
 // ── Chevauchements : colonnes façon iCal ────────────────
 // Les blocs qui se recouvrent forment un « cluster » et se partagent la
 // largeur de la bande en colonnes égales. Un cluster se ferme dès qu'un bloc
 // démarre après la fin la plus tardive rencontrée jusque-là.
+// `layoutEnd` (posé par bandHTML depuis blockGeometry) : l'étendue réellement
+// occupée à l'écran, pas la seule durée. Un bloc étiré pour montrer ses
+// sous-tâches partage donc la largeur avec celui qu'il recouvrirait — mieux
+// vaut deux blocs lisibles côte à côte qu'un bloc pleine largeur dont le
+// contenu disparaît sous son voisin. Les blocs qui ne s'étirent pas sont
+// inchangés : `layoutEnd === end`, donc toujours pleine largeur à gauche.
 function assignColumns(blocks) {
-  const sorted = [...blocks].sort((a, b) => a.start - b.start || b.end - a.end);
+  const endOf = b => b.layoutEnd ?? b.end;
+  const sorted = [...blocks].sort((a, b) => a.start - b.start || endOf(b) - endOf(a));
   let cluster = [], clusterEnd = -1;
   const flush = () => {
     if (!cluster.length) return;
@@ -207,7 +240,7 @@ function assignColumns(blocks) {
     cluster.forEach(b => {
       let c = colEnds.findIndex(end => end <= b.start);
       if (c < 0) { c = colEnds.length; colEnds.push(0); }
-      colEnds[c] = b.end;
+      colEnds[c] = endOf(b);
       b.col = c;
     });
     cluster.forEach(b => { b.cols = colEnds.length; });
@@ -217,7 +250,7 @@ function assignColumns(blocks) {
   sorted.forEach(b => {
     if (cluster.length && b.start >= clusterEnd) flush();
     cluster.push(b);
-    clusterEnd = Math.max(clusterEnd, b.end);
+    clusterEnd = Math.max(clusterEnd, endOf(b));
   });
   flush();
   return sorted;
@@ -292,15 +325,7 @@ function blockHTML(b, ds, px, range) {
   // comme du débordement de contenu, pas comme de la durée. Les
   // chevauchements restent calculés sur les heures VRAIES (assignColumns),
   // donc un bloc étiré ne pousse jamais ses voisins en demi-largeur.
-  const subsAll = t.subtasks || [];
-  const shownSubs = subsAll.slice(0, SUB_MAX_ROWS);
-  const hiddenSubs = subsAll.length - shownSubs.length;
-  const timeH = Math.max(MIN_BLOCK_PX, ((b.end - b.start) / 60) * px);
-  const needH = subsAll.length
-    ? SUB_HEAD_PX + (shownSubs.length + (hiddenSubs ? 1 : 0)) * SUB_ROW_PX
-    : 0;
-  const h = Math.max(timeH, needH);
-  const overflows = h > timeH + 0.5;
+  const { subsAll, shownSubs, hiddenSubs, timeH, h, overflows } = blockGeometry(b, px);
   const cols = b.cols || 1;
   const col  = b.col || 0;
   const isRec = t.recurrence && t.recurrence !== 'none';
@@ -427,6 +452,11 @@ function flexStripHTML(items, period, navDate, ds, opts = {}) {
 // ── Bande de moment complète ────────────────────────────
 function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
   const px = prefs.zoom;
+  // L'étendue rendue, convertie en minutes, AVANT le regroupement : c'est elle
+  // qui décide des colonnes (cf. assignColumns).
+  bucket.timed.forEach(b => {
+    b.layoutEnd = b.start + (blockGeometry(b, px).layoutH / px) * 60;
+  });
   const laid = assignColumns(bucket.timed);
   const range = displayRange(band, laid, prefs);
   const hours = [];
