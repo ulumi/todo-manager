@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2941",
+    "date": "2026-08-27",
+    "message": "fix(agenda): la poignée de redimensionnement ne vole plus le clic de la dernière sous-tâche"
+  },
+  {
     "version": "0.4.2938",
     "date": "2026-08-27",
     "message": "feat(agenda): récurrence, catégorie et liens rejoignent la ligne du titre — la place va aux sous-tâches"
@@ -193,10 +198,5 @@
     "version": "0.4.2780",
     "date": "2026-08-19",
     "message": "fix(modal): les sections thématiques repliées n'affichent plus le padding de leur tiroir en permanence (padding déplacé d'un cran, jamais sur l'élément que la grille écrase à 0)"
-  },
-  {
-    "version": "0.4.2768",
-    "date": "2026-08-19",
-    "message": "fix(menu): renomme « Promouvoir en tâche parente » en « Créer une tâche parente »"
   }
 ]

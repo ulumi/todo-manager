@@ -17302,3 +17302,9 @@ body.view-focus header { display: none; }
   -webkit-line-clamp: 1;
   line-clamp: 1;
 }
+
+// Bande basse réservée à la poignée de redimensionnement quand le bloc porte
+// une checklist : sans elle, .agenda-block-resize (7px collés au bas, z-index
+// 5) recouvrait la dernière ligne de sous-tâche et lui volait le clic.
+// Compté dans SUB_HEAD_PX (agendaView.js) pour que la hauteur reste juste.
+.agenda-block:has(.agenda-block-subs) { padding-bottom: 9px; }

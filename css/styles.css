@@ -18146,4 +18146,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   line-clamp: 1;
 }
 
+.agenda-block:has(.agenda-block-subs) {
+  padding-bottom: 9px;
+}
+
 /*# sourceMappingURL=styles.css.map */

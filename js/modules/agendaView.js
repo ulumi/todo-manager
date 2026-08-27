@@ -60,7 +60,12 @@ const SUB_ROW_PX = 15;
 // (17px de contenu + les paddings du bloc), contre 40 quand `.agenda-block-meta`
 // occupait une 2e ligne : autant de hauteur rendue aux sous-tâches, et donc
 // moins de blocs étirés au-delà de leur durée.
-const SUB_HEAD_PX = 28;
+// 17px d'en-tête + les paddings, dont une bande basse réservée à la poignée de
+// redimensionnement (.agenda-block-resize, 7px collés au bas du bloc) : sans
+// elle, la poignée recouvrait la DERNIÈRE ligne de sous-tâche et lui volait le
+// clic. Reste bien en dessous des 40px d'avant, quand `.agenda-block-meta`
+// occupait une 2e rangée.
+const SUB_HEAD_PX = 36;
 // Jamais plus de lignes que ça dans un bloc : une tâche à 15 sous-tâches
 // mangerait la journée. Le reste part dans « +N de plus », qui ouvre la
 // checklist complète en popover.
