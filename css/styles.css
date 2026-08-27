@@ -4001,6 +4001,9 @@ body.marquee-active {
   outline: none;
   width: 140px;
 }
+.multi-select-bar .multi-select-group-input--wide {
+  width: min(300px, 45vw);
+}
 
 .header-drop-hover {
   outline: 2.5px solid var(--primary) !important;

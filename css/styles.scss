@@ -4116,6 +4116,11 @@ body.marquee-active {
     color: var(--text);
     outline: none;
     width: 140px;
+
+    // Champ prérempli (fusion) : les 140px sont calibrés pour un nom de
+    // groupe qu'on tape de zéro, pas pour un titre de tâche déjà écrit
+    // qu'il faut pouvoir relire en entier avant de valider.
+    &--wide { width: min(300px, 45vw); }
   }
 }
 

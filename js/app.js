@@ -1718,10 +1718,10 @@ class TodoApp {
   // saisir un titre (tâche parente, en-tête de groupe) — jamais de prompt()
   // natif, cf. patterns projet. Patch DOM ciblé : aucun render() tant que
   // la saisie n'est pas confirmée. Échap ou champ vide annule sans trace.
-  _inlineTitlePrompt(id, placeholder, onConfirm, value = '') {
-    const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
+  _inlineTitlePrompt(id, placeholder, onConfirm) {
+    const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
     if (!itemEl || itemEl.previousElementSibling?.classList.contains('ctx-title-input')) return;
-    this._inlineInput(placeholder, onConfirm, el => itemEl.before(el), value);
+    this._inlineInput(placeholder, onConfirm, el => itemEl.before(el));
   }
 
   // Cœur partagé des saisies inline de titre : Entrée confirme, Échap annule
@@ -1733,15 +1733,11 @@ class TodoApp {
   // un champ qui reprend le focus). En liste masonry, l'input doit recevoir
   // son --rspan comme les autres enfants, sinon il n'occuperait qu'une
   // tranche de 4 px.
-  _inlineInput(placeholder, onConfirm, place, value = '') {
+  _inlineInput(placeholder, onConfirm, place) {
     const input = document.createElement('input');
     input.className = 'ctx-title-input';
     input.placeholder = placeholder;
     input.autocomplete = 'off';
-    // `value` prérempli (fusion : le titre de la tâche de base) — sélectionné
-    // au focus, donc la 1re frappe l'écrase comme s'il n'était qu'un défaut,
-    // alors qu'Entrée seul le valide tel quel.
-    if (value) input.value = value;
     let done = false;
     const finish = (viaEnter = false) => {
       if (done) return;
@@ -1764,7 +1760,6 @@ class TodoApp {
     this._updateMasonrySpan(input);
     this._masonryRO?.observe(input);
     input.focus();
-    if (value) input.select();
     return input;
   }
 
@@ -2607,30 +2602,60 @@ class TodoApp {
     this.render();
   }
 
-  // Injecte un input inline dans la barre flottante de multi-sélection pour
-  // nommer le nouveau groupe (jamais de prompt() natif, cf. patterns projet)
-  showGroupPrompt(ids) {
+  // Cœur partagé des saisies de titre d'une action de multi-sélection : input
+  // injecté dans la barre flottante (jamais de prompt() natif, cf. patterns
+  // projet). Ancrage volontairement différent de _inlineTitlePrompt(), qui a
+  // besoin d'un `.todo-item` rendu dans le DOM : la barre, elle, existe dans
+  // TOUTES les vues dès qu'une sélection est active — y compris l'Agenda, la
+  // semaine et le mois, qui n'ont aucun `.todo-item` où s'accrocher.
+  //   value        — préremplissage, sélectionné au focus (la 1re frappe
+  //                  l'écrase, Entrée seul le valide tel quel)
+  //   confirmOnBlur— false pour une action destructrice : avec un champ déjà
+  //                  prérempli, un simple clic ailleurs la déclencherait sinon
+  //                  sans que rien n'ait été tapé
+  //   hint         — remplace le temps de la saisie le texte d'aide de la
+  //                  barre, restauré à la fermeture
+  _multiBarPrompt(placeholder, onConfirm, { value = '', confirmOnBlur = true, hint = '' } = {}) {
     const bar = document.getElementById('multiSelectBar');
     if (!bar || bar.querySelector('.multi-select-group-input')) return;
+    const hintEl = hint ? bar.querySelector('.multi-select-hint') : null;
+    const prevHint = hintEl?.textContent;
+    if (hintEl) hintEl.textContent = hint;
     const input = document.createElement('input');
     input.className = 'multi-select-group-input';
-    input.placeholder = 'Nom du groupe…';
+    input.placeholder = placeholder;
     input.autocomplete = 'off';
-    let saved = false;
-    const confirmFn = () => {
-      if (saved) return;
-      saved = true;
+    if (value) {
+      input.value = value;
+      // Un titre déjà écrit doit être relisible en entier avant validation —
+      // la largeur par défaut est calibrée pour un nom de groupe tapé de zéro.
+      input.classList.add('multi-select-group-input--wide');
+    }
+    let done = false;
+    const finish = commit => {
+      if (done) return;
+      done = true;
       const title = input.value.trim();
       input.remove();
-      if (title) this.groupTasks(ids, title);
+      if (hintEl) hintEl.textContent = prevHint;
+      if (commit && title) onConfirm(title);
     };
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); confirmFn(); }
-      if (e.key === 'Escape') { saved = true; input.remove(); }
+      // Même garde que _inlineInput() : sans stopPropagation, chaque lettre
+      // tapée ici remonte aux raccourcis clavier globaux en pleine saisie.
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+      if (e.key === 'Escape') { finish(false); }
     });
-    input.addEventListener('blur', confirmFn);
+    input.addEventListener('blur', () => finish(confirmOnBlur));
     bar.appendChild(input);
     input.focus();
+    if (value) input.select();
+    return input;
+  }
+
+  showGroupPrompt(ids) {
+    this._multiBarPrompt('Nom du groupe…', title => this.groupTasks(ids, title));
   }
 
   // Menu contextuel (sélection ≥2) → « Fusionner » : les tâches sélectionnées
@@ -2642,15 +2667,22 @@ class TodoApp {
   //
   // La base est la tâche sur laquelle on a fait le clic droit (anchorId) —
   // elle garde son id, sa place dans la liste et sa planification ; le titre
-  // fusionné est demandé en saisie inline, prérempli avec le sien. Les
-  // récurrentes sont exclues (même raison qu'addParentTask/nestTaskAsSubtask :
-  // ni la récurrence ni completedDates n'ont de fusion qui ait un sens).
+  // fusionné est demandé dans la barre de multi-sélection, prérempli avec le
+  // sien. Saisie ancrée à la BARRE et non à l'item (_inlineTitlePrompt) :
+  // l'Agenda, la semaine et le mois n'ont aucun `.todo-item` où l'injecter,
+  // et c'est précisément là que la fusion sert (doublons repérés à l'œil).
+  //
+  // Seules les tâches ABSORBÉES doivent être ponctuelles — même règle que
+  // nestTaskAsSubtask : une récurrente absorbée perdrait sa série et ses
+  // completedDates, alors qu'une récurrente en BASE est un cas de fusion
+  // légitime (la ponctuelle en double disparaît dans la série qui la répète).
   mergeTasks(ids, anchorId) {
     const targets = ids.map(id => state.todos.find(x => x.id === id)).filter(Boolean);
-    if (targets.length < 2 || targets.some(t => t.recurrence && t.recurrence !== 'none')) return;
+    if (targets.length < 2) return;
     const base = targets.find(t => t.id === anchorId) || targets[0];
     const otherIds = targets.filter(t => t !== base).map(t => t.id);
-    this._inlineTitlePrompt(base.id, 'Titre de la tâche fusionnée…', title => {
+    if (targets.some(t => t !== base && t.recurrence && t.recurrence !== 'none')) return;
+    this._multiBarPrompt('Titre de la tâche fusionnée…', title => {
       // Tout est re-résolu APRÈS la saisie : le champ reste ouvert le temps
       // qu'on veut, et le state a pu bouger entre-temps (autre onglet, sync
       // realtime, autre appareil) — les objets capturés plus haut seraient
@@ -2679,7 +2711,7 @@ class TodoApp {
       msClear();
       this.render();
       this._showToast(`⋈ ${others.length + 1} tâches fusionnées`);
-    }, base.title);
+    }, { value: base.title, confirmOnBlur: false, hint: 'Entrée pour fusionner · Échap pour annuler' });
   }
 
   // Réunion champ par champ. `t` (la base) est mutée en place : elle garde
@@ -2739,10 +2771,15 @@ class TodoApp {
     const prio = all.map(o => o.priority || '').sort((a, b) => (RANK[b] || 0) - (RANK[a] || 0))[0];
     if (prio) t.priority = prio; else delete t.priority;
 
+    // Une base récurrente n'a JAMAIS d'échéance (invariant du projet : la
+    // section est masquée dans le modal et saveTaskLogic() supprime les
+    // champs) — celle d'une absorbée ponctuelle ne doit pas l'y introduire.
+    const isRec = !!t.recurrence && t.recurrence !== 'none';
+
     // Échéance : la plus contraignante gagne EN BLOC (date + heure + fenêtre
     // d'alerte appartiennent à la même échéance, les mélanger n'aurait aucun
     // sens) ; dure dès que l'une des deux l'était.
-    const withDl = all.filter(o => o.deadline).sort((a, b) =>
+    const withDl = (isRec ? [] : all.filter(o => o.deadline)).sort((a, b) =>
       (a.deadline + (a.deadlineTime || '99:99')).localeCompare(b.deadline + (b.deadlineTime || '99:99')));
     if (withDl.length) {
       const d = withDl[0];
@@ -2783,7 +2820,9 @@ class TodoApp {
     // Planification : la base garde la sienne. SEULE exception, elle n'en a
     // aucune (Inbox/Backlog) alors qu'une absorbée était datée — adopter sa
     // date plutôt que de renvoyer au néant une tâche déjà planifiée.
-    if (!t.date) {
+    // (jamais sur une base récurrente : sa planification vient de sa
+    // récurrence, un `date` posé dessus serait un champ orphelin)
+    if (!t.date && !isRec) {
       const dated = others.filter(o => o.date).sort((a, b) => a.date.localeCompare(b.date))[0];
       if (dated) {
         t.date = dated.date;
@@ -2816,8 +2855,12 @@ class TodoApp {
     // Il reste à faire tant qu'UNE SEULE des tâches n'était pas faite ; idem
     // pour l'annulation. L'invariant du projet (jamais faite ET annulée) tient
     // de lui-même : il faudrait qu'une source soit déjà dans les deux états.
-    t.completed = all.every(o => o.completed);
-    if (all.every(o => o.cancelled)) t.cancelled = true; else delete t.cancelled;
+    // Rien à écrire sur une base récurrente : son état se lit par occurrence
+    // (completedDates/cancelledDates), `completed` y serait ignoré et trompeur.
+    if (!isRec) {
+      t.completed = all.every(o => o.completed);
+      if (all.every(o => o.cancelled)) t.cancelled = true; else delete t.cancelled;
+    }
     t.updatedAt = Date.now();
   }
 
@@ -10184,12 +10227,13 @@ function _renderCtxMenu() {
   // Cluster « Grouper » (flyout) : n'existe que si au moins une des actions
   // de groupement s'applique — sinon le sous-menu serait vide.
   const canGroupCluster = !group && (canAddGroupHeader || canAddParent || canGroupify || canGroupToTask || canUngroupify);
-  // « Fusionner » : sélection ≥2, ponctuelles seulement, et il faut un item
-  // ancré dans le DOM (vue jour, Backlog, Inbox) pour y injecter la saisie du
-  // titre fusionné — pas depuis une pastille de mois ou la file Focus.
+  // « Fusionner » : sélection ≥2, et seules les tâches ABSORBÉES doivent être
+  // ponctuelles (la base, elle, peut être récurrente — cf. mergeTasks). Même
+  // repli qu'elle sur ids[0] si le clic droit ne vise pas la sélection, pour
+  // que l'item affiché et l'action exécutée parlent bien de la même base.
+  const mergeBaseId = occ.some(({ t }) => t.id === _ctxTarget.anchorId) ? _ctxTarget.anchorId : occ[0]?.t.id;
   const canMerge = group && occ.length > 1
-    && occ.every(({ t }) => !t.recurrence || t.recurrence === 'none')
-    && !!document.querySelector(`.todo-item[data-id="${_ctxTarget.anchorId}"], .inbox-item[data-id="${_ctxTarget.anchorId}"]`);
+    && occ.every(({ t }) => t.id === mergeBaseId || !t.recurrence || t.recurrence === 'none');
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
