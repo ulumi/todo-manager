@@ -17221,3 +17221,23 @@ body.view-focus header { display: none; }
 }
 
 .stw-sub--more .stw-sub-check { display: none; }
+
+// ── Zone « imbriquer » du glisser-déposer, vue Agenda ──────────────────
+// Même geste et même badge qu'en vue jour : lâcher un item sur le MILIEU d'un
+// autre en fait une sous-tâche. Les quarts haut/bas gardent le comportement
+// propre à l'agenda (repositionner à cette heure-là), puisqu'ici la position
+// EST la donnée — il n'y a pas d'avant/après à réordonner.
+.agenda-chip { position: relative; }
+
+.agenda-block.drop-nest,
+.agenda-chip.drop-nest {
+  border-style: dashed;
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+}
+
+// Le badge ne tient pas dans un bloc court : la bordure pointillée suffit à
+// signaler la cible, on ne rétrécit jamais le badge pour le faire entrer.
+.agenda-block.is-tiny .dnd-nest-badge,
+.agenda-block.is-short .dnd-nest-badge,
+.agenda-chip .dnd-nest-badge { display: none; }

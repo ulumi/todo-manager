@@ -8397,12 +8397,38 @@ class TodoApp {
     if (!wrap) return;
     this._agendaTimer = setInterval(() => this._agendaTickNow(), 60000);
 
-    let ghost = null;
+    let ghost = null, dragId = null, activeNest = null;
     const clearGhost = () => { ghost?.remove(); ghost = null; wrap.querySelectorAll('.agenda-flex-strip.drop-target').forEach(el => el.classList.remove('drop-target')); };
+    const clearNest = () => { activeNest?.classList.remove('drop-nest'); activeNest = null; };
+
+    // Zone « imbriquer » : lâcher un item sur le MILIEU d'un autre en fait une
+    // sous-tâche, exactement comme en vue jour (dnDZone 25/50/25). Les quarts
+    // haut/bas gardent le comportement de l'agenda — repositionner à cette
+    // heure-là — puisqu'ici la position EST la donnée (pas d'avant/après à
+    // réordonner). Mêmes exclusions qu'en vue jour : pas de drag externe (on
+    // ne connaît pas son id pendant le survol, `dataTransfer` étant illisible
+    // avant le drop), pas en copie, pas sur une cible de la sélection
+    // déplacée, pas depuis une source récurrente (aucun équivalent
+    // `completedDates` sur une sous-tâche — nestTaskAsSubtask refuserait de
+    // toute façon, autant ne pas le proposer).
+    const nestTarget = e => {
+      if (!dragId || this._isCopyDrag(e)) return null;
+      const el = e.target.closest?.('.agenda-block[data-id], .agenda-chip[data-id]');
+      if (!el || el.dataset.id === dragId) return null;
+      const ids = this._dropIds(dragId);
+      if (ids.includes(el.dataset.id)) return null;
+      // La cible doit être une vraie tâche : sinon on allumerait la surbrillance
+      // « Sous-tâche » pour un drop que nestTaskAsSubtask() refuserait ensuite.
+      if (!state.todos.some(t => t.id === el.dataset.id)) return null;
+      const sources = ids.map(id => state.todos.find(t => t.id === id)).filter(Boolean);
+      if (!sources.length || sources.some(t => t.recurrence && t.recurrence !== 'none')) return null;
+      return dnDZone(e.clientY, el.getBoundingClientRect()) === 'nest' ? el : null;
+    };
 
     wrap.addEventListener('dragstart', e => {
       const el = e.target.closest('.agenda-block[data-id], .agenda-chip[data-id]');
       if (!el) return;
+      dragId = el.dataset.id;
       e.dataTransfer.effectAllowed = 'copyMove';
       e.dataTransfer.setData('text/plain', el.dataset.id);
       this._setDragGhost(e, el.dataset.id);
@@ -8414,9 +8440,20 @@ class TodoApp {
       wrap.classList.remove('agenda-dragging');
       wrap.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
       clearGhost();
+      clearNest();
+      dragId = null;
     });
 
     wrap.addEventListener('dragover', e => {
+      const nest = nestTarget(e);
+      if (nest) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        clearGhost();
+        if (activeNest !== nest) { clearNest(); activeNest = nest; nest.classList.add('drop-nest'); }
+        return;
+      }
+      clearNest();
       const hit = this._agendaHit(e);
       if (!hit) { clearGhost(); return; }
       e.preventDefault();
@@ -8444,19 +8481,23 @@ class TodoApp {
     });
 
     wrap.addEventListener('dragleave', e => {
-      if (!wrap.contains(e.relatedTarget)) clearGhost();
+      if (!wrap.contains(e.relatedTarget)) { clearGhost(); clearNest(); }
     });
 
     wrap.addEventListener('drop', e => {
       e.preventDefault();
+      const nest = nestTarget(e);
       const hit = this._agendaHit(e);
       clearGhost();
+      clearNest();
       wrap.classList.remove('agenda-dragging');
       const taskId = e.dataTransfer.getData('text/plain');
       // Même garde-fou que la vue jour : un drag de section de tag pose lui
       // aussi du text/plain (un tagId). On ne mute que sur un vrai id.
-      if (!hit || !taskId || !state.todos.some(t => t.id === taskId)) return;
+      if (!taskId || !state.todos.some(t => t.id === taskId)) return;
       const ids = this._dropIds(taskId);
+      if (nest) { this.nestTaskAsSubtask(ids, nest.dataset.id); return; }
+      if (!hit) return;
       if (hit.kind === 'time') this._agendaMoveTo(ids, hit.minutes, e);
       else this._agendaUnschedule(ids, hit.period, e);
     });

@@ -74,6 +74,13 @@ const BAND_ICONS = {
 };
 
 const _plusSVG = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+// Badge « imbriquer » du glisser-déposer — même markup et mêmes classes que la
+// vue jour (render.js `_nestBadgeHTML`), redéfini ici plutôt qu'importé :
+// render.js importe déjà agendaView.js, l'inverse créerait un cycle. Toujours
+// présent dans le DOM, révélé par la seule classe `.drop-nest` en CSS (jamais
+// injecté/retiré pendant le drag, cf. la règle du même badge en vue jour).
+const _nestBadgeHTML = `<span class="dnd-nest-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg><span>Sous-tâche</span></span>`;
+
 const _linkSVG = `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
 
 // ── Préférences (synchronisées, cf. getAppConfig/_applyBackup) ──────────
@@ -343,6 +350,7 @@ function blockHTML(b, ds, px, range) {
       <button class="agenda-block-btn" title="Actions" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${t.id}','${ds}')">⋯</button>
     </div>
     <div class="agenda-block-resize" title="Ajuster la durée"></div>
+    ${_nestBadgeHTML}
   </div>`;
 }
 
@@ -368,6 +376,7 @@ function chipHTML(t, navDate, ds) {
     <span class="agenda-chip-title">${esc(t.title)}</span>
     ${isRec ? `<span class="agenda-chip-rec" title="Récurrente">↻</span>` : ''}
     ${est ? `<span class="agenda-chip-est">${est}′</span>` : ''}
+    ${_nestBadgeHTML}
   </div>`;
 }
 
