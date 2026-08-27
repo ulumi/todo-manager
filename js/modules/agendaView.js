@@ -382,7 +382,12 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
   if (ctx.isToday) {
     const nowMin = ctx.nowMinutes;
     if (nowMin >= range.from * 60 && nowMin <= range.to * 60) {
-      nowLine = `<div class="agenda-now" id="agendaNow" style="--t:${((nowMin - range.from * 60) / 60) * px}px"><span class="agenda-now-dot"></span><span class="agenda-now-label">${fmtHM(nowMin)}</span></div>`;
+      // Bouton « + » ancré sur la ligne : ajoute une tâche qui démarre à
+      // l'instant présent. Option/Alt enfoncé décale en plus la suite de la
+      // journée (cf. app.agendaAddNow / _agendaBumpFrom). `pointer-events`
+      // rétabli sur le seul bouton — la ligne elle-même reste traversante
+      // pour ne pas voler les survols de dépôt à la grille.
+      nowLine = `<div class="agenda-now" id="agendaNow" style="--t:${((nowMin - range.from * 60) / 60) * px}px"><span class="agenda-now-dot"></span><button class="agenda-now-add" onclick="window.app.agendaAddNow(event)" title="Ajouter une tâche maintenant — Option+clic décale aussi la suite de la journée">${_plusSVG}</button><span class="agenda-now-label">${fmtHM(nowMin)}</span></div>`;
     }
   }
 

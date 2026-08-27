@@ -131,6 +131,37 @@ export function initMultiSelect(app) {
     else msToggle(el.dataset.id);
   }, true);
 
+  // Clic du milieu sur un item = même bascule que Ctrl/Cmd+clic (et Maj
+  // toujours honoré pour une plage). Un bouton non primaire n'émet PAS de
+  // `click` — seulement `auxclick` — donc aucun onclick inline (ouverture du
+  // modal, navigation) ne se déclenche : rien à court-circuiter côté app.
+  // Ce sont les comportements NATIFS du navigateur qu'il faut neutraliser,
+  // et ils sont tous ancrés sur le mousedown, pas sur l'auxclick :
+  // l'autoscroll (Windows/Linux) et le collage de la sélection primaire
+  // (Linux/X11). D'où le preventDefault() séparé ci-dessous — le faire
+  // seulement sur auxclick arriverait trop tard.
+  const _midTarget = e => {
+    if (e.button !== 1) return null;
+    // Champs de saisie et liens gardent leur comportement natif (collage
+    // X11, ouverture dans un nouvel onglet)
+    if (e.target.closest('input, textarea, [contenteditable="true"], a[href]')) return null;
+    const el = e.target.closest?.(MS_SELECTABLE);
+    return el?.dataset.id ? el : null;
+  };
+
+  document.addEventListener('mousedown', e => {
+    if (_midTarget(e)) e.preventDefault();
+  }, true);
+
+  document.addEventListener('auxclick', e => {
+    const el = _midTarget(e);
+    if (!el) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.shiftKey && anchorId) msRangeTo(el.dataset.id);
+    else msToggle(el.dataset.id);
+  }, true);
+
   // Échap : désélectionne tout (sauf si un modal est ouvert — il a priorité)
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || !selected.size) return;

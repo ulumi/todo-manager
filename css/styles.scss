@@ -17073,3 +17073,31 @@ body.view-focus header { display: none; }
   background: var(--danger);
   span { background: var(--danger); }
 }
+
+// Bouton « + » ancré sur la ligne « maintenant ». La ligne reste
+// `pointer-events: none` (elle ne doit jamais voler un survol de dépôt à la
+// grille) : seul le bouton les rétablit. Au-dessus des blocs (z-index de la
+// ligne), donc toujours atteignable même si une tâche est en cours.
+.agenda-now-add {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: filter .15s cubic-bezier(.25, .46, .45, .94);
+
+  svg { width: 11px; height: 11px; }
+  &:hover { filter: brightness(1.12); }
+}

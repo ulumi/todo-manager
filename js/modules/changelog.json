@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2901",
+    "date": "2026-08-27",
+    "message": "feat(agenda): bouton + sur la ligne « maintenant » ; Option+clic décale la suite de la journée"
+  },
+  {
     "version": "0.4.2898",
     "date": "2026-08-27",
     "message": "fix(fusion): « Fusionner » apparaît enfin en vue Agenda — la saisie du titre passe par la barre de sélection"
@@ -193,10 +198,5 @@
     "version": "0.4.2706",
     "date": "2026-08-18",
     "message": "feat(vue jour): bouton de suppression directe sur chaque tâche"
-  },
-  {
-    "version": "0.4.2704",
-    "date": "2026-08-18",
-    "message": "fix(raccourci): l'icône micro de la saisie rapide dépassait sous la barre — recentrée verticalement"
   }
 ]

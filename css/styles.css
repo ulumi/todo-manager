@@ -17951,4 +17951,32 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   background: var(--danger);
 }
 
+.agenda-now-add {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: filter 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.agenda-now-add svg {
+  width: 11px;
+  height: 11px;
+}
+.agenda-now-add:hover {
+  filter: brightness(1.12);
+}
+
 /*# sourceMappingURL=styles.css.map */

@@ -8189,9 +8189,51 @@ class TodoApp {
     this.render();
   }
 
+  // Bouton « + » de la ligne « maintenant » : ouvre la saisie d'une tâche qui
+  // démarre à l'instant présent (durée par défaut). Option/Alt enfoncé décale
+  // en plus la suite de la journée pour lui faire place (`bump`).
+  // Volontairement `altKey` SEUL, et non _isCopyDrag() : Ctrl/Cmd+clic est
+  // déjà le geste de multi-sélection partout dans l'app.
+  agendaAddNow(event) {
+    event?.stopPropagation();
+    const now = this._agendaNowMinutes();
+    if (now == null) return;
+    this._agendaCreateAt(periodForMinutes(now), now, Math.min(24 * 60 - 1, now + DEFAULT_BLOCK_MIN), { bump: !!event?.altKey });
+  }
+
+  // Insertion : la tâche suivante repart à la fin de celle qu'on vient
+  // d'ajouter, puis on ne propage que tant qu'il reste un VRAI recouvrement —
+  // une tâche déjà libre plus tard dans la journée ne bouge pas. `skipId`
+  // écarte la tâche tout juste créée, qui démarre elle aussi après le repère.
+  _agendaBumpFrom(afterMin, newEnd, skipId) {
+    const ds = DS(state.navDate);
+    const queue = getTodosForDate(state.navDate, state.todos)
+      .filter(r => r.id !== skipId)
+      .map(r => ({ r, start: parseHM(r.startTime) }))
+      .filter(x => x.start != null && x.start >= afterMin)
+      .sort((a, b) => a.start - b.start);
+    let cursor = newEnd, moved = 0;
+    for (const { r, start } of queue) {
+      // La toute première suivante est repoussée quoi qu'il arrive ; ensuite
+      // on s'arrête dès qu'une tâche démarre déjà après le curseur.
+      if (moved > 0 && start >= cursor) break;
+      const t = state.todos.find(x => x.id === r.id);
+      if (!t) continue;
+      const dur = blockMinutes(r);
+      const ns = Math.max(0, Math.min(24 * 60 - 1 - dur, cursor));
+      setOccurrenceField(t, ds, 'startTime', fmtHM(ns));
+      if (parseHM(r.endTime) != null) setOccurrenceField(t, ds, 'endTime', fmtHM(Math.min(24 * 60 - 1, ns + dur)));
+      setOccurrenceField(t, ds, 'dayPeriod', periodForMinutes(ns));
+      t.updatedAt = Date.now();
+      cursor = ns + dur;
+      moved++;
+    }
+    return moved;
+  }
+
   // Création par glisser sur une plage vide (ou double-clic → 30 min) :
   // saisie inline du titre à l'emplacement dessiné, jamais un prompt() natif.
-  _agendaCreateAt(period, startMin, endMin) {
+  _agendaCreateAt(period, startMin, endMin, opts = {}) {
     const canvas = document.querySelector(`.agenda-canvas[data-period="${period}"]`);
     if (!canvas) return;
     const px = parseFloat(canvas.dataset.px) || 72;
@@ -8217,8 +8259,12 @@ class TodoApp {
         endTime: fmtHM(startMin + dur),
         durationEstimated: dur,
       }, state.todos);
+      const created = state.todos[state.todos.length - 1];
+      let bumped = 0;
+      if (opts.bump) bumped = this._agendaBumpFrom(startMin, startMin + dur, created?.id);
       saveTodos(state.todos);
       this.render();
+      if (bumped) this._showToast(`${bumped} tâche${bumped > 1 ? 's' : ''} décalée${bumped > 1 ? 's' : ''}`);
     }, el => holder.appendChild(el));
     // Le champ retiré (Entrée/Échap/blur) laisse sinon l'esquisse à l'écran :
     // _inlineInput ne connaît que son <input>, pas le cadre qui l'entoure.
