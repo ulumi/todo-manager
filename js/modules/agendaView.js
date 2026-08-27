@@ -348,9 +348,11 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
 }
 
 // ── Barre d'outils de l'agenda ──────────────────────────
+const _ZOOM_ICON = `<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.6"/><line x1="10.4" y1="10.4" x2="14.5" y2="14.5"/><line x1="4.8" y1="7" x2="9.2" y2="7"/><line x1="7" y1="4.8" x2="7" y2="9.2"/></svg>`;
+
 function toolbarHTML(prefs, ctx) {
   const zoomBtns = AGENDA_ZOOMS.map(z =>
-    `<button class="agenda-tool-btn${prefs.zoom === z.px ? ' active' : ''}" onclick="window.app.setAgendaZoom(${z.px})">${z.label}</button>`
+    `<button class="agenda-tool-btn${prefs.zoom === z.px ? ' active' : ''}" onclick="window.app.setAgendaZoom(${z.px})" title="Hauteur d’une heure : ${z.px}px">${z.label}</button>`
   ).join('');
   const recBtns = [
     ['none', 'Ponct.'], ['daily', 'Quot.'], ['weekly', 'Hebdo'],
@@ -359,14 +361,13 @@ function toolbarHTML(prefs, ctx) {
     `<button class="agenda-tool-pill${prefs.rec[k] !== false ? ' active' : ''}" onclick="window.app.toggleAgendaRec('${k}')">${l}</button>`
   ).join('');
   const doneTitle = ctx.isStatsMode ? 'Afficher les tâches complétées et annulées' : 'Masquer les tâches complétées et annulées';
+  // Pas de bascule Liste/Agenda ici : elle vit dans `.day-top-row`, commune
+  // aux deux modes (cf. dayLayoutSwitchHTML).
   return `<div class="agenda-toolbar">
-    <div class="agenda-tool-group agenda-tool-group--layout">
-      <button class="agenda-layout-btn" onclick="window.app.toggleDayLayout()" title="Revenir à la vue en listes (Alt+A)">
-        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
-        <span>Liste</span>
-      </button>
+    <div class="agenda-tool-group agenda-tool-group--labelled">
+      <span class="agenda-tool-glabel">${_ZOOM_ICON}<span>Zoom</span></span>
+      ${zoomBtns}
     </div>
-    <div class="agenda-tool-group">${zoomBtns}</div>
     <button class="agenda-tool-btn${prefs.night ? ' active' : ''}" onclick="window.app.toggleAgendaNight()" title="Afficher la nuit (00:00–07:00 et 23:00–00:00)">Nuit</button>
     <div class="agenda-tool-group agenda-tool-pills">${recBtns}</div>
     <button class="agenda-tool-btn agenda-tool-toggle${ctx.isStatsMode ? ' active' : ''}" onclick="window.app.togglePastDisplay()" title="${doneTitle}">Complétés${ctx.isStatsMode && ctx.hiddenAll > 0 ? `<span class="agenda-tool-count">${ctx.hiddenAll}</span>` : ''}</button>
@@ -414,11 +415,24 @@ export function renderAgendaBody(todos, navDate, ctx) {
   </div>`;
 }
 
-// Bouton de bascule Liste → Agenda, injecté dans la rangée de contrôles
-// existante de la colonne Ponctuel (mode Liste uniquement).
-export function agendaSwitchButtonHTML() {
-  return `<button class="day-ctrl-toggle day-ctrl-toggle--switch agenda-switch-btn" onclick="window.app.toggleDayLayout()" title="Basculer en vue Agenda — grille horaire (Alt+A)">
-    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="1.5" y="2.5" width="13" height="12" rx="2"/><line x1="1.5" y1="6" x2="14.5" y2="6"/><line x1="5" y1="6" x2="5" y2="14.5"/></svg>
-    <span class="day-ctrl-label">Agenda</span>
-  </button>`;
+// Sélecteur de mode d'affichage de la vue jour — segmented control à deux
+// segments (Liste | Agenda), volontairement DIFFÉRENT des boutons fantômes
+// des rangées de contrôles : c'est un choix de vue, pas un réglage parmi
+// d'autres. Rendu par la coquille commune de renderDayView() (dans
+// `.day-top-row`, à droite de la mini-semaine), donc exactement au même
+// endroit dans les deux modes — la 1re version vivait dans `.day-col-controls`
+// en mode Liste et dans `.agenda-toolbar` en mode Agenda, elle sautait donc
+// d'un bout à l'autre de l'écran à chaque bascule.
+const _LAYOUT_OPTS = [
+  { id: 'list', label: 'Liste', title: 'Vue en listes — cartes par moment (Alt+A)',
+    icon: `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>` },
+  { id: 'agenda', label: 'Agenda', title: 'Vue Agenda — grille horaire (Alt+A)',
+    icon: `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="2.6" width="12.8" height="11.8" rx="2"/><line x1="1.6" y1="6.2" x2="14.4" y2="6.2"/><line x1="5.4" y1="6.2" x2="5.4" y2="14.4"/></svg>` },
+];
+
+export function dayLayoutSwitchHTML(current = getDayLayout()) {
+  const opts = _LAYOUT_OPTS.map(o =>
+    `<button class="day-layout-opt${current === o.id ? ' active' : ''}" onclick="window.app.setDayLayout('${o.id}')" title="${o.title}" aria-pressed="${current === o.id}">${o.icon}<span>${o.label}</span></button>`
+  ).join('');
+  return `<div class="day-layout-switch" role="group" aria-label="Mode d'affichage de la journée">${opts}</div>`;
 }

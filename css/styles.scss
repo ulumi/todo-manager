@@ -2015,6 +2015,21 @@ body.day-col-resizing {
 }
 
 // Mini two-week grid — desktop drop zones in day view
+// Rangée commune aux modes Liste et Agenda : mini-semaine (élastique) +
+// sélecteur de mode à droite. La marge basse de 20px vit ici, plus sur la
+// mini-semaine — la bascule ne coûte donc AUCUNE hauteur supplémentaire,
+// elle prend de la largeur sur la mini-semaine (qui reste une grille de 14
+// colonnes élastiques) et passe à la ligne d'elle-même sur écran étroit.
+.day-top-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  .day-mini-week { flex: 1; min-width: 320px; margin-bottom: 0; }
+}
+
 .day-mini-week {
   display: flex;
   flex-direction: column;
@@ -16385,8 +16400,7 @@ body.view-focus header { display: none; }
 }
 
 .agenda-tool-btn,
-.agenda-tool-pill,
-.agenda-layout-btn {
+.agenda-tool-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -16421,10 +16435,6 @@ body.view-focus header { display: none; }
   &.active { opacity: 1; background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary); }
 }
 
-.agenda-layout-btn {
-  color: var(--text);
-  svg { flex-shrink: 0; }
-}
 
 .agenda-tool-count {
   min-width: 16px;
@@ -16949,7 +16959,7 @@ body.view-focus header { display: none; }
 .glass-mode {
   .agenda-block, .agenda-chip { @include glass-surface(45%, 12px); color: #f1f5f9; }
   .agenda-block-title, .agenda-chip-title { color: #f1f5f9; }
-  .agenda-tool-btn, .agenda-tool-pill, .agenda-layout-btn { color: #f1f5f9; }
+  .agenda-tool-btn, .agenda-tool-pill { color: #f1f5f9; }
 }
 
 @media (max-width: 720px) {
@@ -16957,4 +16967,87 @@ body.view-focus header { display: none; }
   .agenda-hour { right: 5px; font-size: 9.5px; }
   .agenda-toolbar { gap: 6px; }
   .agenda-chip { max-width: 100%; }
+}
+
+
+// ── Sélecteur de mode de la vue jour (Liste | Agenda) ──────────────────
+// Volontairement DIFFÉRENT des boutons fantômes des rangées de contrôles
+// (.day-ctrl-*, .agenda-tool-*) : c'est un choix de vue, pas un réglage
+// parmi d'autres. Conteneur plein et contrasté, segment actif rempli à
+// var(--primary) — jamais une couleur fixe hors thème.
+.day-layout-switch {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+  box-shadow: inset 0 1px 3px var(--shadow);
+}
+
+.day-layout-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .2s cubic-bezier(.25, .46, .45, .94),
+              color .2s cubic-bezier(.25, .46, .45, .94),
+              box-shadow .2s cubic-bezier(.25, .46, .45, .94);
+
+  svg { flex-shrink: 0; }
+
+  &:hover { color: var(--text); background: var(--surface); }
+
+  &.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
+    &:hover { background: var(--primary); color: #fff; }
+  }
+}
+
+// Groupe de la barre d'agenda précédé de son libellé (« Zoom ») — sans lui,
+// trois boutons « Compact / Normal / Confort » ne se lisaient pas du tout
+// comme un contrôle de zoom.
+.agenda-tool-group--labelled { padding-left: 9px; }
+
+.agenda-tool-glabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 7px;
+  margin-right: 2px;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  white-space: nowrap;
+
+  svg { flex-shrink: 0; opacity: .9; }
+}
+
+.glass-mode {
+  .day-layout-opt { color: #f1f5f9; }
+  .day-layout-switch { background: rgba(255,255,255,.08); }
+  .agenda-tool-glabel { color: #f1f5f9; }
+}
+
+@media (max-width: 720px) {
+  .day-top-row { gap: 10px; }
+  .day-top-row .day-mini-week { min-width: 100%; }
+  .day-layout-switch { width: 100%; }
+  .day-layout-opt { flex: 1; justify-content: center; }
 }

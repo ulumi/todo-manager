@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2879",
+    "date": "2026-08-27",
+    "message": "fix(agenda): sélecteur Liste/Agenda toujours au même endroit et bien distinct ; le zoom porte enfin son nom"
+  },
+  {
     "version": "0.4.2878",
     "date": "2026-08-26",
     "message": "chore: exclut la sortie Playwright du déploiement (.vercelignore)"
@@ -193,10 +198,5 @@
     "version": "0.4.2675",
     "date": "2026-08-18",
     "message": "fix(vue jour): Colonnes du Quotidien en grille N-par-ligne stricte (le masonry anti-vide empilait les tâches courtes ensemble au lieu d'une par colonne)"
-  },
-  {
-    "version": "0.4.2674",
-    "date": "2026-08-18",
-    "message": "feat(vue jour): glisser-déposer une tâche quotidienne sur Matin/Après-midi/Soir pour changer son moment (sections toujours visibles, comme côté ponctuel)"
   }
 ]

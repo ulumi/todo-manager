@@ -2055,6 +2055,19 @@ body.day-col-resizing {
   pointer-events: none;
 }
 
+.day-top-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.day-top-row .day-mini-week {
+  flex: 1;
+  min-width: 320px;
+  margin-bottom: 0;
+}
+
 .day-mini-week {
   display: flex;
   flex-direction: column;
@@ -17107,8 +17120,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .agenda-tool-btn,
-.agenda-tool-pill,
-.agenda-layout-btn {
+.agenda-tool-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -17125,14 +17137,12 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   transition: background 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 .agenda-tool-btn:hover,
-.agenda-tool-pill:hover,
-.agenda-layout-btn:hover {
+.agenda-tool-pill:hover {
   background: var(--surface2);
   color: var(--text);
 }
 .agenda-tool-btn.active,
-.agenda-tool-pill.active,
-.agenda-layout-btn.active {
+.agenda-tool-pill.active {
   background: var(--primary);
   color: #fff;
 }
@@ -17159,13 +17169,6 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   opacity: 1;
   background: color-mix(in srgb, var(--primary) 16%, transparent);
   color: var(--primary);
-}
-
-.agenda-layout-btn {
-  color: var(--text);
-}
-.agenda-layout-btn svg {
-  flex-shrink: 0;
 }
 
 .agenda-tool-count {
@@ -17824,7 +17827,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .glass-mode .agenda-block-title, .glass-mode .agenda-chip-title {
   color: #f1f5f9;
 }
-.glass-mode .agenda-tool-btn, .glass-mode .agenda-tool-pill, .glass-mode .agenda-layout-btn {
+.glass-mode .agenda-tool-btn, .glass-mode .agenda-tool-pill {
   color: #f1f5f9;
 }
 
@@ -17841,6 +17844,99 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   }
   .agenda-chip {
     max-width: 100%;
+  }
+}
+.day-layout-switch {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface2);
+  box-shadow: inset 0 1px 3px var(--shadow);
+}
+
+.day-layout-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.day-layout-opt svg {
+  flex-shrink: 0;
+}
+.day-layout-opt:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+.day-layout-opt.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.day-layout-opt.active:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.agenda-tool-group--labelled {
+  padding-left: 9px;
+}
+
+.agenda-tool-glabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 7px;
+  margin-right: 2px;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.agenda-tool-glabel svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.glass-mode .day-layout-opt {
+  color: #f1f5f9;
+}
+.glass-mode .day-layout-switch {
+  background: rgba(255, 255, 255, 0.08);
+}
+.glass-mode .agenda-tool-glabel {
+  color: #f1f5f9;
+}
+
+@media (max-width: 720px) {
+  .day-top-row {
+    gap: 10px;
+  }
+  .day-top-row .day-mini-week {
+    min-width: 100%;
+  }
+  .day-layout-switch {
+    width: 100%;
+  }
+  .day-layout-opt {
+    flex: 1;
+    justify-content: center;
   }
 }
 

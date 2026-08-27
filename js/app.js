@@ -7772,8 +7772,19 @@ class TodoApp {
 
   // Bascule Liste ⇄ Agenda. Réglage synchronisé (getAppConfig/_applyBackup) :
   // c'est une préférence d'affichage durable, pas un état de session.
+  // Choix explicite d'un mode (segmented control Liste|Agenda) — idempotent,
+  // contrairement à toggleDayLayout() qui sert au raccourci Alt+A.
+  setDayLayout(mode) {
+    const next = mode === 'agenda' ? 'agenda' : 'list';
+    if (next === getDayLayout() && state.view === 'day') return;
+    this._applyDayLayout(next);
+  }
+
   toggleDayLayout() {
-    const next = getDayLayout() === 'agenda' ? 'list' : 'agenda';
+    this._applyDayLayout(getDayLayout() === 'agenda' ? 'list' : 'agenda');
+  }
+
+  _applyDayLayout(next) {
     localStorage.setItem('dayLayout', next);
     this._saveConfigChange();
     if (state.view !== 'day') {
