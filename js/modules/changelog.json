@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2889",
+    "date": "2026-08-27",
+    "message": "fix(agenda): modifier la durée d'une tâche redimensionnée se reflète enfin sur la grille ; hauteur minimale lisible"
+  },
+  {
     "version": "0.4.2884",
     "date": "2026-08-27",
     "message": "fix(agenda): l'heure affichée reflète la durée réelle ; les tâches courtes restent pleine largeur à gauche"
@@ -193,10 +198,5 @@
     "version": "0.4.2692",
     "date": "2026-08-18",
     "message": "fix(raccourci): la lettre 'n' ne s'insère plus dans le champ de la barre de saisie rapide qu'elle vient d'ouvrir"
-  },
-  {
-    "version": "0.4.2691",
-    "date": "2026-08-18",
-    "message": "feat(raccourci): 'n' ouvre une barre de saisie rapide (ajout sans ouvrir la modale) au lieu de la modale complète"
   }
 ]

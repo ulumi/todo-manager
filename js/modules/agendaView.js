@@ -130,11 +130,20 @@ export function periodForMinutes(min) {
 // d'affichage : c'est elle qui donne l'heure de fin affichée, la détection de
 // chevauchement, et la durée préservée lors d'un déplacement. La lisibilité
 // des tout petits blocs est réglée en pixels au rendu (MIN_BLOCK_PX).
+//
+// `durationEstimated` PRIME sur `endTime`, et non l'inverse. Aucune interface
+// ne permet de saisir une heure de fin (`#taskEndTime` est un input hidden) :
+// le seul producteur d'`endTime` est le redimensionnement d'un bloc, qui écrit
+// TOUJOURS les deux champs ensemble. `endTime` n'est donc jamais qu'un reflet
+// de la durée — le laisser primer rendait une tâche déjà redimensionnée sourde
+// à toute modification ultérieure de sa durée (modal, badge en place, Focus),
+// son ancienne heure de fin continuant seule à dicter la longueur du bloc.
+// endTime ne sert plus que de repli quand aucune durée n'est connue.
 export function blockMinutes(t) {
-  const s = parseHM(t.startTime), e = parseHM(t.endTime);
-  if (s != null && e != null && e > s) return e - s;
   const est = effectiveEstimate(t);
   if (est > 0) return Math.max(1, est);
+  const s = parseHM(t.startTime), e = parseHM(t.endTime);
+  if (s != null && e != null && e > s) return e - s;
   return DEFAULT_BLOCK_MIN;
 }
 
@@ -221,20 +230,17 @@ function blockHTML(b, ds, px, range) {
   const top = ((b.start - range.from * 60) / 60) * px;
   // Seule la HAUTEUR est plancherée (lisibilité) — jamais la durée, d'où un
   // bloc de 3 min qui affiche bien « 07:15–07:18 » tout en restant cliquable.
-  // Ce plancher est lui-même borné par l'espace réellement libre jusqu'au bloc
-  // suivant de la même colonne (b.maxH) : une tâche de 3 min suivie d'une autre
-  // 5 min plus tard reste pleine largeur à gauche SANS jamais recouvrir sa
-  // voisine — gonfler la durée pour « faire de la place » les aurait au
-  // contraire déclarées simultanées et mises côte à côte en demi-largeur.
-  const trueH = ((b.end - b.start) / 60) * px;
-  const h = Math.max(Math.min(MIN_BLOCK_PX, b.maxH ?? Infinity), Math.min(trueH, b.maxH ?? Infinity));
+  // Plancher franc : un bloc reste toujours assez haut pour être lu, quitte à
+  // déborder légèrement sur le suivant quand deux tâches très courtes se
+  // suivent de près (choix explicite de Hugues : mieux vaut un léger
+  // chevauchement que des réglettes illisibles). Le survol remonte le bloc
+  // au-dessus de ses voisins, donc rien n'est jamais définitivement caché.
+  const h = Math.max(MIN_BLOCK_PX, ((b.end - b.start) / 60) * px);
   const cols = b.cols || 1;
   const col  = b.col || 0;
   const isRec = t.recurrence && t.recurrence !== 'none';
   const clipped = b.rawEnd > b.end;
-  // Sous 15px il n'y a plus de place pour un titre : le bloc devient une
-  // simple réglette colorée, toujours cliquable et sélectionnable.
-  const sizeCls = h < 15 ? ' is-sliver' : (h < 34 ? ' is-tiny' : (h < 64 ? ' is-short' : ''));
+  const sizeCls = h < 34 ? ' is-tiny' : (h < 64 ? ' is-short' : '');
   const cls = ['agenda-block',
     b.done ? 'done' : '',
     b.cancelled ? 'cancelled' : '',
@@ -326,21 +332,6 @@ function flexStripHTML(items, period, navDate, ds, opts = {}) {
 function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
   const px = prefs.zoom;
   const laid = assignColumns(bucket.timed);
-  // Espace libre jusqu'au bloc suivant de la MÊME colonne : borne la hauteur
-  // minimale d'un bloc très court pour qu'il n'empiète jamais sur son voisin.
-  const byCol = new Map();
-  laid.forEach(b => {
-    const c = b.col || 0;
-    if (!byCol.has(c)) byCol.set(c, []);
-    byCol.get(c).push(b);
-  });
-  byCol.forEach(list => {
-    list.sort((a, b) => a.start - b.start);
-    list.forEach((b, i) => {
-      const next = list[i + 1];
-      b.maxH = next ? ((next.start - b.start) / 60) * prefs.zoom : Infinity;
-    });
-  });
   const range = displayRange(band, laid, prefs);
   const hours = [];
   for (let h = range.from; h <= range.to; h++) hours.push(h);

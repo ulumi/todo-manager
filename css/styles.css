@@ -17939,21 +17939,5 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
     justify-content: center;
   }
 }
-.agenda-block.is-sliver {
-  padding: 0;
-  gap: 0;
-  border-radius: 4px;
-  background: var(--accent, var(--primary));
-  border-color: transparent;
-  overflow: hidden;
-}
-.agenda-block.is-sliver .agenda-block-body,
-.agenda-block.is-sliver .agenda-block-actions,
-.agenda-block.is-sliver .todo-check {
-  display: none;
-}
-.agenda-block.is-sliver .agenda-block-resize {
-  height: 100%;
-}
 
 /*# sourceMappingURL=styles.css.map */
