@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2916",
+    "date": "2026-08-27",
+    "message": "feat(agenda): les sous-tâches s'affichent dans le bloc quand la durée le permet, et se cochent depuis l'avertissement"
+  },
+  {
     "version": "0.4.2911",
     "date": "2026-08-27",
     "message": "fix(agenda): cocher une tâche qui a des sous-tâches incomplètes ne reste plus sans effet"
@@ -193,10 +198,5 @@
     "version": "0.4.2747",
     "date": "2026-08-19",
     "message": "fix(vue jour): l'avertissement de sous-tâches incomplètes s'accrochait à l'en-tête de groupe (même data-id) au lieu de la vraie carte, pour une tâche seule dans son groupe — checkbox sans effet visible"
-  },
-  {
-    "version": "0.4.2746",
-    "date": "2026-08-19",
-    "message": "fix(vue jour): l'avertissement « sous-tâches incomplètes » se rendait hors de l'écran pour une tâche tout en haut de colonne — checkbox visiblement sans effet"
   }
 ]

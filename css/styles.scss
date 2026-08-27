@@ -17130,3 +17130,94 @@ body.view-focus header { display: none; }
   svg { width: 11px; height: 11px; }
   &:hover { filter: brightness(1.12); }
 }
+
+// ── Sous-tâches dans un bloc d'agenda ──────────────────────────────────
+// Affichées seulement quand la hauteur du bloc les porte (SUB_ROW_PX /
+// SUB_HEAD_PX, agendaView.js) : la hauteur d'un bloc reflète sa DURÉE, on
+// ne l'agrandit jamais pour faire tenir une checklist.
+.agenda-block-subs {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.agenda-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 14px;
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+
+  &:hover { color: var(--text); background: var(--surface2); }
+
+  &.done {
+    opacity: .5;
+    .agenda-sub-title { text-decoration: line-through; }
+    .agenda-sub-check { background: var(--success); border-color: var(--success); }
+  }
+}
+
+.agenda-sub-check {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1.4px solid var(--border);
+  border-radius: 50%;
+  transition: background .15s cubic-bezier(.25, .46, .45, .94),
+              border-color .15s cubic-bezier(.25, .46, .45, .94);
+}
+
+.agenda-sub-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.agenda-sub-more { font-style: italic; opacity: .7; cursor: default; &:hover { background: none; } }
+
+// ── Sous-tâches listées dans l'avertissement de complétion ─────────────
+.stw-subs {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  max-width: 280px;
+}
+
+.stw-sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 4px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+
+  &:hover { background: var(--surface2); }
+  &--nested { padding-left: 16px; }
+
+  span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  &.done {
+    opacity: .5;
+    span:last-child { text-decoration: line-through; }
+    .stw-sub-check { background: var(--success); border-color: var(--success); }
+  }
+
+  &--more { font-style: italic; color: var(--text-muted); cursor: default; &:hover { background: none; } }
+}
+
+.stw-sub-check {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.6px solid var(--border);
+  border-radius: 50%;
+  transition: background .15s cubic-bezier(.25, .46, .45, .94),
+              border-color .15s cubic-bezier(.25, .46, .45, .94);
+}
+
+.stw-sub--more .stw-sub-check { display: none; }

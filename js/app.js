@@ -1500,11 +1500,23 @@ class TodoApp {
     const item = document.querySelector(`[data-id="${id}"]:not(.task-group-header):not(.day-spacer)`);
     if (!item) return;
     const label = count === 1 ? '1 sous-tâche incomplète' : `${count} sous-tâches incomplètes`;
+    // Lister ce qui manque, et le rendre cochable sur place : l'avertissement
+    // ne disait que « N sous-tâches incomplètes » sans jamais dire lesquelles,
+    // et dans la vue Agenda un bloc court n'a pas la place de les afficher
+    // lui-même (elles n'y apparaissent qu'au-delà d'une certaine hauteur, la
+    // hauteur d'un bloc reflétant sa durée). C'est donc ici le seul endroit
+    // qui les montre à coup sûr, quelle que soit la vue.
+    const eff = todo ? resolveOccurrence(todo, ds).subtasks : null;
+    const rows = this._flatIncompleteSubtasks(eff).slice(0, 8).map(({ s: st, parentStid }) =>
+      `<li class="stw-sub${parentStid ? ' stw-sub--nested' : ''}" onclick="event.stopPropagation();window.app.toggleSubtaskFromWarning('${id}','${st.id}','${ds}','${parentStid || ''}',this)"><span class="stw-sub-check"></span><span>${esc(st.title)}</span></li>`
+    ).join('');
+    const hidden = Math.max(0, count - 8);
     const popover = document.createElement('div');
     popover.className = 'subtask-warning-popover';
     popover.onclick = e => e.stopPropagation();
     popover.innerHTML = `
       <div class="stw-label">${label}</div>
+      ${rows ? `<ul class="stw-subs">${rows}${hidden ? `<li class="stw-sub stw-sub--more">+${hidden} de plus</li>` : ''}</ul>` : ''}
       <div class="stw-actions">
         <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','all')">Tout compléter</button>
         <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','skip')">Ignorer</button>
@@ -1940,6 +1952,33 @@ class TodoApp {
 
   // Compte récursif des (sous-)sous-tâches non faites — utilisé par
   // l'avertissement de complétion ci-dessus.
+  // Sous-tâches non faites, à plat (profondeur 2 incluse) — même parcours
+  // récursif que _countIncompleteSubtasks, dont elle doit rester le miroir
+  // exact : le popover afficherait sinon un nombre et une liste discordants.
+  _flatIncompleteSubtasks(subtasks, parentStid = null) {
+    const out = [];
+    (subtasks || []).forEach(s => {
+      if (!s.completed) out.push({ s, parentStid });
+      if (s.subtasks?.length) out.push(...this._flatIncompleteSubtasks(s.subtasks, s.id));
+    });
+    return out;
+  }
+
+  // Coche une sous-tâche depuis l'avertissement, sans le refermer : on peut
+  // les liquider d'affilée. Quand la dernière tombe, la tâche parente se
+  // complète d'elle-même (et le popover disparaît avec elle).
+  toggleSubtaskFromWarning(todoId, stid, ds, parentStid, el) {
+    this.toggleSubtask(todoId, stid, ds, parentStid || undefined);
+    // toggleSubtask() a déjà appelé render() ; le popover vit dans <body>,
+    // il y survit — mais son contenu, lui, doit être remis à jour à la main.
+    el.classList.add('done');
+    const t = state.todos.find(x => x.id === todoId);
+    const left = t ? this._countIncompleteSubtasks(resolveOccurrence(t, ds).subtasks) : 0;
+    if (!left) { this.completeWithSubtasks(todoId, ds, 'skip'); return; }
+    const lbl = el.closest('.subtask-warning-popover')?.querySelector('.stw-label');
+    if (lbl) lbl.textContent = left === 1 ? '1 sous-tâche incomplète' : `${left} sous-tâches incomplètes`;
+  }
+
   _countIncompleteSubtasks(subtasks) {
     let n = 0;
     (subtasks || []).forEach(s => {

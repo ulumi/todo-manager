@@ -51,6 +51,12 @@ export const DEFAULT_BLOCK_MIN = 30;   // durée d'un bloc sans endTime ni estim
 // passaient pour simultanées et se retrouvaient côte à côte en demi-largeur
 // au lieu de rester pleine largeur à gauche).
 export const MIN_BLOCK_PX = 20;
+// Sous-tâches listées DANS le bloc : une ligne fait ~15px, et l'en-tête
+// (heure + titre) en réclame ~40. En dessous, le bloc n'affiche que le badge
+// « fait/total » — la hauteur d'un bloc reflète sa durée, jamais son contenu,
+// donc on n'agrandit rien pour faire tenir une checklist (cf. blockMinutes).
+const SUB_ROW_PX = 15;
+const SUB_HEAD_PX = 40;
 
 // Frontières des moments — les mêmes que celles dérivées au drop
 // (periodForMinutes). Elles définissent la plage couverte par chaque bande.
@@ -294,6 +300,23 @@ function blockHTML(b, ds, px, range) {
   const catBadge = cat ? `<span class="agenda-block-badge agenda-block-cat" style="background:${cat.color}">${esc(cat.name.toUpperCase())}</span>` : '';
   const flexBadge = t.flexibleTime ? `<span class="agenda-block-badge agenda-block-flex" title="Heure approximative — peut glisser">≈</span>` : '';
 
+  // Checklist compacte, uniquement si la hauteur du bloc la porte — cochable
+  // sur place. `t.subtasks` est déjà résolu pour l'occurrence du jour
+  // (getTodosForDate → resolveOccurrence) et toggleSubtask() écrit dans le
+  // bon bucket via occurrenceSubtasks(), donc une récurrente n'est modifiée
+  // que pour CETTE date.
+  const subsHTML = (() => {
+    if (!subs.length) return '';
+    const room = Math.floor((h - SUB_HEAD_PX) / SUB_ROW_PX);
+    if (room < 1) return '';
+    const shown = subs.slice(0, room);
+    const rest = subs.length - shown.length;
+    const rows = shown.map(st =>
+      `<div class="agenda-sub${st.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${t.id}','${st.id}','${ds}')" title="${esc(st.title)}"><span class="agenda-sub-check"></span><span class="agenda-sub-title">${esc(st.title)}</span></div>`
+    ).join('');
+    return `<div class="agenda-block-subs">${rows}${rest > 0 ? `<div class="agenda-sub agenda-sub-more">+${rest} de plus</div>` : ''}</div>`;
+  })();
+
   const checkAction = b.cancelled
     ? `window.app.cancelTodo('${t.id}','${ds}')`
     : `window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)`;
@@ -311,6 +334,7 @@ function blockHTML(b, ds, px, range) {
         <div class="agenda-block-title">${esc(t.title)}</div>
       </div>
       <div class="agenda-block-meta">${flexBadge}${recBadge}${catBadge}${subBadge}${linkBadge}</div>
+      ${subsHTML}
     </div>
     <div class="agenda-block-actions">
       <button class="agenda-block-btn" title="Focus sur cette tâche" onclick="event.stopPropagation();window.app.focusStartOn('${t.id}','${ds}')">

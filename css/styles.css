@@ -17962,4 +17962,123 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   filter: brightness(1.12);
 }
 
+.agenda-block-subs {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.agenda-sub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 14px;
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 3px;
+}
+.agenda-sub:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+.agenda-sub.done {
+  opacity: 0.5;
+}
+.agenda-sub.done .agenda-sub-title {
+  text-decoration: line-through;
+}
+.agenda-sub.done .agenda-sub-check {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.agenda-sub-check {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border: 1.4px solid var(--border);
+  border-radius: 50%;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.agenda-sub-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-sub-more {
+  font-style: italic;
+  opacity: 0.7;
+  cursor: default;
+}
+.agenda-sub-more:hover {
+  background: none;
+}
+
+.stw-subs {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  max-width: 280px;
+}
+
+.stw-sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 4px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+.stw-sub:hover {
+  background: var(--surface2);
+}
+.stw-sub--nested {
+  padding-left: 16px;
+}
+.stw-sub span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stw-sub.done {
+  opacity: 0.5;
+}
+.stw-sub.done span:last-child {
+  text-decoration: line-through;
+}
+.stw-sub.done .stw-sub-check {
+  background: var(--success);
+  border-color: var(--success);
+}
+.stw-sub--more {
+  font-style: italic;
+  color: var(--text-muted);
+  cursor: default;
+}
+.stw-sub--more:hover {
+  background: none;
+}
+
+.stw-sub-check {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.6px solid var(--border);
+  border-radius: 50%;
+  transition: background 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.stw-sub--more .stw-sub-check {
+  display: none;
+}
+
 /*# sourceMappingURL=styles.css.map */
