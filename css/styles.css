@@ -5496,6 +5496,205 @@ select.fl-input ~ .fl-label {
   margin-top: 24px;
 }
 
+.app-dialog-overlay {
+  animation: app-dialog-overlay-in 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.app-dialog-overlay.closing {
+  animation: app-dialog-overlay-out 0.16s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.app-dialog-overlay.closing .app-dialog {
+  animation: app-dialog-out 0.16s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.app-dialog {
+  max-width: 420px;
+  padding: 24px;
+  animation: app-dialog-in 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.app-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.app-dialog-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+.app-dialog--danger .app-dialog-icon {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.app-dialog-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.app-dialog-close {
+  margin-left: auto;
+}
+
+.app-dialog-msg {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.app-dialog-detail {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.app-dialog-input {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.app-dialog-input::placeholder {
+  color: var(--text-muted);
+}
+.app-dialog-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.app-dialog .btn:focus-visible,
+.app-dialog .app-dialog-opt:focus-visible,
+.app-dialog .modal-close-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+}
+.app-dialog.app-dialog--danger .btn-danger:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.app-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+.app-dialog-actions--stack {
+  flex-direction: column;
+  gap: 8px;
+}
+.app-dialog-actions--stack .btn {
+  width: 100%;
+}
+
+.app-dialog-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.app-dialog-opt:hover {
+  border-color: var(--primary);
+  background: var(--surface2);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(91, 94, 247, 0.15);
+}
+.app-dialog-opt:active {
+  transform: translateY(0);
+}
+.app-dialog-opt--danger .app-dialog-opt-title {
+  color: var(--danger);
+}
+.app-dialog-opt--danger:hover {
+  border-color: var(--danger);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.18);
+}
+
+.app-dialog-opt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.app-dialog-opt-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@keyframes app-dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes app-dialog-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes app-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes app-dialog-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog-overlay,
+  .app-dialog-overlay.closing,
+  .app-dialog,
+  .app-dialog-overlay.closing .app-dialog {
+    animation-duration: 0.01ms;
+  }
+}
 .title-combobox {
   position: absolute;
   top: calc(100% + 4px);

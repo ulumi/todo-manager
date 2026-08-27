@@ -68,6 +68,51 @@
     .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
     .btn-icon.warn:hover   { color: var(--primary); border-color: var(--primary); }
 
+    /* ── Dialogues (js/modules/dialog.js) ────────────── */
+    /* Cette page a sa propre feuille de style, isolée de css/styles.scss :
+       les quelques classes que dialog.js attend sont redéfinies ici, dans
+       le thème de l'admin, plutôt que d'y importer tout le CSS de l'app. */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px); display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px; width: 100%; max-width: 420px;
+      box-shadow: 0 20px 48px rgba(0,0,0,.45);
+    }
+    .modal-close-btn {
+      flex-shrink: 0; width: 28px; height: 28px; border: none; padding: 0;
+      background: transparent; color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; transition: background .12s, color .12s;
+    }
+    .modal-close-btn:hover { background: var(--surface2); color: var(--text); }
+    .btn-primary { background: var(--primary); color: #0f1117; }
+    .app-dialog-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .app-dialog-icon {
+      flex-shrink: 0; width: 34px; height: 34px; display: flex;
+      align-items: center; justify-content: center; border-radius: 10px;
+      color: var(--primary); background: rgba(245,158,11,.14);
+    }
+    .app-dialog--danger .app-dialog-icon { color: var(--danger); background: rgba(248,113,113,.14); }
+    .app-dialog-title {
+      flex: 1; min-width: 0; font-size: 15px; font-weight: 700;
+      color: var(--text); text-transform: uppercase; letter-spacing: .02em;
+    }
+    .app-dialog-msg { font-size: 14px; line-height: 1.55; color: var(--text); white-space: pre-line; overflow-wrap: break-word; }
+    .app-dialog-detail { margin-top: 8px; font-size: 12.5px; line-height: 1.5; color: var(--muted); white-space: pre-line; }
+    .app-dialog-input {
+      width: 100%; margin-top: 14px; padding: 10px 12px; font-size: 14px;
+      font-family: inherit; color: var(--text); background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px; outline: none;
+    }
+    .app-dialog-input:focus { border-color: var(--primary); }
+    .app-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .app-dialog-actions--stack { flex-direction: column; }
+    .app-dialog-actions--stack .btn { width: 100%; }
+
     /* ── Dashboard shell ─────────────────────────────── */
     #dashboard { display: none; }
 
@@ -860,6 +905,9 @@
 <!-- ══════════ SUPABASE + SCRIPT ══════════ -->
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  // Même module de dialogues que l'app : cette page n'a plus aucune boîte
+  // native confirm()/alert() non plus.
+  import { appConfirm, appAlert } from './js/modules/dialog.js';
 
   const SUPABASE_URL  = 'https://ztibrrmebnpzmflzghjb.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzcxODAsImV4cCI6MjA4ODI1MzE4MH0.Qe0fFvwZWZWyBgYzG1rrlTMO6fnfrCxhQ9Z5CkJTEak';
@@ -1116,7 +1164,13 @@
   const ACTION_ICONS  = { disable: '⊘', enable: '✓', delete: '🗑', revoke: '⟳' };
 
   window.userAction = async function(uid, action) {
-    if (!confirm(`Voulez-vous vraiment ${ACTION_LABELS[action] || action} ce compte ?\n\n${uid}`)) return;
+    const label = ACTION_LABELS[action] || action;
+    if (!await appConfirm(`Voulez-vous vraiment ${label} ce compte ?`, {
+      title: label.charAt(0).toUpperCase() + label.slice(1),
+      detail: uid,
+      confirmLabel: label.charAt(0).toUpperCase() + label.slice(1),
+      danger: action === 'delete' || action === 'disable',
+    })) return;
     try {
       const res = await fetch(API + '/admin-user-action', {
         method: 'POST',
@@ -1133,13 +1187,17 @@
       } else if (action === 'disable' || action === 'enable') {
         await loadUsers(true);
       }
-    } catch (e) { alert('Erreur : ' + e.message); }
+    } catch (e) { appAlert(e.message, { title: 'Erreur', tone: 'error' }); }
   };
 
   // ── Delete anon (shared) ──────────────────────────────
   async function doDeleteAnon() {
     const n = _users.filter(u => u.isAnonymous).length;
-    if (!confirm(`Supprimer ${n} compte(s) guest ? Cette action est irréversible.`)) return;
+    if (!await appConfirm(`${n} compte(s) guest seront supprimés.`, {
+      title: 'Supprimer les comptes guest',
+      detail: 'Cette action est irréversible.',
+      confirmLabel: 'Supprimer', danger: true,
+    })) return;
     try {
       const res  = await fetch(API + '/admin-batch', {
         method: 'POST',
@@ -1150,7 +1208,7 @@
       if (!res.ok) throw new Error(data.error);
       logActivity('🗑', `Deleted ${data.deleted} guest account(s)`);
       await loadUsers();
-    } catch (e) { alert('Erreur : ' + e.message); }
+    } catch (e) { appAlert(e.message, { title: 'Erreur', tone: 'error' }); }
   }
   document.getElementById('deleteAnonBtn').addEventListener('click', doDeleteAnon);
   document.getElementById('deleteAnonBtnTable').addEventListener('click', doDeleteAnon);
@@ -1255,7 +1313,7 @@
       logActivity('🧹', `Cleaned ${data.cleaned} stale presence record(s)`);
       setTimeout(() => { btn.textContent = '🧹'; btn.disabled = false; }, 2500);
       loadOnline(true);
-    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = '🧹'; btn.disabled = false; }
+    } catch (e) { appAlert(e.message, { title: 'Erreur', tone: 'error' }); btn.textContent = '🧹'; btn.disabled = false; }
   });
 
   document.getElementById('cleanStaleBtn').addEventListener('click', () => {
@@ -1372,7 +1430,7 @@
       btn.textContent = `✓ Sent to ${data.sent}`;
       logActivity('📢', `Broadcast to ${data.sent} users: "${message.slice(0,40)}${message.length > 40 ? '…' : ''}"`);
       setTimeout(() => { btn.textContent = origLabel; btn.disabled = false; }, 3000);
-    } catch (e) { alert('Erreur : ' + e.message); btn.textContent = origLabel; btn.disabled = false; }
+    } catch (e) { appAlert(e.message, { title: 'Erreur', tone: 'error' }); btn.textContent = origLabel; btn.disabled = false; }
   }
 
   // ── Chat slide-over ───────────────────────────────────

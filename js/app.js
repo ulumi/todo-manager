@@ -104,6 +104,7 @@ import {
   cropDragStart, setCropZoom, setEmojiZoom,
 } from './modules/avatarEditor.js';
 import { getOverduePunctual, renderReviewBody } from './modules/review.js';
+import { appConfirm, appAlert, appChoice } from './modules/dialog.js';
 
 // Initialize state
 state.initializeState();
@@ -1789,11 +1790,13 @@ class TodoApp {
   addParentTask(id) {
     const t = state.todos.find(x => x.id === id);
     if (!t || (t.recurrence && t.recurrence !== 'none')) return;
-    this._inlineTitlePrompt(id, 'Titre de la tâche parente…', title => {
+    this._inlineTitlePrompt(id, 'Titre de la tâche parente…', async title => {
       const cur = state.todos.find(x => x.id === id);
       if (!cur) return;
       const kids = cur.subtasks || [];
-      if (kids.length && !confirm(`« ${cur.title} » a ${kids.length} sous-tâche(s) : elles passeront au même niveau qu'elle, sous « ${title} ». Continuer ?`)) return;
+      if (kids.length && !await appConfirm(
+        `« ${cur.title} » a ${kids.length} sous-tâche(s) : elles passeront au même niveau qu'elle, sous « ${title} ».`,
+        { title: 'Créer une tâche parente', confirmLabel: 'Continuer', tone: 'warning' })) return;
       snapshot(state.todos);
       const pid = Date.now().toString();
       const parent = {
@@ -2299,7 +2302,7 @@ class TodoApp {
   // est déjà elle-même profondeur 1, donc toute source qui a ses propres
   // enfants dépasserait la limite — split (enfants promus, titre préfixé)
   // au lieu d'imbriquer telle quelle.
-  nestSubtaskUnderSibling(todoId, stid, targetStid, ds) {
+  async nestSubtaskUnderSibling(todoId, stid, targetStid, ds) {
     const t = state.todos.find(x => x.id === todoId);
     if (!t || stid === targetStid) return false;
     const arr = occurrenceSubtasks(t, ds);
@@ -2310,7 +2313,8 @@ class TodoApp {
     const source = arr[fromIdx];
 
     const split = needsSplit(1, source);
-    if (split && !confirm(_splitConfirmMsg([source], target))) return false;
+    if (split && !await appConfirm(_splitConfirmMsg([source], target),
+      { title: 'Imbriquer la sous-tâche', confirmLabel: 'Continuer', tone: 'warning' })) return false;
 
     snapshot(state.todos);
     const entries = split ? splitIntoPromotedChildren(source)
@@ -2632,11 +2636,13 @@ class TodoApp {
   // Inverse : réunit toutes les tâches partageant ce groupId en une seule
   // tâche + sous-tâches. Si les membres ont des dates différentes, elles
   // sont toutes réunies sur celle du 1er membre — confirmation demandée.
-  convertGroupToTask(groupId) {
+  async convertGroupToTask(groupId) {
     const members = state.todos.filter(x => x.groupId === groupId);
     if (members.length < 2) return;
     const dates = new Set(members.map(m => m.date));
-    if (dates.size > 1 && !confirm(`Ces tâches ont des dates différentes : elles seront toutes réunies sur ${members[0].date}. Continuer ?`)) return;
+    if (dates.size > 1 && !await appConfirm(
+      `Ces tâches ont des dates différentes : elles seront toutes réunies sur ${members[0].date}.`,
+      { title: 'Regrouper en sous-tâches', confirmLabel: 'Continuer', tone: 'warning' })) return;
     snapshot(state.todos);
     const first = members[0];
     const parent = {
@@ -4808,7 +4814,7 @@ class TodoApp {
   // a déjà 2 niveaux de sous-tâches dépasserait la limite en s'imbriquant
   // telle quelle sous une cible racine — ses enfants directs sont alors
   // promus à la place (splitIntoPromotedChildren), titre préfixé.
-  nestTaskAsSubtask(draggedIds, targetId) {
+  async nestTaskAsSubtask(draggedIds, targetId) {
     const target = state.todos.find(x => x.id === targetId);
     if (!target) return false;
     const sources = draggedIds.filter(id => id !== targetId)
@@ -4817,9 +4823,15 @@ class TodoApp {
     if (sources.some(s => s.recurrence && s.recurrence !== 'none')) return false;
 
     const lost = _lostFieldLabels(sources);
-    if (lost.length && !confirm(_fieldLossConfirmMsg(sources, target, lost))) return false;
+    if (lost.length && !await appConfirm(_fieldLossConfirmMsg(sources, target, lost),
+      { title: 'Transformer en sous-tâche', confirmLabel: 'Continuer', tone: 'warning' })) return false;
+    // La cible a pu disparaître pendant la confirmation (sync temps réel
+    // d'un autre appareil, autre onglet) : le dialogue rend cette fenêtre
+    // observable, ce que le confirm() natif bloquant n'exposait pas.
+    if (!state.todos.includes(target)) return false;
     const splitSources = sources.filter(s => needsSplit(0, s));
-    if (splitSources.length && !confirm(_splitConfirmMsg(splitSources, target))) return false;
+    if (splitSources.length && !await appConfirm(_splitConfirmMsg(splitSources, target),
+      { title: 'Transformer en sous-tâche', confirmLabel: 'Continuer', tone: 'warning' })) return false;
 
     snapshot(state.todos);
     const newSubtasks = sources.flatMap(s =>
@@ -7714,7 +7726,7 @@ class TodoApp {
       this._saRefresh();
     } catch (err) {
       if (btn) { btn.disabled = false; btn.textContent = '✨ Générer'; }
-      alert(`Erreur : ${err.message}`);
+      appAlert(err.message, { title: 'Erreur', tone: 'error' });
     }
   }
 
@@ -7851,23 +7863,25 @@ class TodoApp {
 
   async connectGoogleCalendar() {
     const token = await getIdToken();
-    if (!token) { alert('Connecte-toi d\'abord à un compte.'); return; }
+    if (!token) { await appAlert('Connecte-toi d\'abord à un compte.', { title: 'Google Calendar' }); return; }
     try {
       const res = await fetch('/api/gcal-auth', { headers: { Authorization: `Bearer ${token}` } });
       const { url } = await res.json();
       window.location.href = url;
     } catch (err) {
-      alert('Erreur de connexion Google Calendar: ' + err.message);
+      appAlert(err.message, { title: 'Connexion Google Calendar', tone: 'error' });
     }
   }
 
   async cleanGcalTodos(skipConfirm = false) {
     const gcalTodos = state.todos.filter(t => t.id && t.id.startsWith('gcal_'));
     if (gcalTodos.length === 0) {
-      if (!skipConfirm) alert('Aucun événement Google Calendar importé à supprimer.');
+      if (!skipConfirm) await appAlert('Aucun événement Google Calendar importé à supprimer.', { title: 'Google Calendar' });
       return;
     }
-    if (!skipConfirm && !confirm(`Supprimer ${gcalTodos.length} événement(s) importé(s) de Google Calendar ?`)) return;
+    if (!skipConfirm && !await appConfirm(
+      `${gcalTodos.length} événement(s) importé(s) de Google Calendar seront supprimés de 2FŨKOI.`,
+      { title: 'Supprimer les événements importés', confirmLabel: 'Supprimer', danger: true })) return;
     state.setTodos(state.todos.filter(t => !t.id || !t.id.startsWith('gcal_')));
     saveTodos(state.todos);
     this.render();
@@ -7877,26 +7891,18 @@ class TodoApp {
     }
   }
 
+  // Dialogue à 3 issues — délégué à appChoice() (dialog.js) comme tout le
+  // reste. C'était auparavant un overlay bricolé en styles inline, hors du
+  // design system : pas de blur, pas d'animation, pas d'Échap, et un fond
+  // `var(--bg-card)` qui n'existe dans AUCUN thème (donc transparent).
   _gcalDisconnectDialog() {
-    return new Promise(resolve => {
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
-      overlay.innerHTML = `
-        <div style="background:var(--bg-card);border-radius:12px;padding:24px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
-          <h3 style="margin:0 0 8px;font-size:16px;">Déconnecter Google Calendar</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px;">Que faire des événements importés depuis Google Calendar ?</p>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <button id="gcalDlgKeep"   class="btn btn-ghost" style="text-align:left;">Déconnecter uniquement — garder les événements</button>
-            <button id="gcalDlgClean"  class="btn btn-ghost" style="text-align:left;color:var(--danger);border-color:var(--danger);">Déconnecter et supprimer les événements importés</button>
-            <button id="gcalDlgCancel" class="btn btn-ghost" style="text-align:left;margin-top:4px;">Annuler</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-      const done = (val) => { overlay.remove(); resolve(val); };
-      overlay.querySelector('#gcalDlgKeep').onclick   = () => done('keep');
-      overlay.querySelector('#gcalDlgClean').onclick  = () => done('clean');
-      overlay.querySelector('#gcalDlgCancel').onclick = () => done(null);
-      overlay.addEventListener('click', e => { if (e.target === overlay) done(null); });
+    return appChoice({
+      title: 'Déconnecter Google Calendar',
+      message: 'Que faire des événements déjà importés depuis Google Calendar ?',
+      options: [
+        { value: 'keep',  label: 'Déconnecter seulement', desc: 'Les événements importés restent dans 2FŨKOI' },
+        { value: 'clean', label: 'Déconnecter et supprimer', desc: 'Les événements importés sont retirés de 2FŨKOI', danger: true },
+      ],
     });
   }
 
@@ -7982,7 +7988,11 @@ class TodoApp {
   }
 
   async profileDeleteData() {
-    if (!confirm('Effacer toutes tes données ? Cette action est irréversible.')) return;
+    if (!await appConfirm('Toutes tes données seront effacées.', {
+      title: 'Effacer mes données',
+      detail: 'Cette action est irréversible.',
+      confirmLabel: 'Tout effacer', danger: true,
+    })) return;
     await deleteUserData();
     Object.keys(localStorage).filter(k => !k.startsWith('sb-')).forEach(k => localStorage.removeItem(k));
     await signOut();
@@ -8856,11 +8866,15 @@ class TodoApp {
     localStorage.setItem('daySpacer', JSON.stringify(this.daySpacer));
   }
 
-  clearDay() {
+  async clearDay() {
     const dateStr = DS(state.navDate);
     const dayTodos = state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && t.date === dateStr);
     if (dayTodos.length === 0) return;
-    if (!confirm(`Supprimer les ${dayTodos.length} tâche(s) de cette journée ?`)) return;
+    if (!await appConfirm(`Les ${dayTodos.length} tâche(s) ponctuelle(s) de cette journée seront supprimées.`, {
+      title: 'Vider la journée',
+      detail: 'Les tâches récurrentes ne sont pas touchées. Annulable avec Ctrl+Z.',
+      confirmLabel: 'Supprimer', danger: true,
+    })) return;
     snapshot(state.todos);
     state.setTodos(state.todos.filter(t => !(!t.recurrence || t.recurrence === 'none') || t.date !== dateStr));
     saveTodos(state.todos);
@@ -9051,8 +9065,12 @@ class TodoApp {
     clearAllSuggestedTasks();
   }
 
-  clearAllCalendarData() {
-    clearAllCalendarData();
+  // await : clearAllCalendarData() ouvre désormais un dialogue de l'app
+  // (asynchrone) au lieu d'un confirm() bloquant — rendre avant qu'il ne soit
+  // résolu redessinerait l'écran d'AVANT la suppression, donc sans effet
+  // visible une fois confirmée.
+  async clearAllCalendarData() {
+    await clearAllCalendarData();
     this.render();
   }
 
@@ -9237,8 +9255,12 @@ class TodoApp {
     this.render();
   }
 
-  confirmDeleteProject(id) {
-    if (!confirm('Supprimer ce projet ?')) return;
+  async confirmDeleteProject(id) {
+    if (!await appConfirm('Ce projet sera supprimé.', {
+      title: 'Supprimer le projet',
+      detail: 'Les tâches qui y étaient rattachées sont conservées.',
+      confirmLabel: 'Supprimer', danger: true,
+    })) return;
     closeProjectPanel();
     deleteProjectItem(id);
     this.render();
@@ -9394,8 +9416,12 @@ class TodoApp {
     this._renderIntentionPanel(id);
   }
 
-  deleteIntention(id) {
-    if (!confirm('Supprimer cette intention ? Les tâches resteront mais ne seront plus taguées.')) return;
+  async deleteIntention(id) {
+    if (!await appConfirm('Cette intention sera supprimée.', {
+      title: 'Supprimer l\u2019intention',
+      detail: 'Les tâches resteront mais ne seront plus taguées.',
+      confirmLabel: 'Supprimer', danger: true,
+    })) return;
     this.closeIntentionPanel();
     // Remove intentionId from tasks
     state.todos.forEach(t => {
@@ -9408,8 +9434,12 @@ class TodoApp {
     this.render();
   }
 
-  deleteCategory(id) {
-    if (!confirm('Supprimer cette catégorie ? Les tâches seront dissociées mais conservées.')) return;
+  async deleteCategory(id) {
+    if (!await appConfirm('Cette étiquette sera supprimée.', {
+      title: 'Supprimer l\u2019étiquette',
+      detail: 'Les tâches seront dissociées mais conservées.',
+      confirmLabel: 'Supprimer', danger: true,
+    })) return;
     closeCategoryView();
     this.removeCategory(id);
   }
@@ -10752,8 +10782,15 @@ try {
       <button id="_bootReset" style="padding:10px 18px;margin:0 6px;border-radius:8px;border:none;background:#c0392b;color:#fff;cursor:pointer;">Réinitialiser les données locales</button>
     </div>`;
   document.getElementById('_bootRetry').onclick = () => location.reload();
-  document.getElementById('_bootReset').onclick = () => {
-    if (!confirm('Efface toutes les données stockées sur cet appareil (tâches, préférences). Action irréversible localement — utile seulement si tes données sont aussi sauvegardées ailleurs (Supabase). Continuer ?')) return;
+  // appConfirm() est utilisable ici : dialog.js n'importe rien et ne dépend
+  // ni de window.app ni de state — c'est justement pourquoi il est écrit
+  // sans aucun import (voir l'en-tête du module).
+  document.getElementById('_bootReset').onclick = async () => {
+    if (!await appConfirm('Efface toutes les données stockées sur cet appareil (tâches, préférences).', {
+      title: 'Réinitialiser les données locales',
+      detail: 'Action irréversible localement — utile seulement si tes données sont aussi sauvegardées ailleurs (Supabase).',
+      confirmLabel: 'Tout effacer', danger: true,
+    })) return;
     localStorage.clear();
     location.reload();
   };

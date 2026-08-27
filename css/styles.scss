@@ -5520,6 +5520,202 @@ select.fl-input ~ .fl-label {
 }
 
 
+// ─── Dialogues de confirmation / alerte (js/modules/dialog.js) ───────────
+// Remplacent les boîtes natives confirm()/alert() du navigateur. Réutilisent
+// .modal-overlay (fond assombri + backdrop-filter blur) et .modal (surface,
+// bordure, ombre, thème) pour que ce soit visuellement le même objet que le
+// modal d'édition — d'où le peu de règles ici : uniquement ce qui est propre
+// à un dialogue (largeur, icône de ton, empilement des actions).
+
+.app-dialog-overlay {
+  animation: app-dialog-overlay-in .18s cubic-bezier(.25, .46, .45, .94);
+
+  &.closing {
+    animation: app-dialog-overlay-out .16s cubic-bezier(.4, 0, 1, 1) forwards;
+
+    .app-dialog { animation: app-dialog-out .16s cubic-bezier(.4, 0, 1, 1) forwards; }
+  }
+}
+
+.app-dialog {
+  max-width: 420px;
+  padding: 24px;
+  animation: app-dialog-in .28s cubic-bezier(.25, .46, .45, .94);
+}
+
+.app-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.app-dialog-icon {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+
+  .app-dialog--danger & {
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+  }
+}
+
+.app-dialog-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.app-dialog-close { margin-left: auto; }
+
+.app-dialog-msg {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+  // Les messages sont posés en textContent (jamais innerHTML) : c'est ceci
+  // qui rend leurs éventuels retours à la ligne.
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.app-dialog-detail {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.app-dialog-input {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+
+  &::placeholder { color: var(--text-muted); }
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+}
+
+// Le bouton d'action reçoit le focus à l'ouverture (Entrée doit le valider
+// tout de suite) : Chromium y peint alors son anneau bleu système, seule
+// couleur de l'écran à ne venir ni du thème ni de --primary. On le remplace
+// par un anneau aux couleurs de l'app.
+.app-dialog {
+  .btn:focus-visible,
+  .app-dialog-opt:focus-visible,
+  .modal-close-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+  }
+
+  &.app-dialog--danger .btn-danger:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
+  }
+}
+
+.app-dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+
+  &--stack {
+    flex-direction: column;
+    gap: 8px;
+
+    .btn { width: 100%; }
+  }
+}
+
+// Option pleine largeur d'un appChoice() — même présentation que les trois
+// boutons du modal « Supprimer une récurrence ».
+.app-dialog-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 13px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: all .18s cubic-bezier(.25, .46, .45, .94);
+
+  &:hover {
+    border-color: var(--primary);
+    background: var(--surface2);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(91, 94, 247, .15);
+  }
+
+  &:active { transform: translateY(0); }
+
+  &--danger {
+    .app-dialog-opt-title { color: var(--danger); }
+
+    &:hover {
+      border-color: var(--danger);
+      box-shadow: 0 8px 20px rgba(239, 68, 68, .18);
+    }
+  }
+}
+
+.app-dialog-opt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.app-dialog-opt-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@keyframes app-dialog-overlay-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes app-dialog-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+
+@keyframes app-dialog-in {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes app-dialog-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(6px) scale(.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog-overlay,
+  .app-dialog-overlay.closing,
+  .app-dialog,
+  .app-dialog-overlay.closing .app-dialog { animation-duration: .01ms; }
+}
+
+
+
 // ─── 12. Forms ───────────────────────────────────────────────────────────
 
 .title-combobox {

@@ -5,6 +5,7 @@
 import * as state from './state.js';
 import { saveTodos, pushNow } from './storage.js';
 import { safeParseJSON } from './utils.js';
+import { appConfirm } from './dialog.js';
 
 const STORAGE_KEY = 'suggestedTasks';
 const TEMPLATES_KEY = 'dayTemplates';
@@ -546,15 +547,21 @@ export function moveSuggestedTask(type, index, direction) {
   renderAdminLists(tasks);
 }
 
-export function clearAllSuggestedTasks() {
-  if (!confirm('Êtes-vous sûr de vouloir vider toutes les tâches suggérées ?')) return;
+export async function clearAllSuggestedTasks() {
+  if (!await appConfirm('Toutes les tâches suggérées (quotidiennes, hebdomadaires, mensuelles) seront vidées.', {
+    title: 'Vider les tâches suggérées',
+    confirmLabel: 'Vider', danger: true,
+  })) return;
   const emptyTasks = { daily: [], weekly: [], monthly: [] };
   saveSuggestedTasks(emptyTasks);
   renderAdminLists(emptyTasks);
 }
 
-export function clearAllCalendarData() {
-  if (!confirm(state.T.confirmClearAllData)) return;
+export async function clearAllCalendarData() {
+  if (!await appConfirm(state.T.confirmClearAllData, {
+    title: state.T.clearAllData || 'Vider les données',
+    confirmLabel: state.T.clearAllData || 'Vider', danger: true,
+  })) return;
   // Clear todos and save
   saveTodos([]);
   state.setTodos([]);

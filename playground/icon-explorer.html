@@ -16,6 +16,24 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;display:flex;flex-direction:column}
 
 /* ── TOPBAR ── */
+/* Dialogues (../js/modules/dialog.js) — aucune boîte native sur cette page */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--bdr2);border-radius:14px;padding:24px;width:100%;max-width:420px;box-shadow:0 20px 48px rgba(0,0,0,.5)}
+.modal-close-btn{flex-shrink:0;width:28px;height:28px;border:none;padding:0;background:none;color:var(--txt3);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close-btn:hover{background:var(--surf2);color:var(--txt)}
+.btn{padding:9px 18px;border-radius:9px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt);font-size:13px;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--acc2);border-color:var(--acc3);color:var(--acc)}
+.btn-danger{background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.4);color:#f87171}
+.app-dialog-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.app-dialog-icon{flex-shrink:0;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--acc);background:var(--acc2)}
+.app-dialog--danger .app-dialog-icon{color:#f87171;background:rgba(248,113,113,.14)}
+.app-dialog-title{flex:1;min-width:0;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.app-dialog-msg{font-size:14px;line-height:1.55;color:var(--txt);white-space:pre-line;overflow-wrap:break-word}
+.app-dialog-detail{margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--txt2)}
+.app-dialog-input{width:100%;margin-top:14px;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--txt);background:var(--surf2);border:1px solid var(--bdr2);border-radius:9px;outline:none}
+.app-dialog-input:focus{border-color:var(--acc3)}
+.app-dialog-input::placeholder{color:var(--txt3)}
+.app-dialog-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
 #topbar{flex-shrink:0;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--bdr);background:var(--bg2);z-index:10}
 #logo{font-size:15px;font-weight:900;letter-spacing:-.5px;white-space:nowrap;background:linear-gradient(135deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 #sw{flex:1;max-width:500px;position:relative;display:flex;align-items:center}
@@ -703,14 +721,20 @@ function renderFavGrid() {
   });
 }
 
+let _dlg = null;
+const dlg = () => (_dlg ||= import('../js/modules/dialog.js'));
+
 function mkFolder(name) {
   if (!name || S.favs[name]) return;
   S.favs[name] = []; S.folder = name; saveFavs(); renderFavs();
 }
 
-function delFolder(name) {
+async function delFolder(name) {
   if (name === 'Favorites') return;
-  if (!confirm(`Delete folder "${name}" (${S.favs[name].length} icons)?`)) return;
+  const { appConfirm } = await dlg();
+  if (!await appConfirm(`Folder "${name}" and its ${S.favs[name].length} icon(s) will be removed.`, {
+    title: 'Delete folder', confirmLabel: 'Delete', cancelLabel: 'Cancel', danger: true,
+  })) return;
   delete S.favs[name];
   if (S.folder === name) S.folder = 'Favorites';
   saveFavs(); renderFavs(); updFavCnt(); updFavBadges();
@@ -740,7 +764,13 @@ function bindEvents() {
     g('favtog').classList.toggle('on', S.favOpen || Object.values(S.favs).some(a => a.length));
   });
 
-  g('afb').addEventListener('click', () => { const n = prompt('Folder name:'); if (n?.trim()) mkFolder(n.trim()); });
+  g('afb').addEventListener('click', async () => {
+    const { appPrompt } = await dlg();
+    const n = await appPrompt('Name of the new folder', {
+      title: 'New folder', placeholder: 'Folder name…', confirmLabel: 'Create', cancelLabel: 'Cancel',
+    });
+    if (n) mkFolder(n);
+  });
 
   g('togall').addEventListener('click', () => {
     const all = S.libs.size === LIBS.length;
