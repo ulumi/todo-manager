@@ -298,12 +298,18 @@ function blockHTML(b, ds, px, range) {
     ? `window.app.cancelTodo('${t.id}','${ds}')`
     : `window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)`;
 
+  // .agenda-block-head garde TOUJOURS l'heure et le titre sur la même ligne,
+  // quelle que soit la hauteur du bloc : un bloc plus long ne doit pas faire
+  // descendre le titre sous l'heure (il s'ellipse plutôt que de passer à la
+  // ligne). Seuls les badges restent en dessous, sur les blocs assez hauts.
   return `<div class="${cls}" data-id="${t.id}" data-date="${ds}" data-start="${b.start}" data-dur="${b.rawEnd - b.start}" draggable="true"
       style="--top:${top}px;--h:${h}px;--col:${col};--cols:${cols};${accent}" title="${esc(t.title)}">
     <div class="todo-check agenda-block-check${b.done ? ' checked' : ''}" onclick="event.stopPropagation();${checkAction}"${b.cancelled ? ' title="Annulée — cliquer pour restaurer"' : ''}></div>
     <div class="agenda-block-body">
-      <div class="agenda-block-time">${timeLabel}</div>
-      <div class="agenda-block-title">${esc(t.title)}</div>
+      <div class="agenda-block-head">
+        <div class="agenda-block-time">${timeLabel}</div>
+        <div class="agenda-block-title">${esc(t.title)}</div>
+      </div>
       <div class="agenda-block-meta">${flexBadge}${recBadge}${catBadge}${subBadge}${linkBadge}</div>
     </div>
     <div class="agenda-block-actions">

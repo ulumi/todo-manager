@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2903",
+    "date": "2026-08-27",
+    "message": "fix(agenda): le titre d'un bloc reste toujours à côté de l'heure, même sur une longue durée"
+  },
+  {
     "version": "0.4.2902",
     "date": "2026-08-27",
     "message": "feat(sélection): le clic du milieu sur une tâche la sélectionne (comme Ctrl/Cmd+clic)"
@@ -193,15 +198,5 @@
     "version": "0.4.2716",
     "date": "2026-08-18",
     "message": "feat(sous-tâches): réordonnancement par glisser-déposer dans le modal, remplace les flèches ↑/↓"
-  },
-  {
-    "version": "0.4.2708",
-    "date": "2026-08-18",
-    "message": "fix(modal): cliquer à l'extérieur du modal d'édition de tâche le ferme désormais"
-  },
-  {
-    "version": "0.4.2706",
-    "date": "2026-08-18",
-    "message": "feat(vue jour): bouton de suppression directe sur chaque tâche"
   }
 ]

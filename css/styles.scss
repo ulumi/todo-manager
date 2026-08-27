@@ -16758,13 +16758,29 @@ body.view-focus header { display: none; }
     .agenda-block-title { text-decoration: line-through; }
   }
 
-  .todo-check { width: 17px; height: 17px; border-width: 1.7px; margin-top: 1px; }
+  // Pas de margin-top : la case se cale d'elle-même sur .agenda-block-head,
+  // dont le min-height vaut exactement sa hauteur (voir plus bas).
+  .todo-check { width: 17px; height: 17px; border-width: 1.7px; margin-top: 0; }
   .todo-check.checked::after { font-size: 10px; }
 }
 
 .agenda-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 
+// Heure + titre sur UNE seule ligne, quelle que soit la hauteur du bloc : une
+// tâche plus longue ne doit pas faire descendre son titre sous l'heure. Le
+// titre s'ellipse (voir .agenda-block-title) plutôt que de passer à la ligne.
+// min-height = hauteur de .todo-check, pour que la case s'aligne pile dessus
+// sans marge de rattrapage.
+.agenda-block-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 17px;
+}
+
 .agenda-block-time {
+  flex: none;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: .02em;
@@ -16774,16 +16790,15 @@ body.view-focus header { display: none; }
 .agenda-block-dash { padding: 0 2px; opacity: .6; }
 
 .agenda-block-title {
+  flex: 1;
+  min-width: 0;
   font-size: 12.5px;
   font-weight: 500;
   color: var(--text);
   line-height: 1.3;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow-wrap: break-word;
+  text-overflow: ellipsis;
 }
 
 .agenda-block-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 1px; }
@@ -16812,16 +16827,17 @@ body.view-focus header { display: none; }
 .agenda-block.is-short {
   padding: 3px 6px;
   .agenda-block-meta { display: none; }
-  .agenda-block-title { -webkit-line-clamp: 1; line-clamp: 1; }
 }
 
 .agenda-block.is-tiny {
   align-items: center;
   padding: 2px 6px;
   gap: 5px;
-  .agenda-block-body { flex-direction: row; align-items: center; gap: 6px; }
   .agenda-block-meta { display: none; }
-  .agenda-block-title { -webkit-line-clamp: 1; line-clamp: 1; font-size: 11.5px; }
+  // Case plus petite ici : le head se resserre d'autant pour ne pas dépasser
+  // MIN_BLOCK_PX (agendaView.js) sur un bloc de quelques minutes.
+  .agenda-block-head { min-height: 14px; }
+  .agenda-block-title { font-size: 11.5px; }
   .todo-check { width: 14px; height: 14px; margin-top: 0; }
   .todo-check.checked::after { font-size: 8px; }
 }
