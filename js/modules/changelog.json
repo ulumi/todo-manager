@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2938",
+    "date": "2026-08-27",
+    "message": "feat(agenda): récurrence, catégorie et liens rejoignent la ligne du titre — la place va aux sous-tâches"
+  },
+  {
     "version": "0.4.2934",
     "date": "2026-08-27",
     "message": "fix(agenda): un bloc étiré par ses sous-tâches ne se fait plus recouvrir par le bloc suivant"
@@ -193,10 +198,5 @@
     "version": "0.4.2768",
     "date": "2026-08-19",
     "message": "fix(menu): renomme « Promouvoir en tâche parente » en « Créer une tâche parente »"
-  },
-  {
-    "version": "0.4.2767",
-    "date": "2026-08-19",
-    "message": "refactor(modal): remplace « Plus d'options » par 6 sections thématiques dépliables indépendantes (Quand/Durée/Priorité/Notes/Étiquettes/Compteur) avec aperçu de la valeur courante ; titre + sous-tâches seuls toujours visibles, départ minimaliste"
   }
 ]

@@ -17591,13 +17591,6 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   text-overflow: ellipsis;
 }
 
-.agenda-block-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 1px;
-}
-
 .agenda-block-badge {
   display: inline-flex;
   align-items: center;
@@ -17635,16 +17628,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .agenda-block.is-short {
   padding: 3px 6px 3px 7px;
 }
-.agenda-block.is-short .agenda-block-meta {
-  display: none;
-}
 
 .agenda-block.is-tiny {
   align-items: center;
   padding: 1px 6px 1px 7px;
-}
-.agenda-block.is-tiny .agenda-block-meta {
-  display: none;
 }
 
 .agenda-block-actions {
@@ -18134,6 +18121,29 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 .agenda-sub-more:hover {
   color: var(--primary);
+}
+
+.agenda-block-head {
+  flex-wrap: nowrap;
+}
+.agenda-block-head > .agenda-block-badge {
+  flex: none;
+}
+.agenda-block-head .agenda-block-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.agenda-block-head .agenda-block-cat {
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  line-height: 15px;
+}
+
+.agenda-block:has(.agenda-block-subs) .agenda-block-title {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 
 /*# sourceMappingURL=styles.css.map */

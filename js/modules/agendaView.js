@@ -56,7 +56,11 @@ export const MIN_BLOCK_PX = 20;
 // « fait/total » — la hauteur d'un bloc reflète sa durée, jamais son contenu,
 // donc on n'agrandit rien pour faire tenir une checklist (cf. blockMinutes).
 const SUB_ROW_PX = 15;
-const SUB_HEAD_PX = 40;
+// Une seule rangée d'en-tête depuis que les badges ont rejoint le titre
+// (17px de contenu + les paddings du bloc), contre 40 quand `.agenda-block-meta`
+// occupait une 2e ligne : autant de hauteur rendue aux sous-tâches, et donc
+// moins de blocs étirés au-delà de leur durée.
+const SUB_HEAD_PX = 28;
 // Jamais plus de lignes que ça dans un bloc : une tâche à 15 sous-tâches
 // mangerait la journée. Le reste part dans « +N de plus », qui ouvre la
 // checklist complète en popover.
@@ -348,11 +352,13 @@ function blockHTML(b, ds, px, range) {
   const accent = cat ? `--accent:${cat.color};` : '';
   const timeLabel = `${fmtHM(b.start)}<span class="agenda-block-dash">–</span>${fmtHM(b.rawEnd)}`;
 
-  // Badge « fait/total » — rendu dans la TÊTE du bloc, pas dans .agenda-block-meta
-  // qui est masquée sur les blocs courts (`is-tiny`/`is-short`). Comme la hauteur
-  // d'un bloc reflète sa durée, la majorité des tâches sont courtes : la placer
-  // dans meta revenait à ne jamais montrer qu'une tâche a des sous-tâches, ni à
-  // offrir un moyen d'y accéder. Cliquable → checklist complète en popover.
+  // TOUS les badges (récurrence, catégorie, lien, heure approximative,
+  // fait/total) vivent sur la MÊME ligne que le titre. Il y avait avant une
+  // 2e rangée `.agenda-block-meta` sous le titre : elle coûtait une ligne de
+  // hauteur à chaque bloc — donc autant de moins pour les sous-tâches — et
+  // était de toute façon masquée sur les blocs courts, c'est-à-dire sur la
+  // plupart d'entre eux. Le badge « fait/total » reste poussé à droite
+  // (margin-left:auto) et ouvre la checklist complète en popover.
   const subDone = subsAll.filter(x => x.completed).length;
   const subBadge = subsAll.length
     ? `<button class="agenda-block-badge agenda-block-subs-btn" title="${subDone}/${subsAll.length} sous-tâches faites — cliquer pour la liste" onclick="event.stopPropagation();window.app.openSubtaskList(this,'${t.id}','${ds}')">${subDone}/${subsAll.length}</button>` : '';
@@ -392,9 +398,8 @@ function blockHTML(b, ds, px, range) {
       <div class="agenda-block-head">
         <div class="agenda-block-time">${timeLabel}</div>
         <div class="agenda-block-title">${esc(t.title)}</div>
-        ${subBadge}
+        ${flexBadge}${recBadge}${catBadge}${linkBadge}${subBadge}
       </div>
-      <div class="agenda-block-meta">${flexBadge}${recBadge}${catBadge}${linkBadge}</div>
       ${subsHTML}
     </div>
     <div class="agenda-block-actions">

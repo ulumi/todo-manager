@@ -16811,7 +16811,6 @@ body.view-focus header { display: none; }
   text-overflow: ellipsis;
 }
 
-.agenda-block-meta { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 1px; }
 
 .agenda-block-badge {
   display: inline-flex;
@@ -16839,17 +16838,13 @@ body.view-focus header { display: none; }
 // démarrent à un x différent selon la durée de la tâche, et la colonne des
 // heures part en escalier d'un bloc à l'autre (1re version : 6px d'écart
 // entre un bloc de 3 min et un bloc de 30 min).
-.agenda-block.is-short {
-  padding: 3px 6px 3px 7px;
-  .agenda-block-meta { display: none; }
-}
+.agenda-block.is-short { padding: 3px 6px 3px 7px; }
 
 // Plancher MIN_BLOCK_PX = 20px (agendaView.js) : 17px de contenu + 2px de
 // marge verticale y tiennent tout juste, d'où le padding réduit à 1px.
 .agenda-block.is-tiny {
   align-items: center;
   padding: 1px 6px 1px 7px;
-  .agenda-block-meta { display: none; }
 }
 
 // Actions en overlay au coin haut-droit — même recette que .todo-actions /
@@ -17242,10 +17237,8 @@ body.view-focus header { display: none; }
 .agenda-block.is-short .dnd-nest-badge,
 .agenda-chip .dnd-nest-badge { display: none; }
 
-// Badge « fait/total » des sous-tâches, dans la TÊTE du bloc (pas dans
-// .agenda-block-meta, masquée sur les blocs courts) : la hauteur d'un bloc
-// reflétant sa durée, la plupart sont courts — c'est donc le seul endroit où
-// il reste visible, et le seul accès à la checklist pour ces tâches-là.
+// Badge « fait/total » : poussé à droite de la rangée de titre, où vivent
+// désormais TOUS les badges (voir .agenda-block-head).
 .agenda-block-subs-btn {
   flex: none;
   margin-left: auto;
@@ -17285,3 +17278,27 @@ body.view-focus header { display: none; }
 // réelle (h), donc un bloc étiré n'y tombe plus — rien à neutraliser ici,
 // c'est noté pour la prochaine fois qu'on touchera à ces seuils.
 .agenda-sub-more { text-decoration: underline dotted; cursor: pointer; &:hover { color: var(--primary); } }
+
+
+// Tous les badges d'un bloc tiennent sur la ligne du titre — la 2e rangée
+// `.agenda-block-meta` a disparu, elle coûtait une ligne de hauteur à chaque
+// bloc (donc autant de moins pour les sous-tâches) et était masquée sur les
+// blocs courts de toute façon. Le titre est le seul élément élastique : c'est
+// lui qui se tronque, jamais les badges.
+.agenda-block-head {
+  flex-wrap: nowrap;
+
+  > .agenda-block-badge { flex: none; }
+
+  .agenda-block-title { flex: 1 1 auto; min-width: 0; }
+
+  // Une étiquette de catégorie longue ne doit pas manger le titre
+  .agenda-block-cat { max-width: 90px; overflow: hidden; text-overflow: ellipsis; display: inline-block; line-height: 15px; }
+}
+
+// Quand le bloc porte une checklist, le titre tient sur UNE ligne : la place
+// verticale va aux sous-tâches. Sans checklist, il garde ses deux lignes.
+.agenda-block:has(.agenda-block-subs) .agenda-block-title {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
