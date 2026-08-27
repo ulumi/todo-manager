@@ -17090,14 +17090,17 @@ body.view-focus header { display: none; }
   span { background: var(--danger); }
 }
 
-// Bouton « + » ancré sur la ligne « maintenant ». La ligne reste
-// `pointer-events: none` (elle ne doit jamais voler un survol de dépôt à la
-// grille) : seul le bouton les rétablit. Au-dessus des blocs (z-index de la
-// ligne), donc toujours atteignable même si une tâche est en cours.
+// Bouton « + » de la ligne « maintenant ». Il vit dans la GOUTTIÈRE DES HEURES
+// (.agenda-rail), pas dans le canevas : posé sur la ligne il recouvrait la case
+// à cocher d'une tâche en cours et, la ligne étant au-dessus des blocs en
+// z-index, lui volait le clic. La gouttière ne contient jamais de bloc, donc
+// les deux cibles cohabitent. Fond opaque + ombre : il occulte proprement le
+// libellé d'heure quand l'instant présent tombe à quelques minutes d'une heure
+// pile (le seul voisin possible dans cette colonne).
 .agenda-now-add {
   position: absolute;
-  left: 6px;
-  top: 50%;
+  right: 5px;
+  top: var(--t);
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
@@ -17110,7 +17113,7 @@ body.view-focus header { display: none; }
   background: var(--danger);
   color: #fff;
   cursor: pointer;
-  pointer-events: auto;
+  z-index: 2;
   box-shadow: 0 2px 6px var(--shadow);
   transition: filter .15s cubic-bezier(.25, .46, .45, .94);
 

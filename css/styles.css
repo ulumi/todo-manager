@@ -17953,8 +17953,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .agenda-now-add {
   position: absolute;
-  left: 6px;
-  top: 50%;
+  right: 5px;
+  top: var(--t);
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
@@ -17967,7 +17967,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   background: var(--danger);
   color: #fff;
   cursor: pointer;
-  pointer-events: auto;
+  z-index: 2;
   box-shadow: 0 2px 6px var(--shadow);
   transition: filter 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }

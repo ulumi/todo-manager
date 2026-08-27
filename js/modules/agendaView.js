@@ -370,7 +370,7 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
   for (let h = range.from; h <= range.to; h++) hours.push(h);
   const height = (range.to - range.from) * px;
 
-  const rail = hours.slice(0, -1).map(h =>
+  const railHours = hours.slice(0, -1).map(h =>
     `<div class="agenda-hour" style="--t:${(h - range.from) * px}px"><span>${String(h).padStart(2, '0')}:00</span></div>`
   ).join('');
 
@@ -384,16 +384,21 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
 
   // Ligne « maintenant » — seulement aujourd'hui, et seulement dans la bande
   // qui contient l'heure courante (rafraîchie par app._agendaTickNow()).
-  let nowLine = '';
+  let nowLine = '', nowAdd = '';
   if (ctx.isToday) {
     const nowMin = ctx.nowMinutes;
     if (nowMin >= range.from * 60 && nowMin <= range.to * 60) {
-      // Bouton « + » ancré sur la ligne : ajoute une tâche qui démarre à
-      // l'instant présent. Option/Alt enfoncé décale en plus la suite de la
-      // journée (cf. app.agendaAddNow / _agendaBumpFrom). `pointer-events`
-      // rétabli sur le seul bouton — la ligne elle-même reste traversante
-      // pour ne pas voler les survols de dépôt à la grille.
-      nowLine = `<div class="agenda-now" id="agendaNow" style="--t:${((nowMin - range.from * 60) / 60) * px}px"><span class="agenda-now-dot"></span><button class="agenda-now-add" onclick="window.app.agendaAddNow(event)" title="Ajouter une tâche maintenant — Option+clic décale aussi la suite de la journée">${_plusSVG}</button><span class="agenda-now-label">${fmtHM(nowMin)}</span></div>`;
+      const nowTop = ((nowMin - range.from * 60) / 60) * px;
+      nowLine = `<div class="agenda-now" id="agendaNow" style="--t:${nowTop}px"><span class="agenda-now-dot"></span><span class="agenda-now-label">${fmtHM(nowMin)}</span></div>`;
+      // Le bouton « + » vit dans la GOUTTIÈRE DES HEURES, pas dans le canevas.
+      // Posé sur la ligne elle-même (canevas, left:6px) il recouvrait la case
+      // à cocher d'une tâche en cours — et la ligne étant au-dessus des blocs
+      // en z-index, il lui volait le clic. La gouttière ne contient jamais de
+      // bloc : les deux cibles cohabitent sans se disputer un seul pixel.
+      // `.agenda-now` reste traversante (pointer-events:none) pour ne pas
+      // voler les survols de dépôt à la grille, et n'a donc plus rien de
+      // cliquable — c'est cohérent.
+      nowAdd = `<button class="agenda-now-add" style="--t:${nowTop}px" onclick="window.app.agendaAddNow(event)" title="Ajouter une tâche maintenant — Option+clic décale aussi la suite de la journée">${_plusSVG}</button>`;
     }
   }
 
@@ -407,7 +412,7 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
     </header>
     ${flexStripHTML(bucket.flex, band.key, navDate, ds)}
     <div class="agenda-grid" style="--px:${px}px;--h:${height}px">
-      <div class="agenda-rail">${rail}</div>
+      <div class="agenda-rail">${railHours}${nowAdd}</div>
       <div class="agenda-canvas" data-period="${band.key}" data-from="${range.from * 60}" data-to="${range.to * 60}" data-px="${px}" style="--h:${height}px">
         ${lines}${nowLine}${blocks}
       </div>

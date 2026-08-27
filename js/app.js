@@ -8104,7 +8104,6 @@ class TodoApp {
   // préservée ; `endTime` n'est réécrit que si la tâche en avait déjà un
   // (ne jamais inventer une heure de fin qui n'existait pas).
   _agendaMoveTo(ids, minutes, event) {
-    const period = periodForMinutes(minutes);
     let occ = this._resolveOccurrences(ids);
     if (!occ.length) return;
     snapshot(state.todos);
@@ -8112,6 +8111,11 @@ class TodoApp {
       occ = occ.map(({ t, ds }) => ({ t: this._insertClone(t), ds }));
     }
     const targetDs = DS(state.navDate);
+    // Curseur d'enchaînement : chaque tâche démarre là où la précédente
+    // finit. Pour un drop d'une seule tâche il ne sert à rien (le curseur
+    // vaut l'heure du drop et n'avance jamais) — le comportement d'origine
+    // est donc strictement préservé.
+    let cursor = minutes;
     occ.forEach(({ t, ds }) => {
       // eff EST t lui-même pour une ponctuelle (resolveOccurrence renvoie la
       // même référence sans override) : tout ce qu'on lit dessus doit l'être
@@ -8119,6 +8123,12 @@ class TodoApp {
       const eff = resolveOccurrence(t, ds);
       const hadEnd = parseHM(eff.endTime) != null;
       const dur = blockMinutes(eff);
+      const start = Math.min(cursor, 24 * 60 - 1);
+      // Le moment se dérive de l'heure RÉELLE de chaque tâche, pas de celle
+      // du drop : une chaîne qui démarre à 11h45 peut franchir une frontière
+      // de bande, et c'est bien dans la bande d'arrivée que la tâche doit
+      // apparaître (règle de placement de la vue Agenda).
+      const period = periodForMinutes(start);
       const changed = (eff.dayPeriod || '') !== period;
       // Tâche venue d'ailleurs (bandeau des retards, onglet Inbox/Backlog) :
       // lui poser une heure sans la DATER la laisserait sur son ancien jour,
@@ -8126,14 +8136,32 @@ class TodoApp {
       // « Aujourd'hui » du Bilan (postponedCount, originalDate, sortie de
       // backlog, détachement du groupe) — jamais une simple affectation de date.
       const moved = this._agendaLandOnDay(t, targetDs, ids);
-      setOccurrenceField(t, ds, 'startTime', fmtHM(minutes));
-      if (hadEnd) setOccurrenceField(t, ds, 'endTime', fmtHM(Math.min(24 * 60 - 1, minutes + dur)));
+      setOccurrenceField(t, ds, 'startTime', fmtHM(start));
+      if (hadEnd) setOccurrenceField(t, ds, 'endTime', fmtHM(Math.min(24 * 60 - 1, start + dur)));
       setOccurrenceField(t, ds, 'dayPeriod', period);
       t.updatedAt = Date.now();
       if (changed && !moved) this._leaveGroupUnlessWhole(t, ids);
+      cursor = start + dur;
     });
     saveTodos(state.todos);
     this.render();
+  }
+
+  // Durée totale de la multi-sélection en cours de drag (null si une seule
+  // tâche est emportée) — sert à l'aperçu de dépôt, qui annonce la plage
+  // occupée par la chaîne entière plutôt que la seule heure de départ.
+  // `_dragMultiIds` est un tableau neuf à chaque dragstart (msIds()), donc
+  // son identité suffit de clé de cache : recalculer à chaque dragover
+  // (plusieurs par seconde) résoudrait toutes les occurrences pour rien.
+  _agendaDragChain() {
+    const ids = this._dragMultiIds;
+    if (!ids || ids.length < 2) return null;
+    if (this._agendaChain?.ids !== ids) {
+      const total = this._resolveOccurrences(ids)
+        .reduce((sum, { t, ds }) => sum + blockMinutes(resolveOccurrence(t, ds)), 0);
+      this._agendaChain = { ids, total, n: ids.length };
+    }
+    return this._agendaChain;
   }
 
   // Ramène une ponctuelle sur le jour affiché si elle n'y était pas (drag
@@ -8350,7 +8378,11 @@ class TodoApp {
       }
       ghost.style.setProperty('--top', `${((hit.minutes - hit.from) / 60) * hit.px}px`);
       ghost.classList.toggle('is-now', !!hit.isNow);
-      ghost.firstChild.textContent = hit.isNow ? `maintenant · ${fmtHM(hit.minutes)}` : fmtHM(hit.minutes);
+      const chain = this._agendaDragChain();
+      const label = hit.isNow ? `maintenant · ${fmtHM(hit.minutes)}` : fmtHM(hit.minutes);
+      ghost.firstChild.textContent = chain
+        ? `${label} → ${fmtHM(Math.min(24 * 60 - 1, hit.minutes + chain.total))} · ${chain.n} tâches`
+        : label;
     });
 
     wrap.addEventListener('dragleave', e => {
