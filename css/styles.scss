@@ -17052,3 +17052,10 @@ body.view-focus header { display: none; }
   .day-layout-opt { flex: 1; justify-content: center; }
 }
 
+
+// Aperçu de dépôt calé sur l'instant présent : même rouge que la ligne
+// « maintenant » de la grille, pour qu'on reconnaisse tout de suite l'ancrage.
+.agenda-drop-ghost.is-now {
+  background: var(--danger);
+  span { background: var(--danger); }
+}

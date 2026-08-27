@@ -116,6 +116,34 @@ export function snapMin(min, step = SNAP_MIN) {
   return Math.round(min / step) * step;
 }
 
+// ── Calage magnétique sur l'instant présent ─────────────
+// En plus du calage régulier (15 min, 5 min avec Alt), deux points d'ancrage
+// liés à MAINTENANT : l'heure courante exacte, et le prochain multiple de
+// 5 minutes (à 8h21 → 8h21 et 8h25). Ils ne s'appliquent que sur la journée
+// d'aujourd'hui et à l'intérieur de la bande survolée : le candidat retenu est
+// simplement le plus proche du curseur, donc loin de l'heure courante la
+// grille régulière l'emporte toujours et rien ne change.
+export function nowAnchors(nowMinutes) {
+  if (nowMinutes == null) return [];
+  const next5 = Math.ceil(nowMinutes / 5) * 5;
+  return next5 === nowMinutes ? [nowMinutes] : [nowMinutes, next5];
+}
+
+// `raw` en minutes depuis minuit → minute calée. `bounds` [min, max] écarte un
+// ancrage hors de la bande survolée (l'heure courante n'est dans qu'UNE bande).
+export function snapWithNow(raw, step, nowMinutes, bounds) {
+  const cands = [snapMin(raw, step), ...nowAnchors(nowMinutes)];
+  let best = null, bestD = Infinity;
+  for (const c of cands) {
+    if (bounds && (c < bounds[0] || c > bounds[1])) continue;
+    const d = Math.abs(raw - c);
+    // `<` strict et `now` placé avant `next5` : à égalité parfaite, l'heure
+    // courante gagne — c'est l'ancrage que Hugues a demandé en premier.
+    if (d < bestD) { best = c; bestD = d; }
+  }
+  return best == null ? snapMin(raw, step) : best;
+}
+
 // Moment dérivé d'une heure — LA règle de cohérence entre l'agenda et la
 // vue liste : tout drop à une heure donnée réécrit `dayPeriod` avec ceci.
 export function periodForMinutes(min) {

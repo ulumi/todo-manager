@@ -17939,5 +17939,11 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
     justify-content: center;
   }
 }
+.agenda-drop-ghost.is-now {
+  background: var(--danger);
+}
+.agenda-drop-ghost.is-now span {
+  background: var(--danger);
+}
 
 /*# sourceMappingURL=styles.css.map */

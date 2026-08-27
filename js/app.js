@@ -56,7 +56,7 @@ import {
 } from './modules/render.js';
 import {
   getAgendaPrefs, saveAgendaPrefs, getDayLayout,
-  parseHM, fmtHM, snapMin, periodForMinutes, blockMinutes,
+  parseHM, fmtHM, snapWithNow, periodForMinutes, blockMinutes,
   SNAP_MIN, FINE_SNAP_MIN, MIN_BLOCK_MIN, DEFAULT_BLOCK_MIN,
 } from './modules/agendaView.js';
 import { setupEventListeners } from './modules/events.js';
@@ -7834,6 +7834,15 @@ class TodoApp {
   // une bande (calage 15 min, 5 min avec Alt) ou une bande « sans heure ».
   // Le hit-test remonte depuis e.target, donc survoler un autre bloc renvoie
   // quand même la position horaire correspondante dans son canevas.
+  // Minute courante — seulement si le jour AFFICHÉ est aujourd'hui. Relue à
+  // chaque appel (jamais figée au rendu) pour que l'ancrage « maintenant »
+  // reste juste même après une longue session sans re-render.
+  _agendaNowMinutes() {
+    if (DS(state.navDate) !== DS(today())) return null;
+    const n = new Date();
+    return n.getHours() * 60 + n.getMinutes();
+  }
+
   _agendaHit(e) {
     const canvas = e.target.closest?.('.agenda-canvas');
     if (canvas) {
@@ -7843,8 +7852,10 @@ class TodoApp {
       const to = parseInt(canvas.dataset.to, 10);
       const step = e.altKey ? FINE_SNAP_MIN : SNAP_MIN;
       const raw = from + ((e.clientY - r.top) / px) * 60;
-      const minutes = Math.max(from, Math.min(to - MIN_BLOCK_MIN, snapMin(raw, step)));
-      return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from };
+      const bounds = [from, to - MIN_BLOCK_MIN];
+      const now = this._agendaNowMinutes();
+      const minutes = Math.max(bounds[0], Math.min(bounds[1], snapWithNow(raw, step, now, bounds)));
+      return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from, isNow: now != null && minutes === now };
     }
     const strip = e.target.closest?.('.agenda-flex-strip');
     if (strip) return { kind: 'flex', strip, period: strip.dataset.period || '' };
@@ -8056,7 +8067,8 @@ class TodoApp {
         hit.canvas.appendChild(ghost);
       }
       ghost.style.setProperty('--top', `${((hit.minutes - hit.from) / 60) * hit.px}px`);
-      ghost.firstChild.textContent = fmtHM(hit.minutes);
+      ghost.classList.toggle('is-now', !!hit.isNow);
+      ghost.firstChild.textContent = hit.isNow ? `maintenant · ${fmtHM(hit.minutes)}` : fmtHM(hit.minutes);
     });
 
     wrap.addEventListener('dragleave', e => {
@@ -8096,7 +8108,10 @@ class TodoApp {
       const onMove = ev => {
         const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
         const raw = startDur + ((ev.clientY - startY) / px) * 60;
-        dur = Math.max(MIN_BLOCK_MIN, Math.min(24 * 60 - start, snapMin(raw, step)));
+        // On cale l'heure de FIN, pas la durée : « jusqu'à maintenant » est une
+        // heure d'horloge, alors qu'une durée de 21 min ne veut rien dire.
+        const snappedEnd = snapWithNow(start + raw, step, this._agendaNowMinutes(), [start + MIN_BLOCK_MIN, 24 * 60]);
+        dur = Math.max(MIN_BLOCK_MIN, Math.min(24 * 60 - start, snappedEnd - start));
         block.style.setProperty('--h', `${Math.max(18, (Math.min(dur, to - start) / 60) * px)}px`);
         const lbl = block.querySelector('.agenda-block-time');
         if (lbl) lbl.innerHTML = `${fmtHM(start)}<span class="agenda-block-dash">–</span>${fmtHM(start + dur)}`;
@@ -8130,7 +8145,9 @@ class TodoApp {
         if (!moved && Math.abs(ev.clientY - e.clientY) < 8) return;
         moved = true;
         const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
-        const a = snapMin(anchor, step), b = snapMin(yToMin(ev.clientY), step);
+        const nowM = this._agendaNowMinutes();
+        const a = snapWithNow(anchor, step, nowM, [from, to]);
+        const b = snapWithNow(yToMin(ev.clientY), step, nowM, [from, to]);
         const s = Math.min(a, b), en = Math.max(a, b, s + MIN_BLOCK_MIN);
         if (!sketch) {
           sketch = document.createElement('div');
@@ -8167,7 +8184,8 @@ class TodoApp {
       const px = parseFloat(canvas.dataset.px) || 72;
       const from = parseInt(canvas.dataset.from, 10);
       const to = parseInt(canvas.dataset.to, 10);
-      const s = Math.max(from, Math.min(to - MIN_BLOCK_MIN, snapMin(from + ((e.clientY - r.top) / px) * 60)));
+      const bounds = [from, to - MIN_BLOCK_MIN];
+      const s = Math.max(bounds[0], Math.min(bounds[1], snapWithNow(from + ((e.clientY - r.top) / px) * 60, SNAP_MIN, this._agendaNowMinutes(), bounds)));
       this._agendaCreateAt(canvas.dataset.period, s, Math.min(to, s + DEFAULT_BLOCK_MIN));
     });
 
