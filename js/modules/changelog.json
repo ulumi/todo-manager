@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2902",
+    "date": "2026-08-27",
+    "message": "feat(sélection): le clic du milieu sur une tâche la sélectionne (comme Ctrl/Cmd+clic)"
+  },
+  {
     "version": "0.4.2901",
     "date": "2026-08-27",
     "message": "feat(agenda): bouton + sur la ligne « maintenant » ; Option+clic décale la suite de la journée"

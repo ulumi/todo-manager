@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════
 //  MULTI-SELECTION — rectangle à la souris (lasso), Ctrl/Cmd+clic,
-//  Maj+clic (plage), Échap. Sélection multiple d'items dans toutes
+//  clic du milieu, Maj+clic (plage), Échap. Sélection multiple dans toutes
 //  les vues, pour agir (drag-and-drop notamment) sur plusieurs
 //  tâches à la fois.
 // ════════════════════════════════════════════════════════
