@@ -17156,6 +17156,27 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   border-color: var(--primary);
 }
 
+.agenda-tool-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.agenda-tool-add:hover {
+  filter: brightness(1.15);
+}
+
 .agenda-tool-pills {
   padding: 2px 3px;
 }
@@ -17297,25 +17318,6 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   font-style: italic;
   color: var(--text-muted);
   opacity: 0.55;
-}
-
-.agenda-flex-add {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--text-muted);
-  color: var(--surface);
-  cursor: pointer;
-  transition: background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-.agenda-flex-add:hover {
-  background: var(--primary);
-  color: #fff;
 }
 
 .agenda-chip {

@@ -16426,6 +16426,31 @@ body.view-focus header { display: none; }
 .agenda-toolbar > .agenda-tool-btn { border-color: var(--border); background: var(--surface); }
 .agenda-toolbar > .agenda-tool-btn.active { border-color: var(--primary); }
 
+// Ajout global de la vue jour — tout à gauche de la barre d'outils. Seul
+// bouton plein de la rangée : c'est L'action de la vue, les autres n'étant
+// que des réglages d'affichage. Les « + » des en-têtes de bande restent la
+// voie rapide vers un moment précis ; celui-ci ouvre le modal complet sur le
+// jour affiché (window.app.openModal() sans argument → state.navDate).
+.agenda-tool-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: filter .18s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover { filter: brightness(1.15); }
+}
+
 .agenda-tool-pills { padding: 2px 3px; }
 
 .agenda-tool-pill {
@@ -16546,22 +16571,6 @@ body.view-focus header { display: none; }
 }
 
 .agenda-flex-empty { font-size: 11.5px; font-style: italic; color: var(--text-muted); opacity: .55; }
-
-.agenda-flex-add {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--text-muted);
-  color: var(--surface);
-  cursor: pointer;
-  transition: background .12s cubic-bezier(.25,.46,.45,.94);
-  &:hover { background: var(--primary); color: #fff; }
-}
 
 // ── Pastille d'une tâche sans heure ───────────────────────────────────
 .agenda-chip {

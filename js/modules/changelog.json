@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2897",
+    "date": "2026-08-27",
+    "message": "feat(agenda): un seul « + » par moment (sur les titres) et un « + » global à gauche de la barre d'outils"
+  },
+  {
     "version": "0.4.2896",
     "date": "2026-08-27",
     "message": "feat(sélection): fusionner deux tâches en une seule depuis le clic droit"
@@ -193,10 +198,5 @@
     "version": "0.4.2703",
     "date": "2026-08-18",
     "message": "feat(raccourci): la dictée vocale démarre automatiquement dans la saisie rapide ; Entrée crée la tâche puis ferme le champ (plus de rafale)"
-  },
-  {
-    "version": "0.4.2701",
-    "date": "2026-08-18",
-    "message": "style(raccourci): la saisie rapide assombrit tout le reste (overlay plein écran, comme les modales) et centre le champ de façon absolue"
   }
 ]

@@ -342,17 +342,16 @@ function chipHTML(t, navDate, ds) {
 }
 
 // ── Bande flexible (tâches sans heure d'un moment) ──────
+// Pas de « + » ici : l'en-tête de la bande juste au-dessus (.agenda-band-add)
+// vise déjà exactement le même moment, un second bouton à 5px de là n'ajoutait
+// qu'un doublon dans une vue qui en comptait déjà huit.
 function flexStripHTML(items, period, navDate, ds, opts = {}) {
   const chips = items.map(t => chipHTML(t, navDate, ds)).join('');
-  const addBtn = period
-    ? `<button class="agenda-flex-add" title="Ajouter une tâche sans heure" onclick="window.app.addSectionTask('${period}')">${_plusSVG}</button>`
-    : `<button class="agenda-flex-add" title="Ajouter une tâche sans moment" onclick="window.app.addSectionTask('')">${_plusSVG}</button>`;
   const empty = !items.length
     ? `<span class="agenda-flex-empty">${opts.emptyLabel || 'déposer ici pour retirer l’heure'}</span>` : '';
   return `<div class="agenda-flex-strip" data-period="${period}">
     <span class="agenda-flex-label">sans heure</span>
     <div class="agenda-flex-items">${chips}${empty}</div>
-    ${addBtn}
   </div>`;
 }
 
@@ -422,6 +421,7 @@ function toolbarHTML(prefs, ctx) {
   // Pas de bascule Liste/Agenda ici : elle vit dans `.day-top-row`, commune
   // aux deux modes (cf. dayLayoutSwitchHTML).
   return `<div class="agenda-toolbar">
+    <button class="agenda-tool-add" onclick="window.app.openModal()" title="Nouvelle tâche (jour affiché)">${_plusSVG}<span>Ajouter</span></button>
     <div class="agenda-tool-group agenda-tool-group--labelled">
       <span class="agenda-tool-glabel">${_ZOOM_ICON}<span>Zoom</span></span>
       ${zoomBtns}
