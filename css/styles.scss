@@ -17051,3 +17051,21 @@ body.view-focus header { display: none; }
   .day-layout-switch { width: 100%; }
   .day-layout-opt { flex: 1; justify-content: center; }
 }
+
+// Bloc trop court pour porter un titre (< 15px) : réglette colorée, sans
+// texte, mais toujours cliquable, sélectionnable et déplaçable. Sa hauteur
+// reste celle de sa VRAIE durée — jamais gonflée pour « faire de la place ».
+.agenda-block.is-sliver {
+  padding: 0;
+  gap: 0;
+  border-radius: 4px;
+  background: var(--accent, var(--primary));
+  border-color: transparent;
+  overflow: hidden;
+
+  .agenda-block-body,
+  .agenda-block-actions,
+  .todo-check { display: none; }
+
+  .agenda-block-resize { height: 100%; }
+}
