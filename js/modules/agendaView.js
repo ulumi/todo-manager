@@ -57,6 +57,10 @@ export const MIN_BLOCK_PX = 20;
 // donc on n'agrandit rien pour faire tenir une checklist (cf. blockMinutes).
 const SUB_ROW_PX = 15;
 const SUB_HEAD_PX = 40;
+// Jamais plus de lignes que ça dans un bloc : une tâche à 15 sous-tâches
+// mangerait la journée. Le reste part dans « +N de plus », qui ouvre la
+// checklist complète en popover.
+const SUB_MAX_ROWS = 6;
 
 // Frontières des moments — les mêmes que celles dérivées au drop
 // (periodForMinutes). Elles définissent la plage couverte par chaque bande.
@@ -276,7 +280,27 @@ function blockHTML(b, ds, px, range) {
   // suivent de près (choix explicite de Hugues : mieux vaut un léger
   // chevauchement que des réglettes illisibles). Le survol remonte le bloc
   // au-dessus de ses voisins, donc rien n'est jamais définitivement caché.
-  const h = Math.max(MIN_BLOCK_PX, ((b.end - b.start) / 60) * px);
+  // Deux hauteurs distinctes, et c'est tout l'enjeu :
+  //  • `timeH` = la durée à l'échelle de la grille (avec son plancher) ;
+  //  • `h`     = ce que le bloc occupe réellement à l'écran.
+  // Un bloc QUI A DES SOUS-TÂCHES s'étire jusqu'à les montrer : « voir ses
+  // sous-tâches » l'emporte sur « occuper pile sa durée ». La 1re version ne
+  // les affichait qu'au-delà de 55px, donc quasiment jamais — une tâche de
+  // 10 min fait 12px (plancher 20px), et elles n'apparaissaient nulle part.
+  // Le temps n'est pas menti pour autant : l'heure de fin reste marquée à
+  // `timeH` par un trait (.agenda-block-endline), et la zone au-delà se lit
+  // comme du débordement de contenu, pas comme de la durée. Les
+  // chevauchements restent calculés sur les heures VRAIES (assignColumns),
+  // donc un bloc étiré ne pousse jamais ses voisins en demi-largeur.
+  const subsAll = t.subtasks || [];
+  const shownSubs = subsAll.slice(0, SUB_MAX_ROWS);
+  const hiddenSubs = subsAll.length - shownSubs.length;
+  const timeH = Math.max(MIN_BLOCK_PX, ((b.end - b.start) / 60) * px);
+  const needH = subsAll.length
+    ? SUB_HEAD_PX + (shownSubs.length + (hiddenSubs ? 1 : 0)) * SUB_ROW_PX
+    : 0;
+  const h = Math.max(timeH, needH);
+  const overflows = h > timeH + 0.5;
   const cols = b.cols || 1;
   const col  = b.col || 0;
   const isRec = t.recurrence && t.recurrence !== 'none';
@@ -288,6 +312,7 @@ function blockHTML(b, ds, px, range) {
     t.priority ? `prio-${t.priority}` : '',
     t.flexibleTime ? 'flexible' : '',
     clipped ? 'is-clipped' : '',
+    overflows ? 'is-overflowing' : '',
   ].filter(Boolean).join(' ') + sizeCls;
 
   const cat = (() => {
@@ -298,14 +323,14 @@ function blockHTML(b, ds, px, range) {
   const accent = cat ? `--accent:${cat.color};` : '';
   const timeLabel = `${fmtHM(b.start)}<span class="agenda-block-dash">–</span>${fmtHM(b.rawEnd)}`;
 
-  const subs = t.subtasks || [];
   // Badge « fait/total » — rendu dans la TÊTE du bloc, pas dans .agenda-block-meta
   // qui est masquée sur les blocs courts (`is-tiny`/`is-short`). Comme la hauteur
   // d'un bloc reflète sa durée, la majorité des tâches sont courtes : la placer
   // dans meta revenait à ne jamais montrer qu'une tâche a des sous-tâches, ni à
   // offrir un moyen d'y accéder. Cliquable → checklist complète en popover.
-  const subBadge = subs.length
-    ? `<button class="agenda-block-badge agenda-block-subs-btn" title="${subs.filter(s => s.completed).length}/${subs.length} sous-tâches faites — cliquer pour la liste" onclick="event.stopPropagation();window.app.openSubtaskList(this,'${t.id}','${ds}')">${subs.filter(s => s.completed).length}/${subs.length}</button>` : '';
+  const subDone = subsAll.filter(x => x.completed).length;
+  const subBadge = subsAll.length
+    ? `<button class="agenda-block-badge agenda-block-subs-btn" title="${subDone}/${subsAll.length} sous-tâches faites — cliquer pour la liste" onclick="event.stopPropagation();window.app.openSubtaskList(this,'${t.id}','${ds}')">${subDone}/${subsAll.length}</button>` : '';
   const linkBadge = (t.links || []).filter(Boolean).length
     ? `<button class="agenda-block-badge agenda-block-link" title="Liens" onclick="event.stopPropagation();window.app.handleLinksBadgeClick(event,'${t.id}')">${_linkSVG}</button>` : '';
   const recBadge = isRec ? `<span class="agenda-block-badge agenda-block-rec" title="Tâche récurrente">↻</span>` : '';
@@ -318,15 +343,13 @@ function blockHTML(b, ds, px, range) {
   // bon bucket via occurrenceSubtasks(), donc une récurrente n'est modifiée
   // que pour CETTE date.
   const subsHTML = (() => {
-    if (!subs.length) return '';
-    const room = Math.floor((h - SUB_HEAD_PX) / SUB_ROW_PX);
-    if (room < 1) return '';
-    const shown = subs.slice(0, room);
-    const rest = subs.length - shown.length;
-    const rows = shown.map(st =>
+    if (!shownSubs.length) return '';
+    const rows = shownSubs.map(st =>
       `<div class="agenda-sub${st.completed ? ' done' : ''}" onclick="event.stopPropagation();window.app.toggleSubtask('${t.id}','${st.id}','${ds}')" title="${esc(st.title)}"><span class="agenda-sub-check"></span><span class="agenda-sub-title">${esc(st.title)}</span></div>`
     ).join('');
-    return `<div class="agenda-block-subs">${rows}${rest > 0 ? `<div class="agenda-sub agenda-sub-more">+${rest} de plus</div>` : ''}</div>`;
+    const more = hiddenSubs > 0
+      ? `<div class="agenda-sub agenda-sub-more" onclick="event.stopPropagation();window.app.openSubtaskList(this,'${t.id}','${ds}')">+${hiddenSubs} de plus</div>` : '';
+    return `<div class="agenda-block-subs">${rows}${more}</div>`;
   })();
 
   const checkAction = b.cancelled
@@ -355,6 +378,7 @@ function blockHTML(b, ds, px, range) {
       </button>
       <button class="agenda-block-btn" title="Actions" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${t.id}','${ds}')">⋯</button>
     </div>
+    ${overflows ? `<div class="agenda-block-endline" style="--t:${timeH}px" title="Fin prévue : ${fmtHM(b.rawEnd)}"></div>` : ''}
     <div class="agenda-block-resize" title="Ajuster la durée"></div>
     ${_nestBadgeHTML}
   </div>`;

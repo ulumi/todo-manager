@@ -18109,4 +18109,31 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   border-color: var(--primary);
 }
 
+.agenda-block-endline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--t);
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.agenda-block.is-overflowing .agenda-block-subs {
+  background: color-mix(in srgb, var(--surface2) 45%, transparent);
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin-left: -3px;
+  margin-right: -3px;
+}
+
+.agenda-sub-more {
+  text-decoration: underline dotted;
+  cursor: pointer;
+}
+.agenda-sub-more:hover {
+  color: var(--primary);
+}
+
 /*# sourceMappingURL=styles.css.map */

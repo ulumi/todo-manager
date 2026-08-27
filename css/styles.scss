@@ -17254,3 +17254,34 @@ body.view-focus header { display: none; }
 
   &:hover { color: var(--primary); border-color: var(--primary); }
 }
+
+// Bloc étiré au-delà de sa durée pour montrer ses sous-tâches : le trait
+// marque l'heure de fin RÉELLE, et tout ce qui est en dessous se lit comme du
+// débordement de contenu — pas comme du temps. Sans ce repère, un bloc de
+// 10 min haut de 100px mentirait sur sa durée.
+.agenda-block-endline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--t);
+  height: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.agenda-block.is-overflowing .agenda-block-subs {
+  // Fond légèrement distinct sous le trait : la zone « en plus » se voit sans
+  // avoir à comparer avec la colonne des heures.
+  background: color-mix(in srgb, var(--surface2) 45%, transparent);
+  border-radius: 4px;
+  padding: 1px 3px;
+  margin-left: -3px;
+  margin-right: -3px;
+}
+
+// Un bloc étiré garde une checklist lisible même si sa DURÉE le classait
+// « minuscule » : les règles is-tiny/is-short sont calées sur la hauteur
+// réelle (h), donc un bloc étiré n'y tombe plus — rien à neutraliser ici,
+// c'est noté pour la prochaine fois qu'on touchera à ces seuils.
+.agenda-sub-more { text-decoration: underline dotted; cursor: pointer; &:hover { color: var(--primary); } }

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2929",
+    "date": "2026-08-27",
+    "message": "feat(agenda): un bloc qui a des sous-tâches s'étire pour les montrer, quelle que soit sa durée"
+  },
+  {
     "version": "0.4.2923",
     "date": "2026-08-27",
     "message": "fix: la case à cocher d'une tâche à sous-tâches ne faisait plus rien (ReferenceError) ; badge sous-tâches visible et cliquable en agenda"
@@ -193,10 +198,5 @@
     "version": "0.4.2764",
     "date": "2026-08-19",
     "message": "fix(vue jour): glisser un membre hors d'un groupe le détache enfin — seul le chip d'en-tête déplace tout le groupe désormais (revert du drag via la carte porteuse) ; renomme « en-tête de groupe » en « groupe » dans les menus"
-  },
-  {
-    "version": "0.4.2748",
-    "date": "2026-08-19",
-    "message": "fix(vue jour): glisser la carte qui porte un en-tête de groupe déplace maintenant tout le groupe de façon explicite (comme glisser l'en-tête lui-même) au lieu de le faire suivre en silence après coup"
   }
 ]
