@@ -299,8 +299,13 @@ function blockHTML(b, ds, px, range) {
   const timeLabel = `${fmtHM(b.start)}<span class="agenda-block-dash">–</span>${fmtHM(b.rawEnd)}`;
 
   const subs = t.subtasks || [];
+  // Badge « fait/total » — rendu dans la TÊTE du bloc, pas dans .agenda-block-meta
+  // qui est masquée sur les blocs courts (`is-tiny`/`is-short`). Comme la hauteur
+  // d'un bloc reflète sa durée, la majorité des tâches sont courtes : la placer
+  // dans meta revenait à ne jamais montrer qu'une tâche a des sous-tâches, ni à
+  // offrir un moyen d'y accéder. Cliquable → checklist complète en popover.
   const subBadge = subs.length
-    ? `<span class="agenda-block-badge">${subs.filter(s => s.completed).length}/${subs.length}</span>` : '';
+    ? `<button class="agenda-block-badge agenda-block-subs-btn" title="${subs.filter(s => s.completed).length}/${subs.length} sous-tâches faites — cliquer pour la liste" onclick="event.stopPropagation();window.app.openSubtaskList(this,'${t.id}','${ds}')">${subs.filter(s => s.completed).length}/${subs.length}</button>` : '';
   const linkBadge = (t.links || []).filter(Boolean).length
     ? `<button class="agenda-block-badge agenda-block-link" title="Liens" onclick="event.stopPropagation();window.app.handleLinksBadgeClick(event,'${t.id}')">${_linkSVG}</button>` : '';
   const recBadge = isRec ? `<span class="agenda-block-badge agenda-block-rec" title="Tâche récurrente">↻</span>` : '';
@@ -339,8 +344,9 @@ function blockHTML(b, ds, px, range) {
       <div class="agenda-block-head">
         <div class="agenda-block-time">${timeLabel}</div>
         <div class="agenda-block-title">${esc(t.title)}</div>
+        ${subBadge}
       </div>
-      <div class="agenda-block-meta">${flexBadge}${recBadge}${catBadge}${subBadge}${linkBadge}</div>
+      <div class="agenda-block-meta">${flexBadge}${recBadge}${catBadge}${linkBadge}</div>
       ${subsHTML}
     </div>
     <div class="agenda-block-actions">

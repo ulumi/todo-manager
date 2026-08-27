@@ -18098,4 +18098,15 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   display: none;
 }
 
+.agenda-block-subs-btn {
+  flex: none;
+  margin-left: auto;
+  cursor: pointer;
+  border-color: var(--border);
+}
+.agenda-block-subs-btn:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 /*# sourceMappingURL=styles.css.map */

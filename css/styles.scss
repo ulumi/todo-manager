@@ -17241,3 +17241,16 @@ body.view-focus header { display: none; }
 .agenda-block.is-tiny .dnd-nest-badge,
 .agenda-block.is-short .dnd-nest-badge,
 .agenda-chip .dnd-nest-badge { display: none; }
+
+// Badge « fait/total » des sous-tâches, dans la TÊTE du bloc (pas dans
+// .agenda-block-meta, masquée sur les blocs courts) : la hauteur d'un bloc
+// reflétant sa durée, la plupart sont courts — c'est donc le seul endroit où
+// il reste visible, et le seul accès à la checklist pour ces tâches-là.
+.agenda-block-subs-btn {
+  flex: none;
+  margin-left: auto;
+  cursor: pointer;
+  border-color: var(--border);
+
+  &:hover { color: var(--primary); border-color: var(--primary); }
+}

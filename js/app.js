@@ -1506,6 +1506,12 @@ class TodoApp {
     // lui-même (elles n'y apparaissent qu'au-delà d'une certaine hauteur, la
     // hauteur d'un bloc reflétant sa durée). C'est donc ici le seul endroit
     // qui les montre à coup sûr, quelle que soit la vue.
+    // `todo` doit être résolu ICI : la 1re version réutilisait le nom d'une
+    // variable qui n'existe que dans toggleTodo(), d'où un ReferenceError qui
+    // faisait échouer toute la fonction — donc aucun popover, et toggleTodo()
+    // s'étant déjà arrêté, la case à cocher ne faisait plus RIEN dans aucune
+    // vue pour toute tâche à sous-tâches incomplètes.
+    const todo = state.todos.find(x => x.id === id);
     const eff = todo ? resolveOccurrence(todo, ds).subtasks : null;
     const rows = this._flatIncompleteSubtasks(eff).slice(0, 8).map(({ s: st, parentStid }) =>
       `<li class="stw-sub${parentStid ? ' stw-sub--nested' : ''}" onclick="event.stopPropagation();window.app.toggleSubtaskFromWarning('${id}','${st.id}','${ds}','${parentStid || ''}',this)"><span class="stw-sub-check"></span><span>${esc(st.title)}</span></li>`
@@ -1535,29 +1541,7 @@ class TodoApp {
     // classe de bug (voir les deux commentaires ci-dessus), traitée à la
     // racine cette fois. Toute nouvelle vue est couverte d'office.
     document.body.appendChild(popover);
-    const rect = item.getBoundingClientRect();
-    const pw = popover.offsetWidth, ph = popover.offsetHeight;
-    // Au-dessus de la carte par défaut, en dessous s'il n'y a pas la place
-    const below = rect.top < ph + 16;
-    popover.classList.toggle('stw-below', below);
-    const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
-    popover.style.left = `${clamp(rect.left + 34, 8, Math.max(8, window.innerWidth - pw - 8))}px`;
-    popover.style.top  = `${clamp(below ? rect.bottom + 6 : rect.top - ph - 6, 8, Math.max(8, window.innerHeight - ph - 8))}px`;
-    setTimeout(() => {
-      // `fixed` ne suit pas son ancre : un défilement ou un redimensionnement
-      // le laisserait flotter à côté de la carte. On referme plutôt que de
-      // recalculer en continu.
-      const dismiss = e => {
-        if (e?.type === 'click' && popover.contains(e.target)) return;
-        popover.remove();
-        document.removeEventListener('click', dismiss);
-        window.removeEventListener('scroll', dismiss, true);
-        window.removeEventListener('resize', dismiss);
-      };
-      document.addEventListener('click', dismiss);
-      window.addEventListener('scroll', dismiss, true);
-      window.addEventListener('resize', dismiss);
-    }, 10);
+    this._placePopover(popover, item);
   }
 
   completeWithSubtasks(id, dsStr, mode) {
@@ -1952,6 +1936,72 @@ class TodoApp {
 
   // Compte récursif des (sous-)sous-tâches non faites — utilisé par
   // l'avertissement de complétion ci-dessus.
+  // Placement commun aux popovers ancrés à une carte : `fixed` depuis <body>,
+  // au-dessus de l'ancre ou en dessous s'il n'y a pas la place, borné au
+  // viewport. Voir _showSubtaskWarning pour POURQUOI ils ne vivent jamais
+  // dans la carte (ancêtres `overflow: hidden`).
+  _placePopover(pop, anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    const below = rect.top < ph + 16;
+    pop.classList.toggle('stw-below', below);
+    const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
+    pop.style.left = `${clamp(rect.left, 8, Math.max(8, window.innerWidth - pw - 8))}px`;
+    pop.style.top  = `${clamp(below ? rect.bottom + 6 : rect.top - ph - 6, 8, Math.max(8, window.innerHeight - ph - 8))}px`;
+    setTimeout(() => {
+      const dismiss = e => {
+        if (e?.type === 'click' && pop.contains(e.target)) return;
+        pop.remove();
+        document.removeEventListener('click', dismiss);
+        window.removeEventListener('scroll', dismiss, true);
+        window.removeEventListener('resize', dismiss);
+      };
+      document.addEventListener('click', dismiss);
+      window.addEventListener('scroll', dismiss, true);
+      window.addEventListener('resize', dismiss);
+    }, 10);
+  }
+
+  // Badge « fait/total » d'un bloc d'agenda → checklist complète, cochable.
+  // Indispensable parce qu'un bloc court n'a pas la hauteur d'afficher ses
+  // sous-tâches en ligne (la hauteur reflète la DURÉE) : c'est le seul accès
+  // à la checklist pour la majorité des tâches.
+  openSubtaskList(anchorEl, todoId, ds) {
+    const open = document.querySelector('.subtask-warning-popover');
+    document.querySelectorAll('.subtask-warning-popover').forEach(el => el.remove());
+    if (open?.dataset.for === todoId) return; // 2e clic sur le même badge : referme
+    const t = state.todos.find(x => x.id === todoId);
+    if (!t) return;
+    const subs = resolveOccurrence(t, ds).subtasks || [];
+    if (!subs.length) return;
+    const pop = document.createElement('div');
+    pop.className = 'subtask-warning-popover';
+    pop.dataset.for = todoId;
+    pop.onclick = e => e.stopPropagation();
+    const row = (st, parentStid) =>
+      `<li class="stw-sub${st.completed ? ' done' : ''}${parentStid ? ' stw-sub--nested' : ''}" onclick="event.stopPropagation();window.app.toggleSubtaskFromList('${todoId}','${st.id}','${ds}','${parentStid || ''}',this)"><span class="stw-sub-check"></span><span>${esc(st.title)}</span></li>`;
+    const rows = subs.map(st =>
+      row(st, null) + (st.subtasks || []).map(c => row(c, st.id)).join('')
+    ).join('');
+    const done = subs.filter(x => x.completed).length;
+    pop.innerHTML = `<div class="stw-label">${done}/${subs.length} fait${done > 1 ? 's' : ''}</div><ul class="stw-subs">${rows}</ul>`;
+    document.body.appendChild(pop);
+    this._placePopover(pop, anchorEl);
+  }
+
+  // Coche depuis la checklist (pas depuis l'avertissement) : on reste ouvert,
+  // et on ne complète JAMAIS la tâche parente d'office — ici l'utilisateur
+  // gère sa liste, il n'était pas en train de compléter la tâche.
+  toggleSubtaskFromList(todoId, stid, ds, parentStid, el) {
+    this.toggleSubtask(todoId, stid, ds, parentStid || undefined);
+    el.classList.toggle('done');
+    const t = state.todos.find(x => x.id === todoId);
+    const subs = t ? (resolveOccurrence(t, ds).subtasks || []) : [];
+    const done = subs.filter(x => x.completed).length;
+    const lbl = el.closest('.subtask-warning-popover')?.querySelector('.stw-label');
+    if (lbl) lbl.textContent = `${done}/${subs.length} fait${done > 1 ? 's' : ''}`;
+  }
+
   // Sous-tâches non faites, à plat (profondeur 2 incluse) — même parcours
   // récursif que _countIncompleteSubtasks, dont elle doit rester le miroir
   // exact : le popover afficherait sinon un nombre et une liste discordants.
@@ -8069,9 +8119,13 @@ class TodoApp {
   // Choix explicite d'un mode (segmented control Liste|Agenda) — idempotent,
   // contrairement à toggleDayLayout() qui sert au raccourci Alt+A.
   setDayLayout(mode) {
-    const next = mode === 'agenda' ? 'agenda' : 'list';
-    if (next === getDayLayout() && state.view === 'day') return;
-    this._applyDayLayout(next);
+    // Pas de court-circuit « déjà dans ce mode » : le réglage peut être
+    // réécrit sous nos pieds par une restauration de config (_applyBackup)
+    // sans que la vue soit re-rendue, et le bouton devenait alors inerte —
+    // il affichait Liste, localStorage disait agenda, et cliquer « Agenda »
+    // ne faisait rien. Re-rendre le même mode ne coûte rien et remet
+    // toujours l'écran d'accord avec le réglage.
+    this._applyDayLayout(mode === 'agenda' ? 'agenda' : 'list');
   }
 
   toggleDayLayout() {
