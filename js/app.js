@@ -1718,10 +1718,10 @@ class TodoApp {
   // saisir un titre (tâche parente, en-tête de groupe) — jamais de prompt()
   // natif, cf. patterns projet. Patch DOM ciblé : aucun render() tant que
   // la saisie n'est pas confirmée. Échap ou champ vide annule sans trace.
-  _inlineTitlePrompt(id, placeholder, onConfirm) {
-    const itemEl = document.querySelector(`.todo-item[data-id="${id}"]`);
+  _inlineTitlePrompt(id, placeholder, onConfirm, value = '') {
+    const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
     if (!itemEl || itemEl.previousElementSibling?.classList.contains('ctx-title-input')) return;
-    this._inlineInput(placeholder, onConfirm, el => itemEl.before(el));
+    this._inlineInput(placeholder, onConfirm, el => itemEl.before(el), value);
   }
 
   // Cœur partagé des saisies inline de titre : Entrée confirme, Échap annule
@@ -1733,11 +1733,15 @@ class TodoApp {
   // un champ qui reprend le focus). En liste masonry, l'input doit recevoir
   // son --rspan comme les autres enfants, sinon il n'occuperait qu'une
   // tranche de 4 px.
-  _inlineInput(placeholder, onConfirm, place) {
+  _inlineInput(placeholder, onConfirm, place, value = '') {
     const input = document.createElement('input');
     input.className = 'ctx-title-input';
     input.placeholder = placeholder;
     input.autocomplete = 'off';
+    // `value` prérempli (fusion : le titre de la tâche de base) — sélectionné
+    // au focus, donc la 1re frappe l'écrase comme s'il n'était qu'un défaut,
+    // alors qu'Entrée seul le valide tel quel.
+    if (value) input.value = value;
     let done = false;
     const finish = (viaEnter = false) => {
       if (done) return;
@@ -1760,6 +1764,7 @@ class TodoApp {
     this._updateMasonrySpan(input);
     this._masonryRO?.observe(input);
     input.focus();
+    if (value) input.select();
     return input;
   }
 
@@ -2626,6 +2631,194 @@ class TodoApp {
     input.addEventListener('blur', confirmFn);
     bar.appendChild(input);
     input.focus();
+  }
+
+  // Menu contextuel (sélection ≥2) → « Fusionner » : les tâches sélectionnées
+  // n'en font plus qu'une. À ne pas confondre avec « Grouper » (elles restent
+  // N tâches sous une étiquette commune) ni avec « Créer une tâche parente »
+  // (elles deviennent N sous-tâches d'une nouvelle) : ici il n'en reste
+  // littéralement qu'UNE, les autres disparaissent après avoir été vidées de
+  // leur contenu dans celle-ci.
+  //
+  // La base est la tâche sur laquelle on a fait le clic droit (anchorId) —
+  // elle garde son id, sa place dans la liste et sa planification ; le titre
+  // fusionné est demandé en saisie inline, prérempli avec le sien. Les
+  // récurrentes sont exclues (même raison qu'addParentTask/nestTaskAsSubtask :
+  // ni la récurrence ni completedDates n'ont de fusion qui ait un sens).
+  mergeTasks(ids, anchorId) {
+    const targets = ids.map(id => state.todos.find(x => x.id === id)).filter(Boolean);
+    if (targets.length < 2 || targets.some(t => t.recurrence && t.recurrence !== 'none')) return;
+    const base = targets.find(t => t.id === anchorId) || targets[0];
+    const otherIds = targets.filter(t => t !== base).map(t => t.id);
+    this._inlineTitlePrompt(base.id, 'Titre de la tâche fusionnée…', title => {
+      // Tout est re-résolu APRÈS la saisie : le champ reste ouvert le temps
+      // qu'on veut, et le state a pu bouger entre-temps (autre onglet, sync
+      // realtime, autre appareil) — les objets capturés plus haut seraient
+      // alors périmés.
+      const cur = state.todos.find(x => x.id === base.id);
+      const others = otherIds.map(id => state.todos.find(x => x.id === id)).filter(Boolean);
+      if (!cur || !others.length) return;
+      snapshot(state.todos);
+      this._mergeInto(cur, others, title);
+      // Les ids disparaissent de state.todos : sans tombstone, un appareil
+      // resté hors ligne les ressusciterait au prochain merge de _applyBackup()
+      others.forEach(o => this._trackDeletion(o.id));
+      const gone = new Set(others.map(o => o.id));
+      state.setTodos(state.todos.filter(t => !gone.has(t.id)));
+      // Un groupe qui perd des membres peut retomber à un seul : il est alors
+      // dissous, même règle qu'ungroupTask() — un groupe d'1 n'a pas de sens.
+      [...new Set(others.map(o => o.groupId).filter(Boolean))].forEach(gid => {
+        const left = state.todos.filter(x => x.groupId === gid);
+        if (left.length === 1) {
+          delete left[0].groupId;
+          delete left[0].groupTitle;
+          left[0].updatedAt = Date.now();
+        }
+      });
+      saveTodos(state.todos);
+      msClear();
+      this.render();
+      this._showToast(`⋈ ${others.length + 1} tâches fusionnées`);
+    }, base.title);
+  }
+
+  // Réunion champ par champ. `t` (la base) est mutée en place : elle garde
+  // tout ce qui la SITUE dans l'app (id, date, moment, heure, backlog, groupe),
+  // les `others` n'y ajoutent que ce qui s'additionne vraiment. Règle générale :
+  // fusionner ne doit jamais faire disparaître du contenu ni relâcher une
+  // contrainte (priorité la plus forte, échéance la plus proche, durées
+  // cumulées, pas terminée tant qu'une seule des tâches ne l'était pas).
+  _mergeInto(t, others, title) {
+    const all = [t, ...others];
+    t.title = title;
+
+    // Notes mises bout à bout, dans l'ordre — doublon exact écarté (deux
+    // copies de la même tâche ont souvent la même note)
+    const descs = [];
+    all.forEach(o => {
+      const d = (o.description || '').trim();
+      if (d && !descs.includes(d)) descs.push(d);
+    });
+    if (descs.length) t.description = descs.join('\n\n'); else delete t.description;
+
+    // Sous-tâches concaténées telles quelles : chaque liste est déjà de
+    // profondeur ≤ 2, les mettre CÔTE À CÔTE ne peut donc pas dépasser la
+    // limite (contrairement à une imbrication, cf. needsSplit/nestTaskAsSubtask).
+    // Ids dédoublonnés au passage : deux tâches créées dans la même
+    // milliseconde peuvent porter des sous-tâches de même id, ce qui casserait
+    // _findSubtask() (le 1er match gagnerait pour les deux lignes).
+    const seen = new Set();
+    let seq = 0;
+    const subs = all.flatMap(o => Array.isArray(o.subtasks) ? o.subtasks : []).map(s => {
+      const c = JSON.parse(JSON.stringify(s));
+      while (seen.has(c.id)) c.id = `${Date.now()}${++seq}`;
+      seen.add(c.id);
+      return c;
+    });
+    if (subs.length) t.subtasks = subs; else delete t.subtasks;
+
+    // Liens : union dans l'ordre d'apparition
+    const links = [];
+    all.forEach(o => (o.links || []).forEach(l => { if (l && !links.includes(l)) links.push(l); }));
+    if (links.length) t.links = links; else delete t.links;
+
+    // Étiquettes : union, écrite au PLURIEL (forme canonique — _getCatIds()
+    // dans render.js ne lit le singulier que si le pluriel est absent, garder
+    // les deux rendrait le singulier invisible et trompeur)
+    [['categoryIds', 'categoryId'], ['projectIds', 'projectId'], ['intentionIds', 'intentionId']]
+      .forEach(([plural, single]) => {
+        const u = [];
+        all.forEach(o => (o[plural] || (o[single] ? [o[single]] : []))
+          .forEach(v => { if (v && !u.includes(v)) u.push(v); }));
+        delete t[single];
+        if (u.length) t[plural] = u; else delete t[plural];
+      });
+
+    // Priorité la plus forte du lot — fusionner ne déclasse jamais
+    const RANK = { high: 3, medium: 2, low: 1 };
+    const prio = all.map(o => o.priority || '').sort((a, b) => (RANK[b] || 0) - (RANK[a] || 0))[0];
+    if (prio) t.priority = prio; else delete t.priority;
+
+    // Échéance : la plus contraignante gagne EN BLOC (date + heure + fenêtre
+    // d'alerte appartiennent à la même échéance, les mélanger n'aurait aucun
+    // sens) ; dure dès que l'une des deux l'était.
+    const withDl = all.filter(o => o.deadline).sort((a, b) =>
+      (a.deadline + (a.deadlineTime || '99:99')).localeCompare(b.deadline + (b.deadlineTime || '99:99')));
+    if (withDl.length) {
+      const d = withDl[0];
+      t.deadline = d.deadline;
+      if (d.deadlineTime) t.deadlineTime = d.deadlineTime; else delete t.deadlineTime;
+      if (d.deadlineLeadDays) t.deadlineLeadDays = d.deadlineLeadDays; else delete t.deadlineLeadDays;
+      if (all.some(o => o.deadlineHard)) t.deadlineHard = true; else delete t.deadlineHard;
+    }
+
+    // Durées : le travail s'additionne (estimé comme réel)
+    const sum = key => all.reduce((n, o) => n + (Number(o[key]) || 0), 0);
+    const est = sum('durationEstimated');
+    if (est) t.durationEstimated = est; else delete t.durationEstimated;
+    const real = sum('durationReal');
+    if (real) t.durationReal = real; else delete t.durationReal;
+
+    // Historique de focus fusionné puis retrié par date, même plafond de
+    // 30 entrées qu'à l'écriture (focusComplete)
+    const hist = all.flatMap(o => Array.isArray(o.durationHistory) ? o.durationHistory : [])
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (hist.length) t.durationHistory = hist.slice(-30); else delete t.durationHistory;
+
+    // Temps de focus en cours : seules les entrées datées d'AUJOURD'HUI
+    // s'additionnent. Une valeur d'hier est de toute façon ignorée partout
+    // (getTimerState, badge de la vue jour) — l'additionner gonflerait le
+    // chrono du jour avec du temps qui n'y appartient pas.
+    const ds = DS(today());
+    const spent = all.reduce((n, o) => n + (o.focusTimeSpentDate === ds ? (Number(o.focusTimeSpent) || 0) : 0), 0);
+    if (spent) { t.focusTimeSpent = spent; t.focusTimeSpentDate = ds; }
+    else { delete t.focusTimeSpent; delete t.focusTimeSpentDate; }
+
+    // Reports : le plus reporté fait foi, l'origine la plus ancienne aussi
+    const post = Math.max(...all.map(o => o.postponedCount || 0));
+    if (post) t.postponedCount = post; else delete t.postponedCount;
+    const orig = all.map(o => o.originalDate).filter(Boolean).sort()[0];
+    if (orig) t.originalDate = orig;
+
+    // Planification : la base garde la sienne. SEULE exception, elle n'en a
+    // aucune (Inbox/Backlog) alors qu'une absorbée était datée — adopter sa
+    // date plutôt que de renvoyer au néant une tâche déjà planifiée.
+    if (!t.date) {
+      const dated = others.filter(o => o.date).sort((a, b) => a.date.localeCompare(b.date))[0];
+      if (dated) {
+        t.date = dated.date;
+        t.backlog = false;
+        if (dated.dayPeriod) t.dayPeriod = dated.dayPeriod;
+        if (dated.startTime) t.startTime = dated.startTime;
+        if (dated.endTime) t.endTime = dated.endTime;
+        if (dated.flexibleTime) t.flexibleTime = true;
+      }
+    }
+
+    // Compteur et endroit : jamais écrasés, seulement adoptés si la base n'en
+    // avait pas (un compteur qui disparaît, c'est une progression perdue)
+    if (!t.counterEnabled) {
+      const c = others.find(o => o.counterEnabled);
+      if (c) {
+        t.counterEnabled = true;
+        if (c.countFrom != null) t.countFrom = c.countFrom;
+        if (c.countTo != null) t.countTo = c.countTo;
+        if (c.countCurrent != null) t.countCurrent = c.countCurrent;
+        if (c.countUnit) t.countUnit = c.countUnit;
+      }
+    }
+    if (!t.location && !t.locationVirtual) {
+      const l = others.find(o => o.location || o.locationVirtual);
+      if (l?.locationVirtual) t.locationVirtual = true;
+      else if (l?.location) t.location = l.location;
+    }
+
+    // Il reste à faire tant qu'UNE SEULE des tâches n'était pas faite ; idem
+    // pour l'annulation. L'invariant du projet (jamais faite ET annulée) tient
+    // de lui-même : il faudrait qu'une source soit déjà dans les deux états.
+    t.completed = all.every(o => o.completed);
+    if (all.every(o => o.cancelled)) t.cancelled = true; else delete t.cancelled;
+    t.updatedAt = Date.now();
   }
 
   // ── Actions du clic droit sur un .task-group-header lui-même (pas un
@@ -9890,7 +10083,10 @@ const _todoCtxMenu = document.createElement('div');
 _todoCtxMenu.className = 'todo-ctx-menu hidden';
 document.body.appendChild(_todoCtxMenu);
 
-let _ctxTarget = null; // { kind: 'task', ids: [...], ds } | { kind: 'subtask', todoId, stid, ds, parentStid }
+let _ctxTarget = null; // { kind: 'task', ids: [...], anchorId, ds } | { kind: 'subtask', todoId, stid, ds, parentStid }
+// anchorId = l'item réellement visé par le clic droit (≠ ids[0] dès que la
+// sélection multiple est ordonnée autrement) — c'est LUI que « Fusionner »
+// garde comme base, et à côté de lui que s'ouvre la saisie du titre fusionné.
 
 // Menu minimal pour une (sous-)sous-tâche (clic droit sur .subtask-item) :
 // ses seules actions pertinentes sont celles déjà exposées par les boutons
@@ -9988,6 +10184,12 @@ function _renderCtxMenu() {
   // Cluster « Grouper » (flyout) : n'existe que si au moins une des actions
   // de groupement s'applique — sinon le sous-menu serait vide.
   const canGroupCluster = !group && (canAddGroupHeader || canAddParent || canGroupify || canGroupToTask || canUngroupify);
+  // « Fusionner » : sélection ≥2, ponctuelles seulement, et il faut un item
+  // ancré dans le DOM (vue jour, Backlog, Inbox) pour y injecter la saisie du
+  // titre fusionné — pas depuis une pastille de mois ou la file Focus.
+  const canMerge = group && occ.length > 1
+    && occ.every(({ t }) => !t.recurrence || t.recurrence === 'none')
+    && !!document.querySelector(`.todo-item[data-id="${_ctxTarget.anchorId}"], .inbox-item[data-id="${_ctxTarget.anchorId}"]`);
   const nb = group ? ` <span class="ctx-count">${ids.length}</span>` : '';
   const curPrio = group
     ? (occ.every(({ t }) => (t.priority || '') === (occ[0].t.priority || '')) ? (occ[0].t.priority || '') : null)
@@ -10047,6 +10249,7 @@ function _renderCtxMenu() {
     <div class="ctx-item" data-action="focus"><span>▶</span> Focus</div>
     <div class="ctx-item" data-action="edit"><span>✎</span> Modifier</div>`}
     ${group ? `<div class="ctx-item" data-action="group"><span>⊞</span> Grouper${nb}</div>` : ''}
+    ${canMerge ? `<div class="ctx-item" data-action="merge"><span>⋈</span> Fusionner${nb}</div>` : ''}
     ${group ? `<div class="ctx-item" data-action="duplicate"><span>⧉</span> Dupliquer${nb}</div>` : ''}
     ${addSubmenu}
     ${groupSubmenu}
@@ -10101,7 +10304,7 @@ function _positionCtxMenu(x, y) {
 }
 
 function _showTodoCtxMenu(anchor, id, ds) {
-  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(id), ds };
+  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(id), anchorId: id, ds };
   _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
   const rect = anchor.getBoundingClientRect();
@@ -10164,7 +10367,7 @@ _todoCtxMenu.addEventListener('click', e => {
     return;
   }
   if ((!item && !prioBtn && !periodBtn) || !_ctxTarget) return;
-  const { ids, ds } = _ctxTarget;
+  const { ids, ds, anchorId } = _ctxTarget;
   const single = ids[0];
   _hideTodoCtxMenu();
   const app = window.app;
@@ -10185,6 +10388,7 @@ _todoCtxMenu.addEventListener('click', e => {
   }
   if (action === 'ungroup')     app.ungroupTask(single);
   if (action === 'group')       app.showGroupPrompt(ids);
+  if (action === 'merge')       app.mergeTasks(ids, anchorId);
   if (action === 'duplicate')   app.duplicateMany(ids);
   if (action === 'today')       app._sendManyTo(ids, { date: DS(today()), backlog: false });
   if (action === 'tomorrow')    app._sendManyTo(ids, { date: DS(addDays(today(), 1)), backlog: false });
@@ -10249,7 +10453,7 @@ document.addEventListener('contextmenu', e => {
   // "tâche" suppose des ids simples résolvables dans state.todos.
   if (item.dataset.id.includes('::')) { e.preventDefault(); return; }
   e.preventDefault();
-  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(item.dataset.id), ds: item.getAttribute('data-date') };
+  _ctxTarget = { kind: 'task', ids: _ctxIdsFor(item.dataset.id), anchorId: item.dataset.id, ds: item.getAttribute('data-date') };
   _renderCtxMenu();
   _todoCtxMenu.classList.remove('hidden');
   _positionCtxMenu(e.clientX + 4, e.clientY);
