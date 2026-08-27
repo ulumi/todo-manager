@@ -1,0 +1,112 @@
+#!/bin/bash
+# ════════════════════════════════════════════════════════════════════════════
+#  pre-commit — empêche une session Claude d'embarquer le travail d'une autre
+# ════════════════════════════════════════════════════════════════════════════
+# Hugues ouvre parfois deux sessions Claude Code en même temps sur ce repo.
+# CLAUDE.md demande d'utiliser `.claude/solo-commit.sh` dans ce cas, mais rien
+# ne l'imposait : un simple `git add -A && git commit` d'une session suffisait
+# à publier le travail INACHEVÉ de l'autre sous un message qui ne le décrit
+# pas — arrivé deux fois de suite le 2026-08-27.
+#
+# Trois issues possibles :
+#   1. un fichier indexé appartient à une AUTRE session (.owns) → refus ;
+#   2. une autre session est vivante et un fichier indexé n'est pas
+#      démontrablement à nous → refus « propriété inconnue ». Volontairement
+#      strict : tant qu'on est deux, le seul chemin correct est solo-commit.sh,
+#      et le suivre ne coûte rien ;
+#   3. sinon → commit normal, ce hook est transparent quand on travaille seul.
+#
+# `solo-commit.sh` n'est PAS bloqué : il construit le commit en plomberie
+# (commit-tree), qui n'exécute aucun hook — le chemin correct reste donc
+# toujours ouvert sans avoir à coder d'exception ici. Un humain qui commite à
+# la main (pas de CLAUDE_CODE_SESSION_ID) est soumis au même contrôle et garde
+# `git commit --no-verify`.
+#
+# L'appartenance vient de .claude/session-track.sh (hook PostToolUse), qui
+# écrit « chemin<TAB>mtime » dans .claude/.sessions/<sid>.owns.
+LIVE_MIN=120     # session considérée vivante si elle a agi il y a moins de N min
+STALE_MIN=720    # au-delà, ses marqueurs sont effacés
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+D="$ROOT/.claude/.sessions"
+[ -d "$D" ] || exit 0
+ME="${CLAUDE_CODE_SESSION_ID:-}"
+
+find "$D" -type f -mmin +$STALE_MIN -delete 2>/dev/null
+
+STAGED=$(git diff --cached --name-only)
+[ -n "$STAGED" ] || exit 0
+
+MINE=$(mktemp); THEIRS=$(mktemp); SHARED=$(mktemp); STG=$(mktemp); KNOWN=$(mktemp)
+trap 'rm -f "$MINE" "$THEIRS" "$SHARED" "$STG" "$KNOWN"' EXIT
+printf '%s\n' "$STAGED" | sort -u > "$STG"
+
+# .owns contient « chemin<TAB>mtime » : jamais comparer la ligne entière.
+_owned() { cut -f1 "$1" 2>/dev/null | sort -u | grep -xF -f "$STG" 2>/dev/null; }
+
+[ -n "$ME" ] && [ -f "$D/$ME.owns" ] && _owned "$D/$ME.owns" > "$MINE"
+cat "$MINE" > "$KNOWN"
+
+LIVE_OTHER=0
+for owns in "$D"/*.owns; do
+  [ -f "$owns" ] || continue
+  sid=$(basename "$owns" .owns)
+  [ "$sid" = "$ME" ] && continue
+  # Vivante = a agi récemment. Ses fichiers restent les siens même après,
+  # jusqu'à ce qu'ils soient committés (donc retirés de son .owns) ou que ses
+  # marqueurs soient périmés : c'est le travail non committé qui compte, pas
+  # le fait qu'elle soit en train de taper.
+  [ -n "$(find "$D/$sid.alive" -mmin -$LIVE_MIN 2>/dev/null)" ] && LIVE_OTHER=1
+  while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    printf '%s\n' "$f" >> "$KNOWN"
+    if grep -qxF -- "$f" "$MINE" 2>/dev/null; then
+      printf '%s\n' "$f" >> "$SHARED"
+    else
+      printf '%s\t%s\n' "$f" "${sid:0:8}" >> "$THEIRS"
+    fi
+  done < <(_owned "$owns")
+done
+
+UNKNOWN=""
+[ "$LIVE_OTHER" = 1 ] && UNKNOWN=$(sort -u "$KNOWN" | grep -vxF -f - "$STG" 2>/dev/null)
+
+[ -s "$THEIRS" ] || [ -s "$SHARED" ] || [ -n "$UNKNOWN" ] || exit 0
+
+{
+  echo
+  echo "  ✋ COMMIT REFUSÉ — une autre session Claude travaille sur ce repo."
+  echo "     Son travail en cours ne doit pas partir dans TON commit."
+  echo
+  if [ -s "$THEIRS" ]; then
+    echo "  À une autre session (ne pas committer ici) :"
+    sort -u "$THEIRS" | while IFS=$'\t' read -r f sid; do printf '    ✗ %-42s session %s\n' "$f" "$sid"; done
+    echo
+  fi
+  if [ -s "$SHARED" ]; then
+    echo "  PARTAGÉS (les deux sessions y ont écrit) — reconstruire le contenu à"
+    echo "  committer depuis le commit parent, cf. « Fichier partagé » dans CLAUDE.md :"
+    sort -u "$SHARED" | while IFS= read -r f; do printf '    ⚠ %-42s -s %s=<fichier>\n' "$f" "$f"; done
+    echo
+  fi
+  if [ -n "$UNKNOWN" ]; then
+    echo "  Propriété inconnue — rien ne prouve que c'est ton travail :"
+    printf '%s\n' "$UNKNOWN" | while IFS= read -r f; do printf '    ? %s\n' "$f"; done
+    echo
+  fi
+  if [ -s "$MINE" ]; then
+    echo "  Ta part, à committer seule :"
+    echo
+    printf '    .claude/solo-commit.sh -m msg.txt'
+    grep -vxF -f <(sort -u "$SHARED" 2>/dev/null) "$MINE" 2>/dev/null | while IFS= read -r f; do printf ' \\\n        -w %s' "$f"; done
+    echo
+  else
+    echo '  Aucun fichier indexé ne ressort comme tien : `git reset`, puis'
+    echo '  .claude/solo-commit.sh -m msg.txt -w <tes fichiers>'
+  fi
+  echo
+  echo "  Mécanisme : .claude/githooks/pre-commit + .claude/session-track.sh"
+  echo "  Passer outre volontairement : git commit --no-verify"
+  echo
+} >&2
+exit 1
