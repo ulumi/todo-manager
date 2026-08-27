@@ -3262,9 +3262,7 @@ body.day-col-resizing {
   }
 }
 .subtask-warning-popover {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 34px;
+  position: fixed;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 10px;
@@ -3274,10 +3272,6 @@ body.day-col-resizing {
   font-size: 13px;
   color: var(--text);
   white-space: nowrap;
-}
-.subtask-warning-popover.stw-below {
-  bottom: auto;
-  top: calc(100% + 6px);
 }
 .subtask-warning-popover .stw-label {
   color: var(--text-muted);

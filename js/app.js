@@ -1510,22 +1510,41 @@ class TodoApp {
         <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','skip')">Ignorer</button>
         <button onclick="event.stopPropagation();window.app.completeWithSubtasks('${id}','${ds}','cancel')">Annuler</button>
       </div>`;
-    item.appendChild(popover);
-    // Flip sous la carte si pas assez de place au-dessus (ex. tout 1er item
-    // d'une colonne/section, en haut de la vue) — sinon `bottom: 100%+6px`
-    // pousse le popover hors du viewport (top négatif), invisible et donc
-    // inutilisable : au clic sur la checkbox, rien ne semble se passer alors
-    // que l'avertissement est bien là, juste rendu au-dessus de l'écran.
+    // Posé dans `document.body` en `position: fixed`, JAMAIS dans la carte :
+    // ancré à l'intérieur, il se faisait découper par le premier ancêtre
+    // `overflow: hidden` de la chaîne. C'était invisible en vue jour (aucun
+    // ancêtre coupant), mais dans la grille de l'agenda il y en a TROIS
+    // (`.agenda-block`, `.agenda-canvas`, `.agenda-scroll`) : le popover
+    // était intégralement clippé, donc cocher une tâche qui a des
+    // sous-tâches incomplètes ne produisait strictement RIEN à l'écran —
+    // toggleTodo() s'arrêtant là, la case semblait morte (signalé par Hugues
+    // sur « vêtements »). En `fixed` depuis le body, plus aucun ancêtre ne
+    // peut le couper, quelle que soit la vue — 3e occurrence de cette même
+    // classe de bug (voir les deux commentaires ci-dessus), traitée à la
+    // racine cette fois. Toute nouvelle vue est couverte d'office.
+    document.body.appendChild(popover);
     const rect = item.getBoundingClientRect();
-    if (rect.top < popover.offsetHeight + 16) popover.classList.add('stw-below');
+    const pw = popover.offsetWidth, ph = popover.offsetHeight;
+    // Au-dessus de la carte par défaut, en dessous s'il n'y a pas la place
+    const below = rect.top < ph + 16;
+    popover.classList.toggle('stw-below', below);
+    const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
+    popover.style.left = `${clamp(rect.left + 34, 8, Math.max(8, window.innerWidth - pw - 8))}px`;
+    popover.style.top  = `${clamp(below ? rect.bottom + 6 : rect.top - ph - 6, 8, Math.max(8, window.innerHeight - ph - 8))}px`;
     setTimeout(() => {
+      // `fixed` ne suit pas son ancre : un défilement ou un redimensionnement
+      // le laisserait flotter à côté de la carte. On referme plutôt que de
+      // recalculer en continu.
       const dismiss = e => {
-        if (!popover.contains(e.target)) {
-          popover.remove();
-          document.removeEventListener('click', dismiss);
-        }
+        if (e?.type === 'click' && popover.contains(e.target)) return;
+        popover.remove();
+        document.removeEventListener('click', dismiss);
+        window.removeEventListener('scroll', dismiss, true);
+        window.removeEventListener('resize', dismiss);
       };
       document.addEventListener('click', dismiss);
+      window.addEventListener('scroll', dismiss, true);
+      window.addEventListener('resize', dismiss);
     }, 10);
   }
 
