@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2907",
+    "date": "2026-08-27",
+    "message": "fix(agenda): colonne des heures alignée quelle que soit la durée, et case à cocher toujours cliquable"
+  },
+  {
     "version": "0.4.2906",
     "date": "2026-08-27",
     "message": "feat(agenda): déposer une multi-sélection enchaîne les tâches dans l'ordre de la sélection au lieu de les empiler à la même heure"
@@ -193,15 +198,5 @@
     "version": "0.4.2745",
     "date": "2026-08-19",
     "message": "fix(vue jour): la checkbox de complétion pouvait être interceptée par le survol +/▶/⋯ sur une carte étroite — délai pointer-events désynchronisé de l'opacité + checkbox toujours au-dessus au clic"
-  },
-  {
-    "version": "0.4.2741",
-    "date": "2026-08-18",
-    "message": "refactor(modal): fusionne le mode guidé et le formulaire dense en un seul flux progressif (puces Quand compactes, priorité en pastilles, reste replié derrière « Plus d'options »)"
-  },
-  {
-    "version": "0.4.2735",
-    "date": "2026-08-18",
-    "message": "feat(groupes de tâches): supprimer un en-tête de groupe (clic droit ou glisser un membre hors du groupe), renommer/dupliquer/ajouter une tâche depuis l'en-tête, distinction visuelle avec les moments"
   }
 ]

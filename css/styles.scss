@@ -16760,7 +16760,20 @@ body.view-focus header { display: none; }
 
   // Pas de margin-top : la case se cale d'elle-même sur .agenda-block-head,
   // dont le min-height vaut exactement sa hauteur (voir plus bas).
-  .todo-check { width: 17px; height: 17px; border-width: 1.7px; margin-top: 0; }
+  // `position:relative; z-index` la remonte au-dessus de .agenda-block-resize
+  // (z-index 5, 7px collés au bas du bloc) : sur un bloc au plancher de 20px,
+  // cette poignée recouvrait le tiers bas de la case et lui volait le clic.
+  // Taille et marges IDENTIQUES dans toutes les classes de taille (voir
+  // .is-tiny/.is-short) — c'est ce qui aligne la colonne des heures.
+  .todo-check {
+    position: relative;
+    z-index: 6;
+    flex: none;
+    width: 17px;
+    height: 17px;
+    border-width: 1.7px;
+    margin-top: 0;
+  }
   .todo-check.checked::after { font-size: 10px; }
 }
 
@@ -16786,6 +16799,9 @@ body.view-focus header { display: none; }
   letter-spacing: .02em;
   color: var(--text-muted);
   white-space: nowrap;
+  // Chiffres à chasse fixe : « 07:15–07:18 » et « 11:15–11:30 » occupent
+  // exactement la même largeur, donc les titres démarrent tous au même x.
+  font-variant-numeric: tabular-nums;
 }
 .agenda-block-dash { padding: 0 2px; opacity: .6; }
 
@@ -16823,23 +16839,23 @@ body.view-focus header { display: none; }
 .agenda-block-link { cursor: pointer; &:hover { color: var(--primary); border-color: var(--primary); } }
 .agenda-block-flex { color: var(--warning); border-color: color-mix(in srgb, var(--warning) 40%, transparent); }
 
-// Blocs courts : on ne garde que l'essentiel plutôt que de tasser
+// Blocs courts / minuscules : SEULE la marge verticale et les badges
+// changent. Le padding GAUCHE, le gap, la taille de la case et celle du
+// titre restent ceux du cas général — sans quoi l'heure et le titre
+// démarrent à un x différent selon la durée de la tâche, et la colonne des
+// heures part en escalier d'un bloc à l'autre (1re version : 6px d'écart
+// entre un bloc de 3 min et un bloc de 30 min).
 .agenda-block.is-short {
-  padding: 3px 6px;
+  padding: 3px 6px 3px 7px;
   .agenda-block-meta { display: none; }
 }
 
+// Plancher MIN_BLOCK_PX = 20px (agendaView.js) : 17px de contenu + 2px de
+// marge verticale y tiennent tout juste, d'où le padding réduit à 1px.
 .agenda-block.is-tiny {
   align-items: center;
-  padding: 2px 6px;
-  gap: 5px;
+  padding: 1px 6px 1px 7px;
   .agenda-block-meta { display: none; }
-  // Case plus petite ici : le head se resserre d'autant pour ne pas dépasser
-  // MIN_BLOCK_PX (agendaView.js) sur un bloc de quelques minutes.
-  .agenda-block-head { min-height: 14px; }
-  .agenda-block-title { font-size: 11.5px; }
-  .todo-check { width: 14px; height: 14px; margin-top: 0; }
-  .todo-check.checked::after { font-size: 8px; }
 }
 
 // Actions en overlay au coin haut-droit — même recette que .todo-actions /

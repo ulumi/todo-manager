@@ -17542,6 +17542,9 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   text-decoration: line-through;
 }
 .agenda-block .todo-check {
+  position: relative;
+  z-index: 6;
+  flex: none;
   width: 17px;
   height: 17px;
   border-width: 1.7px;
@@ -17574,6 +17577,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   letter-spacing: 0.02em;
   color: var(--text-muted);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .agenda-block-dash {
@@ -17635,7 +17639,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .agenda-block.is-short {
-  padding: 3px 6px;
+  padding: 3px 6px 3px 7px;
 }
 .agenda-block.is-short .agenda-block-meta {
   display: none;
@@ -17643,25 +17647,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 
 .agenda-block.is-tiny {
   align-items: center;
-  padding: 2px 6px;
-  gap: 5px;
+  padding: 1px 6px 1px 7px;
 }
 .agenda-block.is-tiny .agenda-block-meta {
   display: none;
-}
-.agenda-block.is-tiny .agenda-block-head {
-  min-height: 14px;
-}
-.agenda-block.is-tiny .agenda-block-title {
-  font-size: 11.5px;
-}
-.agenda-block.is-tiny .todo-check {
-  width: 14px;
-  height: 14px;
-  margin-top: 0;
-}
-.agenda-block.is-tiny .todo-check.checked::after {
-  font-size: 8px;
 }
 
 .agenda-block-actions {
