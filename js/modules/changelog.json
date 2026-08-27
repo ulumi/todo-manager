@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2906",
+    "date": "2026-08-27",
+    "message": "feat(agenda): déposer une multi-sélection enchaîne les tâches dans l'ordre de la sélection au lieu de les empiler à la même heure"
+  },
+  {
     "version": "0.4.2905",
     "date": "2026-08-27",
     "message": "fix(agenda): le bouton + de la ligne « maintenant » ne recouvre plus la case à cocher d'une tâche en cours"
