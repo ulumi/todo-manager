@@ -22,6 +22,8 @@
 #       RECONSTRUIRE un commit local déjà fait mais pollué (jamais poussé).
 #   -w  fichier que cette session est SEULE à avoir touché : son contenu
 #       actuel du répertoire de travail est pris tel quel.
+#   -d  chemin à SUPPRIMER du commit (fichier retiré, ou ancien nom d'un
+#       fichier renommé : sans lui il resterait, hérité du parent).
 #   -s  fichier PARTAGÉ (les deux sessions y ont écrit) : le contenu à
 #       committer est fourni à part — typiquement le fichier de <parent> sur
 #       lequel on a rejoué nos seules éditions. Voir « Fichier partagé »
@@ -37,14 +39,15 @@ set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-MSG=""; PARENT="HEAD"; WT=(); SHARED=()
-while getopts "m:p:w:s:" opt; do
+MSG=""; PARENT="HEAD"; WT=(); SHARED=(); DEL=()
+while getopts "m:p:w:s:d:" opt; do
   case "$opt" in
     m) MSG="$OPTARG" ;;
     p) PARENT="$OPTARG" ;;
     w) WT+=("$OPTARG") ;;
     s) SHARED+=("$OPTARG") ;;
-    *) echo "usage: $0 -m <msgfile> [-p <parent>] [-w path]... [-s path=file]..." >&2; exit 2 ;;
+    d) DEL+=("$OPTARG") ;;
+    *) echo "usage: $0 -m <msgfile> [-p <parent>] [-w path]... [-s path=file]... [-d path]..." >&2; exit 2 ;;
   esac
 done
 [ -n "$MSG" ] && [ -f "$MSG" ] || { echo "solo-commit: -m <fichier-message> requis" >&2; exit 2; }
@@ -60,6 +63,12 @@ git read-tree "$PARENT_SHA"
 for p in ${WT[@]+"${WT[@]}"}; do
   [ -f "$p" ] || { echo "solo-commit: -w $p introuvable" >&2; exit 1; }
   git update-index --add -- "$p"
+done
+
+# Suppressions (fichier retiré ou renommé — sans ça l'ancien chemin, hérité du
+# parent, survivrait au commit à côté du nouveau).
+for p in ${DEL[@]+"${DEL[@]}"}; do
+  git update-index --force-remove -- "$p"
 done
 
 for pair in ${SHARED[@]+"${SHARED[@]}"}; do

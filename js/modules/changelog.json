@@ -1,6 +1,6 @@
 [
   {
-    "version": "0.4.2943",
+    "version": "0.4.2944",
     "date": "2026-08-28",
     "message": "feat(api): API de tâches documentée + serveur MCP — l'app Claude du téléphone peut enfin ajouter des tâches"
   },

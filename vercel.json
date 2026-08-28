@@ -2,10 +2,48 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "framework": null,
-    "crons": [
+  "crons": [
     {
       "path": "/api/cron-cleanup-guests",
       "schedule": "0 3 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/mcp",
+      "destination": "/api/todo/mcp"
+    },
+    {
+      "source": "/api/tasks",
+      "destination": "/api/todo/tasks"
+    },
+    {
+      "source": "/api/docs",
+      "destination": "/api/todo/docs"
+    },
+    {
+      "source": "/api/admin-users",
+      "destination": "/api/admin/users"
+    },
+    {
+      "source": "/api/admin-batch",
+      "destination": "/api/admin/batch"
+    },
+    {
+      "source": "/api/admin-messages",
+      "destination": "/api/admin/messages"
+    },
+    {
+      "source": "/api/admin-presence",
+      "destination": "/api/admin/presence"
+    },
+    {
+      "source": "/api/admin-stats",
+      "destination": "/api/admin/stats"
+    },
+    {
+      "source": "/api/admin-user-action",
+      "destination": "/api/admin/user-action"
     }
   ]
 }
