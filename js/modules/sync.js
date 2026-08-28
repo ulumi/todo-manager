@@ -126,19 +126,38 @@ export async function deleteUserData() {
   }
 }
 
-// ── iCal token ───────────────────────────────────────────
-// Token format: "{uid}_{secret}" — uid embedded for direct row read.
+// ── Feed & API tokens ────────────────────────────────────
+// Token format: "{uid}_{secret}" — the uid travels in the token so a
+// server-side handler can read that row directly (a bare secret wouldn't say
+// whose row to look in).
+//
+// TWO independent secrets, deliberately never shared:
+//   icalSecret → /api/ical           READ-only  (pasted into Google/Apple Calendar)
+//   apiSecret  → /api/tasks, /api/mcp READ-WRITE (Claude connector, scripts)
+// One secret for both would mean every calendar app that ever received the
+// feed URL also holds write access to the task list.
 
 function genSecret() {
   return crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-export async function getOrCreateICalToken() {
-  const user = getCurrentUser();
-  const uid = user?.uid;
-  const cached = localStorage.getItem('icalToken');
+// Reads the secret stored in the user_data row, creating it on first use.
+// Offline fallback generates one locally: it isn't valid server-side yet, but
+// getFullBackup() carries both secrets, so the next successful push writes it
+// into the row and the token starts working — no dead-end state.
+async function getOrCreateSecretToken(field, tokenKey) {
+  const user   = getCurrentUser();
+  const uid    = user?.uid;
+  const cached = localStorage.getItem(tokenKey);
 
   if (!uid) return cached || null;
+
+  const remember = (secret) => {
+    localStorage.setItem(field, secret);
+    const token = uid + '_' + secret;
+    localStorage.setItem(tokenKey, token);
+    return token;
+  };
 
   try {
     const { data, error } = await supabase
@@ -148,37 +167,67 @@ export async function getOrCreateICalToken() {
       .maybeSingle();
 
     if (error) throw error;
-
-    if (data?.data?.icalSecret) {
-      const token = uid + '_' + data.data.icalSecret;
-      localStorage.setItem('icalSecret', data.data.icalSecret);
-      localStorage.setItem('icalToken', token);
-      return token;
-    }
+    if (data?.data?.[field]) return remember(data.data[field]);
 
     // No secret yet — generate and merge into data
-    const secret = genSecret();
+    const secret   = genSecret();
     const existing = data?.data || {};
     await supabase
       .from('user_data')
       .upsert({
         user_id: uid,
-        data: { ...existing, icalSecret: secret },
+        data: { ...existing, [field]: secret },
         updated_at: new Date().toISOString(),
       });
-    localStorage.setItem('icalSecret', secret);
-    const token = uid + '_' + secret;
-    localStorage.setItem('icalToken', token);
-    return token;
+    return remember(secret);
   } catch {
     // Offline — reuse cached if valid for this user, otherwise generate locally
     if (cached && cached.startsWith(uid + '_')) return cached;
-    const secret = genSecret();
-    localStorage.setItem('icalSecret', secret);
-    const token = uid + '_' + secret;
-    localStorage.setItem('icalToken', token);
-    return token;
+    return remember(genSecret());
   }
+}
+
+export function getOrCreateICalToken() {
+  return getOrCreateSecretToken('icalSecret', 'icalToken');
+}
+
+export function getOrCreateApiToken() {
+  return getOrCreateSecretToken('apiSecret', 'apiToken');
+}
+
+// Reissue the API secret: every URL built from the old one stops working at
+// once, which is the whole point (a connector URL pasted somewhere it
+// shouldn't have been). Writes straight to the row rather than going through
+// the debounced push, so revocation is immediate.
+//
+// A tab elsewhere that still holds the OLD secret in localStorage would put it
+// back on its next full-row push; the Realtime broadcast of this write reaches
+// it first and _applyBackup() updates its copy, closing that window.
+export async function regenerateApiToken() {
+  const uid = getCurrentUser()?.uid;
+  if (!uid) throw new Error('no authenticated user');
+
+  const { data, error } = await supabase
+    .from('user_data')
+    .select('data')
+    .eq('user_id', uid)
+    .maybeSingle();
+  if (error) throw error;
+
+  const secret = genSecret();
+  const { error: upsertError } = await supabase
+    .from('user_data')
+    .upsert({
+      user_id: uid,
+      data: { ...(data?.data || {}), apiSecret: secret },
+      updated_at: new Date().toISOString(),
+    });
+  if (upsertError) throw upsertError;
+
+  localStorage.setItem('apiSecret', secret);
+  const token = uid + '_' + secret;
+  localStorage.setItem('apiToken', token);
+  return token;
 }
 
 // ── Google Calendar disconnect ────────────────────────────

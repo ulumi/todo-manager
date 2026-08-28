@@ -234,6 +234,7 @@ export function openAdminModal() {
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('categories')">📁 Catégories</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('modeles')">🗂 Modèles</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('ical')">📅 Calendrier</button>
+        <button class="admin-sidenav-link" onclick="window.app.showAdminSection('api')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg> API &amp; Claude</button>
         <button class="admin-sidenav-link" onclick="window.app.showAdminSection('donnees')">💾 Données</button>
       </nav>
       <div class="admin-content">
@@ -330,6 +331,43 @@ export function openAdminModal() {
           <div class="admin-section" style="margin-top:16px;">
             <h3>Google Calendar</h3>
             <div id="gcalAdminStatus" style="margin-top:8px;"></div>
+          </div>
+        </section>
+
+        <section id="section-api" class="admin-page-section" style="display:none">
+          <h2 class="admin-section-title">API &amp; Claude</h2>
+          <div class="admin-form">
+
+            <div class="admin-section">
+              <h3>Connecteur Claude</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Dans claude.ai : Paramètres → Connecteurs → « Ajouter un connecteur personnalisé », puis colle cette adresse. Le connecteur devient ensuite disponible dans l'app Claude du téléphone, qui peut alors ajouter, lister et compléter des tâches ici.</p>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="apiMcpUrl" class="form-input" readonly onclick="this.select()" style="flex:1;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" placeholder="Génération…">
+                <button class="btn btn-primary" onclick="window.app.copyApiField('apiMcpUrl','apiMcpCopyMsg')">Copier</button>
+              </div>
+              <div id="apiMcpCopyMsg" style="font-size:12px;color:var(--success);display:none;margin-top:6px;">✓ Adresse copiée</div>
+            </div>
+
+            <div class="admin-section">
+              <h3>Jeton</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Pour les Raccourcis iOS, curl ou n'importe quel script : <code>Authorization: Bearer &lt;jeton&gt;</code> sur <code>/api/tasks</code>.</p>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="apiTokenField" class="form-input" readonly onclick="this.select()" style="flex:1;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" placeholder="Génération…">
+                <button class="btn btn-ghost" onclick="window.app.copyApiField('apiTokenField','apiTokenCopyMsg')">Copier</button>
+              </div>
+              <div id="apiTokenCopyMsg" style="font-size:12px;color:var(--success);display:none;margin-top:6px;">✓ Jeton copié</div>
+              <p style="font-size:12px;color:var(--warning);margin-top:10px;line-height:1.5;">Ce jeton donne accès en <strong>lecture et écriture</strong> aux tâches. Ce n'est pas celui du calendrier (onglet Calendrier), qui est en lecture seule et prévu pour être donné à d'autres apps.</p>
+            </div>
+
+            <div class="admin-section">
+              <h3>Documentation</h3>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Endpoints, champs acceptés et exemples curl — page publique, sans jeton.</p>
+              <a id="apiDocsLink" href="https://todo.hugues.app/api/docs" target="_blank" rel="noopener" class="btn btn-ghost" style="display:inline-block;text-decoration:none;">Référence de l'API →</a>
+            </div>
+
+          </div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+            <button class="btn btn-ghost" onclick="window.app.regenerateApiToken()" style="width:100%;">Régénérer le jeton</button>
           </div>
         </section>
 

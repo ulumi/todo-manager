@@ -94,7 +94,7 @@ import {
   upgradeGuestToEmail, signOut, updateUserProfile,
   signInWithGoogle, signInWithFacebook, getIdToken,
 } from './modules/auth.js';
-import { loadFromSupabase, pushToSupabase, subscribeToSupabase, setupOfflineIndicator, deleteUserData, SESSION_ID, getOrCreateICalToken, disconnectGCal } from './modules/sync.js';
+import { loadFromSupabase, pushToSupabase, subscribeToSupabase, setupOfflineIndicator, deleteUserData, SESSION_ID, getOrCreateICalToken, getOrCreateApiToken, regenerateApiToken, disconnectGCal } from './modules/sync.js';
 import { getDebugStatus, renderDebugDrawerHTML } from './modules/debugPanel.js';
 import { initPresence, destroyPresence, markAllMessagesRead, sendUserMessage, updatePresenceName } from './modules/presence.js';
 import {
@@ -419,6 +419,7 @@ class TodoApp {
     if (backup.intentions)     localStorage.setItem('intentions',       JSON.stringify(backup.intentions));
     if (backup.projects)  saveProjects(backup.projects);
     if (backup.icalSecret)     localStorage.setItem('icalSecret', backup.icalSecret);
+    if (backup.apiSecret)      localStorage.setItem('apiSecret',  backup.apiSecret);
     if ('avatar' in backup) {
       if (backup.avatar) localStorage.setItem('profileAvatar', JSON.stringify(backup.avatar));
       else               localStorage.removeItem('profileAvatar');
@@ -7859,6 +7860,64 @@ class TodoApp {
     }
   }
 
+  // ── API & connecteur Claude ─────────────────────────────
+  // Panneau du modal Réglages → « API & Claude » : l'adresse du connecteur MCP
+  // à coller dans claude.ai, le jeton brut pour les scripts, et la révocation.
+  // Peuplé à l'ouverture de CETTE section seulement (showAdminSection) — le
+  // remplir demande un aller-retour Supabase (getOrCreateApiToken), inutile
+  // chaque fois que le modal s'ouvre sur un autre onglet.
+  async loadApiPanel() {
+    const urlEl   = document.getElementById('apiMcpUrl');
+    const tokenEl = document.getElementById('apiTokenField');
+    if (!urlEl || !tokenEl) return;
+
+    if (!getCurrentUser()) {
+      urlEl.value = tokenEl.value = '';
+      urlEl.placeholder = tokenEl.placeholder = 'Connecte-toi à un compte pour générer un jeton.';
+      return;
+    }
+
+    urlEl.placeholder = tokenEl.placeholder = 'Génération…';
+    const token = await getOrCreateApiToken();
+    if (!token) return;
+    // En dev local l'API n'existe pas (pas de fonctions Vercel) — pointer sur
+    // la prod, comme loadICalURL().
+    const host = window.location.hostname === 'localhost' ? 'todo.hugues.app' : window.location.host;
+    urlEl.value   = 'https://' + host + '/api/mcp?token=' + token;
+    tokenEl.value = token;
+    const docs = document.getElementById('apiDocsLink');
+    if (docs) docs.href = 'https://' + host + '/api/docs';
+  }
+
+  async copyApiField(inputId, msgId) {
+    const input = document.getElementById(inputId);
+    if (!input || !input.value) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch {
+      input.select();
+      document.execCommand('copy');
+    }
+    const msg = document.getElementById(msgId);
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2500); }
+  }
+
+  async regenerateApiToken() {
+    if (!await appConfirm('Le jeton actuel cessera immédiatement de fonctionner.', {
+      title: 'Régénérer le jeton d’API',
+      detail: 'Il faudra remettre la nouvelle adresse dans le connecteur Claude, et dans tout script qui l’utilise.',
+      confirmLabel: 'Régénérer',
+      danger: true,
+    })) return;
+    try {
+      await regenerateApiToken();
+      await this.loadApiPanel();
+      this._showToast('✓ Nouveau jeton d’API généré');
+    } catch {
+      this._showToast('⚠ Impossible de régénérer le jeton — connexion indisponible');
+    }
+  }
+
   // ── Google Calendar ─────────────────────────────────────
 
   async connectGoogleCalendar() {
@@ -9076,6 +9135,7 @@ class TodoApp {
 
   showAdminSection(id) {
     showAdminSection(id);
+    if (id === 'api') this.loadApiPanel();
   }
 
   // ═══════════════════════════════════════════════════
@@ -9786,6 +9846,7 @@ class TodoApp {
       this._updateUserBtn();
     }
     if (backup.icalSecret) localStorage.setItem('icalSecret', backup.icalSecret);
+    if (backup.apiSecret) localStorage.setItem('apiSecret', backup.apiSecret);
 
     if (changed && !silent) this.render();
   }

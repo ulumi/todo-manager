@@ -190,8 +190,13 @@ export function getFullBackup(todos) {
     },
     exportDate: new Date().toISOString()
   };
+  // Both feed/API secrets ride along so a device that generated one while
+  // offline gets it written into the row on the next successful push (see
+  // getOrCreateSecretToken in sync.js).
   const icalSecret = localStorage.getItem('icalSecret');
   if (icalSecret) backup.icalSecret = icalSecret;
+  const apiSecret = localStorage.getItem('apiSecret');
+  if (apiSecret) backup.apiSecret = apiSecret;
   return backup;
 }
 
