@@ -5,12 +5,30 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// ⚠ La clé service_role ne doit JAMAIS être écrite en dur ici. Elle contourne
+// entièrement RLS (lecture/écriture sur les données de TOUS les comptes), et
+// une valeur de repli dans ce fichier est une valeur de repli dans un dépôt
+// PUBLIC : la précédente y est restée 143 jours et était toujours active au
+// moment de son retrait. Une variable d'environnement absente doit faire
+// échouer l'API bruyamment, jamais la faire retomber sur un secret commité.
+//
+// L'URL, elle, n'est pas un secret : elle est déjà servie à chaque navigateur
+// dans js/modules/supabase.js. Elle garde donc une valeur par défaut.
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ztibrrmebnpzmflzghjb.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
   || process.env.SUPABASE_SECRET_KEY
-  || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3NzE4MCwiZXhwIjoyMDg4MjUzMTgwfQ.VkgQULfdcqY1S6x8UF6CPNDy3vOh5AwUUkMh-B-zFJs';
+  || '';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabaseConfigured = Boolean(SUPABASE_KEY);
+
+if (!supabaseConfigured) {
+  console.error('[api] CONFIGURATION MANQUANTE : ni SUPABASE_SERVICE_ROLE_KEY ni SUPABASE_SECRET_KEY dans l\u2019environnement. Tout endpoint touchant Supabase va échouer. À poser dans les variables d\u2019environnement du projet Vercel.');
+}
+
+// createClient() lève si la clé est vide ; on lui passe un marqueur pour que
+// l'échec soit un 401 traçable par appel plutôt qu'un crash du module qui
+// ferait tomber TOUS les endpoints, y compris ceux qui n'en ont pas besoin.
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY || 'unconfigured-service-role-key');
 
 export const ADMIN_UIDS = (process.env.ADMIN_UIDS || '')
   .split(',').map(s => s.trim()).filter(Boolean);

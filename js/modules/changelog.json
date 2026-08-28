@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2945",
+    "date": "2026-08-28",
+    "message": "security: la clé service_role Supabase quitte le code — variables d'environnement obligatoires, échec bruyant si absentes"
+  },
+  {
     "version": "0.4.2944",
     "date": "2026-08-28",
     "message": "feat(api): API de tâches documentée + serveur MCP — l'app Claude du téléphone peut enfin ajouter des tâches"
@@ -193,10 +198,5 @@
     "version": "0.4.2791",
     "date": "2026-08-19",
     "message": "refactor(modal): Sous-tâches rejoint les sections thématiques repliables (icône + aperçu N/N comme les autres) — seule section dépliée par défaut, y compris sur une tâche neuve"
-  },
-  {
-    "version": "0.4.2782",
-    "date": "2026-08-19",
-    "message": "fix(vue jour): en grille masonry (≥2 colonnes), saisir une carte la retirait du flux (display:none) et la grille republiait aussitôt une AUTRE carte sous le curseur — tout ciblage de drop (dégroupage, repositionnement précis) devenait imprévisible ; la carte saisie garde maintenant sa cellule réservée (visibility:hidden)"
   }
 ]

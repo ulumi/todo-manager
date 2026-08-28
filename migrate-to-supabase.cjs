@@ -16,10 +16,16 @@ admin.initializeApp({ credential: admin.credential.cert(sa) });
 const db = admin.firestore();
 
 // ── Supabase client (service_role) ──
-const supabase = createClient(
-  'https://ztibrrmebnpzmflzghjb.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjY3NzE4MCwiZXhwIjoyMDg4MjUzMTgwfQ.VkgQULfdcqY1S6x8UF6CPNDy3vOh5AwUUkMh-B-zFJs'
-);
+// Jamais de clé en dur : ce fichier est commité dans un dépôt PUBLIC. Elle y a
+// figuré 143 jours (cf. api/_supabase.js). Script one-shot lancé à la main :
+//   SUPABASE_SERVICE_ROLE_KEY=... node migrate-to-supabase.cjs
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ztibrrmebnpzmflzghjb.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+if (!SUPABASE_KEY) {
+  console.error('SUPABASE_SERVICE_ROLE_KEY manquante dans l\u2019environnement.');
+  process.exit(1);
+}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── ADMIN_UIDS (main users to prioritize) ──
 const ADMIN_UIDS = ['h3ctt4F0zrf5SQTtGOVY8xTJT0Y2', 'QuTBudQzz6SWkIDa50WggbnF4kK2'];

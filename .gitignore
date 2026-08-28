@@ -1,8 +1,13 @@
 .DS_Store
 *.log
 node_modules/
+# Tout fichier d'environnement, quel que soit le suffixe — `.env` et
+# `.env.local` seuls laissaient passer `.env.vercel`, qui s'est retrouvé
+# commité dans ce dépôt PUBLIC (jeton OIDC Vercel).
 .env
+.env.*
 .env.local
+uid-mapping.json
 .vercel
 firebase-service-account.json
 .claude/worktrees/

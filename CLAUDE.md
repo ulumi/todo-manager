@@ -255,6 +255,17 @@ The real gap — a tab left open across a deploy keeps running its already-evalu
 - `api/_supabase.js` — shared Supabase **service role** client + `verifyToken()` + `verifyAdmin()`
 - Admin endpoints require `Authorization: Bearer <supabase-access-token>` + UID in `ADMIN_UIDS` env var
 
+#### ⚠ Aucun secret en dur — le dépôt GitHub est PUBLIC
+`ulumi/todo-manager` est public : tout ce qui est commité est lisible par n'importe qui. La clé **service_role** (qui contourne entièrement RLS — lecture/écriture sur les données de TOUS les comptes) y est restée en valeur de repli dans `api/_supabase.js` et `migrate-to-supabase.cjs` du 2026-04-07 au 2026-08-28, **et elle était toujours active** au moment du retrait (vérifié : elle renvoyait les 4 lignes de `user_data`).
+
+Règles qui en découlent :
+- `SUPABASE_SERVICE_ROLE_KEY` (ou `SUPABASE_SECRET_KEY`) vient **uniquement** de l'environnement. Absente → `supabaseConfigured` est `false`, un `console.error` est émis au chargement et `authenticate()` renvoie **503 « Server misconfigured »**. Jamais de repli sur une valeur littérale : un repli dans ce fichier est un repli dans un dépôt public.
+- L'ordre dans `authenticate()` est **forme du jeton → configuration → réseau**. Une requête sans jeton est fautive quelle que soit la config (401) ; la signaler en 503 masquerait l'erreur de l'appelant. Et sans clé, Supabase répondrait « Invalid API key », qui remonterait en « jeton invalide » et enverrait déboguer du mauvais côté.
+- `SUPABASE_URL` garde une valeur par défaut : ce n'est pas un secret, elle est déjà servie à chaque navigateur dans `js/modules/supabase.js`.
+- Les clés **anon** / publishable de `js/modules/supabase.js` et `admin.html` sont publiques par conception (RLS les encadre) — elles n'ont rien à voir avec le problème ci-dessus.
+- `.gitignore` couvre `.env.*` et plus seulement `.env`/`.env.local` : `.env.vercel` (jeton OIDC Vercel) avait été commité par cet angle mort. `uid-mapping.json` (correspondance uid Firebase→Supabase) est également sorti du suivi.
+- **Ne jamais lire un secret depuis `git show` pour « dépanner »** : la valeur reste dans l'historique du dépôt public, la reproduire ailleurs ne fait qu'étendre la fuite.
+
 ---
 
 ## CSS / SCSS

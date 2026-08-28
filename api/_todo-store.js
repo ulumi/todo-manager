@@ -14,7 +14,7 @@
 // one of them changes.
 
 import { timingSafeEqual } from 'node:crypto';
-import { supabase } from './_supabase.js';
+import { supabase, supabaseConfigured } from './_supabase.js';
 import {
   addTask, getTodosForDate, toggleTodo,
   isCompleted, isCancelled, resolveOccurrence,
@@ -72,6 +72,15 @@ export async function authenticate(req) {
   // a misleading answer to what is simply a bad token.
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uid)) {
     throw new ApiError(401, 'Malformed token (bad account id).');
+  }
+
+  // Contrôlé seulement ici : après la forme du jeton (une requête sans jeton
+  // est fautive quelle que soit la config du serveur — la signaler en 503
+  // masquerait l'erreur de l'appelant), et avant le réseau (sans clé, Supabase
+  // répondrait « Invalid API key », qui remonterait en « jeton invalide » et
+  // enverrait chercher le problème du mauvais côté).
+  if (!supabaseConfigured) {
+    throw new ApiError(503, 'Server misconfigured: no Supabase service key. Check the deployment environment variables.');
   }
 
   let row;
