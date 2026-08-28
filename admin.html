@@ -910,8 +910,9 @@
   import { appConfirm, appAlert } from './js/modules/dialog.js';
 
   const SUPABASE_URL  = 'https://ztibrrmebnpzmflzghjb.supabase.co';
-  const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0aWJycm1lYm5wem1mbHpnaGpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2NzcxODAsImV4cCI6MjA4ODI1MzE4MH0.Qe0fFvwZWZWyBgYzG1rrlTMO6fnfrCxhQ9Z5CkJTEak';
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+    // Clé publishable — cf. js/modules/supabase.js pour le pourquoi.
+  const SUPABASE_KEY = 'sb_publishable_8bm28Lm-gQBEFJ948KfLrg_wnz1oXtG';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const API = '/api';
 
