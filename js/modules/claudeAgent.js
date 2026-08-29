@@ -23,6 +23,20 @@ import { esc } from './utils.js';
 
 export const AGENT_KEY = 'claudeAgent';
 
+// Deux stockages, et la frontière est celle de la PROPRIÉTÉ, pas du confort :
+//   `claudeAgent`        — les réglages, écrits par Hugues, téléversés avec le
+//                          reste de la config ;
+//   `claudeAgentRuntime` — l'état d'exécution (demande, progression, dernier
+//                          passage), écrit UNIQUEMENT par le serveur et jamais
+//                          téléversé.
+// La séparation n'est pas cosmétique : `pushToSupabase` remplace la ligne
+// entière par ce que `getFullBackup()` produit, donc tout ce que le navigateur
+// émet écrase ce que le serveur y avait écrit. Ces champs vivent maintenant
+// dans `data.agentRuntime`, que le navigateur n'émet jamais et que le push
+// préserve explicitement (voir sync.js).
+export const AGENT_RUNTIME_KEY = 'claudeAgentRuntime';
+export const RUNTIME_FIELDS = ['runRequest', 'progress', 'lastRun'];
+
 // Volontairement `enabled: false` : rien ne s'exécute tant que Hugues n'a pas
 // armé l'interrupteur lui-même. Un agent qui écrit du code et déploie ne
 // s'active pas par défaut au premier déploiement qui l'introduit.
@@ -42,7 +56,7 @@ export const AGENT_DEFAULTS = {
 // (storage.js) les retire de ce qu'il téléverse — sans quoi une copie périmée
 // du localStorage viendrait écraser la progression réelle une seconde après
 // que l'agent l'a écrite. C'est le bug qu'avait déjà causé `runRequest`.
-export const SERVER_OWNED_FIELDS = ['runRequest', 'progress'];
+export const SERVER_OWNED_FIELDS = RUNTIME_FIELDS;
 
 // Au-delà, une progression n'est plus « en cours » mais un vestige : un
 // passage tué net (quota, plantage) laisse sa dernière ligne derrière lui, et
@@ -165,15 +179,41 @@ export function serializeAgentConfig(cfg) {
 
 // ─── Côté navigateur ───────────────────────────────────────────────────────
 
+// Vue fusionnée pour tout le rendu : réglages + exécution. Les appelants ne
+// voient qu'un objet, la frontière ne concerne que l'écriture.
 export function getAgentConfig() {
-  return parseAgentConfig(localStorage.getItem(AGENT_KEY));
+  const settings = safeParse(localStorage.getItem(AGENT_KEY));
+  const runtime  = safeParse(localStorage.getItem(AGENT_RUNTIME_KEY));
+  return normalizeAgentConfig({ ...settings, ...runtime });
+}
+
+function safeParse(raw) {
+  if (!raw) return {};
+  try { const v = JSON.parse(raw); return (v && typeof v === 'object') ? v : {}; }
+  catch { return {}; }
+}
+
+// Miroir local de ce que le serveur a écrit. Jamais suivi d'un
+// `_saveConfigChange()` : le repousser est exactement ce que cette séparation
+// existe pour empêcher.
+export function saveAgentRuntime(patch) {
+  const next = {};
+  const merged = { ...safeParse(localStorage.getItem(AGENT_RUNTIME_KEY)), ...patch };
+  for (const k of RUNTIME_FIELDS) if (merged[k] != null) next[k] = merged[k];
+  localStorage.setItem(AGENT_RUNTIME_KEY, JSON.stringify(next));
+  return getAgentConfig();
 }
 
 // Renvoie la config normalisée APRÈS écriture, pour que l'appelant affiche
 // exactement ce qui a été enregistré plutôt que ce qu'il croyait envoyer.
 export function saveAgentConfig(patch) {
   const next = normalizeAgentConfig({ ...getAgentConfig(), ...patch });
-  localStorage.setItem(AGENT_KEY, JSON.stringify(next));
+  // Seuls les RÉGLAGES partent dans la clé téléversée : y laisser un champ
+  // d'exécution le ferait repousser au prochain push de config, et écraser la
+  // valeur du serveur.
+  const settings = { ...next };
+  for (const k of RUNTIME_FIELDS) delete settings[k];
+  localStorage.setItem(AGENT_KEY, JSON.stringify(settings));
   return next;
 }
 

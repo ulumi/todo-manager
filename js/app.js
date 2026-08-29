@@ -106,7 +106,7 @@ import {
 import { getOverduePunctual, renderReviewBody } from './modules/review.js';
 import { getAgentConfig, saveAgentConfig, agentPanelHTML, isAgentPanelOpen, setAgentPanelOpen,
          findAgentCategory, MAX_PER_RUN_LIMIT, RUN_REQUEST_GRACE_MS,
-         parseAgentConfig, AGENT_KEY } from './modules/claudeAgent.js';
+         parseAgentConfig, AGENT_RUNTIME_KEY, saveAgentRuntime } from './modules/claudeAgent.js';
 import { appConfirm, appAlert, appChoice } from './modules/dialog.js';
 
 // Initialize state
@@ -7087,12 +7087,13 @@ class TodoApp {
       const res = await fetch('/api/agent', { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) return;
       const d = await res.json();
-      const local = getAgentConfig();
-      const next = parseAgentConfig({ ...local, progress: d.progress ?? null, runRequest: d.runRequested ? local.runRequest : null });
-      if (JSON.stringify(next) !== JSON.stringify(local)) {
-        localStorage.setItem(AGENT_KEY, JSON.stringify(next));
-        this._refreshAgentPanel();
-      }
+      const before = JSON.stringify(getAgentConfig());
+      saveAgentRuntime({
+        progress:   d.progress ?? null,
+        lastRun:    d.lastRun ?? null,
+        runRequest: d.runRequested ? (getAgentConfig().runRequest || { at: Date.now() }) : null,
+      });
+      if (JSON.stringify(getAgentConfig()) !== before) this._refreshAgentPanel();
     } catch { /* le direct est un confort, jamais une raison d'échouer */ }
     finally { this._agentPolling = false; }
   }
@@ -7127,7 +7128,7 @@ class TodoApp {
       // Écrit aussi en local : la ligne revient par Realtime, mais le panneau
       // doit basculer tout de suite — sinon un deuxième clic part avant que
       // l'aller-retour ne soit revenu.
-      saveAgentConfig({ runRequest: { at: Date.now() } });
+      saveAgentRuntime({ runRequest: { at: Date.now() } });
       this._refreshAgentPanel();
       this._showToast('Passage demandé — départ dans moins de 2 min');
       // Repasse une fois le délai de grâce écoulé : si personne n'a réclamé la
@@ -10112,6 +10113,15 @@ class TodoApp {
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);
+      changed = true;
+    }
+    // État d'exécution de l'agent : miroir local de ce que le serveur a écrit.
+    // Il vit HORS de `config` précisément pour que le navigateur ne l'émette
+    // jamais (voir claudeAgent.js) — ici on ne fait que le recopier pour
+    // l'affichage, sans jamais le repousser.
+    if ('agentRuntime' in backup) {
+      localStorage.setItem(AGENT_RUNTIME_KEY, JSON.stringify(backup.agentRuntime || {}));
+      if (state.view === 'inbox') this._refreshAgentPanel();
       changed = true;
     }
     if ('avatar' in backup) {

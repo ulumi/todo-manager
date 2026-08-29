@@ -17,12 +17,26 @@
 // « ce que l'agent ramasse » sont littéralement le même code.
 
 import { ApiError, authenticate, todosOf, commitTodos, todayDS, serializeTask } from './_todo-store.js';
-import { parseAgentConfig, serializeAgentConfig, agentEligible, isRunRequestPending } from '../js/modules/claudeAgent.js';
+import { parseAgentConfig, agentEligible, isRunRequestPending } from '../js/modules/claudeAgent.js';
 
 const DOCS = 'https://todo.hugues.app/api/docs';
 
+// Réglages (écrits par Hugues) + exécution (écrite ici). Les seconds vivent
+// HORS de `config` : le navigateur remplace `config` à chaque push, donc tout
+// ce que le serveur y écrirait serait effacé quelques secondes plus tard.
 function readConfig(data) {
-  return parseAgentConfig(data?.config?.claudeAgent);
+  const settings = parseAgentConfig(data?.config?.claudeAgent);
+  const runtime  = (data?.agentRuntime && typeof data.agentRuntime === 'object') ? data.agentRuntime : {};
+  return parseAgentConfig({ ...settings, ...runtime });
+}
+
+// N'écrit QUE data.agentRuntime — jamais data.config, qui appartient au client.
+function writeRuntime(data, cfg, patch) {
+  const cur = (data.agentRuntime && typeof data.agentRuntime === 'object') ? data.agentRuntime : {};
+  const next = { ...cur, ...patch };
+  for (const k of Object.keys(next)) if (next[k] == null) delete next[k];
+  data.agentRuntime = next;
+  return next;
 }
 
 export default async function handler(req, res) {
@@ -69,10 +83,10 @@ export default async function handler(req, res) {
       // page web ne peut pas démarrer un processus sur la machine : elle pose
       // un drapeau, le runner local le ramasse à son prochain réveil.
       if (body.requestRun === true) {
-        const next = { ...cfg, runRequest: { at: Date.now() } };
-        data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig(next) };
+        const at = Date.now();
+        writeRuntime(data, cfg, { runRequest: { at } });
         await commitTodos(uid, data, todosOf(data));
-        res.status(200).json({ ok: true, requested: true, at: next.runRequest.at });
+        res.status(200).json({ ok: true, requested: true, at });
         return;
       }
 
@@ -83,10 +97,10 @@ export default async function handler(req, res) {
       // entière (cf. l'egress dans Sync flow), donc elle doit correspondre à
       // un événement réel, jamais à un minuteur.
       if (typeof body.progress === 'string' && body.progress.trim()) {
-        const next = { ...cfg, progress: { at: Date.now(), text: body.progress.trim().slice(0, 300) } };
-        data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig(next) };
+        const progress = { at: Date.now(), text: body.progress.trim().slice(0, 300) };
+        writeRuntime(data, cfg, { progress });
         await commitTodos(uid, data, todosOf(data));
-        res.status(200).json({ ok: true, progress: next.progress });
+        res.status(200).json({ ok: true, progress });
         return;
       }
 
@@ -96,31 +110,23 @@ export default async function handler(req, res) {
       if (body.claimRun === true) {
         const claimed = isRunRequestPending(cfg);
         if (cfg.runRequest) {
-          data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig({ ...cfg, runRequest: null }) };
+          writeRuntime(data, cfg, { runRequest: null });
           await commitTodos(uid, data, todosOf(data));
         }
         res.status(200).json({ ok: true, claimed });
         return;
       }
 
-      const next = {
-        ...cfg,
-        runRequest: null,
-        progress: null,   // le passage est terminé : plus rien « en cours »
-        lastRun: {
-          at:      Date.now(),
-          done:    Number(body.done)    || 0,
-          skipped: Number(body.skipped) || 0,
-          note:    String(body.note ?? '').slice(0, 500),
-        },
+      const lastRun = {
+        at:      Date.now(),
+        done:    Number(body.done)    || 0,
+        skipped: Number(body.skipped) || 0,
+        note:    String(body.note ?? '').slice(0, 500),
       };
-      // La config est une CHAÎNE JSON dans data.config, comme agendaPrefs :
-      // c'est ce que getAppConfig() (storage.js) téléverse et ce que
-      // _applyBackup() réécrit tel quel en localStorage. Y ranger un objet
-      // ferait échouer le parse côté navigateur au rechargement suivant.
-      data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig(next) };
+      // Fin du passage : plus de demande en cours, plus rien « en cours ».
+      writeRuntime(data, cfg, { runRequest: null, progress: null, lastRun });
       await commitTodos(uid, data, todosOf(data));
-      res.status(200).json({ ok: true, lastRun: next.lastRun });
+      res.status(200).json({ ok: true, lastRun });
       return;
     }
 

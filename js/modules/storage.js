@@ -3,7 +3,6 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, today, safeParseJSON } from './utils.js';
-import { SERVER_OWNED_FIELDS } from './claudeAgent.js';
 import { getIdToken } from './auth.js';
 import { pushToSupabase } from './sync.js';
 
@@ -149,17 +148,6 @@ export function initCrossTabSync(onUpdate) {
   });
 }
 
-function stripServerFields(raw) {
-  if (!raw) return raw;
-  try {
-    const parsed = JSON.parse(raw);
-    for (const k of SERVER_OWNED_FIELDS) delete parsed[k];
-    return JSON.stringify(parsed);
-  } catch {
-    return raw;   // valeur illisible : on la laisse telle quelle, le serveur la normalisera
-  }
-}
-
 export function getAppConfig() {
   return {
     zoom: localStorage.getItem('zoom'),
@@ -186,7 +174,11 @@ export function getAppConfig() {
     // Constaté en vrai : `claim` répondait `{"claimed":true}` et le drapeau
     // revenait aussitôt, les écritures de l'agent déclenchant du Realtime, donc
     // des merges, donc des pushes.
-    claudeAgent: stripServerFields(localStorage.getItem('claudeAgent')),
+    // Réglages de l'agent SEULEMENT. Son état d'exécution (demande en cours,
+    // progression, dernier passage) vit dans `claudeAgentRuntime`, que ce
+    // backup n'émet jamais : ce push REMPLACE la ligne, donc tout ce qui passe
+    // par ici écrase ce que le serveur y avait écrit.
+    claudeAgent: localStorage.getItem('claudeAgent'),
   };
 }
 

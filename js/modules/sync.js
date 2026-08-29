@@ -69,11 +69,27 @@ export async function pushToSupabase(backup) {
   try {
     const uid = userId();
     const clean = JSON.parse(JSON.stringify(backup));
+
+    // Ce push REMPLACE `data` : toute clé absente de getFullBackup() serait
+    // donc détruite à chaque écriture du navigateur. C'est ce qui effaçait la
+    // demande de passage de l'agent quelques secondes après le clic — le
+    // serveur l'écrivait, le premier push du navigateur l'emportait.
+    // On relit la ligne et on repose telles quelles les clés qu'on ne
+    // possède pas, au lieu de les écraser avec rien. Une lecture par push
+    // (déjà débouncé à 1,2 s) est un prix acceptable pour que le serveur
+    // puisse écrire dans cette ligne sans être systématiquement piétiné.
+    let preserved = {};
+    try {
+      const { data: cur } = await supabase.from('user_data').select('data').eq('user_id', uid).maybeSingle();
+      const mine = new Set([...Object.keys(clean), '_pushedBySession']);
+      for (const [k, v] of Object.entries(cur?.data || {})) if (!mine.has(k)) preserved[k] = v;
+    } catch { /* lecture impossible : on écrit quand même, mieux vaut publier que bloquer */ }
+
     const { error } = await supabase
       .from('user_data')
       .upsert({
         user_id:    uid,
-        data:       { ...clean, _pushedBySession: SESSION_ID },
+        data:       { ...preserved, ...clean, _pushedBySession: SESSION_ID },
         updated_at: new Date().toISOString(),
       });
     if (error) throw error;

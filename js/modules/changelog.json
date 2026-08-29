@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2971",
+    "date": "2026-08-29",
+    "message": "fix(agent): la demande de passage survit enfin — l'état d'exécution sort de ce que le navigateur écrase"
+  },
+  {
     "version": "0.4.2970",
     "date": "2026-08-29",
     "message": "feat(agent): direct dans le panneau — ce que l'agent fait, et compte à rebours du prochain réveil"
@@ -193,10 +198,5 @@
     "version": "0.4.2895",
     "date": "2026-08-27",
     "message": "feat(agenda): la grille s'aimante sur l'heure qu'il est et sur le prochain multiple de 5 minutes"
-  },
-  {
-    "version": "0.4.2889",
-    "date": "2026-08-27",
-    "message": "fix(agenda): modifier la durée d'une tâche redimensionnée se reflète enfin sur la grille ; hauteur minimale lisible"
   }
 ]
