@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2962",
+    "date": "2026-08-28",
+    "message": "fix(ui): libellés du décompte raccourcis pour tenir sur une ligne à côté des boutons"
+  },
+  {
     "version": "0.4.2961",
     "date": "2026-08-28",
     "message": "fix(ui): « Annuler » et « Recharger » côte à côte dans une rangée d'actions — le titre récupère sa largeur"
@@ -193,10 +198,5 @@
     "version": "0.4.2875",
     "date": "2026-08-25",
     "message": "refonte(backlog): rail de classement en bandeau pleine largeur au-dessus de la liste, en-tête et contrôles resserrés sur une ligne"
-  },
-  {
-    "version": "0.4.2874",
-    "date": "2026-08-25",
-    "message": "feat(backlog): rail en modules épinglables et réordonnables + piles (quick wins, qui traînent…) et clic pour filtrer"
   }
 ]

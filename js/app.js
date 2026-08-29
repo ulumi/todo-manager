@@ -1178,9 +1178,12 @@ class TodoApp {
     const countEl = toast.querySelector('.update-toast-count');
     const paint = held => {
       if (!countEl) return;
+      // Libellés courts à dessein : mesuré au navigateur, la place restante à
+      // gauche des deux boutons est de 188px — au-delà, le texte passe sur
+      // deux lignes et fait grandir le toast à chaque seconde.
       countEl.textContent = held
-        ? 'Rechargement en pause — saisie en cours'
-        : `Rechargement automatique dans ${remaining} s`;
+        ? 'En pause — saisie en cours'
+        : `Rechargement dans ${remaining} s`;
       countEl.classList.toggle('is-held', !!held);
     };
     paint(false);
