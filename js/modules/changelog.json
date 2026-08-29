@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2968",
+    "date": "2026-08-29",
+    "message": "feat(agent): script de configuration Telegram — jeton masqué, chat id trouvé tout seul, test inclus"
+  },
+  {
     "version": "0.4.2966",
     "date": "2026-08-29",
     "message": "fix(agent): notify.sh dit POURQUOI il est muet (valeurs d'exemple, jeton refusé, réseau)"
@@ -193,10 +198,5 @@
     "version": "0.4.2879",
     "date": "2026-08-27",
     "message": "fix(agenda): sélecteur Liste/Agenda toujours au même endroit et bien distinct ; le zoom porte enfin son nom"
-  },
-  {
-    "version": "0.4.2878",
-    "date": "2026-08-26",
-    "message": "chore: exclut la sortie Playwright du déploiement (.vercelignore)"
   }
 ]
