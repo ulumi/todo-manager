@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2965",
+    "date": "2026-08-29",
+    "message": "feat(agent): progression Telegram en direct, détection des passages morts et nettoyage des worktrees"
+  },
+  {
     "version": "0.4.2963",
     "date": "2026-08-28",
     "message": "fix(ui): le toast de mise à jour respire — 460px, marges et interlignes revus"
@@ -193,10 +198,5 @@
     "version": "0.4.2877",
     "date": "2026-08-26",
     "message": "fix(backlog): une pastille de classement seule sur sa ligne ne s'étire plus sur toute la largeur"
-  },
-  {
-    "version": "0.4.2876",
-    "date": "2026-08-26",
-    "message": "refonte(backlog): un module de classement = une rangée pleine largeur — pastilles dimensionnées au libellé, plus aucune troncature ni décalage au drag"
   }
 ]

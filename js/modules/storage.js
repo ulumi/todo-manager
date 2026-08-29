@@ -148,6 +148,16 @@ export function initCrossTabSync(onUpdate) {
   });
 }
 
+function stripRunRequest(raw) {
+  if (!raw) return raw;
+  try {
+    const { runRequest, ...rest } = JSON.parse(raw);
+    return JSON.stringify(rest);
+  } catch {
+    return raw;   // valeur illisible : on la laisse telle quelle, le serveur la normalisera
+  }
+}
+
 export function getAppConfig() {
   return {
     zoom: localStorage.getItem('zoom'),
@@ -165,7 +175,16 @@ export function getAppConfig() {
     inboxQueueView: localStorage.getItem('inboxQueueView'),
     dayLayout: localStorage.getItem('dayLayout'),
     agendaPrefs: localStorage.getItem('agendaPrefs'),
-    claudeAgent: localStorage.getItem('claudeAgent'),
+    // `runRequest` est délibérément RETIRÉ de ce que le client téléverse : c'est
+    // un signal serveur, que l'agent efface (claimRun) au moment où il part
+    // travailler. Le navigateur en garde une copie locale pour afficher
+    // « Passage demandé » tout de suite, mais s'il la repoussait avec le reste
+    // de la config, il ressusciterait la demande une seconde après que le
+    // serveur l'a effacée — et l'agent repartirait en boucle sur le même clic.
+    // Constaté en vrai : `claim` répondait `{"claimed":true}` et le drapeau
+    // revenait aussitôt, les écritures de l'agent déclenchant du Realtime, donc
+    // des merges, donc des pushes.
+    claudeAgent: stripRunRequest(localStorage.getItem('claudeAgent')),
   };
 }
 

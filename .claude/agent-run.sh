@@ -68,12 +68,55 @@ fi
 
 echo "réglages : $STATE"
 
+# Nombre de tâches annoncé dans la notification de départ.
+COUNT=$(printf '%s' "$STATE" | sed -n 's/.*"count":\([0-9]*\).*/\1/p')
+notify() { "$REPO/.claude/notify.sh" "$1" >/dev/null 2>&1 || true; }
+
+notify "▶ 2FŨKOI — passage démarré
+${COUNT:-?} tâche(s) marquée(s) · autonomie $(printf '%s' "$STATE" | sed -n 's/.*"autonomy":"\([a-z]*\)".*/\1/p')"
+
 # --permission-mode bypassPermissions est inévitable pour un agent sans
 # personne devant l'écran : il ne peut répondre à aucune demande d'autorisation.
 # --max-budget-usd borne la casse si un passage part en boucle.
+#
+# tee : la sortie doit rester dans le log EN DIRECT (la capturer dans une
+# variable la retiendrait jusqu'à la fin) tout en restant analysable ensuite.
+# PIPESTATUS car $? donnerait le code de tee, pas celui de claude.
+OUT=$(mktemp)
 claude -p "/inbox-run" \
   --permission-mode bypassPermissions \
   --max-budget-usd 5 \
-  --output-format text
+  --output-format text 2>&1 | tee "$OUT"
+CODE=${PIPESTATUS[0]}
+
+# Le code de sortie ne suffit pas : un quota épuisé s'imprime sans forcément
+# faire échouer le processus (« You're out of extra usage · resets 2am » le
+# 2026-08-28 — passage mort sans aucune trace ailleurs que dans ce log, et donc
+# invisible pour Hugues). On lit donc AUSSI la sortie.
+TAIL=$(tail -4 "$OUT" | tr '\n' ' ' | sed 's/  */ /g' | cut -c1-300)
+FAILED=false
+[ "$CODE" -ne 0 ] && FAILED=true
+printf '%s' "$OUT" >/dev/null
+grep -qiE "out of extra usage|usage limit|rate limit|quota|not authenticated|invalid api key" "$OUT" && FAILED=true
+
+if [ "$FAILED" = true ]; then
+  echo "ÉCHEC (code $CODE) : $TAIL"
+  notify "⚠ 2FŨKOI — passage échoué (code $CODE)
+$TAIL"
+else
+  notify "✔ 2FŨKOI — passage terminé"
+fi
+rm -f "$OUT"
+
+# Un passage interrompu (quota, plantage, machine endormie) n'atteint jamais sa
+# propre étape de nettoyage et laisse son worktree derrière lui. Comme launchd
+# ne fait jamais tourner deux instances de ce job à la fois, tout worktree
+# d'agent encore présent ICI est forcément mort.
+for wt in "$REPO"/.claude/worktrees/agent-*; do
+  [ -d "$wt" ] || continue
+  echo "nettoyage du worktree orphelin : $(basename "$wt")"
+  git -C "$REPO" worktree remove --force "$wt" 2>/dev/null || rm -rf "$wt"
+done
+git -C "$REPO" worktree prune 2>/dev/null
 
 echo "── fin ($(date '+%H:%M:%S')) ──"

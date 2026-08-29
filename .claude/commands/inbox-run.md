@@ -24,6 +24,18 @@ Cette commande tourne aussi bien à la main (`/inbox-run`) que sans personne dev
 
 Le champ `tasks` est déjà borné à `maxPerRun` et déjà filtré : ce sont exactement les tâches à traiter, dans cet ordre. Ne va jamais en chercher d'autres, ne « complète » jamais une tâche qui n'est pas dans cette liste.
 
+### Rendre compte en direct
+
+Hugues ne regarde pas l'écran pendant que tu travailles. Préviens-le à chaque étape :
+
+```bash
+.claude/notify.sh "message"
+```
+
+Envoie une notification **au minimum** : au démarrage de chaque tâche (son titre), quand tu passes à la vérification, à la livraison (avec la version déployée), et si tu refuses ou abandonnes une tâche (avec la raison). Une ligne ou deux, pas un rapport — le compte rendu détaillé va dans les notes de la tâche, la notification sert à suivre l'avancement.
+
+Ce script ne peut jamais faire échouer un passage : sans configuration Telegram il sort silencieusement. N'entoure donc jamais un appel de garde-fou, et ne t'arrête jamais parce qu'une notification n'est pas partie.
+
 `autonomy` dit jusqu'où tu vas à la fin : `deploy` (commit + push master + mise en production), `master` (commit + push, pas de production), `branch` (commit sur une branche dédiée, rien sur master).
 
 ---
@@ -131,7 +143,10 @@ Une fois toutes les tâches traitées (ou à la première panne dure — tu t'ar
 ```bash
 git worktree remove --force <WT>   # depuis le dépôt principal
 .claude/todo-api.sh report '{"done":<n>,"skipped":<n>,"note":"<une ligne>"}'
+.claude/notify.sh "✔ Passage terminé — <n> faite(s), <n> laissée(s)"
 ```
+
+Si tu meurs avant d'arriver ici (quota, plantage), `agent-run.sh` retire de toute façon les worktrees d'agent restants au passage suivant — mais ce n'est qu'un filet : nettoie derrière toi quand tu le peux.
 
 La note apparaît dans le panneau de l'Inbox. Une ligne, factuelle : « 2 faites, 1 laissée (énoncé ambigu) ».
 
