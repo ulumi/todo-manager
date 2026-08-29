@@ -22,6 +22,10 @@
       "destination": "/api/todo/docs"
     },
     {
+      "source": "/api/agent",
+      "destination": "/api/todo/agent"
+    },
+    {
       "source": "/api/admin-users",
       "destination": "/api/admin/users"
     },

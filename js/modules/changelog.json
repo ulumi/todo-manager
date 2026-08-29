@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2954",
+    "date": "2026-08-28",
+    "message": "feat(agent): agent Claude Code sur l'Inbox — panneau de réglages, interrupteur général et étiquette repère"
+  },
+  {
     "version": "0.4.2949",
     "date": "2026-08-28",
     "message": "fix(api): include_completed était ignoré sur inbox/backlog/overdue — une tâche sans date cochée devenait introuvable"
@@ -193,10 +198,5 @@
     "version": "0.4.2848",
     "date": "2026-08-19",
     "message": "feat(modal): stepper de durée — maintenir le clic sur +/- répète l'incrément en continu avec accélération progressive"
-  },
-  {
-    "version": "0.4.2809",
-    "date": "2026-08-19",
-    "message": "feat(modal): stepper de durée sans plafond — paliers de 30 min de 1h à 3h puis d'1h au-delà de 3h"
   }
 ]

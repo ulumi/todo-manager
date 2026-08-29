@@ -104,6 +104,8 @@ import {
   cropDragStart, setCropZoom, setEmojiZoom,
 } from './modules/avatarEditor.js';
 import { getOverduePunctual, renderReviewBody } from './modules/review.js';
+import { getAgentConfig, saveAgentConfig, agentPanelHTML, isAgentPanelOpen, setAgentPanelOpen,
+         findAgentCategory, MAX_PER_RUN_LIMIT } from './modules/claudeAgent.js';
 import { appConfirm, appAlert, appChoice } from './modules/dialog.js';
 
 // Initialize state
@@ -6913,6 +6915,91 @@ class TodoApp {
   }
 
   // Replie/déplie la liste de tâches du bandeau de rappel (vue jour)
+  // ═══════════════════════════════════════════════════
+  // AGENT CLAUDE CODE — panneau de l'Inbox
+  // ═══════════════════════════════════════════════════
+  // Le panneau ne fait que lire/écrire `config.claudeAgent` ; l'agent
+  // lui-même tourne hors de l'app (launchd → .claude/commands/inbox-run.md)
+  // et relit ces réglages à chaque passage par GET /api/agent. Couper
+  // l'interrupteur ici suffit donc à l'arrêter, sans toucher au cron.
+
+  // Repli/dépli : patch DOM ciblé, jamais un render() complet — c'est ce qui
+  // laisse jouer la transition de hauteur (même famille que .subtask-collapse).
+  toggleClaudeAgentPanel() {
+    const panel = document.querySelector('.agent-panel');
+    if (!panel) return;
+    const open = !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    setAgentPanelOpen(open);
+  }
+
+  // Idem : l'interrupteur doit glisser. Rien d'autre dans le panneau ne dépend
+  // de `enabled` que ces trois éléments, donc les toucher à la main est à la
+  // fois suffisant et plus juste qu'une reconstruction qui couperait l'animation.
+  toggleClaudeAgent() {
+    const cfg = saveAgentConfig({ enabled: !getAgentConfig().enabled });
+    this._saveConfigChange();
+    const panel = document.querySelector('.agent-panel');
+    const sw    = panel?.querySelector('.agent-switch');
+    if (sw) {
+      sw.classList.toggle('on', cfg.enabled);
+      sw.setAttribute('aria-checked', String(cfg.enabled));
+      sw.title = (cfg.enabled ? 'Désactiver' : 'Activer') + " l'agent";
+    }
+    panel?.classList.toggle('is-on', cfg.enabled);
+    this._refreshAgentState(panel, cfg);
+    this._showToast(cfg.enabled ? 'Agent Claude Code activé' : 'Agent Claude Code désactivé');
+  }
+
+  _refreshAgentState(panel, cfg) {
+    const label = panel?.querySelector('.agent-panel-state');
+    if (!label) return;
+    const cat  = findAgentCategory(getCategories(), cfg.categoryName);
+    const list = cat ? state.todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed && !t.cancelled && (t.categoryIds || (t.categoryId ? [t.categoryId] : [])).includes(cat.id)) : [];
+    label.textContent = !cfg.enabled ? 'Désactivé'
+      : !cat          ? 'Étiquette introuvable'
+      : list.length   ? `${list.length} tâche${list.length > 1 ? 's' : ''} en attente`
+      : 'Actif — rien à faire';
+  }
+
+  setClaudeAgentField(key, value) {
+    saveAgentConfig({ [key]: value });
+    this._saveConfigChange();
+    this._refreshAgentPanel();
+  }
+
+  stepClaudeAgentMax(delta) {
+    const next = Math.min(MAX_PER_RUN_LIMIT, Math.max(1, getAgentConfig().maxPerRun + delta));
+    this.setClaudeAgentField('maxPerRun', next);
+  }
+
+  // L'étiquette repère est le seul critère d'éligibilité : sans elle l'agent
+  // ne peut rien ramasser, autant pouvoir la créer d'un clic depuis le
+  // panneau plutôt que d'aller la chercher dans les Réglages.
+  createClaudeAgentCategory() {
+    const cfg  = getAgentConfig();
+    const cats = getCategories();
+    if (findAgentCategory(cats, cfg.categoryName)) { this._refreshAgentPanel(); return; }
+    cats.push({
+      id: Date.now().toString(), name: cfg.categoryName,
+      color: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#e07040',
+      icon: '', description: 'Tâches confiées à l\'agent Claude Code', status: 'active', deadline: '',
+    });
+    saveCategories(cats);
+    this._refreshAgentPanel();
+    this._showToast(`Étiquette « ${cfg.categoryName} » créée`);
+  }
+
+  // Reconstruction complète du panneau, pour les réglages dont l'affichage
+  // touche plusieurs endroits à la fois (segments + libellé d'aide + stepper).
+  // Le panneau se rend déjà avec son propre état ouvert/fermé, donc il ne se
+  // referme pas au passage.
+  _refreshAgentPanel() {
+    const panel = document.querySelector('.agent-panel');
+    if (!panel) { if (state.view === 'inbox') this.render(); return; }
+    panel.outerHTML = agentPanelHTML(state.todos, getCategories());
+  }
+
   togglePastDueBanner() {
     const collapsed = localStorage.getItem('pastDueBannerCollapsed') === 'true';
     localStorage.setItem('pastDueBannerCollapsed', String(!collapsed));
@@ -9835,6 +9922,10 @@ class TodoApp {
       if (backup.config.inboxQueueView)   localStorage.setItem('inboxQueueView',   backup.config.inboxQueueView);
       if (backup.config.dayLayout)   localStorage.setItem('dayLayout',   backup.config.dayLayout);
       if (backup.config.agendaPrefs) localStorage.setItem('agendaPrefs', backup.config.agendaPrefs);
+      // Réglages de l'agent Claude Code — synchronisés comme le reste, pour
+      // que l'interrupteur coupé sur un appareil vaille aussi pour l'agent,
+      // qui les relit par GET /api/agent (voir js/modules/claudeAgent.js).
+      if (backup.config.claudeAgent) localStorage.setItem('claudeAgent', backup.config.claudeAgent);
       const _bPal2 = backup.config.bgPalette;
       if (_bPal2)  this.setPalette(_bPal2, { sync: false });
       if (backup.config.bgColor && (!_bPal2 || _bPal2 === 'none'))  _setBgColor(backup.config.bgColor);

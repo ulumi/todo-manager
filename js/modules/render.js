@@ -6,6 +6,7 @@ import { DS, addDays, startOfWeek, daysInMonth, firstDayOfMonth, esc, isSubtaskC
 import { getTodosForDate, isCompleted, isCancelled, getSuggestions, getRecentTasks } from './calendar.js';
 import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
+import { agentPanelHTML } from './claudeAgent.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
 import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
@@ -1635,6 +1636,7 @@ export function renderInboxView(todos) {
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
         </div>
       </div>
+      ${agentPanelHTML(todos, categories)}
       ${empty}
       ${sorted.length > 0 ? `<div class="inbox-list" id="inboxList" style="${colsStyle}">${items}</div>` : ''}
     </div>`;

@@ -165,6 +165,7 @@ export function getAppConfig() {
     inboxQueueView: localStorage.getItem('inboxQueueView'),
     dayLayout: localStorage.getItem('dayLayout'),
     agendaPrefs: localStorage.getItem('agendaPrefs'),
+    claudeAgent: localStorage.getItem('claudeAgent'),
   };
 }
 

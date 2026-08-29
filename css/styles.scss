@@ -12204,6 +12204,296 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size:      14px;
 }
 
+// ── Agent Claude Code — panneau de l'Inbox ────────────────────────────────
+// Décrit ce que fait l'agent et porte ses réglages (js/modules/claudeAgent.js).
+// Le repli passe par `display:grid` + `grid-template-rows: 0fr↔1fr`, comme
+// .subtask-collapse / .focus-queue — jamais max-height, qui clipperait mal dès
+// que le contenu change de hauteur. Le padding vit sur .agent-panel-pad et non
+// sur .agent-panel-body-inner : c'est CET élément que la grille écrase à 0, et
+// overflow:hidden ne masque jamais le padding de sa propre boîte.
+.agent-panel {
+  border:        1px solid var(--border);
+  border-radius: var(--radius);
+  background:    var(--surface);
+  margin-bottom: 18px;
+  overflow:      hidden;
+  transition:    border-color .25s cubic-bezier(.25,.46,.45,.94);
+
+  &.is-on { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+}
+
+.agent-panel-head {
+  display:     flex;
+  align-items: center;
+  gap:         12px;
+  padding:     12px 14px;
+  cursor:      pointer;
+  user-select: none;
+
+  &:hover { background: var(--surface2); }
+}
+
+.agent-panel-icon {
+  display:      flex;
+  flex-shrink:  0;
+  width:        30px;
+  height:       30px;
+  align-items:  center;
+  justify-content: center;
+  border-radius: 8px;
+  background:   var(--surface2);
+  color:        var(--text-muted);
+
+  svg { width: 19px; height: 19px; }
+
+  .agent-panel.is-on & { color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent); }
+}
+
+.agent-panel-title {
+  display:        flex;
+  flex-direction: column;
+  gap:            1px;
+  flex:           1;
+  min-width:      0;
+}
+
+.agent-panel-name {
+  font-size:   14px;
+  font-weight: 600;
+  color:       var(--text);
+}
+
+.agent-panel-state {
+  font-size: 12px;
+  color:     var(--text-muted);
+}
+
+// Interrupteur général. Même geste que partout ailleurs : la pastille glisse,
+// rien ne change de taille.
+.agent-switch {
+  position:      relative;
+  flex-shrink:   0;
+  width:         40px;
+  height:        22px;
+  padding:       0;
+  border:        1px solid var(--border);
+  border-radius: 999px;
+  background:    var(--surface2);
+  cursor:        pointer;
+  transition:    background .25s cubic-bezier(.25,.46,.45,.94),
+                 border-color .25s cubic-bezier(.25,.46,.45,.94);
+
+  &.on {
+    background:   var(--primary);
+    border-color: var(--primary);
+  }
+}
+
+.agent-switch-knob {
+  position:      absolute;
+  top:           50%;
+  left:          2px;
+  width:         16px;
+  height:        16px;
+  margin-top:    -8px;
+  border-radius: 50%;
+  background:    var(--surface);
+  box-shadow:    0 1px 3px var(--shadow);
+  transition:    transform .25s cubic-bezier(.25,.46,.45,.94);
+
+  .agent-switch.on & { transform: translateX(18px); }
+}
+
+.agent-chevron {
+  width:       16px;
+  height:      16px;
+  flex-shrink: 0;
+  color:       var(--text-muted);
+  transition:  transform .25s cubic-bezier(.25,.46,.45,.94);
+
+  .agent-panel.open & { transform: rotate(180deg); }
+}
+
+.agent-panel-body {
+  display:              grid;
+  grid-template-rows:   0fr;
+  transition:           grid-template-rows .3s cubic-bezier(.25,.46,.45,.94);
+
+  .agent-panel.open & { grid-template-rows: 1fr; }
+}
+
+.agent-panel-body-inner { overflow: hidden; }
+
+.agent-panel-pad {
+  padding:    2px 14px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.agent-desc {
+  font-size:   12.5px;
+  line-height: 1.55;
+  color:       var(--text-muted);
+  margin:      12px 0 0;
+
+  strong { color: var(--text); font-weight: 600; }
+
+  &--limits { margin-top: 6px; }
+}
+
+.agent-field {
+  margin-top: 16px;
+}
+
+.agent-field-label {
+  display:        block;
+  font-size:      11px;
+  font-weight:    600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color:          var(--text-muted);
+  margin-bottom:  7px;
+}
+
+.agent-tag-chip {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       4px 10px;
+  border-radius: 999px;
+  font-size:     12px;
+  font-weight:   600;
+  color:         var(--tag, var(--primary));
+  background:    color-mix(in srgb, var(--tag, var(--primary)) 13%, transparent);
+  border:        1px solid color-mix(in srgb, var(--tag, var(--primary)) 35%, transparent);
+
+  svg { width: 13px; height: 13px; }
+}
+
+.agent-warn {
+  display:       flex;
+  align-items:   center;
+  gap:           9px;
+  flex-wrap:     wrap;
+  padding:       9px 11px;
+  border-radius: 8px;
+  font-size:     12.5px;
+  color:         var(--text);
+  background:    color-mix(in srgb, var(--warning) 12%, transparent);
+  border:        1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+
+  svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--warning); }
+  span { flex: 1; min-width: 140px; }
+}
+
+.agent-mini-btn {
+  padding:   4px 10px;
+  font-size: 12px;
+}
+
+// Segmented control — même grammaire que .day-layout-switch : conteneur plein,
+// segment actif rempli à var(--primary). C'est un choix, pas un réglage parmi
+// d'autres.
+.agent-seg {
+  display:       inline-flex;
+  gap:           2px;
+  padding:       2px;
+  border-radius: 8px;
+  background:    var(--surface2);
+  border:        1px solid var(--border);
+}
+
+.agent-seg-opt {
+  padding:       5px 12px;
+  border:        none;
+  border-radius: 6px;
+  background:    transparent;
+  color:         var(--text-muted);
+  font-size:     12.5px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    background .18s cubic-bezier(.25,.46,.45,.94),
+                 color .18s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover:not(.active) { color: var(--text); }
+  &.active { background: var(--primary); color: #fff; }
+}
+
+.agent-stepper {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           2px;
+  padding:       2px;
+  border-radius: 8px;
+  background:    var(--surface2);
+  border:        1px solid var(--border);
+}
+
+.agent-step-btn {
+  width:         26px;
+  height:        26px;
+  border:        none;
+  border-radius: 6px;
+  background:    transparent;
+  color:         var(--text-muted);
+  font-size:     15px;
+  line-height:   1;
+  cursor:        pointer;
+  transition:    background .18s cubic-bezier(.25,.46,.45,.94);
+
+  &:hover:not(:disabled) { background: var(--surface); color: var(--text); }
+  &:disabled { opacity: .35; cursor: default; }
+}
+
+.agent-step-val {
+  min-width:   26px;
+  text-align:  center;
+  font-size:   13px;
+  font-weight: 600;
+  color:       var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-note {
+  font-size:  12px;
+  color:      var(--text-muted);
+  margin:     7px 0 0;
+  line-height: 1.5;
+}
+
+.agent-eligible {
+  list-style: none;
+  margin:     0;
+  padding:    0;
+  display:    flex;
+  flex-wrap:  wrap;
+  gap:        6px;
+
+  li {
+    padding:       4px 10px;
+    border-radius: 6px;
+    background:    var(--surface2);
+    border:        1px solid var(--border);
+    font-size:     12px;
+    color:         var(--text);
+  }
+
+  .agent-eligible-more { color: var(--text-muted); background: transparent; border-style: dashed; }
+}
+
+.agent-lastrun {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  margin-top:  16px;
+  padding-top: 12px;
+  border-top:  1px solid var(--border);
+  font-size:   12px;
+  color:       var(--text-muted);
+
+  svg { width: 14px; height: 14px; flex-shrink: 0; }
+  strong { color: var(--text); font-weight: 600; }
+}
+
 // Échéance d'un item de backlog (t.deadline) — édition en place au clic,
 // le libellé devient un <input type=date> (app.editBacklogDeadline)
 .backlog-deadline-badge {
