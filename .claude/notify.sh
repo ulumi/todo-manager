@@ -55,6 +55,14 @@ esac
 # --data-urlencode : les comptes rendus contiennent des retours à la ligne, des
 # accents et des caractères réservés d'URL. -m 10 : un Telegram lent ne doit pas
 # retarder le passage.
+# La même ligne part aussi dans l'app : le panneau de l'Inbox l'affiche en
+# direct (Realtime), pour qui regarde l'écran plutôt que son téléphone. Best
+# effort et en tâche de fond — l'app ne doit jamais retarder une notification,
+# et une progression perdue n'est pas une raison d'interrompre quoi que ce soit.
+"$(dirname "$0")/todo-api.sh" report "$(python3 -c '
+import json, sys
+print(json.dumps({"progress": sys.argv[1]}))' "$MSG")" >/dev/null 2>&1 &
+
 RESP=$(curl -sS -m 10 \
   -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
   --data-urlencode "chat_id=${CHAT_ID}" \

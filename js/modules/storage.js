@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 import { DS, today, safeParseJSON } from './utils.js';
+import { SERVER_OWNED_FIELDS } from './claudeAgent.js';
 import { getIdToken } from './auth.js';
 import { pushToSupabase } from './sync.js';
 
@@ -148,11 +149,12 @@ export function initCrossTabSync(onUpdate) {
   });
 }
 
-function stripRunRequest(raw) {
+function stripServerFields(raw) {
   if (!raw) return raw;
   try {
-    const { runRequest, ...rest } = JSON.parse(raw);
-    return JSON.stringify(rest);
+    const parsed = JSON.parse(raw);
+    for (const k of SERVER_OWNED_FIELDS) delete parsed[k];
+    return JSON.stringify(parsed);
   } catch {
     return raw;   // valeur illisible : on la laisse telle quelle, le serveur la normalisera
   }
@@ -175,16 +177,16 @@ export function getAppConfig() {
     inboxQueueView: localStorage.getItem('inboxQueueView'),
     dayLayout: localStorage.getItem('dayLayout'),
     agendaPrefs: localStorage.getItem('agendaPrefs'),
-    // `runRequest` est délibérément RETIRÉ de ce que le client téléverse : c'est
-    // un signal serveur, que l'agent efface (claimRun) au moment où il part
-    // travailler. Le navigateur en garde une copie locale pour afficher
-    // « Passage demandé » tout de suite, mais s'il la repoussait avec le reste
-    // de la config, il ressusciterait la demande une seconde après que le
-    // serveur l'a effacée — et l'agent repartirait en boucle sur le même clic.
+    // `runRequest` et `progress` sont délibérément RETIRÉS de ce que le client
+    // téléverse (SERVER_OWNED_FIELDS) : ce sont des signaux serveur, écrits par
+    // l'agent pendant qu'il travaille. Le navigateur en garde une copie locale
+    // pour l'affichage, mais s'il la repoussait avec le reste de la config, il
+    // écraserait la valeur réelle une seconde après que le serveur l'a écrite —
+    // et l'agent repartirait en boucle sur le même clic.
     // Constaté en vrai : `claim` répondait `{"claimed":true}` et le drapeau
     // revenait aussitôt, les écritures de l'agent déclenchant du Realtime, donc
     // des merges, donc des pushes.
-    claudeAgent: stripRunRequest(localStorage.getItem('claudeAgent')),
+    claudeAgent: stripServerFields(localStorage.getItem('claudeAgent')),
   };
 }
 

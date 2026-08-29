@@ -55,6 +55,7 @@ export default async function handler(req, res) {
         // Une demande périmée est renvoyée comme absente : le runner ne doit
         // pas exécuter au réveil du Mac un clic qui date d'hier soir.
         runRequested: isRunRequestPending(cfg),
+        progress: cfg.progress,
         count:    tasks.length,
         tasks:    tasks.slice(0, cfg.maxPerRun).map(t => serializeTask(t, null)),
       });
@@ -75,6 +76,20 @@ export default async function handler(req, res) {
         return;
       }
 
+      // Ligne de progression publiée par l'agent pendant qu'il travaille
+      // (notify.sh l'envoie en même temps qu'à Telegram). Le panneau de
+      // l'Inbox l'affiche en direct via Realtime. Une écriture par étape, pas
+      // un battement de cœur périodique : chaque écriture retéléverse la ligne
+      // entière (cf. l'egress dans Sync flow), donc elle doit correspondre à
+      // un événement réel, jamais à un minuteur.
+      if (typeof body.progress === 'string' && body.progress.trim()) {
+        const next = { ...cfg, progress: { at: Date.now(), text: body.progress.trim().slice(0, 300) } };
+        data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig(next) };
+        await commitTodos(uid, data, todosOf(data));
+        res.status(200).json({ ok: true, progress: next.progress });
+        return;
+      }
+
       // Le runner réclame la demande AVANT de travailler, jamais après : si le
       // passage échoue, le drapeau est déjà consommé et rien ne repart en
       // boucle sur la même demande.
@@ -91,6 +106,7 @@ export default async function handler(req, res) {
       const next = {
         ...cfg,
         runRequest: null,
+        progress: null,   // le passage est terminé : plus rien « en cours »
         lastRun: {
           at:      Date.now(),
           done:    Number(body.done)    || 0,

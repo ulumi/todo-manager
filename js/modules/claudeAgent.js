@@ -34,7 +34,37 @@ export const AGENT_DEFAULTS = {
   maxPerRun:    3,
   lastRun:      null,
   runRequest:   null,
+  progress:     null,
 };
+
+// Champs que SEUL le serveur écrit : l'agent les publie pendant qu'il
+// travaille, le navigateur ne fait que les afficher. `getAppConfig()`
+// (storage.js) les retire de ce qu'il téléverse — sans quoi une copie périmée
+// du localStorage viendrait écraser la progression réelle une seconde après
+// que l'agent l'a écrite. C'est le bug qu'avait déjà causé `runRequest`.
+export const SERVER_OWNED_FIELDS = ['runRequest', 'progress'];
+
+// Au-delà, une progression n'est plus « en cours » mais un vestige : un
+// passage tué net (quota, plantage) laisse sa dernière ligne derrière lui, et
+// l'afficher indéfiniment comme vivante serait mentir.
+export const PROGRESS_STALE_MS = 10 * 60 * 1000;
+
+export function liveProgress(cfg, now = Date.now()) {
+  const p = cfg?.progress;
+  if (!p || !Number.isFinite(p.at) || (now - p.at) >= PROGRESS_STALE_MS) return null;
+  return p;
+}
+
+// Le runner se réveille toutes les 2 minutes : au pire, un passage demandé
+// démarre à cet horizon. C'est une BORNE, pas une prédiction — la page ne peut
+// pas connaître la phase du minuteur de launchd, et l'annoncer comme exacte
+// serait inventer une information.
+export const WAKE_INTERVAL_MS = 120 * 1000;
+
+export function wakeDeadline(cfg) {
+  const at = cfg?.runRequest?.at;
+  return Number.isFinite(at) ? at + WAKE_INTERVAL_MS : null;
+}
 
 export const TRIGGERS = [
   { value: 'manual', label: 'Sur demande',  hint: 'ne part que quand tu appuies sur « Lancer maintenant »' },
@@ -61,6 +91,10 @@ export function isRunRequestPending(cfg, now = Date.now()) {
 export const RUN_REQUEST_GRACE_MS = 3 * 60 * 1000;
 
 export function isRunRequestStranded(cfg, now = Date.now()) {
+  // Une progression fraîche prouve que l'agent est vivant : quoi qu'il arrive
+  // au drapeau de demande, il ne faut alors surtout pas annoncer qu'il est
+  // absent.
+  if (liveProgress(cfg, now)) return false;
   const at = cfg?.runRequest?.at;
   return Number.isFinite(at) && (now - at) >= RUN_REQUEST_GRACE_MS && (now - at) < RUN_REQUEST_TTL_MS;
 }
@@ -89,7 +123,16 @@ export function normalizeAgentConfig(raw) {
     maxPerRun:    Number.isFinite(max) ? Math.min(MAX_PER_RUN_LIMIT, Math.max(1, Math.round(max))) : AGENT_DEFAULTS.maxPerRun,
     lastRun:      normalizeRun(src.lastRun),
     runRequest:   Number.isFinite(Number(src.runRequest?.at)) && Number(src.runRequest.at) > 0 ? { at: Number(src.runRequest.at) } : null,
+    progress:     normalizeProgress(src.progress),
   };
+}
+
+function normalizeProgress(p) {
+  if (!p || typeof p !== 'object') return null;
+  const at = Number(p.at);
+  const text = String(p.text ?? '').trim();
+  if (!Number.isFinite(at) || at <= 0 || !text) return null;
+  return { at, text: text.slice(0, 300) };
 }
 
 function normalizeRun(r) {
@@ -234,7 +277,7 @@ export function agentPanelHTML(todos, categories) {
   // attendre quelque chose qui ne viendra pas.
   const strandedBlock = stranded ? `
       <div class="agent-warn agent-warn--stranded">${ICON.warn}
-        <span>Personne n'a réclamé cette demande. Le runner local n'est pas installé sur cette machine — sans lui, le bouton ne peut rien déclencher.</span>
+        <span>Personne n'a réclamé cette demande. Soit le runner local n'est pas installé sur cette machine, soit il ne tourne plus — sans lui, le bouton ne peut rien déclencher.</span>
         <code class="agent-cmd">launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.hugues.2fukoi-agent.plist</code>
       </div>` : '';
 

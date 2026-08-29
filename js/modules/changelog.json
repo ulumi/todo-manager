@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2969",
+    "date": "2026-08-29",
+    "message": "fix(agent): le navigateur effaçait la demande de passage deux secondes après le clic"
+  },
+  {
     "version": "0.4.2968",
     "date": "2026-08-29",
     "message": "feat(agent): script de configuration Telegram — jeton masqué, chat id trouvé tout seul, test inclus"
@@ -193,10 +198,5 @@
     "version": "0.4.2884",
     "date": "2026-08-27",
     "message": "fix(agenda): l'heure affichée reflète la durée réelle ; les tâches courtes restent pleine largeur à gauche"
-  },
-  {
-    "version": "0.4.2879",
-    "date": "2026-08-27",
-    "message": "fix(agenda): sélecteur Liste/Agenda toujours au même endroit et bien distinct ; le zoom porte enfin son nom"
   }
 ]
