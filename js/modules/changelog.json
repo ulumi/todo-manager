@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2966",
+    "date": "2026-08-29",
+    "message": "fix(agent): notify.sh dit POURQUOI il est muet (valeurs d'exemple, jeton refusé, réseau)"
+  },
+  {
     "version": "0.4.2965",
     "date": "2026-08-29",
     "message": "feat(agent): progression Telegram en direct, détection des passages morts et nettoyage des worktrees"
@@ -193,10 +198,5 @@
     "version": "0.4.2878",
     "date": "2026-08-26",
     "message": "chore: exclut la sortie Playwright du déploiement (.vercelignore)"
-  },
-  {
-    "version": "0.4.2877",
-    "date": "2026-08-26",
-    "message": "fix(backlog): une pastille de classement seule sur sa ligne ne s'étire plus sur toute la largeur"
   }
 ]

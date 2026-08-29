@@ -41,14 +41,34 @@ done < "$CONF"
 
 [ -n "$BOT_TOKEN" ] && [ -n "$CHAT_ID" ] || exit 0
 
+# Garde-fou contre les valeurs d'exemple laissées telles quelles (« <jeton> »,
+# « <id> ») : c'est l'erreur naturelle quand on colle une commande d'installation
+# sans la substituer, et sans ce contrôle le script resterait muet POUR TOUJOURS
+# sans jamais dire pourquoi. Le message part sur stderr, donc dans le log du
+# runner — visible sans jamais faire échouer un passage.
+case "$BOT_TOKEN$CHAT_ID" in
+  *'<'*|*'>'*)
+    echo "notify: $CONF contient encore les valeurs d'exemple — remplace-les par le vrai jeton et le vrai chat id." >&2
+    exit 0 ;;
+esac
+
 # --data-urlencode : les comptes rendus contiennent des retours à la ligne, des
 # accents et des caractères réservés d'URL. -m 10 : un Telegram lent ne doit pas
 # retarder le passage.
-curl -sS -m 10 -o /dev/null \
+RESP=$(curl -sS -m 10 \
   -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
   --data-urlencode "chat_id=${CHAT_ID}" \
   --data-urlencode "text=${MSG}" \
   --data-urlencode "disable_web_page_preview=true" \
-  2>/dev/null
+  2>/dev/null)
+
+# Telegram refuse en répondant 200 avec {"ok":false,...} : un jeton faux, un
+# chat id faux ou un bot à qui on n'a jamais écrit passent donc inaperçus si on
+# ne lit pas le corps. Signalé sur stderr (log du runner), jamais en échec.
+case "$RESP" in
+  *'"ok":true'*) ;;
+  '') echo "notify: Telegram injoignable (réseau ?)" >&2 ;;
+  *)  echo "notify: Telegram a refusé — $(printf '%s' "$RESP" | cut -c1-160)" >&2 ;;
+esac
 
 exit 0
