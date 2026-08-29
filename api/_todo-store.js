@@ -403,23 +403,31 @@ export function listTasks(scope, data, { includeCompleted = false } = {}) {
   const t     = todayDS(data);
   const raw   = (scope ?? 'today').toString().trim().toLowerCase();
 
+  // includeCompleted has to hold for EVERY scope, not just the dated ones. A
+  // task with no date that gets ticked off leaves the Inbox and lands on no
+  // day, so while these three branches hardcoded "not completed" it became
+  // unreachable through the API altogether — no scope could name it, not even
+  // to report where it went. (Exactly how a completed Inbox task vanished with
+  // include_completed:true silently doing nothing.)
+  const open = x => includeCompleted || (!x.completed && !x.cancelled);
+
   const forDate = ds => getTodosForDate(parseDS(ds), todos)
     .map(x => serializeTask(x, ds))
-    .filter(x => includeCompleted || (!x.completed && !x.cancelled));
+    .filter(open);
 
   if (raw === 'inbox') {
     return todos
-      .filter(x => isPunctual(x) && !x.date && !x.backlog && !x.completed && !x.cancelled)
+      .filter(x => isPunctual(x) && !x.date && !x.backlog && open(x))
       .map(x => serializeTask(x, null));
   }
   if (raw === 'backlog') {
     return todos
-      .filter(x => isPunctual(x) && x.backlog && !x.completed && !x.cancelled)
+      .filter(x => isPunctual(x) && x.backlog && open(x))
       .map(x => serializeTask(x, null));
   }
   if (raw === 'overdue') {
     return todos
-      .filter(x => isPunctual(x) && x.date && x.date < t && !x.completed && !x.cancelled)
+      .filter(x => isPunctual(x) && x.date && x.date < t && open(x))
       .map(x => serializeTask(x, x.date));
   }
   if (raw === 'week') {

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2949",
+    "date": "2026-08-28",
+    "message": "fix(api): include_completed était ignoré sur inbox/backlog/overdue — une tâche sans date cochée devenait introuvable"
+  },
+  {
     "version": "0.4.2948",
     "date": "2026-08-28",
     "message": "feat(api): update_task et delete_task — l'app Claude peut modifier et supprimer des tâches, séries récurrentes comprises"
@@ -193,10 +198,5 @@
     "version": "0.4.2809",
     "date": "2026-08-19",
     "message": "feat(modal): stepper de durée sans plafond — paliers de 30 min de 1h à 3h puis d'1h au-delà de 3h"
-  },
-  {
-    "version": "0.4.2808",
-    "date": "2026-08-19",
-    "message": "fix(modal): le bouton Backlog de la rangée Quand pouvait rester invisible (scrollbar masquée sur un débordement réel) — modal élargi (min-width 680px) pour que les 6 puces tiennent sans avoir besoin de scroller, et la scrollbar n'est plus masquée si jamais ça reste nécessaire"
   }
 ]
