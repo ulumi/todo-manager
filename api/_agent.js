@@ -17,7 +17,7 @@
 // « ce que l'agent ramasse » sont littéralement le même code.
 
 import { ApiError, authenticate, todosOf, commitTodos, todayDS, serializeTask } from './_todo-store.js';
-import { parseAgentConfig, serializeAgentConfig, agentEligible } from '../js/modules/claudeAgent.js';
+import { parseAgentConfig, serializeAgentConfig, agentEligible, isRunRequestPending } from '../js/modules/claudeAgent.js';
 
 const DOCS = 'https://todo.hugues.app/api/docs';
 
@@ -50,7 +50,11 @@ export default async function handler(req, res) {
         categoryName: cfg.categoryName,
         category: category ? { id: category.id, name: category.name } : null,
         today:    todayDS(data),
+        trigger:  cfg.trigger,
         lastRun:  cfg.lastRun,
+        // Une demande périmée est renvoyée comme absente : le runner ne doit
+        // pas exécuter au réveil du Mac un clic qui date d'hier soir.
+        runRequested: isRunRequestPending(cfg),
         count:    tasks.length,
         tasks:    tasks.slice(0, cfg.maxPerRun).map(t => serializeTask(t, null)),
       });
@@ -59,8 +63,34 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = await readBody(req);
+
+      // Demande de passage immédiat, déposée par le bouton du panneau. Une
+      // page web ne peut pas démarrer un processus sur la machine : elle pose
+      // un drapeau, le runner local le ramasse à son prochain réveil.
+      if (body.requestRun === true) {
+        const next = { ...cfg, runRequest: { at: Date.now() } };
+        data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig(next) };
+        await commitTodos(uid, data, todosOf(data));
+        res.status(200).json({ ok: true, requested: true, at: next.runRequest.at });
+        return;
+      }
+
+      // Le runner réclame la demande AVANT de travailler, jamais après : si le
+      // passage échoue, le drapeau est déjà consommé et rien ne repart en
+      // boucle sur la même demande.
+      if (body.claimRun === true) {
+        const claimed = isRunRequestPending(cfg);
+        if (cfg.runRequest) {
+          data.config = { ...(data.config || {}), claudeAgent: serializeAgentConfig({ ...cfg, runRequest: null }) };
+          await commitTodos(uid, data, todosOf(data));
+        }
+        res.status(200).json({ ok: true, claimed });
+        return;
+      }
+
       const next = {
         ...cfg,
+        runRequest: null,
         lastRun: {
           at:      Date.now(),
           done:    Number(body.done)    || 0,

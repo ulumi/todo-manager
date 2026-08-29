@@ -49,6 +49,23 @@ case "$STATE" in
   *'"count":0'*) echo "aucune tâche marquée — passage ignoré"; exit 0 ;;
 esac
 
+# « Sur demande » : rien ne part sans un clic sur « Lancer maintenant » dans le
+# panneau de l'Inbox. C'est le mode par défaut — une tâche qu'on vient
+# d'étiqueter ne doit pas déclencher un déploiement deux minutes plus tard
+# sans que personne ne l'ait voulu maintenant.
+REQUESTED=false
+case "$STATE" in *'"runRequested":true'*) REQUESTED=true ;; esac
+case "$STATE" in
+  *'"trigger":"auto"'*) ;;
+  *) if [ "$REQUESTED" != true ]; then echo "mode sur demande, aucune demande en attente — passage ignoré"; exit 0; fi ;;
+esac
+
+# Réclamer AVANT de travailler : si le passage échoue, la demande est déjà
+# consommée et le suivant ne repart pas en boucle sur le même clic.
+if [ "$REQUESTED" = true ]; then
+  "$REPO/.claude/todo-api.sh" claim >/dev/null 2>&1 || echo "(demande non réclamée — on continue)"
+fi
+
 echo "réglages : $STATE"
 
 # --permission-mode bypassPermissions est inévitable pour un agent sans

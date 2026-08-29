@@ -30,9 +30,26 @@ export const AGENT_DEFAULTS = {
   enabled:      false,
   categoryName: 'claude-code',
   autonomy:     'deploy',
+  trigger:      'manual',
   maxPerRun:    3,
   lastRun:      null,
+  runRequest:   null,
 };
+
+export const TRIGGERS = [
+  { value: 'manual', label: 'Sur demande',  hint: 'ne part que quand tu appuies sur « Lancer maintenant »' },
+  { value: 'auto',   label: 'Automatique',  hint: 'part de lui-même dès qu\'une tâche porte l\'étiquette' },
+];
+
+// Une demande de passage périmée ne doit pas déclencher un travail que
+// personne n'attend plus — un clic d'hier soir ne réveille pas l'agent au
+// prochain démarrage du Mac.
+export const RUN_REQUEST_TTL_MS = 15 * 60 * 1000;
+
+export function isRunRequestPending(cfg, now = Date.now()) {
+  const at = cfg?.runRequest?.at;
+  return Number.isFinite(at) && (now - at) < RUN_REQUEST_TTL_MS;
+}
 
 export const AUTONOMY_LEVELS = [
   { value: 'deploy', label: 'Déployer',  hint: 'commit, push sur master et mise en production' },
@@ -54,8 +71,10 @@ export function normalizeAgentConfig(raw) {
     enabled:      src.enabled === true,
     categoryName: name || AGENT_DEFAULTS.categoryName,
     autonomy:     AUTONOMY_LEVELS.some(a => a.value === src.autonomy) ? src.autonomy : AGENT_DEFAULTS.autonomy,
+    trigger:      TRIGGERS.some(t => t.value === src.trigger) ? src.trigger : AGENT_DEFAULTS.trigger,
     maxPerRun:    Number.isFinite(max) ? Math.min(MAX_PER_RUN_LIMIT, Math.max(1, Math.round(max))) : AGENT_DEFAULTS.maxPerRun,
     lastRun:      normalizeRun(src.lastRun),
+    runRequest:   Number.isFinite(Number(src.runRequest?.at)) && Number(src.runRequest.at) > 0 ? { at: Number(src.runRequest.at) } : null,
   };
 }
 
@@ -136,6 +155,7 @@ const ICON = {
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V4h9l8.6 8.6a1.9 1.9 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg>',
   warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="7 4 20 12 7 20 7 4"/></svg>',
 };
 
 const PANEL_OPEN_KEY = 'claudeAgentPanelOpen';
@@ -177,6 +197,35 @@ export function agentPanelHTML(todos, categories) {
          <button class="btn btn-ghost agent-mini-btn" onclick="window.app.createClaudeAgentCategory()">Créer l'étiquette</button>
        </div>`;
 
+  const triggers = TRIGGERS.map(x => `
+    <button class="agent-seg-opt${cfg.trigger === x.value ? ' active' : ''}"
+            onclick="window.app.setClaudeAgentField('trigger','${x.value}')"
+            title="${esc(x.hint)}">${esc(x.label)}</button>`).join('');
+
+  // Le bouton ne LANCE rien : une page web ne peut pas démarrer un processus
+  // sur la machine (même frontière de bac à sable que le son des autres
+  // onglets, qui a imposé une extension). Il dépose une demande que le runner
+  // local ramasse à son prochain réveil — d'où le libellé d'attente, qui dit
+  // la vérité plutôt que de faire croire à un démarrage immédiat.
+  const pending  = isRunRequestPending(cfg);
+  const blocked  = !cfg.enabled ? "l'agent est désactivé"
+                 : !category    ? "l'étiquette n'existe pas"
+                 : !tasks.length ? 'aucune tâche marquée'
+                 : null;
+  const runBlock = `
+    <div class="agent-run-row">
+      <button class="agent-run-btn${pending ? ' is-pending' : ''}" ${blocked ? 'disabled' : ''}
+              onclick="window.app.runClaudeAgentNow()"
+              title="${esc(blocked || 'Demander un passage immédiat')}">
+        ${ICON.play}<span>${pending ? 'Passage demandé' : 'Lancer maintenant'}</span>
+      </button>
+      <span class="agent-run-hint">${esc(blocked
+        ? `Indisponible — ${blocked}.`
+        : pending
+          ? "L'agent démarre à son prochain réveil (moins de 2 min)."
+          : `${tasks.length} tâche${tasks.length > 1 ? 's' : ''} partira${tasks.length > 1 ? 'ient' : ''} au prochain passage.`)}</span>
+    </div>`;
+
   const eligibleList = tasks.length
     ? `<ul class="agent-eligible">${tasks.slice(0, 6).map(t => `<li>${esc(t.title)}</li>`).join('')}
        ${tasks.length > 6 ? `<li class="agent-eligible-more">+ ${tasks.length - 6} autre${tasks.length - 6 > 1 ? 's' : ''}</li>` : ''}</ul>`
@@ -216,6 +265,12 @@ export function agentPanelHTML(todos, categories) {
       </div>
 
       <div class="agent-field">
+        <label class="agent-field-label">Déclenchement</label>
+        <div class="agent-seg">${triggers}</div>
+        <p class="agent-note">${esc(TRIGGERS.find(x => x.value === cfg.trigger).hint)}</p>
+      </div>
+
+      <div class="agent-field">
         <label class="agent-field-label">Tâches par passage</label>
         <div class="agent-stepper">
           <button class="agent-step-btn" onclick="window.app.stepClaudeAgentMax(-1)" ${cfg.maxPerRun <= 1 ? 'disabled' : ''}>−</button>
@@ -229,6 +284,7 @@ export function agentPanelHTML(todos, categories) {
         ${eligibleList}
       </div>
 
+      ${runBlock}
       ${lastRun}
     </div></div></div>
   </section>`;

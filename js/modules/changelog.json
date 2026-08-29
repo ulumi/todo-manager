@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2955",
+    "date": "2026-08-28",
+    "message": "feat(agent): bouton « Lancer maintenant » dans l'Inbox + mode de déclenchement sur demande"
+  },
+  {
     "version": "0.4.2954",
     "date": "2026-08-28",
     "message": "feat(agent): agent Claude Code sur l'Inbox — panneau de réglages, interrupteur général et étiquette repère"
@@ -193,10 +198,5 @@
     "version": "0.4.2849",
     "date": "2026-08-19",
     "message": "feat(modal): nouvelle section Liens — ajouter un ou plusieurs URLs à une tâche, badge cliquable en vue jour"
-  },
-  {
-    "version": "0.4.2848",
-    "date": "2026-08-19",
-    "message": "feat(modal): stepper de durée — maintenir le clic sur +/- répète l'incrément en continu avec accélération progressive"
   }
 ]

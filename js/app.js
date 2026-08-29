@@ -6962,6 +6962,34 @@ class TodoApp {
       : 'Actif — rien à faire';
   }
 
+  // « Lancer maintenant » — le bouton ne démarre AUCUN processus : une page web
+  // ne peut pas en lancer un sur la machine (même mur que le son des autres
+  // onglets, qui a imposé une extension). Il dépose une demande dans la ligne
+  // Supabase ; le runner local (launchd, toutes les 2 min) la réclame et
+  // exécute. Le libellé du panneau dit cette attente au lieu de la masquer.
+  async runClaudeAgentNow() {
+    const cfg = getAgentConfig();
+    if (!cfg.enabled) { this._showToast("L'agent est désactivé"); return; }
+    try {
+      const token = await getOrCreateApiToken();
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ requestRun: true }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      // Écrit aussi en local : la ligne revient par Realtime, mais le panneau
+      // doit basculer tout de suite — sinon un deuxième clic part avant que
+      // l'aller-retour ne soit revenu.
+      saveAgentConfig({ runRequest: { at: Date.now() } });
+      this._refreshAgentPanel();
+      this._showToast('Passage demandé — départ dans moins de 2 min');
+    } catch (err) {
+      console.error('[agent] demande de passage', err);
+      this._showToast('Impossible de demander un passage — ' + (err.message || 'réessaie'));
+    }
+  }
+
   setClaudeAgentField(key, value) {
     saveAgentConfig({ [key]: value });
     this._saveConfigChange();

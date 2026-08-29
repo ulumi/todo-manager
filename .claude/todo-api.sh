@@ -15,6 +15,7 @@
 #
 # Usage :
 #   .claude/todo-api.sh agent                 # réglages + file de travail
+#   .claude/todo-api.sh claim                 # réclame une demande de passage
 #   .claude/todo-api.sh report '{"done":1,"skipped":0,"note":"…"}'
 #   .claude/todo-api.sh tasks inbox           # liste brute
 #   .claude/todo-api.sh patch '{"task":"…","description":"…"}'
@@ -50,8 +51,9 @@ req() {
 cmd="${1:-agent}"
 case "$cmd" in
   agent)  req GET  "/api/agent" ;;
+  claim)  req POST "/api/agent" '{"claimRun":true}' ;;
   report) req POST "/api/agent" "${2:?corps JSON attendu}" ;;
   tasks)  req GET  "/api/tasks?scope=${2:-inbox}" ;;
   patch)  req PATCH "/api/tasks" "${2:?corps JSON attendu}" ;;
-  *)      echo "todo-api: commande inconnue « $cmd » (agent|report|tasks|patch)" >&2; exit 64 ;;
+  *)      echo "todo-api: commande inconnue « $cmd » (agent|claim|report|tasks|patch)" >&2; exit 64 ;;
 esac

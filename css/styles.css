@@ -13141,6 +13141,56 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-style: dashed;
 }
 
+.agent-run-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.agent-run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.agent-run-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.agent-run-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.agent-run-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.agent-run-btn.is-pending {
+  background: transparent;
+  color: var(--primary);
+  border-style: dashed;
+}
+
+.agent-run-hint {
+  flex: 1;
+  min-width: 160px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
 .agent-lastrun {
   display: flex;
   align-items: center;

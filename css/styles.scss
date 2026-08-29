@@ -12480,6 +12480,62 @@ body:has(.bottom-panel:not(.hidden))::before {
   .agent-eligible-more { color: var(--text-muted); background: transparent; border-style: dashed; }
 }
 
+
+// Rangée « Lancer maintenant ». Le bouton ne démarre rien lui-même (une page
+// web ne peut pas lancer de processus) : il dépose une demande que le runner
+// local ramasse — d'où le libellé d'attente à côté, qui n'est pas décoratif.
+.agent-run-row {
+  display:     flex;
+  align-items: center;
+  gap:         11px;
+  flex-wrap:   wrap;
+  margin-top:  18px;
+}
+
+.agent-run-btn {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           7px;
+  padding:       8px 14px;
+  border:        1px solid var(--primary);
+  border-radius: 8px;
+  background:    var(--primary);
+  color:         #fff;
+  font-size:     13px;
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    filter .18s cubic-bezier(.25,.46,.45,.94),
+                 background .18s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover:not(:disabled) { filter: brightness(1.08); }
+
+  &:disabled {
+    opacity:      .45;
+    cursor:       default;
+    background:   var(--surface2);
+    border-color: var(--border);
+    color:        var(--text-muted);
+  }
+
+  // Demande déposée, en attente du prochain réveil du runner. Pas de spinner :
+  // rien ne tourne encore, et faire croire le contraire serait mentir.
+  &.is-pending {
+    background:   transparent;
+    color:        var(--primary);
+    border-style: dashed;
+  }
+}
+
+.agent-run-hint {
+  flex:        1;
+  min-width:   160px;
+  font-size:   12px;
+  line-height: 1.45;
+  color:       var(--text-muted);
+}
+
 .agent-lastrun {
   display:     flex;
   align-items: center;
