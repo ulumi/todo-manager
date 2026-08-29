@@ -94,13 +94,13 @@ Une tâche = un commit = un déploiement, **sauf quand deux tâches modifient le
 
 C'est la partie que Hugues lit. Elle compte autant que le code.
 
-**Tâche réussie** — un seul appel, qui écrit les notes, date sur aujourd'hui et coche :
+**Tâche réussie** — un seul appel, qui écrit les notes et coche :
 
 ```bash
-.claude/todo-api.sh patch '{"task":"<id>","description":"<compte rendu>","move_to":"today","completed":true}'
+.claude/todo-api.sh patch '{"task":"<id>","description":"<compte rendu>","completed":true}'
 ```
 
-⚠ `move_to: "today"` n'est **pas** optionnel. Une tâche d'Inbox cochée mais sans date n'apparaît **nulle part** dans l'app : ni dans l'Inbox (qui filtre les complétées), ni dans aucune vue jour (elle n'a pas de jour). La dater d'abord est ce qui fait que ton travail reste visible au lieu de s'évaporer.
+⚠ **Ne la déplace pas.** Pas de `move_to`, pas de date : la tâche reste dans l'Inbox, où Hugues l'a rangée, et la bascule « Complétées » de cette vue la lui montre. Une version antérieure de ce protocole imposait `move_to: "today"` parce qu'une tâche d'Inbox cochée n'apparaissait alors nulle part — ce trou a été bouché depuis, et le contournement, lui, faisait sortir la tâche de l'endroit exact où Hugues allait la chercher. Dater une tâche qui n'a jamais été planifiée, c'est aussi inventer une information qu'il n'a pas donnée.
 
 ⚠ `description` **remplace** la note existante. Si la tâche en avait une, reprends-la telle quelle en tête, puis ajoute la tienne après une ligne de séparation.
 

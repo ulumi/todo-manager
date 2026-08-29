@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2958",
+    "date": "2026-08-28",
+    "message": "fix(agent): l'agent coche la tâche sur place au lieu de la dater — elle sortait de l'Inbox où on va la chercher"
+  },
+  {
     "version": "0.4.2957",
     "date": "2026-08-28",
     "message": "feat: bascule « Complétées » dans l'Inbox + rechargement auto du toast de mise à jour après 5 s"
@@ -193,10 +198,5 @@
     "version": "0.4.2871",
     "date": "2026-08-23",
     "message": "feat(vue jour): nouveau mode Agenda — grille horaire par moment, glisser-déposer et redimensionnement des tâches"
-  },
-  {
-    "version": "0.4.2859",
-    "date": "2026-08-23",
-    "message": "feat(vue jour): la séparation entre les colonnes Ponctuel et Quotidien est redimensionnable au glisser (double-clic pour réinitialiser)"
   }
 ]
