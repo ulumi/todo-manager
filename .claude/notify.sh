@@ -9,8 +9,16 @@
 # raison que le jeton d'API : `vercel --prod` téléverse le dossier tel quel,
 # gitignoré ou non, et ce dépôt est public. Format attendu, deux lignes :
 #
-#   BOT_TOKEN=123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-#   CHAT_ID=987654321
+#   BOT_TOKEN=<id_du_bot>:<jeton_renvoyé_par_BotFather>
+#   CHAT_ID=<id_du_chat>
+#
+# Le format réel du jeton n'est volontairement PAS écrit ici, même en valeur
+# bidon : la forme « chiffres:AA… » est reconnue telle quelle par l'analyse de
+# secrets de GitHub, qui ouvre une alerte « Publicly leaked secret » sur ce
+# fichier alors qu'aucun vrai jeton n'a jamais été commité — le placeholder
+# classique traîne dans des centaines de .env.example publics, il est donc
+# lui-même répertorié comme fuite connue. Un exemple de documentation ne doit
+# jamais reproduire la FORME d'un secret : décrire ses deux parties suffit.
 #
 # Obtenir les deux :
 #   1. Sur Telegram, parler à @BotFather → /newbot → il renvoie le BOT_TOKEN.
