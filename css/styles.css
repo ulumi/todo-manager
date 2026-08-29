@@ -12891,10 +12891,11 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-variant-numeric: tabular-nums;
 }
 
-.update-toast-auto {
+.update-toast-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-end;
+  gap: 8px;
   margin: 2px 10px 0 18px;
 }
 

@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2961",
+    "date": "2026-08-28",
+    "message": "fix(ui): « Annuler » et « Recharger » côte à côte dans une rangée d'actions — le titre récupère sa largeur"
+  },
+  {
     "version": "0.4.2960",
     "date": "2026-08-28",
     "message": "fix(ui): ligne de décompte alignée sur le titre et les puces, sans filet de séparation"
@@ -193,10 +198,5 @@
     "version": "0.4.2874",
     "date": "2026-08-25",
     "message": "feat(backlog): rail en modules épinglables et réordonnables + piles (quick wins, qui traînent…) et clic pour filtrer"
-  },
-  {
-    "version": "0.4.2873",
-    "date": "2026-08-24",
-    "message": "feat(backlog): rail de classement par glisser-déposer — étiquette, priorité, échéance, planification"
   }
 ]
