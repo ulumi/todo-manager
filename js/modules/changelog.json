@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2960",
+    "date": "2026-08-28",
+    "message": "fix(ui): ligne de décompte alignée sur le titre et les puces, sans filet de séparation"
+  },
+  {
     "version": "0.4.2959",
     "date": "2026-08-28",
     "message": "fix(ui): le décompte de rechargement passe sur sa propre ligne — il était écrasé à 8px et rendu en colonne"
@@ -193,10 +198,5 @@
     "version": "0.4.2873",
     "date": "2026-08-24",
     "message": "feat(backlog): rail de classement par glisser-déposer — étiquette, priorité, échéance, planification"
-  },
-  {
-    "version": "0.4.2872",
-    "date": "2026-08-24",
-    "message": "feat(modal): nouvelle section Échéance — date et heure limite, type dure/souple, alerte X jours avant"
   }
 ]
