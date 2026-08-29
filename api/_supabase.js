@@ -15,8 +15,15 @@ import { createClient } from '@supabase/supabase-js';
 // L'URL, elle, n'est pas un secret : elle est déjà servie à chaque navigateur
 // dans js/modules/supabase.js. Elle garde donc une valeur par défaut.
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ztibrrmebnpzmflzghjb.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  || process.env.SUPABASE_SECRET_KEY
+// SUPABASE_SECRET_KEY (sb_secret_…, nouveau schéma) est essayée AVANT
+// SUPABASE_SERVICE_ROLE_KEY (JWT legacy). L'intégration Vercel de Supabase
+// pose les deux, comme elle pose SUPABASE_PUBLISHABLE_KEY à côté de
+// SUPABASE_ANON_KEY. Désactiver les clés legacy tue la seconde d'un coup :
+// la préférer aurait fait tomber toute l'API serveur au moment même où on
+// ferme la fuite. La clé nouveau schéma est aussi révocable individuellement,
+// donc sans effet de bord sur le client navigateur.
+const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY
+  || process.env.SUPABASE_SERVICE_ROLE_KEY
   || '';
 
 export const supabaseConfigured = Boolean(SUPABASE_KEY);
