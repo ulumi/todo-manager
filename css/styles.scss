@@ -9651,7 +9651,9 @@ body:has(.bottom-panel:not(.hidden))::before {
   box-shadow: 0 4px 16px rgba(0,0,0,.2);
   opacity: 0;
   pointer-events: none;
-  max-width: min(90vw, 380px);
+  // 380px à l'origine : trop juste depuis que la rangée d'actions porte le
+  // décompte ET les deux boutons — tout s'y touchait. Mesuré au navigateur.
+  max-width: min(92vw, 460px);
   transform: translateY(8px);
   transition: opacity .2s ease, transform .2s ease;
 
@@ -9665,8 +9667,8 @@ body:has(.bottom-panel:not(.hidden))::before {
 .update-toast-main {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px 8px 18px;
+  gap: 12px;
+  padding: 15px 18px 6px 20px;
 
   // Le titre + le numéro de version ne doivent jamais être coupés — texte
   // libre de passer à la ligne plutôt qu'une troncature en ellipse.
@@ -9700,11 +9702,11 @@ body:has(.bottom-panel:not(.hidden))::before {
 
   ul {
     margin: 0;
-    padding: 0 18px 10px;
+    padding: 2px 18px 16px 20px;   // gauche calé sur .update-toast-main
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
     max-height: 220px;
     overflow-y: auto;
   }
@@ -9712,7 +9714,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   li {
     font-size: 12px;
     font-weight: 400;
-    line-height: 1.4;
+    line-height: 1.5;
     opacity: .85;
     padding-left: 12px;
     position: relative;
@@ -12293,7 +12295,7 @@ body:has(.bottom-panel:not(.hidden))::before {
   // .update-toast, donc une rangée sœur sans marge vient se coller aux bords.
   // Pas de filet de séparation : l'espacement seul suffit à détacher la ligne
   // du titre, et une bordure de plus dans un toast déjà bordé fait bruyant.
-  margin:          2px 10px 0 18px;
+  margin:          10px 18px 15px 20px;
 }
 
 .update-toast-count {

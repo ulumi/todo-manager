@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2963",
+    "date": "2026-08-28",
+    "message": "fix(ui): le toast de mise à jour respire — 460px, marges et interlignes revus"
+  },
+  {
     "version": "0.4.2962",
     "date": "2026-08-28",
     "message": "fix(ui): libellés du décompte raccourcis pour tenir sur une ligne à côté des boutons"
@@ -193,10 +198,5 @@
     "version": "0.4.2876",
     "date": "2026-08-26",
     "message": "refonte(backlog): un module de classement = une rangée pleine largeur — pastilles dimensionnées au libellé, plus aucune troncature ni décalage au drag"
-  },
-  {
-    "version": "0.4.2875",
-    "date": "2026-08-25",
-    "message": "refonte(backlog): rail de classement en bandeau pleine largeur au-dessus de la liste, en-tête et contrôles resserrés sur une ligne"
   }
 ]
