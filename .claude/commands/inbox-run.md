@@ -73,9 +73,17 @@ cd "$WT"
 
 Dans le worktree, applique `CLAUDE.md` comme n'importe quelle session : SCSS uniquement (jamais `css/styles.css`), Supabase pour toute donnée persistante, restauration de l'état d'interface, conventions d'icônes et d'animations.
 
+**Lis le moins possible — c'est le premier poste de dépense d'un passage.**
+
+Ce que tu lis ne se paie pas une fois : ça reste dans la conversation et te suit à **chaque tour suivant**. Les deux gros fichiers du projet coûtent à eux seuls plus qu'un passage entier — `js/app.js` ≈ 128 000 jetons, `css/styles.scss` ≈ 107 000.
+
+Donc, sans exception : **`grep -n` pour localiser, puis `Read` avec `offset`/`limit`** (une quarantaine de lignes autour de l'ancre). Jamais un `Read` de `app.js`, `styles.scss` ou `render.js` en entier — même « pour voir la structure », le `grep` te la donne.
+
+> Mesuré sur le passage du 2026-08-29 : `app.js` lu deux fois, `styles.scss` une fois, alors que les `grep` avaient déjà trouvé les ancres. Résultat — 9,3 M de jetons relus sur 26 tours pour 25 k écrits, et le plafond de budget a tué la tâche à son tout dernier tour, après le déploiement mais avant qu'elle soit cochée.
+
 **Trois pièges propres au worktree :**
 
-1. **Le bump de version ne se fait pas tout seul.** Le hook `bump-version.sh` a un chemin absolu vers le dépôt principal : il bumperait le mauvais fichier. Édite toi-même `js/modules/version.js` dans le worktree (patch +1).
+1. **Ne bumpe PAS `js/modules/version.js` à la main.** Le hook `bump-version.sh` remonte depuis le fichier édité jusqu'au dépôt qui le contient : dans un worktree, il bumpe donc bien celui du worktree, tout seul, à chaque édition. Le faire en plus produirait un double bump. Contente-toi de lire la valeur finale pour l'entrée de `changelog.json`.
 2. **Le hook git de pré-commit** garde le répertoire partagé contre le mélange entre sessions. Un worktree n'a par construction aucune autre session dedans, donc `git commit --no-verify` y est légitime — c'est le seul endroit où c'est vrai, ne le fais nulle part ailleurs.
 3. **Recompile le SCSS dans le worktree** (`npx sass css/styles.scss css/styles.css --style=expanded`) — le hook de compilation ne s'y déclenche pas non plus.
 
