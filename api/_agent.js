@@ -66,6 +66,7 @@ export default async function handler(req, res) {
         today:    todayDS(data),
         trigger:  cfg.trigger,
         lastRun:  cfg.lastRun,
+        runTasks: (data.agentRuntime && Array.isArray(data.agentRuntime.runTasks)) ? data.agentRuntime.runTasks : [],
         // Une demande périmée est renvoyée comme absente : le runner ne doit
         // pas exécuter au réveil du Mac un clic qui date d'hier soir.
         runRequested: isRunRequestPending(cfg),
@@ -104,6 +105,27 @@ export default async function handler(req, res) {
         return;
       }
 
+      // Métriques d'UNE tâche, envoyées par le runner juste après l'invocation
+      // qui l'a traitée. Elles s'accumulent le temps du passage, puis migrent
+      // dans lastRun au compte rendu final.
+      if (body.taskMetric && typeof body.taskMetric === 'object') {
+        const m = body.taskMetric;
+        const entry = {
+          id:        String(m.id ?? '').slice(0, 40),
+          title:     String(m.title ?? '').slice(0, 120),
+          seconds:   Math.max(0, Number(m.seconds)   || 0),
+          tokensIn:  Math.max(0, Number(m.tokensIn)  || 0),
+          tokensOut: Math.max(0, Number(m.tokensOut) || 0),
+          costUsd:   Math.max(0, Number(m.costUsd)   || 0),
+          ok:        m.ok === true,
+        };
+        const cur = Array.isArray(data.agentRuntime?.runTasks) ? data.agentRuntime.runTasks : [];
+        writeRuntime(data, cfg, { runTasks: [...cur, entry].slice(-10) });
+        await commitTodos(uid, data, todosOf(data));
+        res.status(200).json({ ok: true, taskMetric: entry });
+        return;
+      }
+
       // Le runner réclame la demande AVANT de travailler, jamais après : si le
       // passage échoue, le drapeau est déjà consommé et rien ne repart en
       // boucle sur la même demande.
@@ -123,8 +145,10 @@ export default async function handler(req, res) {
         skipped: Number(body.skipped) || 0,
         note:    String(body.note ?? '').slice(0, 500),
       };
-      // Fin du passage : plus de demande en cours, plus rien « en cours ».
-      writeRuntime(data, cfg, { runRequest: null, progress: null, lastRun });
+      // Fin du passage : plus de demande en cours, plus rien « en cours », et
+      // les métriques accumulées migrent dans le compte rendu.
+      lastRun.tasks = Array.isArray(data.agentRuntime?.runTasks) ? data.agentRuntime.runTasks : [];
+      writeRuntime(data, cfg, { runRequest: null, progress: null, runTasks: null, lastRun });
       await commitTodos(uid, data, todosOf(data));
       res.status(200).json({ ok: true, lastRun });
       return;

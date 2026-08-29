@@ -22,7 +22,9 @@ Cette commande tourne aussi bien à la main (`/inbox-run`) que sans personne dev
 - **`category: null`** → l'étiquette repère n'existe pas encore. Arrête-toi, envoie un compte rendu avec la note « étiquette introuvable ».
 - **`tasks: []`** → rien à faire. Arrête-toi **sans** compte rendu (un passage à vide n'est pas un événement).
 
-Le champ `tasks` est déjà borné à `maxPerRun` et déjà filtré : ce sont exactement les tâches à traiter, dans cet ordre. Ne va jamais en chercher d'autres, ne « complète » jamais une tâche qui n'est pas dans cette liste.
+Le champ `tasks` est déjà borné à `maxPerRun` et déjà filtré : ce sont exactement les tâches éligibles. Ne va jamais en chercher d'autres, ne « complète » jamais une tâche absente de cette liste.
+
+**Un identifiant de tâche t'est passé en argument : `$ARGUMENTS`.** S'il est renseigné, tu ne traites **que cette tâche-là** — le runner t'invoque une fois par tâche, précisément pour mesurer le temps et les jetons de chacune séparément. Vérifie qu'elle figure bien dans `tasks` ; si elle n'y est pas (déjà faite, étiquette retirée entre-temps), arrête-toi et dis-le, sans rien modifier. S'il est vide, traite la liste entière dans l'ordre.
 
 ### Rendre compte en direct
 
@@ -139,6 +141,8 @@ Pas de flatterie, pas de « avec succès ». S'il y a un doute, dis le doute.
 ## 5. Clore le passage
 
 Une fois toutes les tâches traitées (ou à la première panne dure — tu t'arrêtes, tu ne t'acharnes pas sur les suivantes) :
+
+Quand tu es invoqué sur UNE tâche, le compte rendu porte évidemment sur elle seule (`done` et `skipped` valent 0 ou 1).
 
 ```bash
 git worktree remove --force <WT>   # depuis le dépôt principal

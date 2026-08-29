@@ -12767,6 +12767,47 @@ body:has(.bottom-panel:not(.hidden))::before {
   user-select:   all;
 }
 
+
+// Temps, jetons et coût de chaque tâche du dernier passage. Un tableau parce
+// que ce sont quatre colonnes comparables d'une ligne à l'autre — c'est
+// exactement ce qu'on veut lire : quelle tâche a coûté cher.
+.agent-metrics {
+  width:           100%;
+  margin-top:      8px;
+  border-collapse: collapse;
+  font-size:       11.5px;
+  font-variant-numeric: tabular-nums;
+
+  td {
+    padding:       4px 6px;
+    text-align:    right;
+    color:         var(--text-muted);
+    white-space:   nowrap;
+    border-top:    1px solid var(--border);
+  }
+
+  tr.is-failed td { opacity: .55; text-decoration: line-through; }
+}
+
+// Seule colonne élastique : c'est le titre qui se tronque, jamais un chiffre.
+.agent-metrics-task {
+  width:         100%;
+  text-align:    left !important;
+  white-space:   nowrap !important;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  max-width:     0;
+  color:         var(--text) !important;
+}
+
+.agent-metrics-dim { opacity: .55; font-size: 10px; }
+
+.agent-metrics-total td {
+  font-weight:  700;
+  color:        var(--text) !important;
+  border-top:   1px solid var(--text-muted);
+}
+
 .agent-lastrun {
   display:     flex;
   align-items: center;

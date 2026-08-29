@@ -35,7 +35,7 @@ export const AGENT_KEY = 'claudeAgent';
 // dans `data.agentRuntime`, que le navigateur n'émet jamais et que le push
 // préserve explicitement (voir sync.js).
 export const AGENT_RUNTIME_KEY = 'claudeAgentRuntime';
-export const RUNTIME_FIELDS = ['runRequest', 'progress', 'lastRun'];
+export const RUNTIME_FIELDS = ['runRequest', 'progress', 'lastRun', 'runTasks'];
 
 // Volontairement `enabled: false` : rien ne s'exécute tant que Hugues n'a pas
 // armé l'interrupteur lui-même. Un agent qui écrit du code et déploie ne
@@ -158,7 +158,37 @@ function normalizeRun(r) {
     done:    Math.max(0, Number(r.done)    || 0),
     skipped: Math.max(0, Number(r.skipped) || 0),
     note:    String(r.note ?? '').slice(0, 500),
+    tasks:   Array.isArray(r.tasks) ? r.tasks.map(normalizeMetric).filter(Boolean).slice(0, 10) : [],
   };
+}
+
+// Temps et jetons d'UNE tâche, mesurés par le runner sur l'invocation qui l'a
+// traitée (une par tâche — c'est ce qui rend ces chiffres réels plutôt que
+// répartis au prorata).
+function normalizeMetric(m) {
+  if (!m || typeof m !== 'object') return null;
+  const title = String(m.title ?? '').trim();
+  if (!title) return null;
+  return {
+    title:     title.slice(0, 120),
+    seconds:   Math.max(0, Number(m.seconds)   || 0),
+    tokensIn:  Math.max(0, Number(m.tokensIn)  || 0),
+    tokensOut: Math.max(0, Number(m.tokensOut) || 0),
+    costUsd:   Math.max(0, Number(m.costUsd)   || 0),
+    ok:        m.ok === true,
+  };
+}
+
+export function formatTokens(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)} M`;
+  if (n >= 1000)      return `${Math.round(n / 1000)} k`;
+  return String(n);
+}
+
+export function formatDuration(sec) {
+  if (sec < 60) return `${sec} s`;
+  const m = Math.floor(sec / 60);
+  return sec % 60 ? `${m} min ${sec % 60} s` : `${m} min`;
 }
 
 // La valeur vit en localStorage sous forme de CHAÎNE JSON, comme agendaPrefs
@@ -370,8 +400,33 @@ export function agentPanelHTML(todos, categories) {
        ${tasks.length > 6 ? `<li class="agent-eligible-more">+ ${tasks.length - 6} autre${tasks.length - 6 > 1 ? 's' : ''}</li>` : ''}</ul>`
     : `<p class="agent-note">Aucune tâche marquée pour l'instant. Ajoute l'étiquette à une tâche de l'Inbox pour la lui confier.</p>`;
 
+  // Chiffres par tâche : temps, jetons et coût réels de l'invocation qui l'a
+  // traitée. Le total est la somme des lignes, jamais une valeur à part —
+  // deux nombres qui pourraient diverger n'ont pas leur place ici.
+  const metrics = cfg.lastRun?.tasks?.length ? cfg.lastRun.tasks : [];
+  const metricRows = metrics.length ? `
+      <table class="agent-metrics">
+        <tbody>
+          ${metrics.map(m => `
+            <tr class="${m.ok ? '' : 'is-failed'}">
+              <td class="agent-metrics-task" title="${esc(m.title)}">${esc(m.title)}</td>
+              <td>${esc(formatDuration(m.seconds))}</td>
+              <td>${esc(formatTokens(m.tokensIn))} <span class="agent-metrics-dim">in</span></td>
+              <td>${esc(formatTokens(m.tokensOut))} <span class="agent-metrics-dim">out</span></td>
+              <td>${m.costUsd ? esc(m.costUsd.toFixed(2)) + ' $' : '—'}</td>
+            </tr>`).join('')}
+          <tr class="agent-metrics-total">
+            <td>Total</td>
+            <td>${esc(formatDuration(metrics.reduce((a, m) => a + m.seconds, 0)))}</td>
+            <td>${esc(formatTokens(metrics.reduce((a, m) => a + m.tokensIn, 0)))} <span class="agent-metrics-dim">in</span></td>
+            <td>${esc(formatTokens(metrics.reduce((a, m) => a + m.tokensOut, 0)))} <span class="agent-metrics-dim">out</span></td>
+            <td>${metrics.reduce((a, m) => a + m.costUsd, 0).toFixed(2)} $</td>
+          </tr>
+        </tbody>
+      </table>` : '';
+
   const lastRun = cfg.lastRun
-    ? `<div class="agent-lastrun">${ICON.clock}<span><strong>${agoLabel(cfg.lastRun.at)}</strong> — ${cfg.lastRun.done} faite${cfg.lastRun.done > 1 ? 's' : ''}, ${cfg.lastRun.skipped} laissée${cfg.lastRun.skipped > 1 ? 's' : ''}${cfg.lastRun.note ? ` · ${esc(cfg.lastRun.note)}` : ''}</span></div>`
+    ? `<div class="agent-lastrun">${ICON.clock}<span><strong>${agoLabel(cfg.lastRun.at)}</strong> — ${cfg.lastRun.done} faite${cfg.lastRun.done > 1 ? 's' : ''}, ${cfg.lastRun.skipped} laissée${cfg.lastRun.skipped > 1 ? 's' : ''}${cfg.lastRun.note ? ` · ${esc(cfg.lastRun.note)}` : ''}</span></div>${metricRows}`
     : `<div class="agent-lastrun">${ICON.clock}<span>Jamais exécuté.</span></div>`;
 
   return `

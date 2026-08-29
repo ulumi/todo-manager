@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2972",
+    "date": "2026-08-29",
+    "message": "feat(agent): temps, jetons et coût mesurés par tâche — une invocation par tâche"
+  },
+  {
     "version": "0.4.2971",
     "date": "2026-08-29",
     "message": "fix(agent): la demande de passage survit enfin — l'état d'exécution sort de ce que le navigateur écrase"
@@ -193,10 +198,5 @@
     "version": "0.4.2896",
     "date": "2026-08-27",
     "message": "feat(sélection): fusionner deux tâches en une seule depuis le clic droit"
-  },
-  {
-    "version": "0.4.2895",
-    "date": "2026-08-27",
-    "message": "feat(agenda): la grille s'aimante sur l'heure qu'il est et sur le prochain multiple de 5 minutes"
   }
 ]

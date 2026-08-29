@@ -75,29 +75,75 @@ notify() { "$REPO/.claude/notify.sh" "$1" >/dev/null 2>&1 || true; }
 notify "▶ 2FŨKOI — passage démarré
 ${COUNT:-?} tâche(s) marquée(s) · autonomie $(printf '%s' "$STATE" | sed -n 's/.*"autonomy":"\([a-z]*\)".*/\1/p')"
 
-# --permission-mode bypassPermissions est inévitable pour un agent sans
-# personne devant l'écran : il ne peut répondre à aucune demande d'autorisation.
-# --max-budget-usd borne la casse si un passage part en boucle.
+# UNE INVOCATION PAR TÂCHE, et c'est le seul moyen d'avoir des chiffres honnêtes
+# par tâche : `claude -p --output-format json` ne rapporte son temps et ses
+# jetons que pour l'invocation entière. Un seul appel pour tout le lot ne
+# donnerait qu'un total, et le répartir entre les tâches au prorata du temps
+# serait inventer un chiffre. Bénéfice secondaire : une tâche qui explose
+# n'emporte plus les suivantes.
 #
-# tee : la sortie doit rester dans le log EN DIRECT (la capturer dans une
-# variable la retiendrait jusqu'à la fin) tout en restant analysable ensuite.
-# PIPESTATUS car $? donnerait le code de tee, pas celui de claude.
-OUT=$(mktemp)
-claude -p "/inbox-run" \
-  --permission-mode bypassPermissions \
-  --max-budget-usd 5 \
-  --output-format text 2>&1 | tee "$OUT"
-CODE=${PIPESTATUS[0]}
+# Le prix à payer est réel : chaque invocation relit CLAUDE.md et le contexte du
+# dépôt, donc les jetons d'entrée sont payés autant de fois qu'il y a de tâches.
+# C'est assumé — maxPerRun est plafonné à 5.
+IDS=$(printf '%s' "$STATE" | python3 -c 'import json,sys; print("\n".join(t["id"] for t in json.load(sys.stdin)["tasks"]))' 2>/dev/null)
+TITLES=$(printf '%s' "$STATE" | python3 -c 'import json,sys; print("\n".join(t["title"].replace("\n"," ") for t in json.load(sys.stdin)["tasks"]))' 2>/dev/null)
 
-# Le code de sortie ne suffit pas : un quota épuisé s'imprime sans forcément
-# faire échouer le processus (« You're out of extra usage · resets 2am » le
-# 2026-08-28 — passage mort sans aucune trace ailleurs que dans ce log, et donc
-# invisible pour Hugues). On lit donc AUSSI la sortie.
-TAIL=$(tail -4 "$OUT" | tr '\n' ' ' | sed 's/  */ /g' | cut -c1-300)
+CODE=0
 FAILED=false
-[ "$CODE" -ne 0 ] && FAILED=true
-printf '%s' "$OUT" >/dev/null
-grep -qiE "out of extra usage|usage limit|rate limit|quota|not authenticated|invalid api key" "$OUT" && FAILED=true
+TAIL=""
+N=0
+while IFS= read -r TASK_ID; do
+  [ -n "$TASK_ID" ] || continue
+  N=$((N + 1))
+  TITLE=$(printf '%s' "$TITLES" | sed -n "${N}p")
+  echo "── tâche $N : $TASK_ID — $TITLE"
+
+  OUT=$(mktemp)
+  # --permission-mode bypassPermissions est inévitable pour un agent sans
+  # personne devant l'écran : il ne peut répondre à aucune demande
+  # d'autorisation. --max-budget-usd borne la casse par tâche.
+  claude -p "/inbox-run $TASK_ID" \
+    --permission-mode bypassPermissions \
+    --max-budget-usd 5 \
+    --output-format json > "$OUT" 2>&1
+  RC=$?
+
+  # Le JSON de résultat porte durée, jetons et coût réels de CETTE invocation.
+  METRIC=$(python3 - "$OUT" "$TASK_ID" "$TITLE" "$RC" <<'PYM'
+import json, sys
+path, tid, title, rc = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+raw = open(path, encoding='utf-8', errors='replace').read()
+d = {}
+# La sortie peut contenir du bruit avant le JSON : on prend le dernier objet.
+for line in reversed(raw.strip().splitlines()):
+    line = line.strip()
+    if line.startswith('{'):
+        try: d = json.loads(line); break
+        except Exception: continue
+u = d.get('usage') or {}
+print(json.dumps({'taskMetric': {
+    'id': tid, 'title': title[:120],
+    'seconds': round((d.get('duration_ms') or 0) / 1000),
+    'tokensIn': (u.get('input_tokens') or 0) + (u.get('cache_read_input_tokens') or 0),
+    'tokensOut': u.get('output_tokens') or 0,
+    'costUsd': round(d.get('total_cost_usd') or 0, 4),
+    'ok': rc == 0 and d.get('subtype') == 'success',
+}}, ensure_ascii=False))
+PYM
+)
+  echo "   $(printf '%s' "$METRIC" | python3 -c 'import json,sys; m=json.load(sys.stdin)["taskMetric"]; print("%ss · %s jetons entrée / %s sortie · %s $" % (m["seconds"], m["tokensIn"], m["tokensOut"], m["costUsd"]))' 2>/dev/null)"
+  "$REPO/.claude/todo-api.sh" report "$METRIC" >/dev/null 2>&1 || true
+
+  # Un quota épuisé s'imprime sans forcément faire échouer le processus.
+  if [ "$RC" -ne 0 ] || grep -qiE "out of extra usage|usage limit|rate limit|quota|not authenticated|invalid api key" "$OUT"; then
+    CODE=$RC; FAILED=true
+    TAIL=$(tail -4 "$OUT" | tr '\n' ' ' | sed 's/  */ /g' | cut -c1-300)
+    rm -f "$OUT"
+    echo "   arrêt du lot : la cause vaut aussi pour les tâches suivantes"
+    break
+  fi
+  rm -f "$OUT"
+done <<< "$IDS"
 
 if [ "$FAILED" = true ]; then
   echo "ÉCHEC (code $CODE) : $TAIL"
@@ -106,7 +152,6 @@ $TAIL"
 else
   notify "✔ 2FŨKOI — passage terminé"
 fi
-rm -f "$OUT"
 
 # Un passage interrompu (quota, plantage, machine endormie) n'atteint jamais sa
 # propre étape de nettoyage et laisse son worktree derrière lui. Comme launchd
