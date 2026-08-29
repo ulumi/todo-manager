@@ -105,7 +105,8 @@ import {
 } from './modules/avatarEditor.js';
 import { getOverduePunctual, renderReviewBody } from './modules/review.js';
 import { getAgentConfig, saveAgentConfig, agentPanelHTML, isAgentPanelOpen, setAgentPanelOpen,
-         findAgentCategory, MAX_PER_RUN_LIMIT, RUN_REQUEST_GRACE_MS } from './modules/claudeAgent.js';
+         findAgentCategory, MAX_PER_RUN_LIMIT, RUN_REQUEST_GRACE_MS,
+         parseAgentConfig, AGENT_KEY } from './modules/claudeAgent.js';
 import { appConfirm, appAlert, appChoice } from './modules/dialog.js';
 
 // Initialize state
@@ -5928,6 +5929,10 @@ class TodoApp {
     if (state.view === 'search') this.initSearchDragDrop();
     if (state.view === 'plan') this.initPlanDragDrop();
     if (state.view === 'backlog' || state.view === 'inbox') this.initQueueListDnD(state.view);
+    // Direct du panneau de l'agent : horloges peintes tout de suite (sinon le
+    // compte à rebours resterait sur « … » jusqu'à la première seconde), puis
+    // le minuteur prend le relais. Il s'auto-arrête dès que le bloc disparaît.
+    if (state.view === 'inbox') { this._paintAgentClocks(); this._startAgentTicker(); }
     if (state.view === 'backlog') this.initBacklogRailDnD();
     if (state.view === 'focus' || this._focusMinimized) this.initFocusView(); else this._stopFocusTick();
     renderFocusPip(this);
@@ -7035,6 +7040,63 @@ class TodoApp {
     this._showToast(cfg.enabled ? 'Agent Claude Code activé' : 'Agent Claude Code désactivé');
   }
 
+  // ── Direct du panneau : horloges qui tournent + filet de rafraîchissement ──
+  // Le compte à rebours et le « depuis X » doivent avancer sans re-render (un
+  // render complet à chaque seconde détruirait le survol et le focus). Seuls
+  // les deux nœuds de texte concernés sont réécrits.
+  _startAgentTicker() {
+    clearInterval(this._agentTick);
+    this._agentTick = null;
+    if (!document.querySelector('.agent-live')) return;
+    let n = 0;
+    this._agentTick = setInterval(() => {
+      if (state.view !== 'inbox' || !document.querySelector('.agent-live')) {
+        clearInterval(this._agentTick); this._agentTick = null; return;
+      }
+      this._paintAgentClocks();
+      // Filet toutes les 8 s : la progression arrive normalement par Realtime,
+      // mais un onglet en arrière-plan ou une reconnexion peuvent la manquer —
+      // et un panneau « en direct » figé serait pire que pas de direct du tout.
+      if (++n % 8 === 0) this._pollAgentState();
+    }, 1000);
+  }
+
+  _paintAgentClocks() {
+    const cd = document.querySelector('.agent-wake-count[data-until]');
+    if (cd) {
+      const left = Math.max(0, Math.round((Number(cd.dataset.until) - Date.now()) / 1000));
+      cd.textContent = left > 0
+        ? `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
+        : "d'un instant à l'autre";
+    }
+    const since = document.querySelector('.agent-live-since[data-since]');
+    if (since) {
+      const s = Math.max(0, Math.round((Date.now() - Number(since.dataset.since)) / 1000));
+      since.textContent = s < 60 ? `${s} s` : `${Math.floor(s / 60)} min`;
+    }
+  }
+
+  // Lecture seule : on écrit la config reçue en localStorage SANS déclencher de
+  // push (pas de _saveConfigChange) — la repousser ferait exactement ce que
+  // SERVER_OWNED_FIELDS existe pour empêcher.
+  async _pollAgentState() {
+    if (this._agentPolling) return;
+    this._agentPolling = true;
+    try {
+      const token = await getOrCreateApiToken();
+      const res = await fetch('/api/agent', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const d = await res.json();
+      const local = getAgentConfig();
+      const next = parseAgentConfig({ ...local, progress: d.progress ?? null, runRequest: d.runRequested ? local.runRequest : null });
+      if (JSON.stringify(next) !== JSON.stringify(local)) {
+        localStorage.setItem(AGENT_KEY, JSON.stringify(next));
+        this._refreshAgentPanel();
+      }
+    } catch { /* le direct est un confort, jamais une raison d'échouer */ }
+    finally { this._agentPolling = false; }
+  }
+
   _refreshAgentState(panel, cfg) {
     const label = panel?.querySelector('.agent-panel-state');
     if (!label) return;
@@ -7117,6 +7179,8 @@ class TodoApp {
     const panel = document.querySelector('.agent-panel');
     if (!panel) { if (state.view === 'inbox') this.render(); return; }
     panel.outerHTML = agentPanelHTML(state.todos, getCategories());
+    this._paintAgentClocks();
+    this._startAgentTicker();
   }
 
   togglePastDueBanner() {

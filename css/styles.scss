@@ -12601,6 +12601,90 @@ body:has(.bottom-panel:not(.hidden))::before {
 // Rangée « Lancer maintenant ». Le bouton ne démarre rien lui-même (une page
 // web ne peut pas lancer de processus) : il dépose une demande que le runner
 // local ramasse — d'où le libellé d'attente à côté, qui n'est pas décoratif.
+
+// Bloc « en direct » du panneau de l'agent : ce qu'il fait maintenant, ou le
+// temps qu'il reste avant son prochain réveil. Deux états distincts — vert
+// quand il travaille (preuve de vie), couleur d'accent quand on attend.
+.agent-live {
+  display:       flex;
+  align-items:   flex-start;
+  gap:           10px;
+  margin-top:    16px;
+  padding:       10px 12px;
+  border-radius: 8px;
+  border:        1px solid var(--border);
+  background:    var(--surface2);
+
+  &.is-working {
+    border-color: color-mix(in srgb, var(--success) 40%, transparent);
+    background:   color-mix(in srgb, var(--success) 10%, transparent);
+  }
+
+  &.is-waiting {
+    border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+    background:   color-mix(in srgb, var(--primary) 8%, transparent);
+  }
+}
+
+// La pastille pulse : c'est le seul élément qui bouge, et il suffit à dire
+// « ceci est vivant » sans animer le texte, qui doit rester lisible.
+.agent-live-dot {
+  flex-shrink:   0;
+  width:         8px;
+  height:        8px;
+  margin-top:    5px;
+  border-radius: 50%;
+  background:    var(--text-muted);
+  animation:     agent-live-pulse 1.6s ease-in-out infinite;
+
+  .agent-live.is-working & { background: var(--success); }
+  .agent-live.is-waiting & { background: var(--primary); }
+}
+
+@keyframes agent-live-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .45; transform: scale(.82); }
+}
+
+.agent-live-body {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  flex:           1;
+  min-width:      0;
+}
+
+.agent-live-label {
+  font-size:      11px;
+  font-weight:    700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color:          var(--text-muted);
+}
+
+.agent-live-text {
+  font-size:   12.5px;
+  line-height: 1.45;
+  color:       var(--text);
+  // Les lignes de progression viennent de l'agent : longueur imprévisible, et
+  // un retour à la ligne vaut mieux qu'une troncature — on veut savoir ce
+  // qu'il fait, pas ses 40 premiers caractères.
+  overflow-wrap: break-word;
+}
+
+.agent-wake-count {
+  font-weight: 700;
+  color:       var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-live-since {
+  flex-shrink: 0;
+  font-size:   11px;
+  color:       var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .agent-run-row {
   display:     flex;
   align-items: center;

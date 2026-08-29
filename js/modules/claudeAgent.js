@@ -281,7 +281,34 @@ export function agentPanelHTML(todos, categories) {
         <code class="agent-cmd">launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.hugues.2fukoi-agent.plist</code>
       </div>` : '';
 
+  // ── Bloc « en direct » ────────────────────────────────────────────────
+  // Deux états seulement, et chacun n'affirme que ce qu'il sait : soit l'agent
+  // a publié une ligne de progression (preuve de vie), soit une demande est
+  // déposée et on ne peut annoncer qu'une BORNE — la page ne connaît pas la
+  // phase du minuteur de launchd, seulement sa période.
+  const live = liveProgress(cfg);
+  const deadline = wakeDeadline(cfg);
+  const liveBlock = live
+    ? `<div class="agent-live is-working">
+         <span class="agent-live-dot"></span>
+         <span class="agent-live-body">
+           <span class="agent-live-label">L'agent travaille</span>
+           <span class="agent-live-text">${esc(live.text)}</span>
+         </span>
+         <span class="agent-live-since" data-since="${live.at}"></span>
+       </div>`
+    : (pending && !stranded && deadline
+      ? `<div class="agent-live is-waiting">
+           <span class="agent-live-dot"></span>
+           <span class="agent-live-body">
+             <span class="agent-live-label">Passage demandé</span>
+             <span class="agent-live-text">Le runner se réveille toutes les 2 min — départ dans <span class="agent-wake-count" data-until="${deadline}">…</span> au plus tard.</span>
+           </span>
+         </div>`
+      : '');
+
   const runBlock = `
+    ${liveBlock}
     <div class="agent-run-row">
       <button class="agent-run-btn${pending && !stranded ? ' is-pending' : ''}" ${blocked ? 'disabled' : ''}
               onclick="window.app.runClaudeAgentNow()"

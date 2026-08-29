@@ -13225,6 +13225,87 @@ body:has(.bottom-panel:not(.hidden))::before {
   border-style: dashed;
 }
 
+.agent-live {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+}
+.agent-live.is-working {
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+.agent-live.is-waiting {
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.agent-live-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: agent-live-pulse 1.6s ease-in-out infinite;
+}
+.agent-live.is-working .agent-live-dot {
+  background: var(--success);
+}
+.agent-live.is-waiting .agent-live-dot {
+  background: var(--primary);
+}
+
+@keyframes agent-live-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+.agent-live-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.agent-live-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.agent-live-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.agent-wake-count {
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-live-since {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .agent-run-row {
   display: flex;
   align-items: center;
