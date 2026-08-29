@@ -16,6 +16,17 @@
 set -uo pipefail
 
 REPO="/Users/hugues/Desktop/Projects/todo/todo-manager"
+
+# Le modèle de l'agent est FIXÉ ICI, jamais laissé au défaut global de Claude
+# Code (~/.claude/settings.json). Sans ce drapeau, chaque invocation héritait de
+# `"model": "opus"` — et comme le protocole lance UNE invocation par tâche, dont
+# chacune relit CLAUDE.md en entier, un passage de 3 tâches payait trois fois
+# une mise en contexte d'Opus. C'est ce qui a vidé le quota deux jours de suite
+# (2026-08-28 et 29 : « You're out of extra usage », deux passages morts sans
+# rien accomplir). Le travail de l'agent — éditer des fichiers en suivant un
+# protocole écrit — n'a pas besoin d'Opus. Surchargeable ponctuellement sans
+# toucher au script : AGENT_MODEL=opus .claude/agent-run.sh
+AGENT_MODEL="${AGENT_MODEL:-sonnet}"
 LOG="$HOME/Library/Logs/2fukoi-agent.log"
 
 # launchd ne charge aucun profil : sans ça, ni claude, ni node, ni npx, ni
@@ -103,6 +114,7 @@ while IFS= read -r TASK_ID; do
   # personne devant l'écran : il ne peut répondre à aucune demande
   # d'autorisation. --max-budget-usd borne la casse par tâche.
   claude -p "/inbox-run $TASK_ID" \
+    --model "$AGENT_MODEL" \
     --permission-mode bypassPermissions \
     --max-budget-usd 5 \
     --output-format json > "$OUT" 2>&1
