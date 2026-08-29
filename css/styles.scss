@@ -12385,6 +12385,33 @@ body:has(.bottom-panel:not(.hidden))::before {
   color:     var(--text-muted);
 }
 
+// Bouton « + » d'ajout rapide d'une tâche pour l'agent — étiquette repère
+// posée d'office, mode Inbox forcé (voir addAgentTask() dans app.js).
+// Toujours visible, rond, couleur d'accent (jamais un token fixe hors thème).
+// Rendu SEULEMENT si l'étiquette existe : sans elle, on ne peut de toute
+// façon rien poser dessus, donc pas de bouton mort à l'écran.
+.agent-add-btn {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  flex-shrink:     0;
+  width:           26px;
+  height:          26px;
+  padding:         0;
+  border:          none;
+  border-radius:   50%;
+  background:      var(--primary);
+  color:           #fff;
+  cursor:          pointer;
+  transition:      transform .18s cubic-bezier(.25,.46,.45,.94),
+                   box-shadow .18s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 14px; height: 14px; }
+
+  &:hover  { box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 45%, transparent); }
+  &:active { transform: scale(.92); }
+}
+
 // Interrupteur général. Même geste que partout ailleurs : la pastille glisse,
 // rien ne change de taille.
 .agent-switch {

@@ -12993,6 +12993,32 @@ body:has(.bottom-panel:not(.hidden))::before {
   color: var(--text-muted);
 }
 
+.agent-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.agent-add-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.agent-add-btn:hover {
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.agent-add-btn:active {
+  transform: scale(0.92);
+}
+
 .agent-switch {
   position: relative;
   flex-shrink: 0;

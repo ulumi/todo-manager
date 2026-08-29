@@ -283,6 +283,7 @@ const ICON = {
   warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="7 4 20 12 7 20 7 4"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
 };
 
 const PANEL_OPEN_KEY = 'claudeAgentPanelOpen';
@@ -437,6 +438,8 @@ export function agentPanelHTML(todos, categories) {
         <span class="agent-panel-name">Agent Claude Code</span>
         <span class="agent-panel-state">${esc(state)}</span>
       </span>
+      ${category ? `<button class="agent-add-btn" title="Nouvelle tâche pour l'agent — étiquette « ${esc(category.name)} » posée d'office, sans date (Inbox)"
+              onclick="event.stopPropagation();window.app.addAgentTask()">${ICON.plus}</button>` : ''}
       <button class="agent-switch${cfg.enabled ? ' on' : ''}" role="switch" aria-checked="${cfg.enabled}"
               title="${cfg.enabled ? 'Désactiver' : 'Activer'} l'agent"
               onclick="event.stopPropagation();window.app.toggleClaudeAgent()"><span class="agent-switch-knob"></span></button>

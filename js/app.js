@@ -7155,6 +7155,21 @@ class TodoApp {
     this.setClaudeAgentField('maxPerRun', next);
   }
 
+  // Nouvelle tâche destinée à l'agent : étiquette repère posée d'office, mode
+  // Inbox forcé (sans date, sans backlog) — c'est exactement la définition
+  // d'éligibilité de `isAgentTask()`. Ouvre le modal complet pour laisser
+  // Hugues ajouter titre, notes, sous-tâches… la seule chose imposée est
+  // qu'à la sortie la tâche sera bien « pour l'agent ».
+  addAgentTask() {
+    const cfg = getAgentConfig();
+    const cat = findAgentCategory(getCategories(), cfg.categoryName);
+    if (!cat) { this._showToast(`Aucune étiquette « ${cfg.categoryName} »`); return; }
+    openModal(state.navDate, state.todos, 'inbox');
+    // Même délai que openModalForCategory : le tag doit être ajouté après que
+    // le formulaire est peuplé, sinon toggleCategoryTag() lit un état vide.
+    setTimeout(() => toggleCategoryTag(cat.id), 60);
+  }
+
   // L'étiquette repère est le seul critère d'éligibilité : sans elle l'agent
   // ne peut rien ramasser, autant pouvoir la créer d'un clic depuis le
   // panneau plutôt que d'aller la chercher dans les Réglages.

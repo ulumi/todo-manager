@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2976",
+    "date": "2026-08-29",
+    "message": "feat(agent): bouton « + » à côté du titre pour créer une tâche pré-étiquetée « claude-code » en Inbox"
+  },
+  {
     "version": "0.4.2972",
     "date": "2026-08-29",
     "message": "feat(agent): temps, jetons et coût mesurés par tâche — une invocation par tâche"
