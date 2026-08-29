@@ -4,7 +4,7 @@
 // browser, in curl, and to a model asked to "read https://todo.hugues.app/api/docs".
 // `?format=json` returns the same thing as a machine-readable descriptor.
 
-import { PERIODS, PRIORITIES, RECURRENCES, SCOPES } from './_todo-store.js';
+import { PERIODS, PRIORITIES, RECURRENCES, SCOPES, UPDATE_SCOPES, DELETE_SCOPES } from './_todo-store.js';
 
 const BASE = 'https://todo.hugues.app';
 
@@ -39,7 +39,8 @@ Send it either way:
 
 claude.ai → Settings → Connectors → **Add custom connector** → paste the URL
 including \`?token=…\`. It then shows up in the Claude mobile app too. Tools
-exposed: \`add_task\`, \`add_tasks\`, \`list_tasks\`, \`complete_task\`.
+exposed: \`add_task\`, \`add_tasks\`, \`list_tasks\`, \`update_task\`,
+\`delete_task\`, \`complete_task\`.
 
 ## REST
 
@@ -101,18 +102,81 @@ Returns \`201\` with \`{ ok, count, tasks: [{ id, title, date, backlog }] }\`.
 
 ### PATCH /api/tasks
 
-Complete or un-complete one task.
+Change a task: edit its fields, tick it off, or both in one call.
+
+\`task\` is an id (from GET) or an exact title; an ambiguous title is refused
+with the candidates rather than guessed. A body with nothing but \`task\`
+completes it — \`completed: false\` un-ticks it.
 
 \`\`\`bash
+# tick it off
 curl -X PATCH "${BASE}/api/tasks" \\
   -H "Authorization: Bearer $TODO_TOKEN" -H "Content-Type: application/json" \\
   -d '{"task":"Acheter du pain","date":"today"}'
+
+# edit it
+curl -X PATCH "${BASE}/api/tasks" \\
+  -H "Authorization: Bearer $TODO_TOKEN" -H "Content-Type: application/json" \\
+  -d '{"task":"Acheter du pain","priority":"high","move_to":"tomorrow"}'
 \`\`\`
 
-\`task\` is an id (from GET) or an exact title; an ambiguous title is refused
-with the candidates rather than guessed. \`completed: false\` un-ticks it. For a
-recurring task only the occurrence at \`date\` (default today) is touched, never
-the series.
+**Only the fields you send change.** Everything else is left alone — this is a
+patch, not the whole task. Send \`null\` to clear a field, \`[]\` to clear a list.
+
+\`date\` says **which occurrence** the call is about (default today) — it never
+moves the task. Rescheduling is \`move_to\`, so the two can't be confused.
+
+| Field | Notes |
+|---|---|
+| \`title\` | cannot be emptied |
+| \`description\`, \`priority\`, \`day_period\`, \`start_time\`, \`duration_minutes\` | same values as POST |
+| \`subtasks\`, \`links\` | replace the whole list |
+| \`category\` | name of an existing tag |
+| \`move_to\` | new \`date\` / \`inbox\` / \`backlog\` |
+| \`deadline\`, \`deadline_time\` | punctual tasks only |
+| \`recurrence\`, \`week_days\`, \`month_days\` | change how it repeats; \`none\` makes it a one-off again |
+| \`end_date\` | recurring only — last day the series runs |
+| \`cancelled\` | \`true\` abandons the task (kept, struck through, out of every count) |
+| \`completed\` | tick / un-tick |
+| \`scope\` | recurring only: ${UPDATE_SCOPES.map(x => `\`${x}\``).join(' or ')} |
+
+Returns \`{ ok, changed: [...], task }\`.
+
+#### Recurring tasks
+
+By default an edit touches **only the occurrence at \`date\`** — exactly like
+editing that day in the app, which stores the change as a per-day override and
+leaves every other occurrence alone. Pass \`"scope":"series"\` to edit the task
+itself instead.
+
+A series never carries a deadline, and never sits in the Inbox or Backlog; the
+API refuses those rather than storing a state the app can't show. Moving a
+single occurrence to another day isn't a thing either — delete that occurrence
+and add a one-off task.
+
+### DELETE /api/tasks
+
+\`\`\`bash
+curl -X DELETE "${BASE}/api/tasks?task=1756123456789" -H "Authorization: Bearer $TODO_TOKEN"
+curl -X DELETE "${BASE}/api/tasks?task=Yoga&scope=series" -H "Authorization: Bearer $TODO_TOKEN"
+\`\`\`
+
+\`task\`, \`date\` and \`scope\` travel in the query string or in a JSON body.
+A one-off task is simply removed. A recurring one takes the app's own three
+choices:
+
+| \`scope\` | Effect |
+|---|---|
+| \`occurrence\` *(default)* | skip the single day at \`date\`, keep the series |
+| \`future\` | end the series the day before \`date\` |
+| \`series\` | delete the task entirely, history included |
+
+Returns \`{ ok, mode, removed, changed, task }\` — \`removed\` tells you whether
+the task itself is gone or just one of its days. Deletions are tombstoned, so a
+device that was offline at the time won't re-upload the task on reconnect.
+
+There is no undo here. \`cancelled: true\` via PATCH is the reversible option:
+the task stays, struck through, and out of every count.
 
 ## Errors
 
@@ -137,13 +201,18 @@ export default function handler(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.status(200).json({
       name: '2FŨKOI Task API',
-      mcp:  { url: `${BASE}/api/mcp?token=<token>`, transport: 'streamable-http', protocolVersion: '2025-06-18', tools: ['add_task', 'add_tasks', 'list_tasks', 'complete_task'] },
+      mcp:  { url: `${BASE}/api/mcp?token=<token>`, transport: 'streamable-http', protocolVersion: '2025-06-18', tools: ['add_task', 'add_tasks', 'list_tasks', 'update_task', 'delete_task', 'complete_task'] },
       rest: {
         base: `${BASE}/api/tasks`,
-        methods: { GET: 'list tasks (scope, include_completed)', POST: 'create task(s)', PATCH: 'complete / uncomplete a task' },
+        methods: {
+          GET: 'list tasks (scope, include_completed)',
+          POST: 'create task(s)',
+          PATCH: 'edit fields and/or complete a task',
+          DELETE: 'delete a task (task, date, scope)',
+        },
         auth: 'Authorization: Bearer <token>, or ?token=<token>',
       },
-      enums: { scopes: SCOPES, dayPeriods: PERIODS, priorities: PRIORITIES, recurrences: RECURRENCES },
+      enums: { scopes: SCOPES, dayPeriods: PERIODS, priorities: PRIORITIES, recurrences: RECURRENCES, updateScopes: UPDATE_SCOPES, deleteScopes: DELETE_SCOPES },
       docs: `${BASE}/api/docs`,
     });
     return;

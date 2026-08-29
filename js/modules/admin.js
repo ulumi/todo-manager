@@ -340,7 +340,7 @@ export function openAdminModal() {
 
             <div class="admin-section">
               <h3>Connecteur Claude</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Dans claude.ai : Paramètres → Connecteurs → « Ajouter un connecteur personnalisé », puis colle cette adresse. Le connecteur devient ensuite disponible dans l'app Claude du téléphone, qui peut alors ajouter, lister et compléter des tâches ici.</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Dans claude.ai : Paramètres → Connecteurs → « Ajouter un connecteur personnalisé », puis colle cette adresse. Le connecteur devient ensuite disponible dans l'app Claude du téléphone, qui peut alors ajouter, lister, modifier, compléter et supprimer des tâches ici.</p>
               <div style="display:flex;gap:8px;align-items:center;">
                 <input id="apiMcpUrl" class="form-input" readonly onclick="this.select()" style="flex:1;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" placeholder="Génération…">
                 <button class="btn btn-primary" onclick="window.app.copyApiField('apiMcpUrl','apiMcpCopyMsg')">Copier</button>
@@ -350,7 +350,7 @@ export function openAdminModal() {
 
             <div class="admin-section">
               <h3>Jeton</h3>
-              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Pour les Raccourcis iOS, curl ou n'importe quel script : <code>Authorization: Bearer &lt;jeton&gt;</code> sur <code>/api/tasks</code>.</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">Pour les Raccourcis iOS, curl ou n'importe quel script : <code>Authorization: Bearer &lt;jeton&gt;</code> sur <code>/api/tasks</code> (GET lister, POST créer, PATCH modifier/compléter, DELETE supprimer).</p>
               <div style="display:flex;gap:8px;align-items:center;">
                 <input id="apiTokenField" class="form-input" readonly onclick="this.select()" style="flex:1;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;" placeholder="Génération…">
                 <button class="btn btn-ghost" onclick="window.app.copyApiField('apiTokenField','apiTokenCopyMsg')">Copier</button>

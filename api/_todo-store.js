@@ -16,8 +16,9 @@
 import { timingSafeEqual } from 'node:crypto';
 import { supabase, supabaseConfigured } from './_supabase.js';
 import {
-  addTask, getTodosForDate, toggleTodo,
-  isCompleted, isCancelled, resolveOccurrence,
+  addTask, getTodosForDate, toggleTodo, cancelTodo,
+  isCompleted, isCancelled, resolveOccurrence, setOccurrenceField,
+  deleteOneOccurrence, deleteFutureOccurrences,
 } from '../js/modules/calendar.js';
 import { DS, parseDS, addDays } from '../js/modules/utils.js';
 
@@ -28,6 +29,13 @@ export const PERIODS     = ['morning', 'afternoon', 'evening'];
 export const PRIORITIES  = ['low', 'medium', 'high'];
 export const RECURRENCES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
 export const SCOPES      = ['today', 'tomorrow', 'week', 'inbox', 'backlog', 'overdue'];
+// Which occurrences of a RECURRING task a mutation touches. Both default to
+// 'occurrence': the app's own rule is that editing or deleting a recurring
+// task from a day view acts on that day only, never on the series (see
+// CLAUDE.md → overrides / the delete modal), and silently rewriting every past
+// and future occurrence is not something the caller can undo.
+export const UPDATE_SCOPES = ['occurrence', 'series'];
+export const DELETE_SCOPES = ['occurrence', 'future', 'series'];
 
 // Thrown by every helper below; handlers turn it into an HTTP status (REST) or
 // an isError tool result (MCP). `status` is always set.
@@ -252,6 +260,52 @@ function buildSubtasks(input) {
   });
 }
 
+// The day-of-repeat rule (recDays / recDay / recMonth / recLastDay), resolved
+// from the request, falling back to what the task already carries, then to its
+// own start date. Shared by createTask and updateTask so the two can't drift.
+//
+// That last fallback is not a convenience — it closes a hole. getTodosForDate
+// matches a monthly task on recDays/recDay and a yearly one on recMonth+recDay,
+// so creating either without them produced a task that existed in the data and
+// never appeared on any day, with nothing reported to the caller. A recurring
+// task with no explicit day now simply repeats on its start date, which is the
+// obvious reading anyway. Weekly keeps its explicit requirement: it already
+// failed loudly, and guessing one weekday out of seven is a real guess.
+export function recurrenceRule(recurrence, input, startDS, current = {}) {
+  const out = { recDays: undefined, recDay: undefined, recMonth: undefined, recLastDay: undefined };
+  const start = parseDS(startDS);
+
+  const ints = (list, lo, hi, msg) => list.map(d => {
+    const n = Number(d);
+    if (!Number.isInteger(n) || n < lo || n > hi) throw new ApiError(400, msg);
+    return n;
+  });
+
+  if (recurrence === 'weekly') {
+    const days = input.week_days ?? input.recDays ?? current.recDays;
+    if (!Array.isArray(days) || !days.length) {
+      throw new ApiError(400, 'A weekly task needs week_days — an array of weekday numbers (0 = Sunday … 6 = Saturday).');
+    }
+    out.recDays = ints(days, 0, 6, 'week_days entries must be integers from 0 (Sunday) to 6 (Saturday).');
+  } else if (recurrence === 'monthly') {
+    const days = input.month_days ?? input.recDays;
+    if (Array.isArray(days) && days.length) {
+      out.recDays = ints(days, 1, 31, 'month_days entries must be integers from 1 to 31.');
+    } else if (current.recLastDay || (Array.isArray(current.recDays) && current.recDays.length)) {
+      out.recDays    = current.recDays;
+      out.recLastDay = current.recLastDay;
+    } else {
+      out.recDays = [start.getDate()];
+    }
+  } else if (recurrence === 'yearly') {
+    // parseDS builds a LOCAL date, so getMonth()/getDate() read the calendar
+    // values of the string itself — no timezone drift on a UTC server.
+    out.recMonth = Number.isInteger(current.recMonth) ? current.recMonth : start.getMonth();
+    out.recDay   = Number.isInteger(current.recDay)   ? current.recDay   : start.getDate();
+  }
+  return out;
+}
+
 // Builds the todo payload and appends it via the app's own addTask(), which
 // owns id generation (with collision retry), completedDates/completed and
 // startDate for recurring tasks. Returns the created task.
@@ -280,27 +334,7 @@ export function createTask(input, data, todos) {
     subtasks:          buildSubtasks(input),
   };
 
-  if (recurrence === 'weekly') {
-    const days = input.week_days ?? input.recDays;
-    if (!Array.isArray(days) || !days.length) {
-      throw new ApiError(400, 'A weekly task needs week_days — an array of weekday numbers (0 = Sunday … 6 = Saturday).');
-    }
-    payload.recDays = days.map(d => {
-      const n = Number(d);
-      if (!Number.isInteger(n) || n < 0 || n > 6) throw new ApiError(400, 'week_days entries must be integers from 0 (Sunday) to 6 (Saturday).');
-      return n;
-    });
-  }
-  if (recurrence === 'monthly') {
-    const days = input.month_days ?? input.recDays;
-    if (Array.isArray(days) && days.length) {
-      payload.recDays = days.map(d => {
-        const n = Number(d);
-        if (!Number.isInteger(n) || n < 1 || n > 31) throw new ApiError(400, 'month_days entries must be integers from 1 to 31.');
-        return n;
-      });
-    }
-  }
+  if (recurring) Object.assign(payload, recurrenceRule(recurrence, input, payload.date));
 
   // Deadline is a punctual-task concept only — the modal hides the section on
   // a recurring task and saveTaskLogic() strips the fields (see CLAUDE.md).
@@ -441,4 +475,254 @@ export function completeTask(ref, data, ds, { uncomplete = false } = {}) {
   }
   toggleTodo(target.id, date, todos);
   return { task: serializeTask(target, ds), changed: true, todos };
+}
+
+// ─── Editing an existing task ──────────────────────────────────────────────
+
+// Fields a recurring task can carry PER OCCURRENCE — the app's own list (see
+// CLAUDE.md → Data model → overrides). Everything outside it (the recurrence
+// rule, the schedule, the deadline) only ever exists on the master.
+const CONTENT_FIELDS = [
+  'title', 'description', 'priority', 'dayPeriod', 'startTime',
+  'durationEstimated', 'subtasks', 'links', 'categoryIds',
+];
+
+// Every key update_task accepts, so a handler can tell "edit this task" from
+// "just tick it off" without guessing.
+export const UPDATE_FIELDS = [
+  'title', 'description', 'notes', 'priority', 'day_period', 'dayPeriod',
+  'start_time', 'startTime', 'duration_minutes', 'durationEstimated',
+  'subtasks', 'links', 'category', 'categories', 'move_to', 'new_date',
+  'deadline', 'deadline_time', 'deadlineTime', 'recurrence', 'week_days',
+  'recDays', 'month_days', 'end_date', 'endDate', 'cancelled',
+];
+
+// Same horizon and shape as the app's _deletions map (app.js): {id: deletedAt}.
+// Without a tombstone, a device that was offline during the delete re-uploads
+// the task on reconnect and _applyBackup happily resurrects it — the whole
+// reason that map exists.
+const DELETION_HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
+
+export function trackDeletion(data, id) {
+  const src = (data._deletions && typeof data._deletions === 'object') ? data._deletions : {};
+  const cutoff = Date.now() - DELETION_HORIZON_MS;
+  const out = {};
+  for (const [k, ts] of Object.entries(src)) if (ts >= cutoff) out[k] = ts;
+  out[id] = Date.now();
+  data._deletions = out;
+}
+
+// Partial patch — only the fields actually present in `input` change. That is
+// the difference with the app's own saveTaskLogic(), which reads a whole form
+// and therefore rewrites everything: an API caller who sends {title} must not
+// silently wipe the priority they never mentioned. `null` (or "") clears a
+// field, an empty array clears a list.
+//
+// `ds` is the occurrence being edited. On a recurring task the content fields
+// land in t.overrides[ds] (setOccurrenceField), exactly like editing that day
+// from the app — pass scope:'series' to write the master instead.
+export function updateTask(ref, input, data, todos, ds, { scope } = {}) {
+  const mode = oneOf(scope, UPDATE_SCOPES, 'scope') || 'occurrence';
+  // A series-scoped call addresses the task, not one of its days: looking a
+  // title up among that day's occurrences would miss a series whose occurrence
+  // there happens to be excluded or already past its endDate.
+  const t    = findTask(ref, data, mode === 'series' ? null : ds);
+  const changed = [];
+
+  const seen = (...keys) => keys.some(k => input[k] !== undefined);
+  const pick = (...keys) => { for (const k of keys) if (input[k] !== undefined) return input[k]; return undefined; };
+
+  let isRec = !!t.recurrence && t.recurrence !== 'none';
+  let ruleChanged = false;
+
+  // ── The recurrence rule itself (master only, always) ────────────────────
+  if (seen('recurrence', 'week_days', 'recDays', 'month_days')) {
+    const next = seen('recurrence')
+      ? (oneOf(pick('recurrence'), RECURRENCES, 'recurrence') || 'none')
+      : (t.recurrence || 'none');
+    if (next === 'none' && seen('week_days', 'recDays', 'month_days')) {
+      throw new ApiError(400, 'week_days / month_days only mean something on a recurring task.');
+    }
+
+    if (next === 'none') {
+      // Mirrors saveTaskLogic: the series fields go, but startDate /
+      // completedDates / excludedDates stay — inert while the task is punctual,
+      // and still there if it is turned back into a series.
+      t.recurrence = 'none';
+      if (!t.date) t.date = t.startDate || todayDS(data);
+      delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
+    } else {
+      const start = t.startDate || t.date || todayDS(data);
+      const rule  = recurrenceRule(next, input, start, t);   // throws before anything is written
+      t.recurrence = next;
+      t.startDate  = start;
+      t.date       = t.date || start;
+      t.completedDates = t.completedDates || [];
+      // Invariants a series cannot hold: it is never in the Backlog, and never
+      // carries a deadline (the modal hides the section, saveTaskLogic strips
+      // the fields — an absolute due date makes no sense on a repeating task).
+      delete t.backlog;
+      delete t.deadline; delete t.deadlineTime; delete t.deadlineHard; delete t.deadlineLeadDays;
+      delete t.recDays; delete t.recDay; delete t.recMonth; delete t.recLastDay;
+      for (const [k, v] of Object.entries(rule)) if (v !== undefined) t[k] = v;
+    }
+    isRec = next !== 'none';
+    ruleChanged = true;
+    changed.push('recurrence');
+  }
+
+  // Redefining the task means the caller is talking about the task, not about
+  // one of its days — so content edits in the same call hit the master.
+  const perOccurrence = isRec && mode === 'occurrence' && !!ds && !ruleChanged;
+
+  // ── Schedule (master only: an override is keyed BY the date it applies to,
+  // so it cannot move an occurrence to another day) ───────────────────────
+  // `date` is NOT this field: everywhere in this API it names the occurrence a
+  // call is about (complete_task, delete_task, and the override target above),
+  // and PATCH /api/tasks has meant exactly that since before editing existed.
+  // Rescheduling therefore gets its own key rather than overloading it.
+  if (seen('move_to', 'new_date')) {
+    const when = resolveWhen(pick('move_to', 'new_date'), data);
+    if (isRec) {
+      if (mode !== 'series') {
+        throw new ApiError(400, 'Moving a single occurrence of a recurring task to another day is not supported. Use scope:"series" to move the whole series\' start date, or delete_task on that occurrence and add a one-off task instead.');
+      }
+      if (!when.date) throw new ApiError(400, 'A recurring task cannot go to the Inbox or Backlog — it repeats on a schedule. Set recurrence:"none" first.');
+      t.date = when.date;
+      t.startDate = when.date;
+    } else {
+      delete t.date; delete t.backlog;
+      if (when.date)    t.date = when.date;
+      if (when.backlog) t.backlog = true;
+    }
+    changed.push('move_to');
+  }
+
+  if (seen('end_date', 'endDate')) {
+    const raw = str(pick('end_date', 'endDate'), 'end_date');
+    if (!raw) { delete t.endDate; }
+    else {
+      if (!isRec) throw new ApiError(400, 'end_date only means something on a recurring task — it is the last day the series runs.');
+      const resolved = resolveWhen(raw, data).date;
+      if (!resolved) throw new ApiError(400, 'end_date must be a date (YYYY-MM-DD, "today", "tomorrow", "+N").');
+      t.endDate = resolved;
+    }
+    changed.push('end_date');
+  }
+
+  // ── Deadline (master only, punctual only) ───────────────────────────────
+  if (seen('deadline')) {
+    const raw = str(pick('deadline'), 'deadline');
+    if (!raw) {
+      // Clearing takes the three settings that only exist to qualify it, so
+      // they can't resurface on a deadline set later (same as the app's
+      // in-place deadline editor).
+      delete t.deadline; delete t.deadlineTime; delete t.deadlineHard; delete t.deadlineLeadDays;
+    } else {
+      if (isRec) throw new ApiError(400, 'A recurring task cannot have a deadline.');
+      const resolved = resolveWhen(raw, data).date;
+      if (!resolved) throw new ApiError(400, 'deadline must be a date (YYYY-MM-DD, "today", "tomorrow", "+N").');
+      t.deadline = resolved;
+    }
+    changed.push('deadline');
+  }
+  if (seen('deadline_time', 'deadlineTime')) {
+    const v = time(pick('deadline_time', 'deadlineTime'), 'deadline_time');
+    if (!v) delete t.deadlineTime;
+    else if (!t.deadline) throw new ApiError(400, 'deadline_time needs a deadline — set one in the same call.');
+    else t.deadlineTime = v;
+    changed.push('deadline_time');
+  }
+
+  // ── Content ─────────────────────────────────────────────────────────────
+  const content = {};
+  if (seen('title')) {
+    const v = str(pick('title'), 'title', 500);
+    if (!v) throw new ApiError(400, 'title cannot be emptied.');
+    content.title = v;
+  }
+  if (seen('description', 'notes'))            content.description       = str(pick('description', 'notes'), 'description', 5000) ?? null;
+  if (seen('priority'))                        content.priority          = oneOf(pick('priority'), PRIORITIES, 'priority') ?? null;
+  if (seen('day_period', 'dayPeriod'))         content.dayPeriod         = oneOf(pick('day_period', 'dayPeriod'), PERIODS, 'day_period') ?? null;
+  if (seen('start_time', 'startTime'))         content.startTime         = time(pick('start_time', 'startTime'), 'start_time') ?? null;
+  if (seen('duration_minutes', 'durationEstimated')) content.durationEstimated = posInt(pick('duration_minutes', 'durationEstimated'), 'duration_minutes', 24 * 60) ?? null;
+  if (seen('subtasks'))                        content.subtasks          = buildSubtasks(input) || [];
+  if (seen('category', 'categories'))          content.categoryIds       = resolveCategoryIds(input, data) || [];
+  if (seen('links')) {
+    const raw = pick('links');
+    if (raw !== null && !Array.isArray(raw)) throw new ApiError(400, 'links must be an array of URLs.');
+    content.links = Array.isArray(raw) ? raw.map(normalizeUrl).filter(Boolean) : [];
+  }
+
+  for (const key of CONTENT_FIELDS) {
+    if (!(key in content)) continue;
+    const v = content[key];
+    if (perOccurrence) {
+      // Always an explicit value, never undefined: undefined does not survive
+      // the JSON round-trip through localStorage/Supabase, and the master's
+      // value would come back after a reload.
+      setOccurrenceField(t, ds, key, Array.isArray(v) ? v : (v ?? null));
+    } else if (v === null || (Array.isArray(v) && !v.length)) {
+      delete t[key];
+    } else {
+      t[key] = v;
+      // The app writes tags in the plural form and drops the legacy singular.
+      if (key === 'categoryIds') delete t.categoryId;
+    }
+    changed.push(key);
+  }
+
+  // ── Abandoned / restored. Always per date: cancelling a whole series is not
+  // something the app can express either (cancelledDates is per occurrence).
+  if (seen('cancelled')) {
+    const want = input.cancelled === true || input.cancelled === 'true';
+    const d = parseDS(ds || t.date || todayDS(data));
+    if (isCancelled(t, d) !== want) cancelTodo(t.id, d, todos);
+    changed.push('cancelled');
+  }
+
+  if (!changed.length) {
+    throw new ApiError(400, `Nothing to update — pass at least one field to change (${UPDATE_FIELDS.slice(0, 8).join(', ')}, …).`);
+  }
+  t.updatedAt = Date.now();
+  return { task: serializeTask(t, isRec ? ds : (t.date || null)), changed, perOccurrence, todos };
+}
+
+// ─── Deleting ──────────────────────────────────────────────────────────────
+
+// A punctual task is simply removed. A recurring one offers the app's own three
+// choices (its delete modal): this occurrence (excludedDates), this one and
+// every later one (endDate), or the whole series (removed). Default is the
+// safest, 'occurrence' — never wipe a series someone meant to skip once.
+export function deleteTask(ref, data, todos, ds, { scope } = {}) {
+  const asked = oneOf(scope, DELETE_SCOPES, 'scope');
+  const t     = findTask(ref, data, asked === 'series' ? null : ds);   // see updateTask
+  const isRec = !!t.recurrence && t.recurrence !== 'none';
+  // A punctual task has exactly one occurrence, so "this occurrence" and "the
+  // task" are the same thing — don't make the caller retry with another word.
+  const mode  = !isRec ? 'series' : (asked || 'occurrence');
+  const task  = serializeTask(t, isRec ? ds : (t.date || null));
+
+  if (mode === 'series') {
+    const i = todos.findIndex(x => x.id === t.id);
+    if (i >= 0) todos.splice(i, 1);
+    trackDeletion(data, t.id);
+    return { task, mode, removed: true, todos };
+  }
+
+  if (mode === 'occurrence') {
+    if ((t.excludedDates || []).includes(ds)) {
+      return { task, mode, removed: false, changed: false, todos };
+    }
+    deleteOneOccurrence(t.id, parseDS(ds), todos);
+    return { task, mode, removed: false, changed: true, todos };
+  }
+
+  // 'future' — deleteFutureOccurrences returns a NEW array when cutting before
+  // the start would leave nothing at all, so the caller must commit what comes
+  // back here, not the array it passed in.
+  const next    = deleteFutureOccurrences(t.id, parseDS(ds), todos);
+  const removed = !next.some(x => x.id === t.id);
+  if (removed) trackDeletion(data, t.id);
+  return { task, mode, removed, changed: true, todos: next };
 }

@@ -14,7 +14,8 @@
 
 import {
   ApiError, authenticate, todosOf, commitTodos, createTask, listTasks,
-  completeTask, todayDS, resolveWhen, PERIODS, PRIORITIES, RECURRENCES, SCOPES, DEFAULT_TZ,
+  completeTask, updateTask, deleteTask, todayDS, resolveWhen,
+  PERIODS, PRIORITIES, RECURRENCES, SCOPES, UPDATE_SCOPES, DELETE_SCOPES, DEFAULT_TZ,
 } from './_todo-store.js';
 
 const PROTOCOL_VERSION  = '2025-06-18';
@@ -96,7 +97,7 @@ async function handleMessage(msg, req) {
           protocolVersion: SUPPORTED_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSION,
           capabilities: { tools: { listChanged: false } },
           serverInfo: SERVER_INFO,
-          instructions: 'Task list for 2FŨKOI (todo.hugues.app). Use list_tasks before answering questions about the day, and add_task / add_tasks to capture new work. Dates are YYYY-MM-DD in the user\'s own timezone — the tool descriptions state today\'s date.',
+          instructions: 'Task list for 2FŨKOI (todo.hugues.app). Use list_tasks before answering questions about the day, add_task / add_tasks to capture new work, and update_task / delete_task to change or remove one — always list first, so you act on a task id rather than a guessed title. Dates are YYYY-MM-DD in the user\'s own timezone — the tool descriptions state today\'s date. On a repeating task, editing and deleting touch only the day you name unless you pass scope:"series".',
         });
       }
 
@@ -148,11 +149,41 @@ const TASK_FIELDS = today => ({
   subtasks:    { type: 'array', items: { type: 'string' }, description: 'Checklist items inside the task.' },
   category:    { type: 'string', description: 'Name of an EXISTING tag/category (case-insensitive). The call fails and lists the known ones if it does not exist — it never creates one.' },
   deadline:    { type: 'string', description: 'Hard due date (YYYY-MM-DD, "today", "tomorrow", "+N") — "after this it is too late", distinct from `date` which is when you plan to do it. Not allowed on a recurring task.' },
+  deadline_time: { type: 'string', description: 'Time of the deadline, HH:MM in 24h. Without it the deadline means the end of that day.' },
   recurrence:  { type: 'string', enum: RECURRENCES, description: 'Repeat rule. Defaults to "none". With "weekly" you must also pass week_days.' },
   week_days:   { type: 'array', items: { type: 'integer', minimum: 0, maximum: 6 }, description: 'Required for recurrence "weekly": weekday numbers, 0 = Sunday … 6 = Saturday.' },
   month_days:  { type: 'array', items: { type: 'integer', minimum: 1, maximum: 31 }, description: 'Optional for recurrence "monthly": days of the month.' },
   links:       { type: 'array', items: { type: 'string' }, description: 'URLs to attach to the task.' },
 });
+
+// The editable subset. Reuses the add_task field descriptions so the two tools
+// can't describe the same thing differently, and adds the three keys that only
+// make sense when a task already exists.
+function updateFields(today) {
+  const f = TASK_FIELDS(today);
+  return {
+    task:  { type: 'string', description: 'The task id (preferred) or its exact title.' },
+    date:  { type: 'string', description: `WHICH occurrence to edit, for a repeating task: YYYY-MM-DD, "today", "tomorrow". Defaults to today (${today}). This never moves the task — use move_to for that.` },
+    scope: { type: 'string', enum: UPDATE_SCOPES, description: 'Repeating tasks only: "occurrence" (default — this day only) or "series" (the whole repeating task). Ignored on a one-off task.' },
+    title: { type: 'string', description: 'New title.' },
+    description: f.description,
+    priority: f.priority,
+    day_period: f.day_period,
+    start_time: f.start_time,
+    duration_minutes: f.duration_minutes,
+    subtasks: { type: 'array', items: { type: 'string' }, description: 'Replaces the whole checklist. Pass [] to clear it.' },
+    links: f.links,
+    category: f.category,
+    move_to: { type: 'string', description: `Reschedule: a YYYY-MM-DD date, "today", "tomorrow", "+N", "inbox" (no date) or "backlog" (set aside). Today is ${today}. On a repeating task this needs scope:"series" and moves the day the series starts.` },
+    deadline: f.deadline,
+    deadline_time: f.deadline_time,
+    recurrence: { ...f.recurrence, description: 'Change how the task repeats. "none" turns a repeating task back into a one-off. Switching to "weekly" needs week_days.' },
+    week_days: f.week_days,
+    month_days: f.month_days,
+    end_date: { type: 'string', description: 'Repeating tasks only: the last day the series runs. null removes the end date.' },
+    cancelled: { type: 'boolean', description: 'true abandons the task (kept, struck through, out of every count), false restores it. On a repeating task this is always just the day at `date`.' },
+  };
+}
 
 function toolDefs(data) {
   const today = data ? todayDS(data) : 'unknown';
@@ -198,6 +229,28 @@ function toolDefs(data) {
         },
       },
       annotations: { title: 'List tasks', readOnlyHint: true, openWorldHint: false },
+    },
+    {
+      name: 'update_task',
+      title: 'Edit a task',
+      description: `Change an existing task in the 2FŨKOI list. ${stamp} Only the fields you pass change — everything else is left alone; pass null to clear one. Identify the task by the id from list_tasks (preferred) or by its exact title. On a repeating task this edits ONLY the occurrence at \`date\` (the app's own "this occurrence only"); pass scope:"series" to change every occurrence. \`date\` says WHICH day you are editing — to move a task to another day use \`move_to\`.`,
+      inputSchema: { type: 'object', properties: updateFields(today), required: ['task'] },
+      annotations: { title: 'Edit a task', readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    {
+      name: 'delete_task',
+      title: 'Delete a task',
+      description: `Remove a task from the 2FŨKOI list. ${stamp} This cannot be undone from here, so confirm with the user first. On a repeating task the default only skips the single occurrence at \`date\` — scope:"future" ends the series from that day on, scope:"series" removes the whole thing including its history.`,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          task:  { type: 'string', description: 'The task id (preferred) or its exact title.' },
+          date:  { type: 'string', description: `Which occurrence, for a repeating task: YYYY-MM-DD, "today", "tomorrow". Defaults to today (${today}).` },
+          scope: { type: 'string', enum: DELETE_SCOPES, description: 'Repeating tasks only: "occurrence" (default — skip just that day), "future" (that day and all later ones), "series" (delete the task entirely). Ignored on a one-off task, which is simply deleted.' },
+        },
+        required: ['task'],
+      },
+      annotations: { title: 'Delete a task', readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
     {
       name: 'complete_task',
@@ -255,6 +308,25 @@ async function callTool(params, req) {
       const tasks = listTasks(scope, data, { includeCompleted: args.include_completed === true });
       if (!tasks.length) return text(`No task for "${scope}".`);
       return text(`${tasks.length} task${tasks.length > 1 ? 's' : ''} for "${scope}" (today is ${todayDS(data)}):\n` + tasks.map(formatTask).join('\n'));
+    }
+
+    case 'update_task': {
+      const ds = args.date ? (resolveWhen(args.date, data).date || todayDS(data)) : todayDS(data);
+      const { task, changed, perOccurrence, todos } = updateTask(args.task, args, data, todosOf(data), ds, { scope: args.scope });
+      await commitTodos(uid, data, todos);
+      const where = perOccurrence ? ` (that occurrence only, ${ds})` : '';
+      return text(`Updated "${task.title}"${where} — changed: ${changed.join(', ')}.\n${formatTask(task)}`);
+    }
+
+    case 'delete_task': {
+      const ds = args.date ? (resolveWhen(args.date, data).date || todayDS(data)) : todayDS(data);
+      const r  = deleteTask(args.task, data, todosOf(data), ds, { scope: args.scope });
+      if (r.changed === false) return text(`"${r.task.title}" was already removed from ${ds} — nothing changed.`);
+      await commitTodos(uid, data, r.todos);
+      const what = r.mode === 'occurrence' ? `the ${ds} occurrence of "${r.task.title}" (the rest of the series is untouched)`
+                 : r.mode === 'future'     ? (r.removed ? `"${r.task.title}" entirely (nothing was left before ${ds})` : `"${r.task.title}" from ${ds} onwards (earlier occurrences kept)`)
+                 : `"${r.task.title}"`;
+      return text(`Deleted ${what}.`);
     }
 
     case 'complete_task': {
