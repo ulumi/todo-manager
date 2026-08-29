@@ -86,7 +86,7 @@ Puis, dans le worktree : entrée dans `js/modules/changelog.json` (version coura
 | `master` | `git push origin HEAD:master`, rien d'autre |
 | `branch`  | `git push -u origin HEAD:agent/<slug-de-la-tâche>`, rien sur master |
 
-Une tâche = un commit = un déploiement. Jamais de lot.
+Une tâche = un commit = un déploiement, **sauf quand deux tâches modifient le même fichier**. Dans ce cas, les séparer voudrait dire reconstruire ce fichier à la main pour chaque commit — plus de risque que ce que la règle en retire. Regroupe-les alors en un seul commit dont le message décrit les deux, et dis-le dans les notes des deux tâches. Ne regroupe jamais pour aller plus vite : uniquement quand la séparation est réellement impraticable.
 
 ---
 

@@ -12846,6 +12846,79 @@ body:has(.bottom-panel:not(.hidden))::before {
   font-size: 14px;
 }
 
+.inbox-item.done,
+.inbox-item.cancelled {
+  opacity: 0.55;
+}
+.inbox-item.done .todo-text,
+.inbox-item.cancelled .todo-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.inbox-item.done .todo-check {
+  background: var(--success);
+  border-color: var(--success);
+}
+.inbox-item.done .todo-check::after {
+  content: "✓";
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inbox-item.cancelled .todo-check {
+  border-color: var(--danger);
+}
+.inbox-item.cancelled .todo-check::after {
+  content: "✕";
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inbox-done-count {
+  display: inline-block;
+  min-width: 15px;
+  padding: 0 4px;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-toast-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.update-toast-count.is-held {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.update-toast-cancel {
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.update-toast-cancel:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
 .agent-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);

@@ -1153,11 +1153,82 @@ class TodoApp {
         <span>${label}</span>
         <span class="update-toast-time" title="Heure de détection">${time}</span>
         ${toggleBtn}
+        <span class="update-toast-count" aria-live="polite"></span>
+        <button class="update-toast-cancel" onclick="window.app.cancelUpdateReload(this)">Annuler</button>
         <button class="update-toast-btn" onclick="window.app.reloadForUpdate()">Recharger</button>
       </div>
       ${notesHTML}`;
     stack.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add('update-toast--visible'));
+    this._startUpdateCountdown(toast);
+  }
+
+  // Rechargement automatique après un décompte de 5 s (même grammaire que
+  // .newday-toast : décompte visible + bouton Annuler).
+  //
+  // UN SEUL décompte à la fois : plusieurs versions peuvent s'empiler pendant
+  // qu'un onglet reste ouvert, et deux décomptes concurrents ne veulent rien
+  // dire — seul le dernier toast compte, les précédents gardent leur bouton
+  // « Recharger » manuel.
+  _startUpdateCountdown(toast) {
+    this._cancelUpdateCountdown();
+    let remaining = 5;
+    const countEl = toast.querySelector('.update-toast-count');
+    const paint = held => {
+      if (!countEl) return;
+      countEl.textContent = held ? '· en pause' : `· ${remaining} s`;
+      countEl.classList.toggle('is-held', !!held);
+    };
+    paint(false);
+    this._updateCountdownToast = toast;
+    this._updateCountdownInterval = setInterval(() => {
+      // Recharger pendant une saisie ferait perdre ce qui est en train d'être
+      // tapé : le brouillon du modal est sauvegardé, mais pas un input inline
+      // (titre de sous-tâche, renommage de groupe…). On met le décompte en
+      // PAUSE plutôt que de l'annuler — il repart tout seul dès que le champ
+      // est quitté, sans rien demander.
+      if (this._isBusyForReload()) { paint(true); return; }
+      remaining -= 1;
+      if (remaining <= 0) {
+        this._cancelUpdateCountdown();
+        this.reloadForUpdate();
+        return;
+      }
+      paint(false);
+    }, 1000);
+  }
+
+  _isBusyForReload() {
+    if (document.querySelector('.modal-overlay:not(.hidden)')) return true;
+    const el = document.activeElement;
+    if (!el) return false;
+    return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+  }
+
+  _cancelUpdateCountdown() {
+    if (this._updateCountdownInterval) {
+      clearInterval(this._updateCountdownInterval);
+      this._updateCountdownInterval = null;
+    }
+    const prev = this._updateCountdownToast;
+    if (prev) {
+      prev.querySelector('.update-toast-count')?.remove();
+      prev.querySelector('.update-toast-cancel')?.remove();
+      this._updateCountdownToast = null;
+    }
+  }
+
+  // Annuler ne ferme pas le toast : la mise à jour reste disponible, c'est
+  // seulement le rechargement AUTOMATIQUE qu'on refuse. Le bouton
+  // « Recharger » reste donc en place.
+  cancelUpdateReload(btn) {
+    const toast = btn?.closest('.update-toast');
+    if (toast && toast !== this._updateCountdownToast) {
+      toast.querySelector('.update-toast-count')?.remove();
+      btn.remove();
+      return;
+    }
+    this._cancelUpdateCountdown();
   }
 
   toggleUpdateToastNotes(btn) {
@@ -3635,6 +3706,12 @@ class TodoApp {
 
   // Préférences d'affichage (tri, colonnes) du Backlog/Inbox — mirrors
   // focusSetQueueView. Synchronisées entre appareils (getAppConfig()).
+  // Bascule « Complétées » du Backlog/Inbox. Rangée dans les mêmes préférences
+  // que tri et colonnes, donc persistée et synchronisée sans clé nouvelle.
+  toggleListShowDone(view) {
+    this.setListQueueView(view, 'showDone', !getListPrefs(view).showDone);
+  }
+
   setListQueueView(view, key, val) {
     const p = getListPrefs(view);
     p[key] = val;

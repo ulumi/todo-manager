@@ -27,6 +27,10 @@ export function getListPrefs(view) {
     if (p) return {
       sort: p.sort || 'date',
       cols: p.cols || '1',
+      // Afficher les tâches complétées/annulées. Rangé ICI plutôt que dans une
+      // clé à part : il hérite gratuitement de la persistance et de la
+      // synchronisation entre appareils de `{view}QueueView` (getAppConfig).
+      showDone: p.showDone === true,
       rail: Array.isArray(p.rail) ? p.rail : null,
       railFold: Array.isArray(p.railFold) ? p.railFold : [],
     };
@@ -34,7 +38,7 @@ export function getListPrefs(view) {
   // Migration douce depuis l'ancienne clé plate (backlogSort/inboxSort) —
   // garde le tri déjà choisi au lieu de repartir sur "Récentes".
   const legacy = localStorage.getItem(`${view}Sort`);
-  return { sort: legacy || 'date', cols: '1', rail: null, railFold: [] };
+  return { sort: legacy || 'date', cols: '1', showDone: false, rail: null, railFold: [] };
 }
 
 export function saveListPrefs(view, prefs) {

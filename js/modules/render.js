@@ -1552,9 +1552,18 @@ export function getBacklogCount(todos) {
 }
 
 export function renderInboxView(todos) {
-  const inboxItems = todos.filter(t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog && !t.completed && !t.cancelled);
-
   const prefs = getListPrefs('inbox');
+  const isInboxItem = t => (!t.recurrence || t.recurrence === 'none') && !t.date && !t.backlog;
+  const pending = todos.filter(t => isInboxItem(t) && !t.completed && !t.cancelled);
+  // Une tâche d'Inbox cochée n'apparaît NULLE PART ailleurs dans l'app : sans
+  // date elle n'a aucun jour où s'afficher, et cette vue la filtrait — elle
+  // disparaissait donc sans laisser de trace. Ce réglage la rend consultable
+  // ici ; le badge de navigation, lui, continue de ne compter que le travail
+  // restant.
+  const doneItems = prefs.showDone
+    ? todos.filter(t => isInboxItem(t) && (t.completed || t.cancelled))
+    : [];
+  const inboxItems = pending;
   const priorityOrder = { high: 0, medium: 1, low: 2, '': 3 };
   const sorted = prefs.sort === 'manual' ? applyManualOrder('inbox', inboxItems) : [...inboxItems].sort((a, b) => {
     if (prefs.sort === 'priority') return (priorityOrder[a.priority || ''] ?? 3) - (priorityOrder[b.priority || ''] ?? 3);
@@ -1563,6 +1572,11 @@ export function renderInboxView(todos) {
     return b.id.localeCompare(a.id); // newest first (default)
   });
   const canDrag = prefs.sort === 'manual' && prefs.cols === '1';
+  // Toujours en fin de liste, quel que soit le tri : ce qui reste à faire
+  // passe avant ce qui est déjà réglé.
+  const shown = doneItems.length
+    ? [...sorted, ...[...doneItems].sort((a, b) => b.id.localeCompare(a.id))]
+    : sorted;
 
   const categories = getCategories();
   const itemTemplate = t => {
@@ -1571,12 +1585,13 @@ export function renderInboxView(todos) {
       ? `<span class="todo-category-badge" style="background:${cat.color}20;color:${cat.color};border-color:${cat.color}40;cursor:pointer;" onclick="event.stopPropagation();window.app.openCategoryView('${cat.id}')">${esc(cat.name.toUpperCase())}</span>`
       : '';
     const prioCls = t.priority ? ` prio-${t.priority}` : '';
+    const stateCls = t.cancelled ? ' cancelled' : (t.completed ? ' done' : '');
     // Sous-tâches affichées dans la carte comme en vue jour — ds vide : un
     // item d'inbox n'a pas de date, donc rien à focuser (cf. subtaskListHTML)
     const subtasks = subtaskParts(t, '');
     const hasMeta = !!catBadge || !!subtasks.toggle;
     return `
-      <div class="inbox-item${prioCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
+      <div class="inbox-item${prioCls}${stateCls}${canDrag ? ' inbox-item--draggable' : ''}" data-id="${t.id}" draggable="true"
         ondragstart="window.app.planDragStart(event,'${t.id}')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.clickInboxItem(event,'${t.id}')">
@@ -1600,9 +1615,9 @@ export function renderInboxView(todos) {
         ${subtasks.block}
       </div>`;
   };
-  const items = prefs.sort === 'manual' ? renderGroupedItems(sorted, itemTemplate) : sorted.map(itemTemplate).join('');
+  const items = prefs.sort === 'manual' ? renderGroupedItems(shown, itemTemplate) : shown.map(itemTemplate).join('');
 
-  const empty = sorted.length === 0 ? `
+  const empty = shown.length === 0 ? `
     <div class="inbox-empty">
       <div class="inbox-empty-icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
@@ -1618,6 +1633,17 @@ export function renderInboxView(todos) {
   const colBtns = ['1', '2', '3', '4', 'auto'].map(c =>
     `<button class="inbox-sort-btn${prefs.cols === c ? ' active' : ''}" onclick="window.app.setListQueueView('inbox','cols','${c}')" title="${c === 'auto' ? 'Colonnes automatiques' : `${c} colonne${c !== '1' ? 's' : ''}`}">${c === 'auto' ? 'Auto' : c}</button>`
   ).join('');
+  // Compté sur TOUT l'inbox, pas sur la liste affichée : sinon le badge
+  // tomberait à zéro dès qu'elles sont masquées, c'est-à-dire exactement
+  // quand il sert à savoir qu'il y en a.
+  const doneCount = todos.filter(t => isInboxItem(t) && (t.completed || t.cancelled)).length;
+  const doneBtn = `
+    <button class="inbox-sort-btn inbox-done-toggle${prefs.showDone ? ' active' : ''}"
+            onclick="window.app.toggleListShowDone('inbox')"
+            title="${prefs.showDone ? 'Masquer' : 'Afficher'} les tâches complétées et abandonnées">
+      Complétées${doneCount ? ` <span class="inbox-done-count">${doneCount}</span>` : ''}
+    </button>`;
+
   const colsStyle = prefs.cols === 'auto'
     ? 'grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));'
     : `--cols:${prefs.cols};`;
@@ -1630,15 +1656,16 @@ export function renderInboxView(todos) {
           <p class="inbox-view-desc">Tâches capturées sans date <br>— à planifier ou traiter dès que possible.</p>
         </div>
         <div class="inbox-view-controls">
-          <span class="inbox-count-label">${sorted.length} tâche${sorted.length !== 1 ? 's' : ''}</span>
+          <span class="inbox-count-label">${pending.length} tâche${pending.length !== 1 ? 's' : ''}</span>
           <div class="inbox-sort-group">${sortBtns}</div>
           <div class="inbox-sort-group">${colBtns}</div>
+          <div class="inbox-sort-group">${doneBtn}</div>
           <button class="btn btn-primary inbox-add-btn" onclick="window.app.openModalForInbox()">＋ Capturer</button>
         </div>
       </div>
       ${agentPanelHTML(todos, categories)}
       ${empty}
-      ${sorted.length > 0 ? `<div class="inbox-list" id="inboxList" style="${colsStyle}">${items}</div>` : ''}
+      ${shown.length > 0 ? `<div class="inbox-list" id="inboxList" style="${colsStyle}">${items}</div>` : ''}
     </div>`;
 }
 
