@@ -1153,9 +1153,11 @@ class TodoApp {
         <span>${label}</span>
         <span class="update-toast-time" title="Heure de détection">${time}</span>
         ${toggleBtn}
+        <button class="update-toast-btn" onclick="window.app.reloadForUpdate()">Recharger</button>
+      </div>
+      <div class="update-toast-auto">
         <span class="update-toast-count" aria-live="polite"></span>
         <button class="update-toast-cancel" onclick="window.app.cancelUpdateReload(this)">Annuler</button>
-        <button class="update-toast-btn" onclick="window.app.reloadForUpdate()">Recharger</button>
       </div>
       ${notesHTML}`;
     stack.appendChild(toast);
@@ -1176,7 +1178,9 @@ class TodoApp {
     const countEl = toast.querySelector('.update-toast-count');
     const paint = held => {
       if (!countEl) return;
-      countEl.textContent = held ? '· en pause' : `· ${remaining} s`;
+      countEl.textContent = held
+        ? 'Rechargement en pause — saisie en cours'
+        : `Rechargement automatique dans ${remaining} s`;
       countEl.classList.toggle('is-held', !!held);
     };
     paint(false);
@@ -1212,8 +1216,7 @@ class TodoApp {
     }
     const prev = this._updateCountdownToast;
     if (prev) {
-      prev.querySelector('.update-toast-count')?.remove();
-      prev.querySelector('.update-toast-cancel')?.remove();
+      prev.querySelector('.update-toast-auto')?.remove();
       this._updateCountdownToast = null;
     }
   }
@@ -1224,8 +1227,7 @@ class TodoApp {
   cancelUpdateReload(btn) {
     const toast = btn?.closest('.update-toast');
     if (toast && toast !== this._updateCountdownToast) {
-      toast.querySelector('.update-toast-count')?.remove();
-      btn.remove();
+      toast.querySelector('.update-toast-auto')?.remove();
       return;
     }
     this._cancelUpdateCountdown();

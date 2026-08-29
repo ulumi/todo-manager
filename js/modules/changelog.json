@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2959",
+    "date": "2026-08-28",
+    "message": "fix(ui): le décompte de rechargement passe sur sa propre ligne — il était écrasé à 8px et rendu en colonne"
+  },
+  {
     "version": "0.4.2958",
     "date": "2026-08-28",
     "message": "fix(agent): l'agent coche la tâche sur place au lieu de la dater — elle sortait de l'Inbox où on va la chercher"
@@ -193,10 +198,5 @@
     "version": "0.4.2872",
     "date": "2026-08-24",
     "message": "feat(modal): nouvelle section Échéance — date et heure limite, type dure/souple, alerte X jours avant"
-  },
-  {
-    "version": "0.4.2871",
-    "date": "2026-08-23",
-    "message": "feat(vue jour): nouveau mode Agenda — grille horaire par moment, glisser-déposer et redimensionnement des tâches"
   }
 ]

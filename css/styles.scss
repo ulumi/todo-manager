@@ -12265,18 +12265,39 @@ body:has(.bottom-panel:not(.hidden))::before {
 }
 
 // ── Toast de mise à jour : décompte avant rechargement automatique ────────
+// Rangée PROPRE, sous le titre, jamais dans .update-toast-main. Deux raisons,
+// toutes deux mesurées au navigateur : (1) cette rangée porte déjà titre +
+// heure + chevron + bouton et n'avait plus la place — le décompte s'y
+// retrouvait écrasé à 8px et rendu en colonne verticale « · / 5 / s » ;
+// (2) le sélecteur `.update-toast-main span` (0,0,1,1) impose
+// `white-space: normal` pour que le titre ne soit jamais tronqué, et l'emporte
+// en spécificité sur `.update-toast-count` (0,0,1,0) — un `nowrap` posé là est
+// silencieusement perdu. Sur sa propre ligne, le décompte tient une phrase entière et le
+// bouton « Recharger » ne bouge plus quand le texte change.
+.update-toast-auto {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  margin-top:  8px;
+  padding-top: 8px;
+  border-top:  1px solid var(--border);
+}
+
 .update-toast-count {
+  flex:           1;              // c'est LUI qui absorbe la variation de texte
+  min-width:      0;
   font-size:      12px;
+  line-height:    1.4;
   color:          var(--text-muted);
   font-variant-numeric: tabular-nums;
-  white-space:    nowrap;
 
   // En pause pendant une saisie : le décompte ne descend plus, et ça doit se
   // voir — sinon un chiffre figé passe pour un bug.
-  &.is-held { font-style: italic; opacity: .8; }
+  &.is-held { font-style: italic; opacity: .85; }
 }
 
 .update-toast-cancel {
+  flex-shrink:   0;               // jamais compressé par le texte du décompte
   padding:       4px 9px;
   border:        1px solid var(--border);
   border-radius: 6px;
