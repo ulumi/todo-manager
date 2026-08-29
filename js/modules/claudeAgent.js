@@ -51,6 +51,20 @@ export function isRunRequestPending(cfg, now = Date.now()) {
   return Number.isFinite(at) && (now - at) < RUN_REQUEST_TTL_MS;
 }
 
+// Le runner se réveille toutes les 2 min et réclame la demande AVANT de
+// travailler. Une demande encore là au bout de trois minutes n'est donc pas
+// « en cours de départ » : personne ne l'a ramassée, et la seule explication
+// est qu'aucun runner ne tourne sur cette machine. C'est une PREUVE, pas une
+// supposition — d'où l'absence de heartbeat, qui aurait coûté une écriture de
+// ligne complète toutes les deux minutes (cf. l'egress dans CLAUDE.md) pour
+// une information qu'on tient déjà gratuitement.
+export const RUN_REQUEST_GRACE_MS = 3 * 60 * 1000;
+
+export function isRunRequestStranded(cfg, now = Date.now()) {
+  const at = cfg?.runRequest?.at;
+  return Number.isFinite(at) && (now - at) >= RUN_REQUEST_GRACE_MS && (now - at) < RUN_REQUEST_TTL_MS;
+}
+
 export const AUTONOMY_LEVELS = [
   { value: 'deploy', label: 'Déployer',  hint: 'commit, push sur master et mise en production' },
   { value: 'master', label: 'Pousser',   hint: 'commit et push sur master, aucune mise en production' },
@@ -208,23 +222,38 @@ export function agentPanelHTML(todos, categories) {
   // local ramasse à son prochain réveil — d'où le libellé d'attente, qui dit
   // la vérité plutôt que de faire croire à un démarrage immédiat.
   const pending  = isRunRequestPending(cfg);
+  const stranded = isRunRequestStranded(cfg);
   const blocked  = !cfg.enabled ? "l'agent est désactivé"
                  : !category    ? "l'étiquette n'existe pas"
                  : !tasks.length ? 'aucune tâche marquée'
                  : null;
+
+  // Une demande restée sur le carreau ne doit pas continuer à annoncer un
+  // départ imminent : c'est le seul moment où l'app apprend que le runner
+  // local n'est pas installé, autant le dire là plutôt que laisser Hugues
+  // attendre quelque chose qui ne viendra pas.
+  const strandedBlock = stranded ? `
+      <div class="agent-warn agent-warn--stranded">${ICON.warn}
+        <span>Personne n'a réclamé cette demande. Le runner local n'est pas installé sur cette machine — sans lui, le bouton ne peut rien déclencher.</span>
+        <code class="agent-cmd">launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.hugues.2fukoi-agent.plist</code>
+      </div>` : '';
+
   const runBlock = `
     <div class="agent-run-row">
-      <button class="agent-run-btn${pending ? ' is-pending' : ''}" ${blocked ? 'disabled' : ''}
+      <button class="agent-run-btn${pending && !stranded ? ' is-pending' : ''}" ${blocked ? 'disabled' : ''}
               onclick="window.app.runClaudeAgentNow()"
               title="${esc(blocked || 'Demander un passage immédiat')}">
-        ${ICON.play}<span>${pending ? 'Passage demandé' : 'Lancer maintenant'}</span>
+        ${ICON.play}<span>${pending && !stranded ? 'Passage demandé' : 'Lancer maintenant'}</span>
       </button>
       <span class="agent-run-hint">${esc(blocked
         ? `Indisponible — ${blocked}.`
-        : pending
-          ? "L'agent démarre à son prochain réveil (moins de 2 min)."
-          : `${tasks.length} tâche${tasks.length > 1 ? 's' : ''} partira${tasks.length > 1 ? 'ient' : ''} au prochain passage.`)}</span>
-    </div>`;
+        : stranded
+          ? "Demande en attente depuis plus de 3 min — voir ci-dessous."
+          : pending
+            ? "L'agent démarre à son prochain réveil (moins de 2 min)."
+            : `${tasks.length} tâche${tasks.length > 1 ? 's' : ''} partira${tasks.length > 1 ? 'ient' : ''} au prochain passage.`)}</span>
+    </div>
+    ${strandedBlock}`;
 
   const eligibleList = tasks.length
     ? `<ul class="agent-eligible">${tasks.slice(0, 6).map(t => `<li>${esc(t.title)}</li>`).join('')}

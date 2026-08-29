@@ -12536,6 +12536,36 @@ body:has(.bottom-panel:not(.hidden))::before {
   color:       var(--text-muted);
 }
 
+
+// Demande restée sur le carreau : le runner local n'est pas là. Rouge d'alerte
+// plutôt qu'orange d'avertissement — ce n'est pas un réglage à peaufiner, le
+// bouton ne peut simplement rien déclencher tant que ça n'est pas réglé.
+.agent-warn--stranded {
+  flex-direction: column;
+  align-items:    flex-start;
+  background:     color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color:   color-mix(in srgb, var(--danger) 32%, transparent);
+  margin-top:     10px;
+
+  svg { color: var(--danger); }
+}
+
+.agent-cmd {
+  display:       block;
+  width:         100%;
+  overflow-x:    auto;
+  padding:       7px 9px;
+  border-radius: 6px;
+  background:    var(--surface2);
+  border:        1px solid var(--border);
+  font-family:   ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size:     11px;
+  line-height:   1.5;
+  color:         var(--text);
+  white-space:   pre;
+  user-select:   all;
+}
+
 .agent-lastrun {
   display:     flex;
   align-items: center;

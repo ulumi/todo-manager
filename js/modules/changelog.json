@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2956",
+    "date": "2026-08-28",
+    "message": "fix(agent): une demande que personne ne réclame dit que le runner local manque, au lieu d'annoncer un départ imminent"
+  },
+  {
     "version": "0.4.2955",
     "date": "2026-08-28",
     "message": "feat(agent): bouton « Lancer maintenant » dans l'Inbox + mode de déclenchement sur demande"
@@ -193,10 +198,5 @@
     "version": "0.4.2857",
     "date": "2026-08-22",
     "message": "fix(dictation): taper au clavier coupe l'écoute du micro ; le démarrage automatique attend 1s avant de s'armer"
-  },
-  {
-    "version": "0.4.2849",
-    "date": "2026-08-19",
-    "message": "feat(modal): nouvelle section Liens — ajouter un ou plusieurs URLs à une tâche, badge cliquable en vue jour"
   }
 ]

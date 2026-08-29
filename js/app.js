@@ -105,7 +105,7 @@ import {
 } from './modules/avatarEditor.js';
 import { getOverduePunctual, renderReviewBody } from './modules/review.js';
 import { getAgentConfig, saveAgentConfig, agentPanelHTML, isAgentPanelOpen, setAgentPanelOpen,
-         findAgentCategory, MAX_PER_RUN_LIMIT } from './modules/claudeAgent.js';
+         findAgentCategory, MAX_PER_RUN_LIMIT, RUN_REQUEST_GRACE_MS } from './modules/claudeAgent.js';
 import { appConfirm, appAlert, appChoice } from './modules/dialog.js';
 
 // Initialize state
@@ -6984,6 +6984,13 @@ class TodoApp {
       saveAgentConfig({ runRequest: { at: Date.now() } });
       this._refreshAgentPanel();
       this._showToast('Passage demandé — départ dans moins de 2 min');
+      // Repasse une fois le délai de grâce écoulé : si personne n'a réclamé la
+      // demande d'ici là, le panneau doit le dire de lui-même plutôt que de
+      // laisser « départ imminent » à l'écran indéfiniment.
+      clearTimeout(this._agentStrandedTimer);
+      this._agentStrandedTimer = setTimeout(() => {
+        if (state.view === 'inbox') this._refreshAgentPanel();
+      }, RUN_REQUEST_GRACE_MS + 5000);
     } catch (err) {
       console.error('[agent] demande de passage', err);
       this._showToast('Impossible de demander un passage — ' + (err.message || 'réessaie'));
