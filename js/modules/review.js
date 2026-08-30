@@ -80,6 +80,13 @@ function _daysSinceCreated(t) {
 // Exportée : réutilisée par renderBacklogView() (render.js) pour afficher
 // « ajoutée il y a N jours » sur les items du backlog
 export function ageBadge(t) {
+  // Jamais sur une récurrente : « ajoutée il y a 47 j » ne veut rien dire pour
+  // une série qui se répète — ce n'est pas une tâche qui traîne depuis 47 jours,
+  // c'est une habitude installée depuis 47 jours. Le badge existe pour repérer
+  // ce qui stagne (Backlog, Inbox, Bilan), un sens qu'une récurrente n'a pas.
+  // Filtré ICI plutôt que chez chaque appelant, pour qu'aucune vue future ne le
+  // réintroduise par inadvertance.
+  if (t && t.recurrence && t.recurrence !== 'none') return '';
   const days = _daysSinceCreated(t);
   if (days === null) return '';
   const label = days <= 0 ? 'auj.' : `${days} j`;
@@ -100,6 +107,10 @@ export function ageBadge(t) {
 // dans `completedDates`, et on ne la consulte que sur son propre jour.
 export function completedBadge(t) {
   if (!t || !t.completed || !t.completedDate) return '';
+  // Ceinture ET bretelles : stampCompletion() n'estampille jamais une
+  // récurrente, mais un champ hérité (données anciennes, complétion venue de
+  // Google Calendar) collerait sinon le badge sur TOUTES ses occurrences.
+  if (t.recurrence && t.recurrence !== 'none') return '';
   const days = Math.round((today() - parseDS(t.completedDate)) / 86400000);
   const label = days <= 0 ? 'auj.' : days === 1 ? 'hier' : `il y a ${days} j`;
   const exact = parseDS(t.completedDate).toLocaleDateString('fr-CA');

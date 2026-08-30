@@ -147,6 +147,12 @@ export function cancelTodo(id, d, todos) {
 // laissée telle quelle garderait une date de complétion mensongère.
 export function stampCompletion(t) {
   if (!t) return;
+  // Une récurrente n'est jamais estampillée : sa complétion vit dans
+  // `completedDates`, par occurrence. Poser `completedDate` sur le master
+  // marquerait la SÉRIE ENTIÈRE comme complétée un jour donné — ce que fait
+  // par exemple une complétion venue de Google Calendar, qui écrit
+  // `t.completed = true` sans regarder la récurrence.
+  if (t.recurrence && t.recurrence !== 'none') { delete t.completedDate; return; }
   if (t.completed) t.completedDate = t.completedDate || DS(today());
   else delete t.completedDate;
 }

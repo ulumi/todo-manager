@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2981",
+    "date": "2026-08-30",
+    "message": "fix(récurrentes): plus de date de création ni de date de complétion affichée sur une série"
+  },
+  {
     "version": "0.4.2980",
     "date": "2026-08-30",
     "message": "fix(report): une tâche déplacée d'un jour à l'autre ne garde plus son ancienne heure"
@@ -193,10 +198,5 @@
     "version": "0.4.2905",
     "date": "2026-08-27",
     "message": "fix(agenda): le bouton + de la ligne « maintenant » ne recouvre plus la case à cocher d'une tâche en cours"
-  },
-  {
-    "version": "0.4.2903",
-    "date": "2026-08-27",
-    "message": "fix(agenda): le titre d'un bloc reste toujours à côté de l'heure, même sur une longue durée"
   }
 ]
