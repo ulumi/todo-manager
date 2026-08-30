@@ -5932,7 +5932,7 @@ class TodoApp {
     // Direct du panneau de l'agent : horloges peintes tout de suite (sinon le
     // compte à rebours resterait sur « … » jusqu'à la première seconde), puis
     // le minuteur prend le relais. Il s'auto-arrête dès que le bloc disparaît.
-    if (state.view === 'inbox') { this._paintAgentClocks(); this._startAgentTicker(); }
+    if (state.view === 'inbox') { this._paintAgentClocks(); this._startAgentTicker(); this.initAgentQueueDnD(); }
     if (state.view === 'backlog') this.initBacklogRailDnD();
     if (state.view === 'focus' || this._focusMinimized) this.initFocusView(); else this._stopFocusTick();
     renderFocusPip(this);
@@ -7144,6 +7144,56 @@ class TodoApp {
     }
   }
 
+  // Réordonnancement de la file de l'agent (panneau de l'Inbox) — même recette
+  // que initBacklogRailDnD() : repositionnement DOM en direct au survol, et
+  // l'ordre du DOM au `dragend` EST l'ordre persisté, sans rendu intermédiaire.
+  //
+  // Ne pose JAMAIS de `text/plain`, et `stopPropagation()` partout : l'Inbox est
+  // pleine de vraies cibles de drop (onglets du header, cartes `.inbox-item`)
+  // qui muteraient une tâche sur un id de tâche reçu là. Avec un type maison que
+  // personne d'autre ne lit, lâcher une ligne hors de la file ne peut rien faire.
+  initAgentQueueDnD() {
+    const wrap = document.getElementById('agentQueue');
+    if (!wrap || wrap.dataset.dndBound) return;
+    wrap.dataset.dndBound = '1';
+    let dragEl = null;
+
+    wrap.addEventListener('dragstart', e => {
+      const li = e.target.closest('.agent-q-item');
+      if (!li) return;
+      e.stopPropagation();
+      dragEl = li;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('application/x-agent-task', li.dataset.id);
+      requestAnimationFrame(() => dragEl?.classList.add('agent-q-item--dragging'));
+    });
+
+    wrap.addEventListener('dragover', e => {
+      if (!dragEl) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const over = e.target.closest('.agent-q-item');
+      if (!over || over === dragEl) return;
+      const r = over.getBoundingClientRect();
+      wrap.insertBefore(dragEl, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
+    });
+
+    wrap.addEventListener('drop', e => { if (dragEl) { e.preventDefault(); e.stopPropagation(); } });
+
+    wrap.addEventListener('dragend', () => {
+      if (!dragEl) return;
+      dragEl.classList.remove('agent-q-item--dragging');
+      dragEl = null;
+      // Réécrit la liste ENTIÈRE des éligibles affichés : les ids de tâches
+      // faites ou désétiquetées depuis disparaissent d'eux-mêmes, l'ordre ne
+      // se remplit donc jamais indéfiniment. Le panneau est re-rendu dans la
+      // foulée par setClaudeAgentField() — c'est ce qui renumérote les rangs
+      // et redessine la coupure « ce passage / ensuite ».
+      const ids = [...wrap.querySelectorAll('.agent-q-item')].map(el => el.dataset.id);
+      this.setClaudeAgentField('order', ids);
+    });
+  }
+
   setClaudeAgentField(key, value) {
     saveAgentConfig({ [key]: value });
     this._saveConfigChange();
@@ -7197,6 +7247,7 @@ class TodoApp {
     panel.outerHTML = agentPanelHTML(state.todos, getCategories());
     this._paintAgentClocks();
     this._startAgentTicker();
+    this.initAgentQueueDnD();   // outerHTML a détruit l'élément qui portait les écouteurs
   }
 
   togglePastDueBanner() {

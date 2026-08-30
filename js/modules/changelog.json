@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2977",
+    "date": "2026-08-29",
+    "message": "feat(agent): ordre d'exécution des tâches de l'agent, réordonnable par glisser-déposer"
+  },
+  {
     "version": "0.4.2976",
     "date": "2026-08-29",
     "message": "feat(agent): bouton « + » à côté du titre pour créer une tâche pré-étiquetée « claude-code » en Inbox"
@@ -193,15 +198,5 @@
     "version": "0.4.2898",
     "date": "2026-08-27",
     "message": "fix(fusion): « Fusionner » apparaît enfin en vue Agenda — la saisie du titre passe par la barre de sélection"
-  },
-  {
-    "version": "0.4.2897",
-    "date": "2026-08-27",
-    "message": "feat(agenda): un seul « + » par moment (sur les titres) et un « + » global à gauche de la barre d'outils"
-  },
-  {
-    "version": "0.4.2896",
-    "date": "2026-08-27",
-    "message": "feat(sélection): fusionner deux tâches en une seule depuis le clic droit"
   }
 ]

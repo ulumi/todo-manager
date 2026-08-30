@@ -46,6 +46,7 @@ export const AGENT_DEFAULTS = {
   autonomy:     'deploy',
   trigger:      'manual',
   maxPerRun:    3,
+  order:        [],
   lastRun:      null,
   runRequest:   null,
   progress:     null,
@@ -135,6 +136,7 @@ export function normalizeAgentConfig(raw) {
     autonomy:     AUTONOMY_LEVELS.some(a => a.value === src.autonomy) ? src.autonomy : AGENT_DEFAULTS.autonomy,
     trigger:      TRIGGERS.some(t => t.value === src.trigger) ? src.trigger : AGENT_DEFAULTS.trigger,
     maxPerRun:    Number.isFinite(max) ? Math.min(MAX_PER_RUN_LIMIT, Math.max(1, Math.round(max))) : AGENT_DEFAULTS.maxPerRun,
+    order:        Array.isArray(src.order) ? [...new Set(src.order.map(String).filter(Boolean))].slice(0, ORDER_LIMIT) : [],
     lastRun:      normalizeRun(src.lastRun),
     runRequest:   Number.isFinite(Number(src.runRequest?.at)) && Number(src.runRequest.at) > 0 ? { at: Number(src.runRequest.at) } : null,
     progress:     normalizeProgress(src.progress),
@@ -268,10 +270,32 @@ export function findAgentCategory(categories, name) {
   return (categories || []).find(c => String(c.name || '').trim().toLowerCase() === wanted) || null;
 }
 
+// Borne du tableau d'ordre. Il ne contient que des ids de tâches éligibles au
+// moment où l'utilisateur réordonne (le drag réécrit la liste complète, ce qui
+// purge au passage les tâches faites ou désétiquetées), mais un plafond reste
+// nécessaire : la config est téléversée à chaque écriture.
+const ORDER_LIMIT = 60;
+
+// L'ORDRE D'EXÉCUTION EST EXPLICITE, PAS DÉDUIT. Sans ce tri, `agentEligible()`
+// rendait les tâches dans l'ordre d'insertion du tableau `todos` — arbitraire du
+// point de vue de l'utilisateur, et déterminant puisque le lot est tronqué à
+// `maxPerRun` : avec maxPerRun=1, c'est lui seul qui décide QUELLE tâche tourne.
+//
+// Tri stable à dessein : une tâche absente de `order` (jamais classée, ou
+// étiquetée après le dernier réordonnancement) garde sa position relative
+// d'origine et passe APRÈS toutes les tâches classées. Une nouvelle tâche ne
+// peut donc jamais s'insérer devant une priorité déjà posée.
+export function orderAgentTasks(tasks, order) {
+  const rank = new Map((order || []).map((id, i) => [String(id), i]));
+  const at = t => (rank.has(String(t.id)) ? rank.get(String(t.id)) : Infinity);
+  return [...tasks].sort((a, b) => (at(a) === at(b) ? 0 : at(a) - at(b)));
+}
+
 export function agentEligible(todos, categories, cfg) {
   const cat = findAgentCategory(categories, cfg.categoryName);
   if (!cat) return { category: null, tasks: [] };
-  return { category: cat, tasks: (todos || []).filter(t => isAgentTask(t, cat.id)) };
+  const tasks = (todos || []).filter(t => isAgentTask(t, cat.id));
+  return { category: cat, tasks: orderAgentTasks(tasks, cfg.order) };
 }
 
 // ─── Panneau de l'Inbox ────────────────────────────────────────────────────
@@ -396,9 +420,21 @@ export function agentPanelHTML(todos, categories) {
     </div>
     ${strandedBlock}`;
 
+  // La file est rendue EN ENTIER, sans troncature « + N autres » : on ne peut
+  // pas réordonner ce qu'on ne voit pas. C'est la hauteur qui est bornée, en
+  // CSS, avec un défilement.
+  const runCount = Math.min(cfg.maxPerRun, tasks.length);
   const eligibleList = tasks.length
-    ? `<ul class="agent-eligible">${tasks.slice(0, 6).map(t => `<li>${esc(t.title)}</li>`).join('')}
-       ${tasks.length > 6 ? `<li class="agent-eligible-more">+ ${tasks.length - 6} autre${tasks.length - 6 > 1 ? 's' : ''}</li>` : ''}</ul>`
+    ? `<p class="agent-queue-cap">Ordre d'exécution — glisse pour changer.
+         ${tasks.length === runCount ? 'Toutes partent au prochain passage.'
+           : runCount === 1              ? 'Seule la <strong>première</strong> part au prochain passage.'
+           : `Seules les <strong>${runCount}</strong> premières partent au prochain passage.`}</p>
+       <ul class="agent-queue" id="agentQueue">${tasks.map((t, i) => `
+         <li class="agent-q-item${i < runCount ? ' is-next' : ''}${i === runCount - 1 && tasks.length > runCount ? ' is-cut' : ''}"
+             draggable="true" data-id="${esc(String(t.id))}" title="${esc(t.title)}">
+           <span class="agent-q-rank">${i + 1}</span>
+           <span class="agent-q-title">${esc(t.title)}</span>
+         </li>`).join('')}</ul>`
     : `<p class="agent-note">Aucune tâche marquée pour l'instant. Ajoute l'étiquette à une tâche de l'Inbox pour la lui confier.</p>`;
 
   // Chiffres par tâche : temps, jetons et coût réels de l'invocation qui l'a
