@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2980",
+    "date": "2026-08-30",
+    "message": "fix(report): une tâche déplacée d'un jour à l'autre ne garde plus son ancienne heure"
+  },
+  {
     "version": "0.4.2979",
     "date": "2026-08-30",
     "message": "feat(tâches): date de complétion réelle affichée sur les items complétés"
@@ -193,15 +198,5 @@
     "version": "0.4.2903",
     "date": "2026-08-27",
     "message": "fix(agenda): le titre d'un bloc reste toujours à côté de l'heure, même sur une longue durée"
-  },
-  {
-    "version": "0.4.2902",
-    "date": "2026-08-27",
-    "message": "feat(sélection): le clic du milieu sur une tâche la sélectionne (comme Ctrl/Cmd+clic)"
-  },
-  {
-    "version": "0.4.2901",
-    "date": "2026-08-27",
-    "message": "feat(agenda): bouton + sur la ligne « maintenant » ; Option+clic décale la suite de la journée"
   }
 ]

@@ -6613,7 +6613,10 @@ class TodoApp {
   // report auto) doivent passer l'id de TOUTES pour que déplacer un groupe
   // entier ensemble ne le détache pas.
   _postpone(t, newDateStr, movingIds = [t.id]) {
-    if (t.date && t.date !== newDateStr) {
+    // Changement de jour RÉEL — pas une simple réaffectation à la même date,
+    // ni la planification d'une tâche qui n'en avait aucune.
+    const changedDay = !!t.date && t.date !== newDateStr;
+    if (changedDay) {
       if (!t.originalDate) t.originalDate = t.date;
       t.postponedCount = (t.postponedCount || 0) + 1;
     }
@@ -6625,6 +6628,25 @@ class TodoApp {
     // overdueDropTodayPeriod() repose là-dessus : il repose t.dayPeriod
     // juste après avoir appelé _postpone(), donc rien ne change pour lui.
     delete t.dayPeriod;
+    // Même raisonnement pour l'HEURE, et c'est une demande explicite : une
+    // tâche déplacée ou reportée ne doit pas SYSTÉMATIQUEMENT garder la sienne.
+    // « 08:00 » avait un sens le jour où elle était planifiée ; poussée trois
+    // jours plus loin, ce n'est plus qu'un reste d'un plan qui n'existe plus —
+    // et il la fait resurgir dans un créneau que personne n'a choisi (bloc
+    // d'agenda, tri Chrono, position dans le moment).
+    //
+    // Seulement quand la tâche change VRAIMENT de jour : planifier une tâche
+    // d'Inbox à qui on vient de donner une heure dans le modal ne doit pas la
+    // lui reprendre au passage.
+    //
+    // Les chemins qui désignent une heure explicite la reposent juste après cet
+    // appel (_agendaMoveTo et _agendaUnschedule, via setOccurrenceField) —
+    // exactement le même contrat que overdueDropTodayPeriod() avec dayPeriod.
+    if (changedDay) {
+      delete t.startTime;
+      delete t.endTime;
+      delete t.flexibleTime;   // ne qualifie plus rien une fois l'heure partie
+    }
     t.updatedAt = Date.now();
     this._leaveGroupUnlessWhole(t, movingIds);
   }
