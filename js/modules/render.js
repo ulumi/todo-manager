@@ -1650,12 +1650,10 @@ export function renderInboxView(todos) {
 
   return `
     <div class="inbox-view">
-      <div class="inbox-view-header">
-        <div class="inbox-view-title-block">
-          <h1 class="inbox-view-title">Inbox</h1>
-          <p class="inbox-view-desc">Tâches capturées sans date <br>— à planifier ou traiter dès que possible.</p>
-        </div>
-        <div class="inbox-view-controls">
+      <div class="backlog-head">
+        <h1 class="backlog-title">Inbox</h1>
+        <span class="backlog-subtitle">Tâches capturées sans date — à planifier ou traiter dès que possible.</span>
+        <div class="backlog-head-tools">
           <span class="inbox-count-label">${pending.length} tâche${pending.length !== 1 ? 's' : ''}</span>
           <div class="inbox-sort-group">${sortBtns}</div>
           <div class="inbox-sort-group">${colBtns}</div>

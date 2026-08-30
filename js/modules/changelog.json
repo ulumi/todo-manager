@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2978",
+    "date": "2026-08-30",
+    "message": "feat(inbox): en-tête sur une ligne comme le backlog"
+  },
+  {
     "version": "0.4.2977",
     "date": "2026-08-29",
     "message": "feat(agent): ordre d'exécution des tâches de l'agent, réordonnable par glisser-déposer"
