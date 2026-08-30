@@ -142,6 +142,7 @@ Mutable exports in `state.js` with setter functions (`setTodos()`, `setView()`, 
   id, title, description?,
   completed, date?,              // YYYY-MM-DD (one-time)
   completedDates: [],            // dates done for recurring
+  completedDate?: string,        // YYYY-MM-DD — jour où la tâche a été RÉELLEMENT cochée, distinct de `date` (le jour où elle était PRÉVUE) : une ponctuelle du 20 cochée le 29 ne montrait cet écart nulle part. Posé par `stampCompletion()` (calendar.js) sur les SIX chemins de complétion (toggleTodo, toggleInboxDone, completeMany, zone « Fait » du Bilan, pull Google Calendar, sélecteur de date) et **effacé au décochage**, sinon une tâche décochée garderait une date mensongère. Une valeur déjà posée n'est jamais écrasée (le sélecteur de date de complétion permet de dater après coup). Ponctuelles seulement — pour une récurrente, `completedDates` porte déjà la date de l'occurrence, qu'on ne consulte que sur son propre jour. Rendu par `completedBadge()` (review.js) dans `.todo-meta` (vue jour, cartes Inbox/Backlog) et dans l'en-tête d'un bloc d'Agenda, en format relatif (« auj. » / « hier » / « il y a N j ») avec la date exacte en infobulle — affiché dès qu'une date existe, sans masquer le cas « cochée le jour prévu » : un badge conditionnel se lit comme un bug quand on cherche justement l'information
   recurrence: 'none'|'daily'|'weekly'|'monthly'|'yearly',
   startDate?, endDate?, excludedDates: [],
   recDays: [],                   // day-of-week (weekly) or day-of-month (monthly)

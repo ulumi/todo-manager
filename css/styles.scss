@@ -12624,6 +12624,37 @@ body:has(.bottom-panel:not(.hidden))::before {
   .agent-eligible-more { color: var(--text-muted); background: transparent; border-style: dashed; }
 }
 
+// ── Badge « complétée le … » ──────────────────────────────────────────────
+// Date à laquelle la tâche a été RÉELLEMENT cochée (t.completedDate), à ne pas
+// confondre avec le jour où elle était prévue. Rendu dans .todo-meta (vue jour,
+// cartes Inbox/Backlog) et dans l'en-tête d'un bloc d'agenda.
+// Vert comme les états de complétion du reste de l'app (var(--success)), et
+// discret : c'est une information de contexte, pas une alerte.
+.todo-completed-badge {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           3px;
+  padding:       1px 6px;
+  border-radius: 5px;
+  font-size:     10.5px;
+  font-weight:   600;
+  white-space:   nowrap;
+  color:         var(--success);
+  background:    color-mix(in srgb, var(--success) 13%, transparent);
+  border:        1px solid color-mix(in srgb, var(--success) 30%, transparent);
+
+  &::before { content: '✓'; font-size: 9.5px; }
+}
+
+// Dans un bloc d'agenda, il vit sur la ligne du titre avec les autres badges :
+// il doit en reprendre la métrique, sinon il fait grandir la rangée d'en-tête
+// (et vole d'autant la place des sous-tâches, cf. SUB_HEAD_PX).
+.agenda-block-head .todo-completed-badge {
+  padding:   0 4px;
+  font-size: 9.5px;
+  flex:      0 0 auto;
+}
+
 // ── File de l'agent : ordre d'exécution explicite ─────────────────────────
 // L'ordre est une donnée (config.claudeAgent.order), pas un tri déduit : c'est
 // lui qui décide QUELLE tâche part quand le lot est tronqué à maxPerRun.

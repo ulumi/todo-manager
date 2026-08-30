@@ -8,7 +8,7 @@ import * as state from './state.js';
 import { getCategories, categoryIconSVG } from './admin.js';
 import { agentPanelHTML } from './claudeAgent.js';
 import { getProjects, PROJECT_STATUS_LABELS, PROJECT_STATUS_COLORS } from './projectManager.js';
-import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge } from './review.js';
+import { renderAdherenceRows, computeTimeStats, renderTimeStatsRows, computeTotalFocusMinutes, fmtMinutes, getOverduePunctual, renderOverdueGroups, renderOverdueDropZones, dayLabel, ageBadge, deadlineBadge, completedBadge } from './review.js';
 import { renderRefillPanel } from './focus.js';
 import { getListPrefs, applyManualOrder, renderGroupedItems, renderBacklogRail, getRailFilter, railFilterFn, railFilterLabel } from './backlogInboxView.js';
 import { renderAgendaBody, dayLayoutSwitchHTML, getDayLayout } from './agendaView.js';
@@ -256,7 +256,8 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
   // fois dépassée (voir deadlineBadge/deadlineInfo, review.js).
   const deadlineBadgeHTML = (dayView && !isRec) ? deadlineBadge(todo) : '';
   const { toggle: subtaskToggleHTML, block: expandedHTML, addBtn: subtaskAddBtnHTML } = subtaskParts(todo, ds);
-  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || linksBadge || deadlineBadgeHTML || subtaskToggleHTML;
+  const completedBadgeHTML = completedBadge(todo);
+  const hasMeta = categoryBadge || projectBadge || intentionBadge || rec || timeBadge || focusTimeBadge || linksBadge || deadlineBadgeHTML || subtaskToggleHTML || completedBadgeHTML;
   const draggableAttr = group ? ` draggable="true" data-group="${group}"` : '';
   return `
     <div class="todo-item${done?' done':''}${cancelled?' cancelled':''}${prioCls}" data-id="${todo.id}" data-date="${ds}"${draggableAttr} onclick="window.app.clickTodo(event,'${todo.id}','${ds}')">
@@ -265,7 +266,7 @@ export function todoItemHTML(todo, date, group = null, dayView = false, hideCate
       <div class="todo-check${done?' checked':''}" onclick="event.stopPropagation();${cancelled ? `window.app.cancelTodo('${todo.id}','${ds}')` : `window.app.toggleTodo('${todo.id}',window.app.parseDS('${ds}'),event)`}" ${cancelled ? 'title="Annulée — cliquer pour restaurer"' : ''}></div>
       <div class="todo-content">
         <span class="todo-text">${esc(todo.title)}</span>
-        ${hasMeta ? `<div class="todo-meta">${timeBadge}${deadlineBadgeHTML}${focusTimeBadge}${linksBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
+        ${hasMeta ? `<div class="todo-meta">${completedBadgeHTML}${timeBadge}${deadlineBadgeHTML}${focusTimeBadge}${linksBadge}${categoryBadge}${projectBadge}${intentionBadge}${rec ? `<span class="todo-badge${isRec?' recurring':''}">${rec}</span>` : ''}${subtaskToggleHTML}</div>` : ''}
         ${counterBar}
       </div>
       <div class="todo-actions">
@@ -1708,7 +1709,7 @@ export function renderBacklogView(todos) {
         <div class="todo-check" onclick="event.stopPropagation();window.app.toggleInboxDone('${t.id}')"></div>
         <div class="inbox-item-body">
           <span class="todo-text editable" ondblclick="event.stopPropagation();window.app.quickEditInboxTitle(this,'${t.id}')">${esc(t.title)}</span>
-          <div class="todo-meta">${catBadge}${ageBadge(t)}${deadlineBadge(t, { ghostIfEmpty: true })}${subtasks.toggle}</div>
+          <div class="todo-meta">${completedBadge(t)}${catBadge}${ageBadge(t)}${deadlineBadge(t, { ghostIfEmpty: true })}${subtasks.toggle}</div>
         </div>
         <div class="inbox-item-actions">
           ${subtasks.addBtn}

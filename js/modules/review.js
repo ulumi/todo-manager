@@ -86,6 +86,26 @@ export function ageBadge(t) {
   return `<span class="review-age-badge" title="Créée ${days <= 0 ? "aujourd'hui" : `il y a ${days} jour${days > 1 ? 's' : ''}`}">${label}</span>`;
 }
 
+// Date à laquelle la tâche a été RÉELLEMENT cochée (`t.completedDate`, posé par
+// `stampCompletion()` de calendar.js sur les six chemins de complétion).
+// Distincte de `t.date`, qui est le jour où elle était PRÉVUE : une tâche du
+// 20 août cochée le 29 ne montrait cet écart nulle part.
+//
+// Affiché dès qu'une date est connue, sans chercher à masquer le cas « cochée
+// le jour prévu » : un badge qui n'apparaît que dans certaines conditions se
+// lit comme un bug quand on cherche justement à savoir quand on a fait la
+// chose. Format relatif comme `ageBadge`, date exacte dans l'infobulle.
+//
+// Ponctuelles seulement : une récurrente porte déjà la date de l'occurrence
+// dans `completedDates`, et on ne la consulte que sur son propre jour.
+export function completedBadge(t) {
+  if (!t || !t.completed || !t.completedDate) return '';
+  const days = Math.round((today() - parseDS(t.completedDate)) / 86400000);
+  const label = days <= 0 ? 'auj.' : days === 1 ? 'hier' : `il y a ${days} j`;
+  const exact = parseDS(t.completedDate).toLocaleDateString('fr-CA');
+  return `<span class="todo-completed-badge" title="Complétée le ${exact}">${label}</span>`;
+}
+
 // ─── Échéance (t.deadline / deadlineTime / deadlineHard / deadlineLeadDays) ──
 // Champs posés par la section « Échéance » du modal (modal.js) — jamais sur
 // une tâche récurrente (la section y est masquée : une date limite absolue

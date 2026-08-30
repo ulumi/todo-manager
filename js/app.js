@@ -26,7 +26,7 @@ import {
 import {
   getTodosForDate, isCompleted, isCancelled, toggleTodo, cancelTodo, deleteOneOccurrence,
   deleteFutureOccurrences, addTask, getSuggestions, getPeriodStatus,
-  resolveOccurrence, occurrenceSubtasks, setOccurrenceField
+  resolveOccurrence, occurrenceSubtasks, setOccurrenceField, stampCompletion,
 } from './modules/calendar.js';
 import {
   openModal, closeModal, openEditModal, selectRecurrence, toggleWeekDay,
@@ -3706,6 +3706,7 @@ class TodoApp {
     if (!t) return;
     snapshot(state.todos);
     t.completed = !t.completed;
+    stampCompletion(t);
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     if (t.completed) celebrate(state.lang);
@@ -4205,6 +4206,7 @@ class TodoApp {
         }
       } else {
         t.completed = !allDone;
+        stampCompletion(t);
         if (t.completed) t.cancelled = false;
       }
       t.updatedAt = Date.now();
@@ -6754,7 +6756,7 @@ class TodoApp {
   }
 
   overdueDropDone(event) {
-    this._reviewDrop(event, t => { t.completed = true; t.updatedAt = Date.now(); });
+    this._reviewDrop(event, t => { t.completed = true; stampCompletion(t); t.updatedAt = Date.now(); });
   }
 
   overdueDropToday(event) {
@@ -8351,7 +8353,7 @@ class TodoApp {
     let changed = false;
     for (const id of completedTodoIds) {
       const t = state.todos.find(x => x.id === id);
-      if (t && !t.completed && !t.cancelled) { t.completed = true; changed = true; }
+      if (t && !t.completed && !t.cancelled) { t.completed = true; stampCompletion(t); changed = true; }
     }
     for (const { id, date } of movedTodos) {
       const t = state.todos.find(x => x.id === id);

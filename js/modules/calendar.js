@@ -132,6 +132,25 @@ export function cancelTodo(id, d, todos) {
   t.updatedAt = Date.now();
 }
 
+// Date à laquelle la tâche a été RÉELLEMENT cochée (`t.completedDate`, YYYY-MM-DD),
+// à ne pas confondre avec `t.date` (le jour où elle était prévue) : une tâche du
+// 20 août cochée le 29 ne montrait nulle part cet écart.
+//
+// Ponctuelles seulement, et c'est un choix, pas un raccourci : pour une
+// récurrente, `completedDates` porte déjà la date de l'occurrence, et on ne
+// regarde une occurrence que sur son propre jour — afficher « complétée le 29 »
+// en consultant le 29 serait du bruit.
+//
+// Le champ existait déjà, écrit par le seul sélecteur de date de complétion et
+// relu par personne. Il est désormais posé par TOUS les chemins de complétion
+// (il y en a six) et effacé au décochage — sans quoi une tâche décochée puis
+// laissée telle quelle garderait une date de complétion mensongère.
+export function stampCompletion(t) {
+  if (!t) return;
+  if (t.completed) t.completedDate = t.completedDate || DS(today());
+  else delete t.completedDate;
+}
+
 export function toggleTodo(id, d, todos) {
   const t = todos.find(x => x.id === id);
   if (!t) return;
@@ -146,6 +165,7 @@ export function toggleTodo(id, d, todos) {
   } else {
     t.completed = !t.completed;
     if (t.completed) t.cancelled = false;
+    stampCompletion(t);
   }
   t.updatedAt = Date.now();
 }

@@ -30,6 +30,7 @@ import { DS, esc, effectiveEstimate, safeParseJSON } from './utils.js';
 import { getTodosForDate, isCompleted, isCancelled } from './calendar.js';
 import * as state from './state.js';
 import { getCategories } from './admin.js';
+import { completedBadge } from './review.js';
 
 // ── Constantes de géométrie ─────────────────────────────
 export const AGENDA_ZOOMS = [
@@ -372,6 +373,9 @@ function blockHTML(b, ds, px, range) {
   const recBadge = isRec ? `<span class="agenda-block-badge agenda-block-rec" title="Tâche récurrente">↻</span>` : '';
   const catBadge = cat ? `<span class="agenda-block-badge agenda-block-cat" style="background:${cat.color}">${esc(cat.name.toUpperCase())}</span>` : '';
   const flexBadge = t.flexibleTime ? `<span class="agenda-block-badge agenda-block-flex" title="Heure approximative — peut glisser">≈</span>` : '';
+  // Date de complétion réelle : la vue Agenda EST la vue jour de Hugues, une
+  // fonctionnalité qui n'existerait qu'en mode Liste serait cassée, pas « v1 ».
+  const doneBadge = completedBadge(t);
 
   // Checklist compacte, uniquement si la hauteur du bloc la porte — cochable
   // sur place. `t.subtasks` est déjà résolu pour l'occurrence du jour
@@ -403,7 +407,7 @@ function blockHTML(b, ds, px, range) {
       <div class="agenda-block-head">
         <div class="agenda-block-time">${timeLabel}</div>
         <div class="agenda-block-title">${esc(t.title)}</div>
-        ${flexBadge}${recBadge}${catBadge}${linkBadge}${subBadge}
+        ${doneBadge}${flexBadge}${recBadge}${catBadge}${linkBadge}${subBadge}
       </div>
       ${subsHTML}
     </div>
