@@ -17445,37 +17445,35 @@ body.view-focus header { display: none; }
   gap: 18px;
 }
 
-// Colonne principale (grilles horaires Matin/Après-midi/Soir) à gauche,
-// colonne des tâches SANS heure à droite — cf. l'en-tête d'agendaView.js.
-// Aucun `filter`/`backdrop-filter`/`transform` ici ni sur `.agenda-main` :
-// `.agenda-flex-strip` (dans `.agenda-sidebar`) reste une vraie cible de
-// drop native, qu'un ancêtre filtré casserait silencieusement (cf. en-tête).
+// Grille CSS à 2 colonnes (bandes horaires à gauche, sections « sans heure »
+// à droite) — cf. l'en-tête d'agendaView.js. Chaque bande et sa section
+// jumelle partagent une même LIGNE de grille (`grid-area`, posé en style
+// inline par bandHTML()/sidebarSectionHTML()) : la ligne prend la hauteur du
+// plus grand des deux, donc les deux commencent au même sommet, quelle que
+// soit la hauteur de l'un ou l'autre — c'est ce qui aligne « Matin » (à
+// gauche) sur sa section « sans heure » (à droite), etc. « Sans moment »
+// n'a pas de jumelle : elle occupe seule la 1re ligne, une cellule vide à
+// gauche (`.`) — Matin/Après-midi/Soir démarrent donc toutes les deux un cran
+// plus bas que le haut de la grille, mais restent alignées entre elles.
+// `align-items: start` : une section plus courte que sa bande ne s'étire pas
+// pour remplir la ligne, elle reste juste calée sur son sommet.
+// Aucun `filter`/`backdrop-filter`/`transform` ici : `.agenda-flex-strip`
+// reste une vraie cible de drop native, qu'un ancêtre filtré casserait
+// silencieusement (cf. en-tête).
 .agenda-columns {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  grid-template-areas:
+    ".          side-none"
+    "morning    side-morning"
+    "afternoon  side-afternoon"
+    "evening    side-evening";
+  align-items: start;
+  column-gap: 16px;
+  row-gap: 18px;
 }
-
-.agenda-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
 
 .agenda-band { display: flex; flex-direction: column; gap: 6px; }
-
-.agenda-sidebar {
-  flex: 0 0 220px;
-  width: 220px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.agenda-sidebar-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--text-muted);
-  opacity: .6;
-}
 
 .agenda-sidebar-section { display: flex; flex-direction: column; gap: 6px; }
 
@@ -17970,10 +17968,21 @@ body.view-focus header { display: none; }
   .agenda-grid { grid-template-columns: 40px 1fr; }
   .agenda-hour { right: 5px; font-size: 9.5px; }
   .agenda-toolbar { gap: 6px; }
-  // Écran étroit : la colonne « sans heure » ne tient plus à côté de la
-  // grille — elle repasse sous elle, pleine largeur.
-  .agenda-columns { flex-direction: column; }
-  .agenda-sidebar { width: auto; flex: none; }
+  // Écran étroit : la grille à 2 colonnes n'a plus la place — tout repasse
+  // sur une seule colonne, chaque section « sans heure » juste après sa
+  // bande (ordre de lecture par moment, l'alignement latéral n'a plus de
+  // sens sans 2e colonne).
+  .agenda-columns {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "side-none"
+      "morning"
+      "side-morning"
+      "afternoon"
+      "side-afternoon"
+      "evening"
+      "side-evening";
+  }
 }
 
 
