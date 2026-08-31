@@ -7,11 +7,13 @@
 //
 //  STRUCTURE — la journée n'est PAS une seule grille continue : elle est
 //  découpée en BANDES de moment (Matin / Après-midi / Soir), chacune avec sa
-//  propre sous-grille horaire, précédée d'une « bande flexible » qui accueille
-//  les tâches de ce moment SANS heure. Le concept `dayPeriod` — central dans
-//  toute l'app — reste donc la structure primaire, l'heure n'étant qu'une
-//  précision à l'intérieur du moment. Une 4e bande sans grille (« Sans
-//  moment ») coiffe le tout pour les tâches qui n'ont ni heure ni moment.
+//  propre sous-grille horaire, dans la colonne PRINCIPALE (.agenda-main). Le
+//  concept `dayPeriod` — central dans toute l'app — reste donc la structure
+//  primaire, l'heure n'étant qu'une précision à l'intérieur du moment.
+//  Les tâches SANS heure vivent à part, dans une COLONNE DE DROITE
+//  (.agenda-sidebar) : une section par moment (Matin/Après-midi/Soir, dans
+//  cet ordre) puis « Sans moment » pour celles qui n'ont ni heure ni moment.
+//  Sorties de la grille horaire, elles ne lui volent plus d'espace vertical.
 //
 //  RÈGLE DE PLACEMENT : une tâche AVEC `startTime` est placée dans la bande
 //  que son heure désigne, quel que soit son `dayPeriod` stocké (une tâche à
@@ -287,11 +289,14 @@ function splitItems(items, navDate, prefs) {
     // Placement par l'HEURE (pas par dayPeriod stocké) — cf. en-tête du fichier
     const band = periodForMinutes(start);
     const dur = blockMinutes(t);
+    // `end` n'est JAMAIS clampée à la frontière de la bande (ex. 11:30→13:00
+    // dans Matin) : une tâche qui s'échelonne sur midi doit apparaître en
+    // entier, début ET fin, quitte à faire déborder la grille de sa bande
+    // au-delà de son heure nominale (cf. displayRange, qui l'englobe).
     buckets[band].timed.push({
       t,
       start,
-      end: Math.min(start + dur, AGENDA_BANDS.find(b => b.key === band).to * 60),
-      rawEnd: start + dur,
+      end: start + dur,
       done: isCompleted(t, navDate),
       cancelled: isCancelled(t, navDate),
     });
@@ -309,7 +314,12 @@ function displayRange(band, timed, prefs) {
     from = Math.min(from, Math.floor(b.start / 60));
     to   = Math.max(to,   Math.ceil(b.end / 60));
   });
-  return { from: Math.max(band.from, from), to: Math.min(band.to, Math.max(to, from + 1)) };
+  // Le haut reste borné à la bande (une tâche est toujours affectée par son
+  // heure de DÉBUT, jamais avant band.from). Le bas, lui, n'est borné qu'à la
+  // journée : une tâche qui déborde de la bande (ex. 11:30→13:00 dans Matin)
+  // doit pouvoir étirer la grille au-delà de band.to pour rester visible en
+  // entier — c'est ce qui affiche son début ET sa fin.
+  return { from: Math.max(band.from, from), to: Math.min(24, Math.max(to, from + 1)) };
 }
 
 // ── Rendu d'un bloc ─────────────────────────────────────
@@ -339,14 +349,12 @@ function blockHTML(b, ds, px, range) {
   const cols = b.cols || 1;
   const col  = b.col || 0;
   const isRec = t.recurrence && t.recurrence !== 'none';
-  const clipped = b.rawEnd > b.end;
   const sizeCls = h < 34 ? ' is-tiny' : (h < 64 ? ' is-short' : '');
   const cls = ['agenda-block',
     b.done ? 'done' : '',
     b.cancelled ? 'cancelled' : '',
     t.priority ? `prio-${t.priority}` : '',
     t.flexibleTime ? 'flexible' : '',
-    clipped ? 'is-clipped' : '',
     overflows ? 'is-overflowing' : '',
   ].filter(Boolean).join(' ') + sizeCls;
 
@@ -356,7 +364,7 @@ function blockHTML(b, ds, px, range) {
     return getCategories().find(c => c.id === ids[0]) || null;
   })();
   const accent = cat ? `--accent:${cat.color};` : '';
-  const timeLabel = `${fmtHM(b.start)}<span class="agenda-block-dash">–</span>${fmtHM(b.rawEnd)}`;
+  const timeLabel = `${fmtHM(b.start)}<span class="agenda-block-dash">–</span>${fmtHM(b.end)}`;
 
   // TOUS les badges (récurrence, catégorie, lien, heure approximative,
   // fait/total) vivent sur la MÊME ligne que le titre. Il y avait avant une
@@ -400,7 +408,7 @@ function blockHTML(b, ds, px, range) {
   // quelle que soit la hauteur du bloc : un bloc plus long ne doit pas faire
   // descendre le titre sous l'heure (il s'ellipse plutôt que de passer à la
   // ligne). Seuls les badges restent en dessous, sur les blocs assez hauts.
-  return `<div class="${cls}" data-id="${t.id}" data-date="${ds}" data-start="${b.start}" data-dur="${b.rawEnd - b.start}" draggable="true"
+  return `<div class="${cls}" data-id="${t.id}" data-date="${ds}" data-start="${b.start}" data-dur="${b.end - b.start}" draggable="true"
       style="--top:${top}px;--h:${h}px;--col:${col};--cols:${cols};${accent}" title="${esc(t.title)}">
     <div class="todo-check agenda-block-check${b.done ? ' checked' : ''}" onclick="event.stopPropagation();${checkAction}"${b.cancelled ? ' title="Annulée — cliquer pour restaurer"' : ''}></div>
     <div class="agenda-block-body">
@@ -417,7 +425,7 @@ function blockHTML(b, ds, px, range) {
       </button>
       <button class="agenda-block-btn" title="Actions" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${t.id}','${ds}')">⋯</button>
     </div>
-    ${overflows ? `<div class="agenda-block-endline" style="--t:${timeH}px" title="Fin prévue : ${fmtHM(b.rawEnd)}"></div>` : ''}
+    ${overflows ? `<div class="agenda-block-endline" style="--t:${timeH}px" title="Fin prévue : ${fmtHM(b.end)}"></div>` : ''}
     <div class="agenda-block-resize" title="Ajuster la durée"></div>
     ${_nestBadgeHTML}
   </div>`;
@@ -449,17 +457,33 @@ function chipHTML(t, navDate, ds) {
   </div>`;
 }
 
-// ── Bande flexible (tâches sans heure d'un moment) ──────
-// Pas de « + » ici : l'en-tête de la bande juste au-dessus (.agenda-band-add)
-// vise déjà exactement le même moment, un second bouton à 5px de là n'ajoutait
-// qu'un doublon dans une vue qui en comptait déjà huit.
-function flexStripHTML(items, period, navDate, ds, opts = {}) {
+// ── Section de la colonne de droite (tâches sans heure) ─
+// Toutes les tâches SANS heure vivent dans une colonne à droite de la grille
+// — Matin/Après-midi/Soir en premier (elles restent proches de « leur »
+// bande, demandé par Hugues), « Sans moment » en dernier. Chaque section
+// garde `.agenda-flex-strip`/`data-period` : c'est la cible de drop native
+// que `app._agendaHit()` résout par `closest()`, sa position dans le DOM
+// n'a donc aucune importance pour le drag-and-drop.
+// Pas de « + » sur Matin/Après-midi/Soir : le bouton de l'en-tête de LEUR
+// bande (`.agenda-band-add`, dans `.agenda-main`) vise déjà exactement le
+// même moment. « Sans moment » n'a pas de bande jumelle dans la colonne
+// principale : elle seule reçoit son propre bouton, via `opts.addAction`.
+function sidebarSectionHTML(period, label, icon, items, navDate, ds, opts = {}) {
   const chips = items.map(t => chipHTML(t, navDate, ds)).join('');
   const empty = !items.length
     ? `<span class="agenda-flex-empty">${opts.emptyLabel || 'déposer ici pour retirer l’heure'}</span>` : '';
-  return `<div class="agenda-flex-strip" data-period="${period}">
-    <span class="agenda-flex-label">sans heure</span>
-    <div class="agenda-flex-items">${chips}${empty}</div>
+  const addBtn = opts.addAction
+    ? `<button class="agenda-band-add" title="${opts.addTitle}" onclick="${opts.addAction}">${_plusSVG}</button>` : '';
+  return `<div class="agenda-sidebar-section">
+    <header class="agenda-band-head">
+      ${icon}<span class="agenda-band-label">${label}</span>
+      ${items.length ? `<span class="agenda-band-count">${items.length}</span>` : ''}
+      <span class="agenda-band-line"></span>
+      ${addBtn}
+    </header>
+    <div class="agenda-flex-strip" data-period="${period}">
+      <div class="agenda-flex-items">${chips}${empty}</div>
+    </div>
   </div>`;
 }
 
@@ -509,6 +533,9 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
     }
   }
 
+  // Le compteur de l'en-tête reste le total du moment (avec ET sans heure) :
+  // les tâches sans heure font toujours partie de CE moment, même si elles
+  // s'affichent maintenant dans la colonne de droite plutôt qu'ici.
   const count = bucket.timed.length + bucket.flex.length;
   return `<section class="agenda-band" data-period="${band.key}">
     <header class="agenda-band-head">
@@ -517,7 +544,6 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
       <span class="agenda-band-line"></span>
       <button class="agenda-band-add" title="Ajouter une tâche à ce moment" onclick="window.app.addSectionTask('${band.key}')">${_plusSVG}</button>
     </header>
-    ${flexStripHTML(bucket.flex, band.key, navDate, ds)}
     <div class="agenda-grid" style="--px:${px}px;--h:${height}px">
       <div class="agenda-rail">${railHours}${nowAdd}</div>
       <div class="agenda-canvas" data-period="${band.key}" data-from="${range.from * 60}" data-to="${range.to * 60}" data-px="${px}" style="--h:${height}px">
@@ -572,24 +598,32 @@ export function renderAgendaBody(todos, navDate, ctx) {
     : all;
   const buckets = splitItems(items, navDate, prefs);
 
-  const noneStrip = buckets.none.length
-    ? `<section class="agenda-band agenda-band--none" data-period="">
-        <header class="agenda-band-head">
-          ${BAND_ICONS.none}<span class="agenda-band-label">Sans moment</span>
-          <span class="agenda-band-count">${buckets.none.length}</span>
-          <span class="agenda-band-line"></span>
-          <button class="agenda-band-add" title="Ajouter une tâche sans moment" onclick="window.app.addSectionTask('')">${_plusSVG}</button>
-        </header>
-        ${flexStripHTML(buckets.none, '', navDate, ds, { emptyLabel: 'aucune' })}
-      </section>`
-    : '';
-
   const bands = AGENDA_BANDS.map(b => bandHTML(b, buckets[b.key], navDate, ds, prefs, ctx)).join('');
+
+  // Colonne de droite : tout ce qui n'a pas d'heure. Matin/Après-midi/Soir
+  // d'abord (chacune juste sous le titre de colonne, demandé par Hugues),
+  // « Sans moment » en dernier — toujours rendue, même vide, pour rester une
+  // cible de drop stable (cf. sidebarSectionHTML) au lieu d'apparaître et
+  // disparaître du DOM au gré du contenu.
+  const sidebarBands = AGENDA_BANDS.map(b =>
+    sidebarSectionHTML(b.key, b.label, BAND_ICONS[b.key], buckets[b.key].flex, navDate, ds)
+  ).join('');
+  const sidebarNone = sidebarSectionHTML('', 'Sans moment', BAND_ICONS.none, buckets.none, navDate, ds, {
+    emptyLabel: 'aucune',
+    addAction: `window.app.addSectionTask('')`,
+    addTitle: 'Ajouter une tâche sans moment',
+  });
 
   return `<div class="agenda-wrap">
     ${toolbarHTML(prefs, ctx)}
     <div class="agenda-scroll" id="agendaScroll">
-      ${noneStrip}${bands}
+      <div class="agenda-columns">
+        <div class="agenda-main">${bands}</div>
+        <aside class="agenda-sidebar">
+          <div class="agenda-sidebar-title">Sans heure</div>
+          ${sidebarBands}${sidebarNone}
+        </aside>
+      </div>
       <div class="agenda-hint">Glissez un bloc pour le déplacer · tirez son bord bas pour la durée · glissez sur une plage vide (ou double-cliquez) pour créer</div>
     </div>
     ${ctx.refillHTML || ''}

@@ -18145,7 +18145,44 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   gap: 18px;
 }
 
+.agenda-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.agenda-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .agenda-band {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agenda-sidebar {
+  flex: 0 0 220px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agenda-sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.agenda-sidebar-section {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -18204,11 +18241,8 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .agenda-flex-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 5px 8px;
+  min-height: 34px;
+  padding: 6px;
   border: 1.5px dashed var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface2) 55%, transparent);
@@ -18220,23 +18254,10 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
-.agenda-flex-label {
-  flex-shrink: 0;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--text-muted);
-  opacity: 0.65;
-}
-
 .agenda-flex-items {
-  flex: 1;
-  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
-  align-items: center;
 }
 
 .agenda-flex-empty {
@@ -18247,10 +18268,9 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .agenda-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 240px;
   padding: 4px 10px 4px 5px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent, var(--border));
@@ -18441,16 +18461,6 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   border-style: dashed;
   border-left-style: solid;
   background: repeating-linear-gradient(135deg, var(--surface) 0 7px, color-mix(in srgb, var(--surface2) 70%, transparent) 7px 14px);
-}
-.agenda-block.is-clipped::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 4px;
-  background: repeating-linear-gradient(90deg, var(--text-muted) 0 4px, transparent 4px 8px);
-  opacity: 0.5;
 }
 .agenda-block.done {
   opacity: 0.55;
@@ -18746,8 +18756,12 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   .agenda-toolbar {
     gap: 6px;
   }
-  .agenda-chip {
-    max-width: 100%;
+  .agenda-columns {
+    flex-direction: column;
+  }
+  .agenda-sidebar {
+    width: auto;
+    flex: none;
   }
 }
 .day-layout-switch {

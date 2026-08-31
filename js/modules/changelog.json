@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2996",
+    "date": "2026-08-31",
+    "message": "feat(agenda): colonne dédiée aux tâches sans heure + blocs à cheval sur midi affichés en entier"
+  },
+  {
     "version": "0.4.2982",
     "date": "2026-08-31",
     "message": "fix(report): glisser-déposer et menu Déplacer effacent aussi l'heure devenue obsolète"

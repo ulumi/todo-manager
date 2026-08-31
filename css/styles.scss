@@ -17445,7 +17445,39 @@ body.view-focus header { display: none; }
   gap: 18px;
 }
 
+// Colonne principale (grilles horaires Matin/Après-midi/Soir) à gauche,
+// colonne des tâches SANS heure à droite — cf. l'en-tête d'agendaView.js.
+// Aucun `filter`/`backdrop-filter`/`transform` ici ni sur `.agenda-main` :
+// `.agenda-flex-strip` (dans `.agenda-sidebar`) reste une vraie cible de
+// drop native, qu'un ancêtre filtré casserait silencieusement (cf. en-tête).
+.agenda-columns {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.agenda-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+
 .agenda-band { display: flex; flex-direction: column; gap: 6px; }
+
+.agenda-sidebar {
+  flex: 0 0 220px;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.agenda-sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  opacity: .6;
+}
+
+.agenda-sidebar-section { display: flex; flex-direction: column; gap: 6px; }
 
 .agenda-band-head {
   display: flex;
@@ -17491,13 +17523,13 @@ body.view-focus header { display: none; }
   &:hover { filter: brightness(1.15); }
 }
 
-// ── Bande flexible : les tâches du moment SANS heure ──────────────────
+// ── Bande flexible : les tâches SANS heure d'une section de la colonne
+// de droite (une par moment, plus « Sans moment ») — le libellé vit dans le
+// `.agenda-band-head` juste au-dessus (cf. sidebarSectionHTML), cette boîte
+// n'est donc plus qu'un conteneur (dashed = cible de drop) pour la liste.
 .agenda-flex-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 5px 8px;
+  min-height: 34px;
+  padding: 6px;
   border: 1.5px dashed var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--surface2) 55%, transparent);
@@ -17511,33 +17543,20 @@ body.view-focus header { display: none; }
   }
 }
 
-.agenda-flex-label {
-  flex-shrink: 0;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .07em;
-  color: var(--text-muted);
-  opacity: .65;
-}
-
 .agenda-flex-items {
-  flex: 1;
-  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
-  align-items: center;
 }
 
 .agenda-flex-empty { font-size: 11.5px; font-style: italic; color: var(--text-muted); opacity: .55; }
 
-// ── Pastille d'une tâche sans heure ───────────────────────────────────
+// ── Pastille d'une tâche sans heure — empilées pleine largeur dans la
+// colonne étroite de droite (contrairement à l'ancienne bande horizontale).
 .agenda-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  max-width: 240px;
   padding: 4px 10px 4px 5px;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent, var(--border));
@@ -17690,17 +17709,6 @@ body.view-focus header { display: none; }
       var(--surface) 0 7px,
       color-mix(in srgb, var(--surface2) 70%, transparent) 7px 14px
     );
-  }
-
-  // Le bloc déborde de sa bande de moment (ex. 11:30 → 13:00) : coupé net
-  // au bas de la bande, avec un liseré qui signale la continuation.
-  &.is-clipped::after {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    height: 4px;
-    background: repeating-linear-gradient(90deg, var(--text-muted) 0 4px, transparent 4px 8px);
-    opacity: .5;
   }
 
   &.done {
@@ -17962,7 +17970,10 @@ body.view-focus header { display: none; }
   .agenda-grid { grid-template-columns: 40px 1fr; }
   .agenda-hour { right: 5px; font-size: 9.5px; }
   .agenda-toolbar { gap: 6px; }
-  .agenda-chip { max-width: 100%; }
+  // Écran étroit : la colonne « sans heure » ne tient plus à côté de la
+  // grille — elle repasse sous elle, pleine largeur.
+  .agenda-columns { flex-direction: column; }
+  .agenda-sidebar { width: auto; flex: none; }
 }
 
 
