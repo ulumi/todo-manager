@@ -18148,10 +18148,21 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .agenda-columns {
   display: grid;
   grid-template-columns: 1fr 220px;
-  grid-template-areas: ".          side-none" "morning    side-morning" "afternoon  side-afternoon" "evening    side-evening";
+  grid-template-areas: "morning    side-morning" "afternoon  side-afternoon" "evening    side-evening";
   align-items: start;
   column-gap: 16px;
   row-gap: 18px;
+}
+
+.agenda-unscheduled-band {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agenda-unscheduled-band .agenda-flex-items {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .agenda-band {
@@ -18736,7 +18747,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   }
   .agenda-columns {
     grid-template-columns: 1fr;
-    grid-template-areas: "side-none" "morning" "side-morning" "afternoon" "side-afternoon" "evening" "side-evening";
+    grid-template-areas: "morning" "side-morning" "afternoon" "side-afternoon" "evening" "side-evening";
   }
 }
 .day-layout-switch {

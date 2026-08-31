@@ -10,14 +10,18 @@
 //  propre sous-grille horaire. Le concept `dayPeriod` — central dans toute
 //  l'app — reste donc la structure primaire, l'heure n'étant qu'une
 //  précision à l'intérieur du moment.
-//  Les tâches SANS heure vivent à part, dans une COLONNE DE DROITE :
-//  `.agenda-columns` est une grille CSS à 2 colonnes (bandes à gauche,
-//  sections « sans heure » à droite) où « Sans moment » occupe seule la 1re
-//  ligne (rien à gauche pour elle), puis Matin/Après-midi/Soir PARTAGENT
-//  chacune la ligne de grille de leur bande jumelle — même sommet des deux
-//  côtés, quelle que soit la hauteur de l'une ou l'autre (`grid-area`, posé
-//  en style inline par `bandHTML()`/`sidebarSectionHTML()`). Sorties de la
-//  grille horaire, elles ne lui volent plus d'espace vertical.
+//  Les tâches SANS heure D'UN MOMENT vivent à part, dans une COLONNE DE
+//  DROITE : `.agenda-columns` est une grille CSS à 2 colonnes (bandes à
+//  gauche, sections « sans heure » à droite) où Matin/Après-midi/Soir
+//  PARTAGENT chacune la ligne de grille de leur bande jumelle — même sommet
+//  des deux côtés, quelle que soit la hauteur de l'une ou l'autre
+//  (`grid-area`, posé en style inline par `bandHTML()`/`sidebarSectionHTML()`).
+//  Sorties de la grille horaire, elles ne lui volent plus d'espace vertical.
+//  Les tâches SANS heure NI moment (« À céduler aujourd'hui ») n'ont pas de
+//  jumelle à gauche : les mettre dans cette grille à 2 colonnes laissait une
+//  cellule vide sur la gauche — elles vivent donc en bandeau PLEINE LARGEUR
+//  à part, juste au-dessus, masqué entièrement si vide (cf.
+//  `unscheduledTodayHTML()`).
 //
 //  RÈGLE DE PLACEMENT : une tâche AVEC `startTime` est placée dans la bande
 //  que son heure désigne, quel que soit son `dayPeriod` stocké (une tâche à
@@ -461,38 +465,57 @@ function chipHTML(t, navDate, ds) {
   </div>`;
 }
 
-// ── Section de la colonne de droite (tâches sans heure) ─
-// Toutes les tâches SANS heure vivent dans une colonne à droite de la grille.
-// `.agenda-columns` est une grille CSS à 2 colonnes dont chaque section
-// partage sa LIGNE avec sa bande jumelle (`grid-area`, posé ici en style
-// inline) : « Sans moment » n'a pas de jumelle et occupe seule la 1re ligne
-// (rien à gauche), Matin/Après-midi/Soir partagent ensuite chacune la ligne
-// de LEUR bande — même sommet, quelle que soit la hauteur de l'une ou
-// l'autre (demandé par Hugues). Chaque section garde `.agenda-flex-strip`/
-// `data-period` : c'est la cible de drop native que `app._agendaHit()`
-// résout par `closest()`, sa position dans le DOM n'a donc aucune
-// importance pour le drag-and-drop.
-// Pas de « + » sur Matin/Après-midi/Soir : le bouton de l'en-tête de LEUR
-// bande (`.agenda-band-add`, à gauche, même ligne de grille) vise déjà
-// exactement le même moment. « Sans moment » n'a pas de bande jumelle :
-// elle seule reçoit son propre bouton, via `opts.addAction`.
-function sidebarSectionHTML(period, label, icon, items, navDate, ds, opts = {}) {
+// ── Section de la colonne de droite (tâches sans heure D'UN MOMENT) ────
+// Matin/Après-midi/Soir seulement — cf. `unscheduledTodayHTML()` juste après
+// pour les tâches qui n'ont NI heure NI moment. `.agenda-columns` est une
+// grille CSS à 2 colonnes où chaque section partage sa LIGNE avec sa bande
+// jumelle (`grid-area`, posé ici en style inline) : même sommet, quelle que
+// soit la hauteur de l'une ou l'autre. Toujours rendue, même vide (contraire
+// à `unscheduledTodayHTML()`) : Matin/Après-midi/Soir doivent rester des
+// cibles de drop stables. Garde `.agenda-flex-strip`/`data-period` : c'est
+// la cible de drop native que `app._agendaHit()` résout par `closest()`, sa
+// position dans le DOM n'a donc aucune importance pour le drag-and-drop.
+// Pas de « + » : le bouton de l'en-tête de LEUR bande (`.agenda-band-add`,
+// à gauche, même ligne de grille) vise déjà exactement le même moment.
+function sidebarSectionHTML(period, label, icon, items, navDate, ds) {
   const chips = items.map(t => chipHTML(t, navDate, ds)).join('');
   const empty = !items.length
-    ? `<span class="agenda-flex-empty">${opts.emptyLabel || 'déposer ici pour retirer l’heure'}</span>` : '';
-  const addBtn = opts.addAction
-    ? `<button class="agenda-band-add" title="${opts.addTitle}" onclick="${opts.addAction}">${_plusSVG}</button>` : '';
-  return `<div class="agenda-sidebar-section" style="grid-area:side-${period || 'none'}">
+    ? `<span class="agenda-flex-empty">déposer ici pour retirer l’heure</span>` : '';
+  return `<div class="agenda-sidebar-section" style="grid-area:side-${period}">
     <header class="agenda-band-head">
       ${icon}<span class="agenda-band-label">${label}</span>
       ${items.length ? `<span class="agenda-band-count">${items.length}</span>` : ''}
       <span class="agenda-band-line"></span>
-      ${addBtn}
     </header>
     <div class="agenda-flex-strip" data-period="${period}">
       <div class="agenda-flex-items">${chips}${empty}</div>
     </div>
   </div>`;
+}
+
+// ── Bandeau « À céduler aujourd'hui » (tâches SANS heure NI moment) ────
+// Contrairement aux sections par moment ci-dessus, ce bucket n'a pas de
+// bande jumelle à gauche : le mettre dans `.agenda-columns` (même en 1re
+// ligne, seule) laissait une cellule vide à gauche — demandé par Hugues à
+// corriger. Il vit donc HORS de la grille à 2 colonnes, en bandeau PLEINE
+// LARGEUR juste au-dessus (chips en ligne, comme avant l'introduction de la
+// colonne de droite). Masqué entièrement si vide — ce bucket est rare, pas
+// la peine de lui réserver en permanence une place qu'`unscheduledTodayHTML`
+// ne remplit presque jamais.
+function unscheduledTodayHTML(items, navDate, ds) {
+  if (!items.length) return '';
+  const chips = items.map(t => chipHTML(t, navDate, ds)).join('');
+  return `<section class="agenda-unscheduled-band">
+    <header class="agenda-band-head">
+      ${BAND_ICONS.none}<span class="agenda-band-label">À céduler aujourd’hui</span>
+      <span class="agenda-band-count">${items.length}</span>
+      <span class="agenda-band-line"></span>
+      <button class="agenda-band-add" title="Ajouter une tâche sans moment" onclick="window.app.addSectionTask('')">${_plusSVG}</button>
+    </header>
+    <div class="agenda-flex-strip" data-period="">
+      <div class="agenda-flex-items">${chips}</div>
+    </div>
+  </section>`;
 }
 
 // ── Bande de moment complète ────────────────────────────
@@ -608,17 +631,14 @@ export function renderAgendaBody(todos, navDate, ctx) {
 
   const bands = AGENDA_BANDS.map(b => bandHTML(b, buckets[b.key], navDate, ds, prefs, ctx)).join('');
 
-  // Colonne de droite : tout ce qui n'a pas d'heure. « Sans moment » en
-  // premier (rien à aligner à gauche pour elle), puis Matin/Après-midi/Soir
-  // — chacune alignée sur le DÉBUT de sa bande correspondante à gauche, pas
-  // simplement empilée à la suite (cf. le grid-template-areas de
-  // `.agenda-columns` : chaque bande et sa section partagent la même ligne
-  // de grille, donc le même sommet, quelle que soit leur hauteur propre).
-  const sidebarNone = sidebarSectionHTML('', 'Sans moment', BAND_ICONS.none, buckets.none, navDate, ds, {
-    emptyLabel: 'aucune',
-    addAction: `window.app.addSectionTask('')`,
-    addTitle: 'Ajouter une tâche sans moment',
-  });
+  // Colonne de droite : les tâches sans heure D'UN MOMENT, chacune alignée
+  // sur le DÉBUT de sa bande correspondante à gauche (cf. le
+  // grid-template-areas de `.agenda-columns` : chaque bande et sa section
+  // partagent la même ligne de grille, donc le même sommet, quelle que soit
+  // leur hauteur propre). Les tâches sans heure NI moment sont à part, en
+  // bandeau pleine largeur au-dessus (`unscheduledTodayHTML`) : voir sa
+  // documentation pour pourquoi elles ne peuvent pas rejoindre cette grille.
+  const unscheduled = unscheduledTodayHTML(buckets.none, navDate, ds);
   const sidebarBands = AGENDA_BANDS.map(b =>
     sidebarSectionHTML(b.key, b.label, BAND_ICONS[b.key], buckets[b.key].flex, navDate, ds)
   ).join('');
@@ -626,8 +646,9 @@ export function renderAgendaBody(todos, navDate, ctx) {
   return `<div class="agenda-wrap">
     ${toolbarHTML(prefs, ctx)}
     <div class="agenda-scroll" id="agendaScroll">
+      ${unscheduled}
       <div class="agenda-columns">
-        ${sidebarNone}${bands}${sidebarBands}
+        ${bands}${sidebarBands}
       </div>
       <div class="agenda-hint">Glissez un bloc pour le déplacer · tirez son bord bas pour la durée · glissez sur une plage vide (ou double-cliquez) pour créer</div>
     </div>

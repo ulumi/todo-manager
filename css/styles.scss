@@ -17446,15 +17446,16 @@ body.view-focus header { display: none; }
 }
 
 // Grille CSS à 2 colonnes (bandes horaires à gauche, sections « sans heure »
-// à droite) — cf. l'en-tête d'agendaView.js. Chaque bande et sa section
-// jumelle partagent une même LIGNE de grille (`grid-area`, posé en style
-// inline par bandHTML()/sidebarSectionHTML()) : la ligne prend la hauteur du
-// plus grand des deux, donc les deux commencent au même sommet, quelle que
-// soit la hauteur de l'un ou l'autre — c'est ce qui aligne « Matin » (à
-// gauche) sur sa section « sans heure » (à droite), etc. « Sans moment »
-// n'a pas de jumelle : elle occupe seule la 1re ligne, une cellule vide à
-// gauche (`.`) — Matin/Après-midi/Soir démarrent donc toutes les deux un cran
-// plus bas que le haut de la grille, mais restent alignées entre elles.
+// D'UN MOMENT à droite) — cf. l'en-tête d'agendaView.js. Chaque bande et sa
+// section jumelle partagent une même LIGNE de grille (`grid-area`, posé en
+// style inline par bandHTML()/sidebarSectionHTML()) : la ligne prend la
+// hauteur du plus grand des deux, donc les deux commencent au même sommet,
+// quelle que soit la hauteur de l'un ou l'autre — c'est ce qui aligne
+// « Matin » (à gauche) sur sa section « sans heure » (à droite), etc.
+// Les tâches sans heure NI moment (« À céduler aujourd'hui ») n'ont pas de
+// jumelle à gauche : leur donner une ligne ici laissait une cellule vide sur
+// toute la largeur de la colonne principale — elles vivent donc HORS de
+// cette grille, en bandeau à part (`.agenda-unscheduled-band`, plus bas).
 // `align-items: start` : une section plus courte que sa bande ne s'étire pas
 // pour remplir la ligne, elle reste juste calée sur son sommet.
 // Aucun `filter`/`backdrop-filter`/`transform` ici : `.agenda-flex-strip`
@@ -17464,13 +17465,28 @@ body.view-focus header { display: none; }
   display: grid;
   grid-template-columns: 1fr 220px;
   grid-template-areas:
-    ".          side-none"
     "morning    side-morning"
     "afternoon  side-afternoon"
     "evening    side-evening";
   align-items: start;
   column-gap: 16px;
   row-gap: 18px;
+}
+
+// ── Bandeau « À céduler aujourd'hui » (sans heure NI moment) ───────────
+// Pleine largeur, chips en ligne (comme avant l'introduction de la colonne
+// de droite) — n'est jamais dans le DOM quand ce bucket est vide (cf.
+// unscheduledTodayHTML()), donc aucun style d'état vide à prévoir ici.
+.agenda-unscheduled-band {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .agenda-flex-items {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
 }
 
 .agenda-band { display: flex; flex-direction: column; gap: 6px; }
@@ -17521,10 +17537,11 @@ body.view-focus header { display: none; }
   &:hover { filter: brightness(1.15); }
 }
 
-// ── Bande flexible : les tâches SANS heure d'une section de la colonne
-// de droite (une par moment, plus « Sans moment ») — le libellé vit dans le
-// `.agenda-band-head` juste au-dessus (cf. sidebarSectionHTML), cette boîte
-// n'est donc plus qu'un conteneur (dashed = cible de drop) pour la liste.
+// ── Bande flexible : les tâches SANS heure d'une section de la colonne de
+// droite (une par moment) OU du bandeau « À céduler aujourd'hui » — le
+// libellé vit dans le `.agenda-band-head` juste au-dessus (cf.
+// sidebarSectionHTML/unscheduledTodayHTML), cette boîte n'est donc plus
+// qu'un conteneur (dashed = cible de drop) pour la liste.
 .agenda-flex-strip {
   min-height: 34px;
   padding: 6px;
@@ -17975,7 +17992,6 @@ body.view-focus header { display: none; }
   .agenda-columns {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "side-none"
       "morning"
       "side-morning"
       "afternoon"

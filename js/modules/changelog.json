@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3010",
+    "date": "2026-08-31",
+    "message": "fix(agenda): « Sans moment » renommée « À céduler aujourd'hui », en bandeau pleine largeur masqué si vide"
+  },
+  {
     "version": "0.4.3003",
     "date": "2026-08-31",
     "message": "fix(agenda): colonne sans heure réordonnée (Sans moment en tête) et alignée sur sa bande à gauche"
