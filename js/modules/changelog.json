@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.2982",
+    "date": "2026-08-31",
+    "message": "fix(report): glisser-déposer et menu Déplacer effacent aussi l'heure devenue obsolète"
+  },
+  {
     "version": "0.4.2981",
     "date": "2026-08-30",
     "message": "fix(récurrentes): plus de date de création ni de date de complétion affichée sur une série"

@@ -4952,8 +4952,15 @@ class TodoApp {
     if (!targets.length) return;
     snapshot(state.todos);
     targets.forEach(t => {
-      if (isCopy) this._insertClone(t, { date: newDateStr });
-      else { t.date = newDateStr; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); }
+      const changedDay = !!t.date && t.date !== newDateStr;
+      if (isCopy) {
+        const clone = this._insertClone(t, { date: newDateStr });
+        if (changedDay) this._clearStaleScheduleOnMove(clone);
+      } else {
+        t.date = newDateStr; t.updatedAt = Date.now();
+        if (changedDay) this._clearStaleScheduleOnMove(t);
+        this._leaveGroupUnlessWhole(t, ids);
+      }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -6480,8 +6487,19 @@ class TodoApp {
     snapshot(state.todos);
     const isCopy = this._isCopyDrag(event);
     targets.forEach(t => {
-      if (isCopy) this._insertClone(t, { date, backlog });
-      else { t.date = date; t.backlog = backlog; t.updatedAt = Date.now(); this._leaveGroupUnlessWhole(t, ids); }
+      // Seul un déplacement vers une date RÉELLE (Aujourd'hui/Demain) efface
+      // le créneau devenu obsolète — cf. _clearStaleScheduleOnMove(). Envoyer
+      // vers l'Inbox/le Backlog (date null) laisse le moment/l'heure tels
+      // quels, comme le fait déjà overdueToBacklog().
+      const changedDay = !!date && !!t.date && t.date !== date;
+      if (isCopy) {
+        const clone = this._insertClone(t, { date, backlog });
+        if (changedDay) this._clearStaleScheduleOnMove(clone);
+      } else {
+        t.date = date; t.backlog = backlog; t.updatedAt = Date.now();
+        if (changedDay) this._clearStaleScheduleOnMove(t);
+        this._leaveGroupUnlessWhole(t, ids);
+      }
     });
     saveTodos(state.todos);
     if (ids.length > 1) msClear();
@@ -6603,6 +6621,21 @@ class TodoApp {
     } else {
       this.overdueAllToBacklog();
     }
+  }
+
+  // Moment/heure devenus obsolètes une fois la tâche RÉELLEMENT déplacée vers
+  // un autre jour — même contrat que _postpone() (voir plus bas) : un
+  // déplacement générique (aucun moment/heure ciblé par le geste) ne doit
+  // jamais laisser resurgir un créneau d'un plan qui n'existe plus. Partagé
+  // par _postpone(), moveManyToDate() (drag semaine/mois/Planifier/mini-
+  // calendrier) et _sendManyTo() (menu contextuel Déplacer, onglets du
+  // header) — les trois seuls chemins qui réassignent `t.date` vers une
+  // valeur RÉELLEMENT différente de celle que la tâche avait déjà.
+  _clearStaleScheduleOnMove(t) {
+    delete t.dayPeriod;
+    delete t.startTime;
+    delete t.endTime;
+    delete t.flexibleTime;
   }
 
   // ── Bilan / Review — tâches laissées pour compte ─────────────────────────
