@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3012",
+    "date": "2026-09-02",
+    "message": "fix(agenda): bouton « + » de la barre titre d'un moment réparé (ne ciblait que le mode Liste)"
+  },
+  {
     "version": "0.4.3011",
     "date": "2026-09-02",
     "message": "fix(subtasks): clic droit « Ajouter une sous-tâche » réparé en Agenda/semaine/mois/Planifier/Bilan (repli sur le modal d'édition)"

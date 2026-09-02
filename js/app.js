@@ -1950,26 +1950,34 @@ class TodoApp {
 
   // Liste d'un moment de la colonne Aujourd'hui (Matin/Après-midi/Soir, ou
   // la liste sans moment) — cible des saisies inline lancées par le clic
-  // droit sur la section elle-même.
+  // droit sur la section elle-même, et par le « + » de la vue Agenda
+  // (.agenda-band-add → addSectionTask()).
   _sectionListEl(period) {
     const col = document.querySelector('.day-col--punctual');
-    if (!col) return null;
-    if (period) {
-      return col.querySelector(`.day-heure-section[data-period="${period}"] .todo-list`)
-          || col.querySelector(`.todo-list[data-group="punctual-${period}"]`);
+    if (col) {
+      if (period) {
+        return col.querySelector(`.day-heure-section[data-period="${period}"] .todo-list`)
+            || col.querySelector(`.todo-list[data-group="punctual-${period}"]`);
+      }
+      const existing = col.querySelector('.todo-list[data-group="punctual"]');
+      if (existing) return existing;
+      // Aucune tâche sans moment aujourd'hui : cette liste n'est pas rendue du
+      // tout — on pose un conteneur d'accueil à l'endroit exact qu'elle
+      // occupera (juste avant les sections de moment). Il disparaît au
+      // prochain render(), et ne laisse rien de visible si la saisie est annulée.
+      const grid = col.querySelector('.day-heure-grid');
+      if (!grid) return null;
+      const holder = document.createElement('div');
+      holder.className = 'todo-list';
+      grid.before(holder);
+      return holder;
     }
-    const existing = col.querySelector('.todo-list[data-group="punctual"]');
-    if (existing) return existing;
-    // Aucune tâche sans moment aujourd'hui : cette liste n'est pas rendue du
-    // tout — on pose un conteneur d'accueil à l'endroit exact qu'elle
-    // occupera (juste avant les sections de moment). Il disparaît au
-    // prochain render(), et ne laisse rien de visible si la saisie est annulée.
-    const grid = col.querySelector('.day-heure-grid');
-    if (!grid) return null;
-    const holder = document.createElement('div');
-    holder.className = 'todo-list';
-    grid.before(holder);
-    return holder;
+    // Vue Agenda (.day-columns n'existe pas) : les tâches sans heure d'un
+    // moment vivent dans la colonne de droite, une seule et même structure
+    // pour un vrai moment et pour « sans moment » (period === '', bandeau
+    // « À céduler aujourd'hui » — voir agendaView.js sidebarSectionHTML/
+    // unscheduledTodayHTML, toutes deux posent .agenda-flex-strip[data-period]).
+    return document.querySelector(`.agenda-flex-strip[data-period="${period}"] .agenda-flex-items`);
   }
 
   // Clic droit sur un moment → « Créer un groupe ». Un groupe n'existe que
