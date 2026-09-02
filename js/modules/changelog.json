@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3011",
+    "date": "2026-09-02",
+    "message": "fix(subtasks): clic droit « Ajouter une sous-tâche » réparé en Agenda/semaine/mois/Planifier/Bilan (repli sur le modal d'édition)"
+  },
+  {
     "version": "0.4.3010",
     "date": "2026-08-31",
     "message": "fix(agenda): « Sans moment » renommée « À céduler aujourd'hui », en bandeau pleine largeur masqué si vide"

@@ -1789,9 +1789,19 @@ class TodoApp {
   // Point d'entrée commun avec le bouton « + » de la rangée d'actions de
   // l'item (`.todo-subtask-add-btn`, rendu seulement quand la tâche n'a pas
   // encore de checklist — cf. subtaskParts, render.js).
-  ctxAddSubtask(id) {
+  ctxAddSubtask(id, ctxDs) {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
-    if (!itemEl) return;
+    if (!itemEl) {
+      // Vues sans structure de checklist à patcher en place (Agenda, semaine,
+      // mois, Planifier, Bilan, file Focus...) : pas d'ancre `.subtask-list`
+      // où injecter un input. Repli sur le modal d'édition — sa section
+      // Sous-tâches est TOUJOURS dépliée par défaut (cf. patterns projet) —
+      // et enchaîne directement sur la saisie inline, plutôt que de rester
+      // silencieux faute de DOM à patcher.
+      this.openEditModal(id, ctxDs || null);
+      this.addModalSubtaskInline();
+      return;
+    }
     // data-date porte l'occurrence RÉELLEMENT affichée (peut différer
     // d'aujourd'hui si on consulte un autre jour) — jamais DS(today()) en dur.
     const ds = itemEl.classList.contains('inbox-item') ? '' : (itemEl.dataset.date || DS(today()));
@@ -11151,7 +11161,7 @@ _todoCtxMenu.addEventListener('click', e => {
   if (action === 'focus')       app.focusStartOn(single, ds);
   if (action === 'edit')        app.openEditModal(single, ds);
   if (action === 'add-after')   app.addTaskAfter(single, ds);
-  if (action === 'add-subtask') app.ctxAddSubtask(single);
+  if (action === 'add-subtask') app.ctxAddSubtask(single, ds);
   if (action === 'add-parent')  app.addParentTask(single);
   if (action === 'group-header') app.addGroupHeader(single);
   if (action === 'task-to-group') app.convertTaskToGroup(single);
