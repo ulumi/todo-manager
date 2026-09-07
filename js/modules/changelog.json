@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3022",
+    "date": "2026-09-07",
+    "message": "fix(subtasks): Entrée sur l'ajout inline (Agenda/semaine/mois/Planifier/Bilan/Focus) enchaîne sur une nouvelle sous-tâche"
+  },
+  {
     "version": "0.4.3021",
     "date": "2026-09-07",
     "message": "fix(subtasks): clic droit « Ajouter une sous-tâche » toujours inline (Agenda/semaine/mois/Planifier/Bilan/Focus), plus de repli sur le modal"

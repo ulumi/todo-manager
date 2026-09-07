@@ -1826,10 +1826,7 @@ class TodoApp {
     // « Ensuite » : chips/lignes compactes qui n'affichent aucune checklist
     // — un input flottant ancré sur l'item (cf. _floatingAddSubtaskInline)
     // remplace ici le repli sur le modal d'édition.
-    const anchor = document.querySelector([
-      '.week-todo-item', '.month-todo-dot', '.plan-week-task',
-      '.review-item', '.agenda-chip', '.focus-queue-item',
-    ].map(sel => `${sel}[data-id="${id}"]`).join(', '));
+    const anchor = this._lightweightTaskAnchor(id);
     if (anchor) {
       this._floatingAddSubtaskInline(anchor, id, ctxDs || anchor.dataset.date || '');
       return;
@@ -1838,6 +1835,15 @@ class TodoApp {
     // seul chemin possible — sa section Sous-tâches est toujours dépliée.
     this.openEditModal(id, ctxDs || null);
     this.addModalSubtaskInline();
+  }
+
+  // Ancre DOM partagée par _floatingAddSubtaskInline et sa propre rafale
+  // (cf. plus bas) — toutes les vues chip/ligne compacte sans checklist.
+  _lightweightTaskAnchor(id) {
+    return document.querySelector([
+      '.week-todo-item', '.month-todo-dot', '.plan-week-task',
+      '.review-item', '.agenda-chip', '.focus-queue-item',
+    ].map(sel => `${sel}[data-id="${id}"]`).join(', '));
   }
 
   // Ajout de sous-tâche par clic droit dans un bloc de la vue Agenda : le
@@ -1873,7 +1879,11 @@ class TodoApp {
       if (originalH) blockEl.style.setProperty('--h', originalH);
       blockEl.style.zIndex = '';
     };
-    const finish = () => {
+    // reopen=true (Entrée) : enchaîne directement sur un nouvel input pour la
+    // sous-tâche suivante — rafale, même convention que addSubtaskInline. Le
+    // bloc visé n'est plus celui-ci : _saveNewSubtask() vient de le remplacer
+    // en entier via son render(), il faut le retrouver dans le DOM frais.
+    const finish = (reopen = false) => {
       if (done) return;
       done = true;
       const title = input.value.trim();
@@ -1883,13 +1893,17 @@ class TodoApp {
       // ce bloc avec sa vraie géométrie — pas la peine de restaurer --h/z-index
       // ici, ce nœud DOM n'existera plus.
       this._saveNewSubtask(todoId, title, null, ds);
+      if (reopen) {
+        const fresh = document.querySelector(`.agenda-block[data-id="${todoId}"]`);
+        if (fresh) this._agendaAddSubtaskInline(fresh, todoId, ds);
+      }
     };
     input.addEventListener('keydown', e => {
       e.stopPropagation();
-      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
       if (e.key === 'Escape') { done = true; cleanup(); }
     });
-    input.addEventListener('blur', finish);
+    input.addEventListener('blur', () => finish(false));
     subs.appendChild(input);
     blockEl.style.zIndex = 6; // au-dessus d'un voisin non survolé (:hover → 5)
     const needed = body.scrollHeight + 10; // + marge pour la poignée de redimensionnement
@@ -1920,19 +1934,27 @@ class TodoApp {
     input.placeholder = 'Nouvelle sous-tâche…';
     input.autocomplete = 'off';
     let done = false;
-    const finish = () => {
+    // reopen=true (Entrée) : même rafale que addSubtaskInline — ré-ancre un
+    // nouveau popover sur l'item, retrouvé dans le DOM frais après le
+    // render() de _saveNewSubtask() (l'ancien anchorEl a été remplacé).
+    const finish = (reopen = false) => {
       if (done) return;
       done = true;
       const title = input.value.trim();
       pop.remove();
-      if (title) this._saveNewSubtask(todoId, title, null, ds);
+      if (!title) return;
+      this._saveNewSubtask(todoId, title, null, ds);
+      if (reopen) {
+        const fresh = this._lightweightTaskAnchor(todoId);
+        if (fresh) this._floatingAddSubtaskInline(fresh, todoId, ds);
+      }
     };
     input.addEventListener('keydown', e => {
       e.stopPropagation();
-      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Enter') { e.preventDefault(); finish(true); }
       if (e.key === 'Escape') { done = true; pop.remove(); }
     });
-    input.addEventListener('blur', finish);
+    input.addEventListener('blur', () => finish(false));
     pop.appendChild(input);
     attachMic(input, { wrap: true, compact: true });
     document.body.appendChild(pop);
