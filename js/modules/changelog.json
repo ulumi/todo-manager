@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3021",
+    "date": "2026-09-07",
+    "message": "fix(subtasks): clic droit « Ajouter une sous-tâche » toujours inline (Agenda/semaine/mois/Planifier/Bilan/Focus), plus de repli sur le modal"
+  },
+  {
     "version": "0.4.3017",
     "date": "2026-09-07",
     "message": "feat(agenda): déposer une tâche sur une autre la cale à la même heure (côte à côte), remplace l'imbrication au drag"

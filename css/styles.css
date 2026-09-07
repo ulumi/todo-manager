@@ -3301,6 +3301,31 @@ body.day-col-resizing {
   opacity: 0.8;
 }
 
+.subtask-quickadd-popover {
+  position: fixed;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  z-index: 500;
+}
+.subtask-quickadd-popover input {
+  display: block;
+  width: 220px;
+  max-width: 60vw;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 30px 6px 9px;
+  font-size: 13px;
+  background: var(--surface2);
+  color: var(--text);
+  outline: none;
+}
+.subtask-quickadd-popover input:focus {
+  border-color: var(--primary);
+}
+
 .modal-subtask-item {
   display: flex;
   align-items: center;
@@ -18935,6 +18960,24 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 .agenda-sub-more:hover {
   background: none;
+}
+
+.agenda-sub-new-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 20px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface2);
+  color: var(--text);
+  outline: none;
+}
+.agenda-sub-new-input:focus {
+  border-color: var(--primary);
 }
 
 .stw-subs {

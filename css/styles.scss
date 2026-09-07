@@ -3405,6 +3405,37 @@ body.day-col-resizing {
   }
 }
 
+// Ajout de sous-tâche par clic droit dans les vues sans checklist en place
+// (semaine, mois, Planifier, Bilan, chips Agenda, file Focus « Ensuite ») —
+// input flottant ancré sur l'item (app._floatingAddSubtaskInline), même
+// chrome que .subtask-warning-popover mais sans son contenu liste/actions.
+.subtask-quickadd-popover {
+  position: fixed;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.14);
+  z-index: 500;
+
+  input {
+    display: block;
+    width: 220px;
+    max-width: 60vw;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    // Padding droit réservé pour le bouton micro (.dictate-btn, attachMic) —
+    // sans lui le texte tapé passerait sous l'icône.
+    padding: 6px 30px 6px 9px;
+    font-size: 13px;
+    background: var(--surface2);
+    color: var(--text);
+    outline: none;
+
+    &:focus { border-color: var(--primary); }
+  }
+}
+
 // Modal subtask section
 .modal-subtask-item {
   display: flex;
@@ -18169,6 +18200,28 @@ body.view-focus header { display: none; }
 .agenda-sub-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .agenda-sub-more { font-style: italic; opacity: .7; cursor: default; &:hover { background: none; } }
+
+// Ajout de sous-tâche par clic droit directement dans un bloc d'Agenda
+// (app._agendaAddSubtaskInline) — un peu plus haut que .agenda-sub (14px) :
+// il reçoit un bouton micro (.dictate-btn--sm, 18px) comme tout input de
+// sous-tâche, qui déborderait d'une ligne calée sur la hauteur d'affichage.
+// Padding droit réservé pour que le texte tapé ne passe pas sous l'icône.
+.agenda-sub-new-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 20px 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface2);
+  color: var(--text);
+  outline: none;
+
+  &:focus { border-color: var(--primary); }
+}
 
 // ── Sous-tâches listées dans l'avertissement de complétion ─────────────
 .stw-subs {

@@ -1791,35 +1791,154 @@ class TodoApp {
   // encore de checklist — cf. subtaskParts, render.js).
   ctxAddSubtask(id, ctxDs) {
     const itemEl = document.querySelector(`.todo-item[data-id="${id}"], .inbox-item[data-id="${id}"]`);
-    if (!itemEl) {
-      // Vues sans structure de checklist à patcher en place (Agenda, semaine,
-      // mois, Planifier, Bilan, file Focus...) : pas d'ancre `.subtask-list`
-      // où injecter un input. Repli sur le modal d'édition — sa section
-      // Sous-tâches est TOUJOURS dépliée par défaut (cf. patterns projet) —
-      // et enchaîne directement sur la saisie inline, plutôt que de rester
-      // silencieux faute de DOM à patcher.
-      this.openEditModal(id, ctxDs || null);
-      this.addModalSubtaskInline();
+    if (itemEl) {
+      // data-date porte l'occurrence RÉELLEMENT affichée (peut différer
+      // d'aujourd'hui si on consulte un autre jour) — jamais DS(today()) en dur.
+      const ds = itemEl.classList.contains('inbox-item') ? '' : (itemEl.dataset.date || DS(today()));
+      if (!itemEl.querySelector('.subtask-list')) {
+        itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, ds)}</div></div>`);
+      } else {
+        // La liste peut déjà exister mais être repliée (grid-template-rows:0)
+        // — sans dépli, l'input inline serait injecté hors de vue
+        const wrap = itemEl.querySelector('.subtask-collapse.collapsed');
+        if (wrap) {
+          wrap.classList.remove('collapsed');
+          expandSubtask(id);
+          const toggleBtn = itemEl.querySelector('.todo-subtask-toggle');
+          toggleBtn?.querySelector('.subtask-toggle-chevron')?.classList.remove('collapsed');
+          if (toggleBtn) toggleBtn.title = 'Masquer les sous-tâches';
+        }
+      }
+      this.addSubtaskInline(id, null, ds);
       return;
     }
-    // data-date porte l'occurrence RÉELLEMENT affichée (peut différer
-    // d'aujourd'hui si on consulte un autre jour) — jamais DS(today()) en dur.
-    const ds = itemEl.classList.contains('inbox-item') ? '' : (itemEl.dataset.date || DS(today()));
-    if (!itemEl.querySelector('.subtask-list')) {
-      itemEl.insertAdjacentHTML('beforeend', `<div class="subtask-collapse"><div class="subtask-collapse-inner">${subtaskListHTML([], id, ds)}</div></div>`);
-    } else {
-      // La liste peut déjà exister mais être repliée (grid-template-rows:0)
-      // — sans dépli, l'input inline serait injecté hors de vue
-      const wrap = itemEl.querySelector('.subtask-collapse.collapsed');
-      if (wrap) {
-        wrap.classList.remove('collapsed');
-        expandSubtask(id);
-        const toggleBtn = itemEl.querySelector('.todo-subtask-toggle');
-        toggleBtn?.querySelector('.subtask-toggle-chevron')?.classList.remove('collapsed');
-        if (toggleBtn) toggleBtn.title = 'Masquer les sous-tâches';
-      }
+    // Focus (tâche courante, plein écran) : sa checklist (`_subtasksHTML`,
+    // focus.js) est TOUJOURS rendue avec un bouton d'ajout déjà câblé sur le
+    // même mécanisme inline — rien à réinventer ici.
+    const focusEl = document.querySelector(`.focus-current-item[data-id="${id}"]`);
+    if (focusEl) { this.focusAddSubtask(id); return; }
+    // Agenda (grille horaire) : le bloc affiche déjà sa checklist quand il en
+    // a une (`.agenda-block-subs`) — même traitement en place, le bloc étant
+    // fait grandir pour la durée de la saisie (cf. _agendaAddSubtaskInline).
+    const blockEl = document.querySelector(`.agenda-block[data-id="${id}"]`);
+    if (blockEl) { this._agendaAddSubtaskInline(blockEl, id, ctxDs || blockEl.dataset.date || ''); return; }
+    // Semaine, mois, Planifier, Bilan, chips Agenda (sans heure), file Focus
+    // « Ensuite » : chips/lignes compactes qui n'affichent aucune checklist
+    // — un input flottant ancré sur l'item (cf. _floatingAddSubtaskInline)
+    // remplace ici le repli sur le modal d'édition.
+    const anchor = document.querySelector([
+      '.week-todo-item', '.month-todo-dot', '.plan-week-task',
+      '.review-item', '.agenda-chip', '.focus-queue-item',
+    ].map(sel => `${sel}[data-id="${id}"]`).join(', '));
+    if (anchor) {
+      this._floatingAddSubtaskInline(anchor, id, ctxDs || anchor.dataset.date || '');
+      return;
     }
-    this.addSubtaskInline(id, null, ds);
+    // Repli ultime (aucune ancre DOM trouvée pour cet id) : le modal reste le
+    // seul chemin possible — sa section Sous-tâches est toujours dépliée.
+    this.openEditModal(id, ctxDs || null);
+    this.addModalSubtaskInline();
+  }
+
+  // Ajout de sous-tâche par clic droit dans un bloc de la vue Agenda : le
+  // bloc affiche déjà sa checklist quand il en a une (`.agenda-block-subs`,
+  // agendaView.js), donc on y injecte un input du même genre — MAIS le bloc
+  // a `overflow:hidden` et une hauteur figée (`--h`, posée par blockGeometry
+  // au dernier render()) : sans l'agrandir, l'input serait invisible,
+  // silencieusement rogné. On la fait donc grandir à la mesure réelle du
+  // contenu (`body.scrollHeight`), en approximation transitoire — le prochain
+  // render() (déclenché par `_saveNewSubtask()`) recalcule la vraie géométrie
+  // et remplace ce DOM en entier, donc cette approximation n'a besoin d'être
+  // juste que le temps de la frappe. z-index remonté comme au survol, pour
+  // qu'un bloc agrandi ne disparaisse pas sous son voisin du dessous.
+  _agendaAddSubtaskInline(blockEl, todoId, ds) {
+    const body = blockEl.querySelector('.agenda-block-body');
+    if (!body) { this.openEditModal(todoId, ds || null); this.addModalSubtaskInline(); return; }
+    let subs = body.querySelector('.agenda-block-subs');
+    const isNewList = !subs;
+    if (isNewList) {
+      subs = document.createElement('div');
+      subs.className = 'agenda-block-subs';
+      body.appendChild(subs);
+    }
+    const originalH = blockEl.style.getPropertyValue('--h');
+    const input = document.createElement('input');
+    input.className = 'agenda-sub-new-input';
+    input.placeholder = 'Nouvelle sous-tâche…';
+    input.autocomplete = 'off';
+    let done = false;
+    const cleanup = () => {
+      input.remove();
+      if (isNewList && !subs.children.length) subs.remove();
+      if (originalH) blockEl.style.setProperty('--h', originalH);
+      blockEl.style.zIndex = '';
+    };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const title = input.value.trim();
+      if (!title) { cleanup(); return; }
+      input.remove();
+      // _saveNewSubtask() déclenche déjà un render() complet, qui reconstruit
+      // ce bloc avec sa vraie géométrie — pas la peine de restaurer --h/z-index
+      // ici, ce nœud DOM n'existera plus.
+      this._saveNewSubtask(todoId, title, null, ds);
+    };
+    input.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Escape') { done = true; cleanup(); }
+    });
+    input.addEventListener('blur', finish);
+    subs.appendChild(input);
+    blockEl.style.zIndex = 6; // au-dessus d'un voisin non survolé (:hover → 5)
+    const needed = body.scrollHeight + 10; // + marge pour la poignée de redimensionnement
+    const curH = parseFloat(blockEl.style.getPropertyValue('--h')) || blockEl.offsetHeight;
+    if (needed > curH) blockEl.style.setProperty('--h', `${needed}px`);
+    attachMic(input, { wrap: true, compact: true });
+    input.focus();
+    autoStartDictation(input);
+  }
+
+  // Ajout de sous-tâche par clic droit dans une vue sans AUCUNE checklist en
+  // place (semaine, mois, Planifier, Bilan, chips Agenda, file Focus
+  // « Ensuite ») : un petit input flottant ancré sur l'item (position:fixed,
+  // cf. _positionPopover — mêmes calculs que le popover de checklist, mais
+  // SANS son dismiss-au-clic-extérieur : un scroll/resize pendant la frappe
+  // ne doit jamais faire disparaître un texte en cours de saisie, contrairement
+  // à une simple checklist consultative — blur/Entrée/Échap suffisent, même
+  // cœur que `addSubtaskInline`). Persiste via `_saveNewSubtask()` (partagé,
+  // déclenche son propre render()) : rien n'est affiché en permanence après
+  // coup dans ces vues, qui ne rendent aucune checklist — la sous-tâche existe,
+  // visible là où elle l'est déjà (vue jour, Agenda, Backlog/Inbox, Focus).
+  _floatingAddSubtaskInline(anchorEl, todoId, ds) {
+    document.querySelectorAll('.subtask-quickadd-popover').forEach(el => el.remove());
+    const pop = document.createElement('div');
+    pop.className = 'subtask-quickadd-popover';
+    pop.onclick = e => e.stopPropagation();
+    const input = document.createElement('input');
+    input.placeholder = 'Nouvelle sous-tâche…';
+    input.autocomplete = 'off';
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const title = input.value.trim();
+      pop.remove();
+      if (title) this._saveNewSubtask(todoId, title, null, ds);
+    };
+    input.addEventListener('keydown', e => {
+      e.stopPropagation();
+      if (e.key === 'Enter') { e.preventDefault(); finish(); }
+      if (e.key === 'Escape') { done = true; pop.remove(); }
+    });
+    input.addEventListener('blur', finish);
+    pop.appendChild(input);
+    attachMic(input, { wrap: true, compact: true });
+    document.body.appendChild(pop);
+    this._positionPopover(pop, anchorEl);
+    input.focus();
+    autoStartDictation(input);
   }
 
   // Petit input inline injecté juste au-dessus d'un item de tâche pour
@@ -2043,7 +2162,11 @@ class TodoApp {
   // au-dessus de l'ancre ou en dessous s'il n'y a pas la place, borné au
   // viewport. Voir _showSubtaskWarning pour POURQUOI ils ne vivent jamais
   // dans la carte (ancêtres `overflow: hidden`).
-  _placePopover(pop, anchorEl) {
+  // Pur calcul de position — extrait pour être réutilisable sans le
+  // dismiss-au-clic-extérieur de _placePopover (cf. _floatingAddSubtaskInline,
+  // où un scroll/resize pendant la frappe ne doit jamais faire disparaître un
+  // texte en cours de saisie).
+  _positionPopover(pop, anchorEl) {
     const rect = anchorEl.getBoundingClientRect();
     const pw = pop.offsetWidth, ph = pop.offsetHeight;
     const below = rect.top < ph + 16;
@@ -2051,6 +2174,11 @@ class TodoApp {
     const clamp = (v, min, max) => Math.max(min, Math.min(v, max));
     pop.style.left = `${clamp(rect.left, 8, Math.max(8, window.innerWidth - pw - 8))}px`;
     pop.style.top  = `${clamp(below ? rect.bottom + 6 : rect.top - ph - 6, 8, Math.max(8, window.innerHeight - ph - 8))}px`;
+    return below;
+  }
+
+  _placePopover(pop, anchorEl) {
+    this._positionPopover(pop, anchorEl);
     setTimeout(() => {
       const dismiss = e => {
         if (e?.type === 'click' && pop.contains(e.target)) return;
