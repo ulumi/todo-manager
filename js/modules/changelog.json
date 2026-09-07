@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3038",
+    "date": "2026-09-07",
+    "message": "feat(subtasks): bouton « + » visible dans toutes les vues (Agenda, semaine, mois, Planifier, Bilan, Focus), discret si la tâche n'a pas encore de sous-tâche"
+  },
+  {
     "version": "0.4.3022",
     "date": "2026-09-07",
     "message": "fix(subtasks): Entrée sur l'ajout inline (Agenda/semaine/mois/Planifier/Bilan/Focus) enchaîne sur une nouvelle sous-tâche"

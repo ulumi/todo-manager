@@ -693,12 +693,20 @@ export function renderFocusView(app) {
       queueRows += `<div class="focus-queue-group">${g.label}<span class="focus-queue-group-n">${n}</span></div>`;
       lastGroup = g.key;
     }
+    // Bouton « + » seulement pour une vraie tâche (id simple) : un id composé
+    // "todoId::stid" (sous-tâche comme item de file) n'est pas résolvable par
+    // ctxAddSubtask()/_saveNewSubtask() — mêmes ids simples que MS_SELECTABLE
+    // exige déjà pour le clic droit (cf. le listener contextmenu global).
+    const subtaskBtn = !isSub
+      ? `<button class="focus-queue-subtask-add${(t.subtasks || []).length ? ' has-subtasks' : ''}" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${DS(d)}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>`
+      : '';
     queueRows += `
         <div class="focus-queue-item${isSub ? ' focus-queue-item--subtask' : ''}${t.priority ? ` prio-${t.priority}` : ''}"${canDrag && !isSub ? ' draggable="true"' : ''} data-id="${t.id}" data-date="${DS(d)}" data-group="${g ? g.key : 'none'}" onclick="window.app.focusJumpTo('${t.id}')" title="Cliquer : passer à cette tâche${canDrag && !isSub ? ' · Glisser : réordonner' : ''}${isSub ? '' : ' · Clic droit : actions'}">
           ${canDrag && !isSub ? _grip : ''}
           <span class="focus-queue-text">${esc(t.title)}</span>
           ${isSub && effectiveEstimate(t) ? `<span class="focus-queue-est">${effectiveEstimate(t)} min</span>` : ''}
           ${!isSub && t.startTime ? `<span class="focus-queue-time">${t.startTime}</span>` : (!isSub && t.dayPeriod ? `<span class="focus-queue-time">${PERIOD_LABEL[t.dayPeriod] || ''}</span>` : '')}
+          ${subtaskBtn}
         </div>`;
   });
 

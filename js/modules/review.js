@@ -218,9 +218,13 @@ const _DRAG_HANDLE_SVG = `<svg width="10" height="16" viewBox="0 0 10 16" fill="
 // glyphe, d'où « je grab mais rien ne se passe ». Une ligne <div> pleine se
 // saisit de façon fiable. Un clic simple (sans mouvement) ne déclenche pas de
 // drag, donc la sélection/clic droit restent libres, comme sur .todo-item.
+const _PLUS_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+
 function _itemRow(t) {
   const prioDot = t.priority ? `<span class="review-prio-dot prio-${t.priority}"></span>` : '';
-  return `<div class="review-item" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}
+  const ds = t.date || '';
+  const hasSubs = (t.subtasks || []).length > 0;
+  return `<div class="review-item${hasSubs ? ' has-subtasks' : ''}" data-id="${t.id}"${t.date ? ` data-date="${t.date}"` : ''}
     draggable="true" title="Glisser vers une zone d'action"
     ondragstart="window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
     ondragend="this.classList.remove('dragging')">
@@ -228,6 +232,7 @@ function _itemRow(t) {
     <div class="review-item-main">
       ${prioDot}<span class="review-item-title">${esc(t.title)}</span>${_postponedBadge(t)}${ageBadge(t)}${deadlineBadge(t)}
     </div>
+    <button class="review-item-subtask-add" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')">${_PLUS_SVG}</button>
   </div>`;
 }
 

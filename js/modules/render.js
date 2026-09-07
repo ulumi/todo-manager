@@ -1050,9 +1050,17 @@ function _renderWeekBlock(todos, weekStart, todayStr) {
         ${showStats ? weekStatsHTML : displayItems.map(t => {
           const done = isCompleted(t,d);
           const isRec = t.recurrence && t.recurrence!=='none';
-          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
+          const hasSubs = (t.subtasks || []).length > 0;
+          // Ancre requise par ctxAddSubtask()/_lightweightTaskAnchor() : data-id
+          // n'existe que sur !isRec ici (comme draggable) — le bouton suivrait
+          // sinon un id que le dispatcher ne peut pas retrouver dans le DOM.
+          const subtaskBtn = !isRec
+            ? `<button class="week-todo-subtask-add" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')">${_plusSVG}</button>`
+            : '';
+          return `<div class="week-todo-item${done?' done':''}${isRec?' recurring':''}${hasSubs?' has-subtasks':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}  onclick="event.stopPropagation()">
             <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)"></div>
             <span class="week-todo-text" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">${esc(t.title)}</span>
+            ${subtaskBtn}
             <button class="week-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
             <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
           </div>`;
@@ -1199,9 +1207,17 @@ function monthCell(date, otherMonth, todayDS, todos) {
       const done = isCompleted(t,date);
       const isRec = t.recurrence && t.recurrence!=='none';
       const isLongTitle = t.title.length > 28;
+      const hasSubs = (t.subtasks || []).length > 0;
+      // Même contrainte que le drag/data-id ci-dessus : sans data-id, le
+      // dispatcher ctxAddSubtask() ne peut pas retrouver cette pastille comme
+      // ancre — bouton réservé aux tâches non récurrentes ici aussi.
+      const subtaskBtn = !isRec
+        ? `<button class="month-todo-subtask-add${hasSubs ? ' has-subtasks' : ''}" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')">${_plusSVG}</button>`
+        : '';
       return `<div class="month-todo-dot${done?' done':''}${isRec?' recurring':''}"${!isRec?` draggable="true" data-id="${t.id}" data-date="${ds}"`:''}>
         <div class="month-dot-check" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)"></div>
         <span class="month-todo-dot-text${isLongTitle?' long-title':''}" title="${esc(t.title)}">${esc(t.title)}</span>
+        ${subtaskBtn}
         <button class="month-todo-edit" onclick="event.stopPropagation();window.app.openEditModal('${t.id}','${ds}')">✎</button>
         <button class="month-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
       </div>`;

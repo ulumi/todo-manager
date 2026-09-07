@@ -4326,7 +4326,9 @@ body.marquee-active {
 .week-todo-item {
   font-size: 14px;
   padding: 4px 6px;
-  padding-right: 32px;
+  // 32px de base (édition + suppression, 14px chacun) + 14px pour le « + »
+  // sous-tâche (.week-todo-subtask-add, right:30px, à gauche des deux autres).
+  padding-right: 46px;
   border-radius: 6px;
   background: var(--surface2);
   border-left: 3px solid var(--primary);
@@ -4389,6 +4391,42 @@ body.marquee-active {
   color: var(--text);
   font-weight: 500;
 }
+
+// Ajouter une sous-tâche — à gauche d'éditer/supprimer, avec son PROPRE
+// délai de révélation (2 s par défaut, 500 ms si la tâche a déjà des
+// sous-tâches via `.has-subtasks`) : contrairement à ses deux voisins
+// (révélés instantanément par le survol du conteneur), c'est une action
+// plus rare qu'on ne veut pas exposer aussi vite pour toutes les tâches.
+.week-todo-subtask-add {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s;
+
+  svg { width: 10px; height: 10px; }
+  &:hover { color: var(--primary); }
+}
+
+.week-todo-item.has-subtasks .week-todo-subtask-add {
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s;
+}
+
+.week-todo-item:hover .week-todo-subtask-add { opacity: 1; pointer-events: auto; }
 
 .week-todo-delete {
   position: absolute;
@@ -4673,6 +4711,40 @@ body.marquee-active {
   &:hover {
     .month-todo-delete { opacity: 1; }
     .month-todo-edit   { opacity: 1; }
+    .month-todo-subtask-add { opacity: 1; pointer-events: auto; }
+  }
+}
+
+// « + » sous-tâche — même gabarit qu'éditer/supprimer (12px, réservé dans le
+// flux comme eux : la pastille est déjà si dense qu'un overlay hors flux s'y
+// superposerait au titre) mais avec son propre délai de révélation, HORS de
+// la transition instantanée de ses deux voisins : 2s par défaut, 500ms si la
+// tâche a déjà des sous-tâches (`.has-subtasks`) — même convention que
+// partout ailleurs.
+.month-todo-subtask-add {
+  width: 12px;
+  height: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 3px;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s;
+
+  svg { width: 8px; height: 8px; }
+  &:hover { color: var(--primary); }
+
+  &.has-subtasks {
+    transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+                pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s;
   }
 }
 
@@ -13811,12 +13883,16 @@ body:has(.bottom-panel:not(.hidden))::before {
   align-items:   center;
   gap:           5px;
   padding:       3px 5px;
+  // Room à droite pour le « + » sous-tâche (right:30px, .week-todo-subtask-add)
+  // et la suppression (right:2px) — pas d'édition ici (jamais rendue dans ce mode).
+  padding-right: 44px;
   border-radius: 5px;
   font-size:     11px;
   background:    var(--surface2);
   cursor:        grab;
   border:        1.5px solid transparent;
   transition:    border-color .12s, opacity .12s;
+  position:      relative;
 
   .week-todo-check { display: none; }
 
@@ -13830,6 +13906,16 @@ body:has(.bottom-panel:not(.hidden))::before {
     border-color: var(--border);
     .week-todo-delete { display: block; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0 2px; font-size: 13px; }
   }
+}
+
+// « + » sous-tâche : même bouton/positionnement que la vue Semaine
+// (.week-todo-subtask-add), mais ses propres déclencheurs de révélation —
+// suppression utilise ici display:none/block sans délai, ce bouton-ci garde
+// son fondu à délai variable (2s / 500ms si `.has-subtasks`).
+.plan-week-task:hover .week-todo-subtask-add { opacity: 1; pointer-events: auto; }
+.plan-week-task.has-subtasks .week-todo-subtask-add {
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s;
 }
 
 .plan-week-add {
@@ -15866,6 +15952,49 @@ body.view-focus header { display: none; }
   }
 }
 
+// « + » sous-tâche de la file « Ensuite » — overlay hors flux, même
+// convention de délai variable que les autres vues chip/ligne (2s par
+// défaut, 500ms si `.has-subtasks`, posée directement sur le bouton ici
+// plutôt que sur le conteneur — un seul élément à cibler).
+.focus-queue-item { position: relative; }
+
+.focus-queue-subtask-add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: var(--surface2);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 12px; height: 12px; }
+  &:hover { background: var(--surface); color: var(--primary); }
+
+  &.has-subtasks {
+    transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+                pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s,
+                background .12s cubic-bezier(.25,.46,.45,.94),
+                color .12s cubic-bezier(.25,.46,.45,.94);
+  }
+}
+
+.focus-queue-item:hover .focus-queue-subtask-add { opacity: 1; pointer-events: auto; }
+
 // ── Journée bouclée ──
 .focus-stage--done {
   .focus-done-emoji { font-size: 72px; }
@@ -16108,6 +16237,7 @@ body.view-focus header { display: none; }
 }
 
 .review-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -16127,6 +16257,48 @@ body.view-focus header { display: none; }
   &.dragging { opacity: .4; }
   &:active { cursor: grabbing; }
 }
+
+// « + » sous-tâche — overlay hors flux : la ligne est `width:fit-content`,
+// un enfant flex de plus élargirait la ligne dès qu'il existe dans le DOM,
+// même invisible. 2s par défaut, 500ms si la tâche a déjà des sous-tâches
+// (`.has-subtasks`) — même convention que les autres vues chip/ligne.
+.review-item-subtask-add {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 10px; height: 10px; }
+  &:hover { background: var(--surface2); color: var(--primary); }
+}
+
+.review-item.has-subtasks .review-item-subtask-add {
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+}
+
+.review-item:hover .review-item-subtask-add { opacity: 1; pointer-events: auto; }
 
 // Grip décoratif seulement (affordance visuelle) — plus le point de départ
 // du drag ; pointer-events:none pour qu'il ne capte jamais le geste (c'est
@@ -17600,6 +17772,7 @@ body.view-focus header { display: none; }
 // ── Pastille d'une tâche sans heure — empilées pleine largeur dans la
 // colonne étroite de droite (contrairement à l'ancienne bande horizontale).
 .agenda-chip {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -17629,6 +17802,48 @@ body.view-focus header { display: none; }
 .agenda-chip-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .agenda-chip-rec { flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
 .agenda-chip-est { flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: var(--text-muted); opacity: .8; }
+
+// « + » sous-tâche — overlay hors flux (jamais un enfant flex de plus : ferait
+// grandir la pastille et re-flow ses voisines dans .agenda-flex-items, en
+// flex-wrap). Même délai variable que .agenda-block-subtask-btn : 2 s par
+// défaut, 500 ms si la tâche a déjà des sous-tâches (`.has-subtasks`).
+.agenda-chip-subtask-btn {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+
+  svg { width: 9px; height: 9px; }
+  &:hover { background: var(--surface2); color: var(--primary); }
+}
+
+.agenda-chip.has-subtasks .agenda-chip-subtask-btn {
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+}
+
+.agenda-chip:hover .agenda-chip-subtask-btn { opacity: 1; pointer-events: auto; }
 
 // ── Grille horaire ────────────────────────────────────────────────────
 .agenda-grid {
@@ -17903,6 +18118,32 @@ body.view-focus header { display: none; }
   svg { width: 11px; height: 11px; }
   &:hover { background: var(--surface2); color: var(--primary); }
 }
+
+// « + » sous-tâche dans la même toolbar que Focus/⋯ (.agenda-block-actions),
+// mais avec son PROPRE délai de révélation — indépendant du fondu du
+// conteneur (qui reste à 500 ms, inchangé pour Focus/⋯) : le conteneur peut
+// donc déjà être visible pendant que ce bouton-ci reste encore transparent.
+// 2 s par défaut (la plupart des tâches n'ont pas de sous-tâches, pas la
+// peine de l'exposer aussi vite qu'une action utile à toutes) ; ramené à
+// 500 ms sur `.has-subtasks` (posé dès que le bloc affiche déjà sa
+// checklist) — en ajouter une de plus est une action plus probable.
+.agenda-block-subtask-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) 2s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+}
+
+.agenda-block.has-subtasks .agenda-block-subtask-btn {
+  transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              pointer-events .18s cubic-bezier(.25,.46,.45,.94) .5s,
+              background .12s cubic-bezier(.25,.46,.45,.94),
+              color .12s cubic-bezier(.25,.46,.45,.94);
+}
+
+.agenda-block:hover .agenda-block-subtask-btn { opacity: 1; pointer-events: auto; }
 
 // Poignée de durée — bord bas du bloc
 .agenda-block-resize {

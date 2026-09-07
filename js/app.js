@@ -6363,13 +6363,15 @@ class TodoApp {
       .filter(t => !hideCompleted || !isCompleted(t, d));
     const taskRows = items.map(t => {
       const done = isCompleted(t, d);
-      return `<div class="plan-week-task${done?' done':''}" data-id="${t.id}" data-date="${ds}"
+      const hasSubs = (t.subtasks || []).length > 0;
+      return `<div class="plan-week-task${done?' done':''}${hasSubs?' has-subtasks':''}" data-id="${t.id}" data-date="${ds}"
         draggable="true"
         ondragstart="event.stopPropagation();window.app.planDragStart(event,'${t.id}');this.classList.add('dragging')"
         ondragend="this.classList.remove('dragging')"
         onclick="window.app.openEditModal('${t.id}','${ds}')">
         <div class="week-todo-check${done?' checked':''}" onclick="event.stopPropagation();window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'))"></div>
         <span class="week-todo-text">${esc(t.title)}</span>
+        <button class="week-todo-subtask-add" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
         <button class="week-todo-delete" onclick="event.stopPropagation();window.app.deleteTodo('${t.id}','${ds}')">×</button>
       </div>`;
     }).join('');

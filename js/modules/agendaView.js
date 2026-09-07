@@ -358,6 +358,7 @@ function blockHTML(b, ds, px, range) {
     t.priority ? `prio-${t.priority}` : '',
     t.flexibleTime ? 'flexible' : '',
     overflows ? 'is-overflowing' : '',
+    subsAll.length ? 'has-subtasks' : '',
   ].filter(Boolean).join(' ') + sizeCls;
 
   const cat = (() => {
@@ -422,6 +423,7 @@ function blockHTML(b, ds, px, range) {
       ${subsHTML}
     </div>
     <div class="agenda-block-actions">
+      <button class="agenda-block-btn agenda-block-subtask-btn" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')">${_plusSVG}</button>
       <button class="agenda-block-btn" title="Focus sur cette tâche" onclick="event.stopPropagation();window.app.focusStartOn('${t.id}','${ds}')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13a1 1 0 0 0 1.53.85l10.5-6.5a1 1 0 0 0 0-1.7L8.53 4.65A1 1 0 0 0 7 5.5Z"/></svg>
       </button>
@@ -447,13 +449,14 @@ function chipHTML(t, navDate, ds) {
     ? `window.app.cancelTodo('${t.id}','${ds}')`
     : `window.app.toggleTodo('${t.id}',window.app.parseDS('${ds}'),event)`;
   const cls = ['agenda-chip', done ? 'done' : '', cancelled ? 'cancelled' : '',
-    t.priority ? `prio-${t.priority}` : ''].filter(Boolean).join(' ');
+    t.priority ? `prio-${t.priority}` : '', (t.subtasks || []).length ? 'has-subtasks' : ''].filter(Boolean).join(' ');
   return `<div class="${cls}" data-id="${t.id}" data-date="${ds}" draggable="true"
       style="${cat ? `--accent:${cat.color};` : ''}" title="${esc(t.title)} — glisser dans la grille pour lui donner une heure">
     <div class="todo-check agenda-chip-check${done ? ' checked' : ''}" onclick="event.stopPropagation();${checkAction}"></div>
     <span class="agenda-chip-title">${esc(t.title)}</span>
     ${isRec ? `<span class="agenda-chip-rec" title="Récurrente">↻</span>` : ''}
     ${est ? `<span class="agenda-chip-est">${est}′</span>` : ''}
+    <button class="agenda-chip-subtask-btn" title="Ajouter une sous-tâche" onclick="event.stopPropagation();window.app.ctxAddSubtask('${t.id}','${ds}')">${_plusSVG}</button>
   </div>`;
 }
 

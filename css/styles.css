@@ -4220,7 +4220,7 @@ body.marquee-active {
 .week-todo-item {
   font-size: 14px;
   padding: 4px 6px;
-  padding-right: 32px;
+  padding-right: 46px;
   border-radius: 6px;
   background: var(--surface2);
   border-left: 3px solid var(--primary);
@@ -4298,6 +4298,42 @@ body.marquee-active {
   cursor: default;
   color: var(--text);
   font-weight: 500;
+}
+
+.week-todo-subtask-add {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s;
+}
+.week-todo-subtask-add svg {
+  width: 10px;
+  height: 10px;
+}
+.week-todo-subtask-add:hover {
+  color: var(--primary);
+}
+
+.week-todo-item.has-subtasks .week-todo-subtask-add {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
+}
+
+.week-todo-item:hover .week-todo-subtask-add {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .week-todo-delete {
@@ -4617,6 +4653,38 @@ body.marquee-active {
 }
 .month-todo-dot:hover .month-todo-edit {
   opacity: 1;
+}
+.month-todo-dot:hover .month-todo-subtask-add {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.month-todo-subtask-add {
+  width: 12px;
+  height: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 3px;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s;
+}
+.month-todo-subtask-add svg {
+  width: 8px;
+  height: 8px;
+}
+.month-todo-subtask-add:hover {
+  color: var(--primary);
+}
+.month-todo-subtask-add.has-subtasks {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .month-dot-check {
@@ -14441,12 +14509,14 @@ body:has(.bottom-panel:not(.hidden))::before {
   align-items: center;
   gap: 5px;
   padding: 3px 5px;
+  padding-right: 44px;
   border-radius: 5px;
   font-size: 11px;
   background: var(--surface2);
   cursor: grab;
   border: 1.5px solid transparent;
   transition: border-color 0.12s, opacity 0.12s;
+  position: relative;
 }
 .plan-week-task .week-todo-check {
   display: none;
@@ -14481,6 +14551,15 @@ body:has(.bottom-panel:not(.hidden))::before {
   cursor: pointer;
   padding: 0 2px;
   font-size: 13px;
+}
+
+.plan-week-task:hover .week-todo-subtask-add {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.plan-week-task.has-subtasks .week-todo-subtask-add {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s;
 }
 
 .plan-week-add {
@@ -16550,6 +16629,48 @@ body.view-focus header {
   border-style: dashed;
 }
 
+.focus-queue-item {
+  position: relative;
+}
+
+.focus-queue-subtask-add {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: var(--surface2);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.focus-queue-subtask-add svg {
+  width: 12px;
+  height: 12px;
+}
+.focus-queue-subtask-add:hover {
+  background: var(--surface);
+  color: var(--primary);
+}
+.focus-queue-subtask-add.has-subtasks {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.focus-queue-item:hover .focus-queue-subtask-add {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .focus-stage--done .focus-done-emoji {
   font-size: 72px;
 }
@@ -16804,6 +16925,7 @@ body.view-focus header {
 }
 
 .review-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -16825,6 +16947,46 @@ body.view-focus header {
 }
 .review-item:active {
   cursor: grabbing;
+}
+
+.review-item-subtask-add {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.review-item-subtask-add svg {
+  width: 10px;
+  height: 10px;
+}
+.review-item-subtask-add:hover {
+  background: var(--surface2);
+  color: var(--primary);
+}
+
+.review-item.has-subtasks .review-item-subtask-add {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.review-item:hover .review-item-subtask-add {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .review-item-handle {
@@ -18282,6 +18444,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 }
 
 .agenda-chip {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -18346,6 +18509,46 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   font-weight: 700;
   color: var(--text-muted);
   opacity: 0.8;
+}
+
+.agenda-chip-subtask-btn {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--shadow);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.agenda-chip-subtask-btn svg {
+  width: 9px;
+  height: 9px;
+}
+.agenda-chip-subtask-btn:hover {
+  background: var(--surface2);
+  color: var(--primary);
+}
+
+.agenda-chip.has-subtasks .agenda-chip-subtask-btn {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.agenda-chip:hover .agenda-chip-subtask-btn {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .agenda-grid {
@@ -18634,6 +18837,21 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .agenda-block-btn:hover {
   background: var(--surface2);
   color: var(--primary);
+}
+
+.agenda-block-subtask-btn {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 2s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.agenda-block.has-subtasks .agenda-block-subtask-btn {
+  transition: opacity 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, pointer-events 0.18s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s, background 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94), color 0.12s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.agenda-block:hover .agenda-block-subtask-btn {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .agenda-block-resize {
