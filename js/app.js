@@ -8672,9 +8672,26 @@ class TodoApp {
     return n.getHours() * 60 + n.getMinutes();
   }
 
-  _agendaHit(e) {
+  // `excludeIds` (la sélection en cours de drag) permet d'ignorer les blocs
+  // qu'on est soi-même en train de déplacer comme cible de calage.
+  _agendaHit(e, excludeIds) {
     const canvas = e.target.closest?.('.agenda-canvas');
     if (canvas) {
+      // Lâcher sur un AUTRE bloc cale exactement sur SON heure de départ
+      // (`data-start`, déjà en minutes — cf. blockHTML) plutôt que sur la
+      // position du curseur : c'est ce qui rend deux tâches simultanées,
+      // donc côte à côte via assignColumns() au rendu suivant. Remplace
+      // l'ancienne zone « imbriquer » (milieu du bloc) — l'imbrication en
+      // sous-tâche reste possible autrement (clic droit, drag en vue Liste).
+      const block = e.target.closest?.('.agenda-block[data-id]');
+      if (block && !(excludeIds && excludeIds.includes(block.dataset.id))) {
+        const minutes = parseInt(block.dataset.start, 10);
+        if (!Number.isNaN(minutes)) {
+          const px = parseFloat(canvas.dataset.px) || 72;
+          const from = parseInt(canvas.dataset.from, 10);
+          return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from, isNow: false, syncTarget: block.dataset.id };
+        }
+      }
       const r = canvas.getBoundingClientRect();
       const px = parseFloat(canvas.dataset.px) || 72;
       const from = parseInt(canvas.dataset.from, 10);
@@ -8932,33 +8949,9 @@ class TodoApp {
     if (!wrap) return;
     this._agendaTimer = setInterval(() => this._agendaTickNow(), 60000);
 
-    let ghost = null, dragId = null, activeNest = null;
+    let ghost = null, dragId = null, syncEl = null;
     const clearGhost = () => { ghost?.remove(); ghost = null; wrap.querySelectorAll('.agenda-flex-strip.drop-target').forEach(el => el.classList.remove('drop-target')); };
-    const clearNest = () => { activeNest?.classList.remove('drop-nest'); activeNest = null; };
-
-    // Zone « imbriquer » : lâcher un item sur le MILIEU d'un autre en fait une
-    // sous-tâche, exactement comme en vue jour (dnDZone 25/50/25). Les quarts
-    // haut/bas gardent le comportement de l'agenda — repositionner à cette
-    // heure-là — puisqu'ici la position EST la donnée (pas d'avant/après à
-    // réordonner). Mêmes exclusions qu'en vue jour : pas de drag externe (on
-    // ne connaît pas son id pendant le survol, `dataTransfer` étant illisible
-    // avant le drop), pas en copie, pas sur une cible de la sélection
-    // déplacée, pas depuis une source récurrente (aucun équivalent
-    // `completedDates` sur une sous-tâche — nestTaskAsSubtask refuserait de
-    // toute façon, autant ne pas le proposer).
-    const nestTarget = e => {
-      if (!dragId || this._isCopyDrag(e)) return null;
-      const el = e.target.closest?.('.agenda-block[data-id], .agenda-chip[data-id]');
-      if (!el || el.dataset.id === dragId) return null;
-      const ids = this._dropIds(dragId);
-      if (ids.includes(el.dataset.id)) return null;
-      // La cible doit être une vraie tâche : sinon on allumerait la surbrillance
-      // « Sous-tâche » pour un drop que nestTaskAsSubtask() refuserait ensuite.
-      if (!state.todos.some(t => t.id === el.dataset.id)) return null;
-      const sources = ids.map(id => state.todos.find(t => t.id === id)).filter(Boolean);
-      if (!sources.length || sources.some(t => t.recurrence && t.recurrence !== 'none')) return null;
-      return dnDZone(e.clientY, el.getBoundingClientRect()) === 'nest' ? el : null;
-    };
+    const clearSync = () => { syncEl?.classList.remove('agenda-sync-target'); syncEl = null; };
 
     wrap.addEventListener('dragstart', e => {
       const el = e.target.closest('.agenda-block[data-id], .agenda-chip[data-id]');
@@ -8975,26 +8968,18 @@ class TodoApp {
       wrap.classList.remove('agenda-dragging');
       wrap.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
       clearGhost();
-      clearNest();
+      clearSync();
       dragId = null;
     });
 
     wrap.addEventListener('dragover', e => {
-      const nest = nestTarget(e);
-      if (nest) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        clearGhost();
-        if (activeNest !== nest) { clearNest(); activeNest = nest; nest.classList.add('drop-nest'); }
-        return;
-      }
-      clearNest();
-      const hit = this._agendaHit(e);
-      if (!hit) { clearGhost(); return; }
+      const hit = this._agendaHit(e, dragId ? this._dropIds(dragId) : null);
+      if (!hit) { clearGhost(); clearSync(); return; }
       e.preventDefault();
       e.dataTransfer.dropEffect = this._isCopyDrag(e) ? 'copy' : 'move';
       if (hit.kind === 'flex') {
         clearGhost();
+        clearSync();
         hit.strip.classList.add('drop-target');
         return;
       }
@@ -9008,30 +8993,36 @@ class TodoApp {
       }
       ghost.style.setProperty('--top', `${((hit.minutes - hit.from) / 60) * hit.px}px`);
       ghost.classList.toggle('is-now', !!hit.isNow);
+      ghost.classList.toggle('is-sync', !!hit.syncTarget);
+      // Surligne le bloc visé : la ligne de calage seule tombe pile sur son
+      // bord haut, trop discret pour signaler « ces deux tâches vont devenir
+      // simultanées » sans un repère sur la cible elle-même.
+      const target = hit.syncTarget ? wrap.querySelector(`.agenda-block[data-id="${hit.syncTarget}"]`) : null;
+      if (syncEl !== target) { clearSync(); syncEl = target; syncEl?.classList.add('agenda-sync-target'); }
       const chain = this._agendaDragChain();
-      const label = hit.isNow ? `maintenant · ${fmtHM(hit.minutes)}` : fmtHM(hit.minutes);
+      const label = hit.isNow ? `maintenant · ${fmtHM(hit.minutes)}`
+        : hit.syncTarget ? `même heure · ${fmtHM(hit.minutes)}`
+        : fmtHM(hit.minutes);
       ghost.firstChild.textContent = chain
         ? `${label} → ${fmtHM(Math.min(24 * 60 - 1, hit.minutes + chain.total))} · ${chain.n} tâches`
         : label;
     });
 
     wrap.addEventListener('dragleave', e => {
-      if (!wrap.contains(e.relatedTarget)) { clearGhost(); clearNest(); }
+      if (!wrap.contains(e.relatedTarget)) { clearGhost(); clearSync(); }
     });
 
     wrap.addEventListener('drop', e => {
       e.preventDefault();
-      const nest = nestTarget(e);
-      const hit = this._agendaHit(e);
-      clearGhost();
-      clearNest();
-      wrap.classList.remove('agenda-dragging');
       const taskId = e.dataTransfer.getData('text/plain');
+      const hit = this._agendaHit(e, taskId ? this._dropIds(taskId) : null);
+      clearGhost();
+      clearSync();
+      wrap.classList.remove('agenda-dragging');
       // Même garde-fou que la vue jour : un drag de section de tag pose lui
       // aussi du text/plain (un tagId). On ne mute que sur un vrai id.
       if (!taskId || !state.todos.some(t => t.id === taskId)) return;
       const ids = this._dropIds(taskId);
-      if (nest) { this.nestTaskAsSubtask(ids, nest.dataset.id); return; }
       if (!hit) return;
       if (hit.kind === 'time') this._agendaMoveTo(ids, hit.minutes, e);
       else this._agendaUnschedule(ids, hit.period, e);

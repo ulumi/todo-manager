@@ -18997,21 +18997,14 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   display: none;
 }
 
-.agenda-chip {
-  position: relative;
-}
-
-.agenda-block.drop-nest,
-.agenda-chip.drop-nest {
+.agenda-block.agenda-sync-target {
   border-style: dashed;
-  border-color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
 }
 
-.agenda-block.is-tiny .dnd-nest-badge,
-.agenda-block.is-short .dnd-nest-badge,
-.agenda-chip .dnd-nest-badge {
-  display: none;
+.agenda-drop-ghost.is-sync {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
 }
 
 .agenda-block-subs-btn {

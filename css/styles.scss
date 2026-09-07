@@ -18214,25 +18214,26 @@ body.view-focus header { display: none; }
 
 .stw-sub--more .stw-sub-check { display: none; }
 
-// ── Zone « imbriquer » du glisser-déposer, vue Agenda ──────────────────
-// Même geste et même badge qu'en vue jour : lâcher un item sur le MILIEU d'un
-// autre en fait une sous-tâche. Les quarts haut/bas gardent le comportement
-// propre à l'agenda (repositionner à cette heure-là), puisqu'ici la position
-// EST la donnée — il n'y a pas d'avant/après à réordonner.
-.agenda-chip { position: relative; }
-
-.agenda-block.drop-nest,
-.agenda-chip.drop-nest {
+// ── Cible « même heure » du glisser-déposer, vue Agenda ────────────────
+// Lâcher un item sur un AUTRE bloc (n'importe où dessus, plus de zonage
+// haut/milieu/bas) cale son heure exactement sur celle de la cible — elles
+// deviennent simultanées, donc côte à côte via assignColumns() au rendu
+// suivant (cf. app.js `_agendaHit`). Remplace l'ancienne zone « imbriquer »
+// au centre du bloc — l'imbrication en sous-tâche reste possible autrement
+// (clic droit, drag en vue Liste).
+.agenda-block.agenda-sync-target {
   border-style: dashed;
-  border-color: var(--warning);
-  background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
 }
 
-// Le badge ne tient pas dans un bloc court : la bordure pointillée suffit à
-// signaler la cible, on ne rétrécit jamais le badge pour le faire entrer.
-.agenda-block.is-tiny .dnd-nest-badge,
-.agenda-block.is-short .dnd-nest-badge,
-.agenda-chip .dnd-nest-badge { display: none; }
+// Aperçu de dépôt calé sur un autre bloc : même bleu que la ligne par défaut
+// (déjà --primary), mais avec un halo — la simple ligne tombe pile sur le
+// bord haut de la cible, déjà surlignée par .agenda-sync-target, et se
+// distinguerait mal d'un calage horaire ordinaire sans ce surplus.
+.agenda-drop-ghost.is-sync {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
 
 // Badge « fait/total » : poussé à droite de la rangée de titre, où vivent
 // désormais TOUS les badges (voir .agenda-block-head).

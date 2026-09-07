@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3017",
+    "date": "2026-09-07",
+    "message": "feat(agenda): déposer une tâche sur une autre la cale à la même heure (côte à côte), remplace l'imbrication au drag"
+  },
+  {
     "version": "0.4.3012",
     "date": "2026-09-02",
     "message": "fix(agenda): bouton « + » de la barre titre d'un moment réparé (ne ciblait que le mode Liste)"
