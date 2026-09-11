@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3040",
+    "date": "2026-09-10",
+    "message": "fix(nav): état actif de l'onglet « Demain », mutuellement exclusif avec Aujourd'hui"
+  },
+  {
     "version": "0.4.3039",
     "date": "2026-09-10",
     "message": "feat(nav): onglet « Demain » dans le header, à côté d'Aujourd'hui — jump direct + cible de drop"

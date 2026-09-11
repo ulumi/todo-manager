@@ -6052,7 +6052,22 @@ class TodoApp {
     document.body.classList.toggle('view-focus',      state.view === 'focus');
     const noLabel = isCategories || isProjects || isProfile || isInbox || isBacklog || isPlan || isSuperadmin || isIntentions || isAnalyse;
     document.getElementById('periodLabel').textContent = noLabel ? '' : getPeriodLabel();
-    document.querySelectorAll('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view===state.view));
+    // .tomorrow-tab n'a pas de data-view (ce n'est pas une vue distincte, juste
+    // un raccourci vers la vue jour sur demain) : actif seulement quand la vue
+    // jour affiche VRAIMENT demain, jamais sur data-view seul — sinon il resterait
+    // allumé en même temps que « Aujourd'hui » (même data-view="day") pour
+    // n'importe quelle autre date affichée en vue jour.
+    const navDS = DS(state.navDate);
+    const isDayView = state.view === 'day';
+    document.querySelectorAll('.view-tab').forEach(b => {
+      if (b.classList.contains('tomorrow-tab')) {
+        b.classList.toggle('active', isDayView && navDS === DS(addDays(new Date(), 1)));
+      } else if (b.dataset.view === 'day') {
+        b.classList.toggle('active', isDayView && navDS === DS(new Date()));
+      } else {
+        b.classList.toggle('active', b.dataset.view === state.view);
+      }
+    });
     this._updateInboxBadge();
     // Close project panel when switching away
     if (!isProjects && getCurrentProjectId()) closeProjectPanel({ immediate: true });
