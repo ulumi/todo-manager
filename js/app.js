@@ -1427,6 +1427,10 @@ class TodoApp {
     await this._animateViewChange();
   }
 
+  goToTomorrow() {
+    this.setNavDateAndView(addDays(new Date(), 1), 'day');
+  }
+
   // ═══════════════════════════════════════════════════
   // TODOS
   // ═══════════════════════════════════════════════════
@@ -7498,11 +7502,12 @@ class TodoApp {
     sidebar?.querySelector('.cal-sidebar-handle-chevron')?.classList.toggle('collapsed', next);
   }
 
-  // ── Header drop zones (Inbox / Backlog / Today buttons) ─────────────────
+  // ── Header drop zones (Inbox / Backlog / Today / Tomorrow buttons) ──────
   initHeaderDropZones() {
-    const inboxBtn   = document.getElementById('inboxTab');
-    const backlogBtn = document.querySelector('.backlog-tab');
-    const todayBtn   = document.querySelector('.view-tab[data-view="day"]');
+    const inboxBtn    = document.getElementById('inboxTab');
+    const backlogBtn  = document.querySelector('.backlog-tab');
+    const todayBtn    = document.querySelector('.view-tab[data-view="day"]');
+    const tomorrowBtn = document.querySelector('.tomorrow-tab');
     if (!inboxBtn || !backlogBtn) return;
 
     // Avoid duplicate listeners by using a flag
@@ -7540,6 +7545,13 @@ class TodoApp {
     if (todayBtn) {
       setup(todayBtn, (id, e) => {
         this._sendManyTo(this._dropIds(id), { date: DS(new Date()), backlog: false }, e);
+        this._closeSearchView();
+      });
+    }
+
+    if (tomorrowBtn) {
+      setup(tomorrowBtn, (id, e) => {
+        this._sendManyTo(this._dropIds(id), { date: DS(addDays(new Date(), 1)), backlog: false }, e);
         this._closeSearchView();
       });
     }

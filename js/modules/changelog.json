@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3039",
+    "date": "2026-09-10",
+    "message": "feat(nav): onglet « Demain » dans le header, à côté d'Aujourd'hui — jump direct + cible de drop"
+  },
+  {
     "version": "0.4.3038",
     "date": "2026-09-07",
     "message": "feat(subtasks): bouton « + » visible dans toutes les vues (Agenda, semaine, mois, Planifier, Bilan, Focus), discret si la tâche n'a pas encore de sous-tâche"
