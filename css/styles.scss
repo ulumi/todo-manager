@@ -18174,7 +18174,15 @@ body.view-focus header { display: none; }
 
 .agenda-block:hover .agenda-block-subtask-btn { opacity: 1; pointer-events: auto; }
 
-// Poignée de durée — bord bas du bloc
+// Poignées de redimensionnement — bord bas (ajuste la fin, début fixe) et
+// coin haut-droit SEULEMENT (ajuste le début, fin fixe : cf. app.js
+// `_agendaResizeTopCommit`). Le coin, pas toute la largeur comme en bas : le
+// haut du bloc porte déjà la case à cocher, le titre et `.agenda-block-actions`
+// (+/▶/⋯, même coin) — une poignée pleine largeur les aurait tous recouverts.
+// `draggable="false"` sur les deux (posé dans blockHTML) : `.agenda-block`
+// lui-même est `draggable="true"`, et une poignée qui exige un vrai glisser
+// (contrairement à un simple clic sur la case/les boutons) est le geste qui
+// peut faire hériter le natif du parent si on ne l'exclut pas explicitement.
 .agenda-block-resize {
   position: absolute;
   left: 0;
@@ -18199,6 +18207,30 @@ body.view-focus header { display: none; }
   }
 }
 .agenda-block:hover .agenda-block-resize::after { opacity: .55; }
+
+.agenda-block-resize-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 7px;
+  cursor: ns-resize;
+  z-index: 5;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: 3px;
+    top: 2px;
+    width: 12px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--text-muted);
+    opacity: 0;
+    transition: opacity .18s cubic-bezier(.25,.46,.45,.94) .5s;
+  }
+}
+.agenda-block:hover .agenda-block-resize-top::after { opacity: .55; }
 
 // ── Aperçus pendant les gestes ────────────────────────────────────────
 .agenda-drop-ghost {

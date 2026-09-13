@@ -444,7 +444,8 @@ function blockHTML(b, ds, px, range) {
       <button class="agenda-block-btn" title="Actions" onclick="event.stopPropagation();window.app.showTodoMenu(event,'${t.id}','${ds}')">⋯</button>
     </div>
     ${overflows ? `<div class="agenda-block-endline" style="--t:${timeH}px" title="Fin prévue : ${fmtHM(b.end)}"></div>` : ''}
-    <div class="agenda-block-resize" title="Ajuster la durée"></div>
+    <div class="agenda-block-resize-top" draggable="false" title="Ajuster le début"></div>
+    <div class="agenda-block-resize" draggable="false" title="Ajuster la durée"></div>
   </div>`;
 }
 

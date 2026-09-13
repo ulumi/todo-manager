@@ -8987,9 +8987,10 @@ class TodoApp {
     this.render();
   }
 
-  // Redimensionnement : écrit endTime ET durationEstimated, pour que le
-  // badge de durée de la vue jour, l'objectif du mode Focus et la hauteur du
-  // bloc parlent toujours du même nombre (décision produit assumée).
+  // Redimensionnement (bord bas — ajuste la FIN, le début ne bouge pas) :
+  // écrit endTime ET durationEstimated, pour que le badge de durée de la vue
+  // jour, l'objectif du mode Focus et la hauteur du bloc parlent toujours du
+  // même nombre (décision produit assumée).
   _agendaResizeCommit(id, ds, minutes) {
     const t = state.todos.find(x => x.id === id);
     if (!t) return;
@@ -9001,6 +9002,29 @@ class TodoApp {
     snapshot(state.todos);
     setOccurrenceField(t, ds, 'endTime', fmtHM(start + dur));
     setOccurrenceField(t, ds, 'durationEstimated', dur);
+    t.updatedAt = Date.now();
+    saveTodos(state.todos);
+    this.render();
+  }
+
+  // Redimensionnement (coin haut-droit — ajuste le DÉBUT, la fin ne bouge
+  // pas) : symétrique de `_agendaResizeCommit`, mais le début qui change peut
+  // faire changer de moment (`dayPeriod`) — même règle que `_agendaMoveTo`,
+  // qui dérive toujours le moment de l'heure RÉELLE de la tâche.
+  _agendaResizeTopCommit(id, ds, newStart) {
+    const t = state.todos.find(x => x.id === id);
+    if (!t) return;
+    const eff = resolveOccurrence(t, ds);
+    const oldStart = parseHM(eff.startTime);
+    if (oldStart == null) return;
+    const end = oldStart + blockMinutes(eff);
+    const start = Math.max(0, Math.min(end - MIN_BLOCK_MIN, newStart));
+    if (start === oldStart) return;
+    snapshot(state.todos);
+    setOccurrenceField(t, ds, 'startTime', fmtHM(start));
+    setOccurrenceField(t, ds, 'endTime', fmtHM(end));
+    setOccurrenceField(t, ds, 'durationEstimated', end - start);
+    setOccurrenceField(t, ds, 'dayPeriod', periodForMinutes(start));
     t.updatedAt = Date.now();
     saveTodos(state.todos);
     this.render();
@@ -9243,6 +9267,54 @@ class TodoApp {
         handle.removeEventListener('pointercancel', onUp);
         block.classList.remove('resizing');
         if (dur !== startDur) this._agendaResizeCommit(block.dataset.id, block.dataset.date, dur);
+      };
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    });
+
+    // ── Resize par le HAUT (pointer) — ajuste le début, la fin ne bouge pas.
+    // Symétrique du bloc précédent : `--top` ET `--h` bougent ensemble (le
+    // bas du bloc doit rester visuellement fixe), alors que le resize du bas
+    // ne touchait que `--h`. Le début RÉEL (`start`, tracké dans la fermeture)
+    // n'est jamais plafonné à `from` — comme le bas n'est jamais plafonné à
+    // `to` pour la durée — seul l'AFFICHAGE pendant le drag se fige au bord
+    // du canevas (`overflow:hidden` couperait sinon le haut du bloc) ; le
+    // commit envoie la vraie valeur, et le rendu suivant réétend la grille.
+    wrap.addEventListener('pointerdown', e => {
+      const handle = e.target.closest('.agenda-block-resize-top');
+      if (!handle || e.button !== 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const block = handle.closest('.agenda-block');
+      const canvas = block.closest('.agenda-canvas');
+      const px = parseFloat(canvas.dataset.px) || 72;
+      const from = parseInt(canvas.dataset.from, 10);
+      const originalStart = parseInt(block.dataset.start, 10);
+      const end = originalStart + parseInt(block.dataset.dur, 10);
+      const bottomPx = ((end - from) / 60) * px; // fixe pendant tout le drag
+      const startY = e.clientY;
+      let start = originalStart;
+      block.classList.add('resizing');
+      handle.setPointerCapture(e.pointerId);
+      const onMove = ev => {
+        const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
+        const raw = originalStart + ((ev.clientY - startY) / px) * 60;
+        // On cale l'heure de DÉBUT, comme le resize du bas cale la fin.
+        const snapped = snapWithNow(raw, step, this._agendaNowMinutes(), [0, end - MIN_BLOCK_MIN]);
+        start = Math.max(0, Math.min(end - MIN_BLOCK_MIN, snapped));
+        const topPx = Math.max(0, ((start - from) / 60) * px);
+        block.style.setProperty('--top', `${topPx}px`);
+        block.style.setProperty('--h', `${Math.max(18, bottomPx - topPx)}px`);
+        const lbl = block.querySelector('.agenda-block-time');
+        if (lbl) lbl.innerHTML = `${fmtHM(start)}<span class="agenda-block-dash">–</span>${fmtHM(end)}`;
+      };
+      const onUp = () => {
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointercancel', onUp);
+        block.classList.remove('resizing');
+        if (start !== originalStart) this._agendaResizeTopCommit(block.dataset.id, block.dataset.date, start);
       };
       handle.addEventListener('pointermove', onMove);
       handle.addEventListener('pointerup', onUp);

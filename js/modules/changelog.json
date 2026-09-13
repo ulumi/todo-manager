@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3051",
+    "date": "2026-09-13",
+    "message": "fix(agenda): redimensionnement fiable même en traversant les moments + poignée du haut (coin) pour ajuster le début"
+  },
+  {
     "version": "0.4.3049",
     "date": "2026-09-13",
     "message": "fix(agenda): grille horaire continue pour tout le jour — une tâche à cheval sur plusieurs moments reste visible en entier, sans dupliquer les heures"
