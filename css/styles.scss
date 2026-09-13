@@ -17648,32 +17648,32 @@ body.view-focus header { display: none; }
   gap: 18px;
 }
 
-// Grille CSS à 2 colonnes (bandes horaires à gauche, sections « sans heure »
-// D'UN MOMENT à droite) — cf. l'en-tête d'agendaView.js. Chaque bande et sa
-// section jumelle partagent une même LIGNE de grille (`grid-area`, posé en
-// style inline par bandHTML()/sidebarSectionHTML()) : la ligne prend la
-// hauteur du plus grand des deux, donc les deux commencent au même sommet,
-// quelle que soit la hauteur de l'un ou l'autre — c'est ce qui aligne
-// « Matin » (à gauche) sur sa section « sans heure » (à droite), etc.
+// Grille CSS à 2 colonnes (la grille horaire du jour, en une seule pièce, à
+// gauche ; les sections « sans heure » par moment à droite) — cf. l'en-tête
+// d'agendaView.js. Une seule ligne désormais : la grille horaire n'est plus
+// découpée en bandes empilées, donc plus besoin d'aligner chaque bande sur sa
+// section jumelle via `grid-area` — les 3 sections « sans heure » sont
+// simplement empilées dans `.agenda-sidebar-col` (plus bas).
 // Les tâches sans heure NI moment (« À céduler aujourd'hui ») n'ont pas de
 // jumelle à gauche : leur donner une ligne ici laissait une cellule vide sur
 // toute la largeur de la colonne principale — elles vivent donc HORS de
 // cette grille, en bandeau à part (`.agenda-unscheduled-band`, plus bas).
-// `align-items: start` : une section plus courte que sa bande ne s'étire pas
-// pour remplir la ligne, elle reste juste calée sur son sommet.
-// Aucun `filter`/`backdrop-filter`/`transform` ici : `.agenda-flex-strip`
-// reste une vraie cible de drop native, qu'un ancêtre filtré casserait
-// silencieusement (cf. en-tête).
+// `align-items: start` : la colonne de droite ne s'étire pas pour remplir
+// toute la hauteur de la grille horaire, elle reste calée sur son sommet.
+// Aucun `filter`/`backdrop-filter`/`transform` ici : `.agenda-canvas` et
+// `.agenda-flex-strip` restent de vraies cibles de drop natives, qu'un
+// ancêtre filtré casserait silencieusement (cf. en-tête).
 .agenda-columns {
   display: grid;
   grid-template-columns: 1fr 220px;
-  grid-template-areas:
-    "morning    side-morning"
-    "afternoon  side-afternoon"
-    "evening    side-evening";
   align-items: start;
   column-gap: 16px;
-  row-gap: 18px;
+}
+
+.agenda-sidebar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 // ── Bandeau « À céduler aujourd'hui » (sans heure NI moment) ───────────
@@ -17692,9 +17692,38 @@ body.view-focus header { display: none; }
   }
 }
 
-.agenda-band { display: flex; flex-direction: column; gap: 6px; }
+.agenda-day-canvas { display: flex; flex-direction: column; gap: 6px; }
 
 .agenda-sidebar-section { display: flex; flex-direction: column; gap: 6px; }
+
+// Séparateur de moment À L'INTÉRIEUR de la grille continue (cf.
+// agendaView.js periodDividerHTML()) — réutilise le balisage ET le style de
+// `.agenda-band-head` (icône, libellé, compteur, ligne, bouton +), posé en
+// overlay `position:absolute` à la hauteur exacte où le moment commence, pour
+// qu'une tâche qui traverse cette frontière reste visible en entier dans la
+// MÊME grille sans jamais dupliquer les heures qui suivent.
+// `pointer-events: none` sur le conteneur (comme `.agenda-now`) : il ne doit
+// jamais voler un survol de dépôt à la grille — seul son bouton « + »
+// réactive les événements pointeur pour rester cliquable.
+.agenda-period-divider {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: var(--t);
+  transform: translateY(-50%);
+  z-index: 4;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  pointer-events: none;
+
+  .agenda-band-add { pointer-events: auto; }
+
+  // Le moment déjà actif tout en haut de la plage affichée (typiquement
+  // Matin) : posé à --t:0, un centrage sur la ligne le ferait déborder à
+  // moitié hors du canevas (overflow:hidden) — ancré au sommet à la place.
+  &.is-top { top: 3px; transform: none; }
+}
 
 .agenda-band-head {
   display: flex;
@@ -18258,19 +18287,10 @@ body.view-focus header { display: none; }
   .agenda-hour { right: 5px; font-size: 9.5px; }
   .agenda-toolbar { gap: 6px; }
   // Écran étroit : la grille à 2 colonnes n'a plus la place — tout repasse
-  // sur une seule colonne, chaque section « sans heure » juste après sa
-  // bande (ordre de lecture par moment, l'alignement latéral n'a plus de
-  // sens sans 2e colonne).
-  .agenda-columns {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "morning"
-      "side-morning"
-      "afternoon"
-      "side-afternoon"
-      "evening"
-      "side-evening";
-  }
+  // sur une seule colonne (ordre du DOM : la grille horaire du jour, puis les
+  // 3 sections « sans heure » empilées) ; l'alignement latéral n'a de toute
+  // façon plus de sens sans 2e colonne.
+  .agenda-columns { grid-template-columns: 1fr; }
 }
 
 

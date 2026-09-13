@@ -18335,10 +18335,14 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
 .agenda-columns {
   display: grid;
   grid-template-columns: 1fr 220px;
-  grid-template-areas: "morning    side-morning" "afternoon  side-afternoon" "evening    side-evening";
   align-items: start;
   column-gap: 16px;
-  row-gap: 18px;
+}
+
+.agenda-sidebar-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
 .agenda-unscheduled-band {
@@ -18352,7 +18356,7 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   align-items: center;
 }
 
-.agenda-band {
+.agenda-day-canvas {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -18362,6 +18366,26 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.agenda-period-divider {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: var(--t);
+  transform: translateY(-50%);
+  z-index: 4;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  pointer-events: none;
+}
+.agenda-period-divider .agenda-band-add {
+  pointer-events: auto;
+}
+.agenda-period-divider.is-top {
+  top: 3px;
+  transform: none;
 }
 
 .agenda-band-head {
@@ -18990,7 +19014,6 @@ body.is-dragging-task .overdue-drop-zone--today .today-zone-periods {
   }
   .agenda-columns {
     grid-template-columns: 1fr;
-    grid-template-areas: "morning" "side-morning" "afternoon" "side-afternoon" "evening" "side-evening";
   }
 }
 .day-layout-switch {

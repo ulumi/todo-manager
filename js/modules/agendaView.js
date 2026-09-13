@@ -5,35 +5,47 @@
 //  de la vue jour (.day-columns, 2 colonnes de cartes) est remplacé par une
 //  grille horaire pleine largeur.
 //
-//  STRUCTURE — la journée n'est PAS une seule grille continue : elle est
-//  découpée en BANDES de moment (Matin / Après-midi / Soir), chacune avec sa
-//  propre sous-grille horaire. Le concept `dayPeriod` — central dans toute
-//  l'app — reste donc la structure primaire, l'heure n'étant qu'une
-//  précision à l'intérieur du moment.
+//  STRUCTURE — UNE SEULE grille continue pour toute la journée (`.agenda-canvas`,
+//  cf. `dayCanvasHTML()`), et non 3 bandes empilées comme dans une version
+//  antérieure. Matin/Après-midi/Soir restent des repères visuels — un simple
+//  séparateur horizontal (`.agenda-period-divider`, réutilise le style de
+//  `.agenda-band-head`) posé à 12h/18h à l'intérieur de CETTE MÊME grille —
+//  mais ne sont plus des sections séparées avec leur propre sous-grille. Deux
+//  raisons à cet abandon : (1) une tâche qui traverse une frontière de moment
+//  (ex. 11h→14h, Matin→Après-midi) faisait s'étirer la bande de départ pour
+//  l'englober en entier, mais la bande suivante affichait QUAND MÊME sa
+//  propre plage par défaut — donc les mêmes heures apparaissaient deux fois,
+//  empilées dans deux boîtes, la tâche encore en cours semblant absente de la
+//  seconde ; (2) `assignColumns()` (mise en colonnes des chevauchements)
+//  tournait par bande — deux tâches réellement simultanées mais commençant
+//  dans des bandes différentes n'étaient donc jamais détectées comme se
+//  chevauchant. Une seule grille + un seul appel à `assignColumns()` sur la
+//  totalité des tâches datées de la journée règle les deux d'un coup. Voir
+//  `dayDisplayRange()` pour le calcul de la plage horaire affichée.
+//
 //  Les tâches SANS heure D'UN MOMENT vivent à part, dans une COLONNE DE
-//  DROITE : `.agenda-columns` est une grille CSS à 2 colonnes (bandes à
-//  gauche, sections « sans heure » à droite) où Matin/Après-midi/Soir
-//  PARTAGENT chacune la ligne de grille de leur bande jumelle — même sommet
-//  des deux côtés, quelle que soit la hauteur de l'une ou l'autre
-//  (`grid-area`, posé en style inline par `bandHTML()`/`sidebarSectionHTML()`).
-//  Sorties de la grille horaire, elles ne lui volent plus d'espace vertical.
+//  DROITE (`.agenda-sidebar-col`, une section par moment, empilées
+//  verticalement — plus d'alignement ligne-à-ligne avec une bande jumelle
+//  puisqu'il n'y a plus qu'UNE grille horaire à gauche).
 //  Les tâches SANS heure NI moment (« À céduler aujourd'hui ») n'ont pas de
 //  jumelle à gauche : les mettre dans cette grille à 2 colonnes laissait une
 //  cellule vide sur la gauche — elles vivent donc en bandeau PLEINE LARGEUR
 //  à part, juste au-dessus, masqué entièrement si vide (cf.
 //  `unscheduledTodayHTML()`).
 //
-//  RÈGLE DE PLACEMENT : une tâche AVEC `startTime` est placée dans la bande
-//  que son heure désigne, quel que soit son `dayPeriod` stocké (une tâche à
-//  14h ne peut pas s'afficher dans une bande qui s'arrête à 12h). Les données
-//  se réalignent d'elles-mêmes dès qu'on la déplace, tout drop dérivant
+//  RÈGLE DE PLACEMENT : une tâche AVEC `startTime` est positionnée dans la
+//  grille à SA propre heure, quel que soit son `dayPeriod` stocké (le moment
+//  affiché/dérivé — `periodForMinutes()` — sert seulement à choisir dans quel
+//  « + » de moment une tâche SANS heure atterrit, et à choisir le séparateur
+//  sous lequel compter une tâche datée dans les badges). Les données se
+//  réalignent d'elles-mêmes dès qu'on la déplace, tout drop dérivant
 //  `dayPeriod` de l'heure d'arrivée (cf. app.js `_agendaMoveTo`).
 //
 //  ⚠ Aucun conteneur de cette vue ne doit recevoir `filter`/`backdrop-filter`/
 //  `transform` : .agenda-canvas et .agenda-flex-strip sont de vraies cibles de
 //  drop natives, qu'un ancêtre filtré casse silencieusement (bug Chromium
 //  documenté dans CLAUDE.md). Le mode glass ne stylise donc que les blocs
-//  eux-mêmes (sources de drag), jamais les bandes.
+//  eux-mêmes (sources de drag), jamais la grille.
 // ════════════════════════════════════════════════════════
 
 import { DS, esc, effectiveEstimate, safeParseJSON } from './utils.js';
@@ -236,9 +248,12 @@ export function blockGeometry(b, px) {
 
 // ── Chevauchements : colonnes façon iCal ────────────────
 // Les blocs qui se recouvrent forment un « cluster » et se partagent la
-// largeur de la bande en colonnes égales. Un cluster se ferme dès qu'un bloc
-// démarre après la fin la plus tardive rencontrée jusque-là.
-// `layoutEnd` (posé par bandHTML depuis blockGeometry) : l'étendue réellement
+// largeur de la grille en colonnes égales. Un cluster se ferme dès qu'un bloc
+// démarre après la fin la plus tardive rencontrée jusque-là. Appelé UNE FOIS
+// sur la totalité des tâches datées de la journée (cf. dayCanvasHTML) — deux
+// tâches réellement simultanées mais commençant dans des moments différents
+// sont donc bien détectées comme se chevauchant.
+// `layoutEnd` (posé par dayCanvasHTML depuis blockGeometry) : l'étendue réellement
 // occupée à l'écran, pas la seule durée. Un bloc étiré pour montrer ses
 // sous-tâches partage donc la largeur avec celui qu'il recouvrirait — mieux
 // vaut deux blocs lisibles côte à côte qu'un bloc pleine largeur dont le
@@ -270,14 +285,20 @@ function assignColumns(blocks) {
   return sorted;
 }
 
-// ── Répartition des tâches du jour en bandes ────────────
-// Retourne { none: [...chips], morning: {timed, flex}, afternoon, evening }
+// ── Répartition des tâches du jour ──────────────────────
+// Retourne { none: [...chips], timed: [...blocs, à plat, TOUS moments
+// confondus], morning: {flex}, afternoon: {flex}, evening: {flex} }.
+// Les tâches AVEC heure ne sont plus classées par moment : une seule grille
+// couvre toute la journée (cf. en-tête du fichier), donc plus besoin de les
+// répartir avant coup — seul `periodForMinutes(start)` (dérivé à l'affichage
+// et au drop) dit dans quel moment une tâche datée « vit ».
 function splitItems(items, navDate, prefs) {
   const buckets = {
     none: [],
-    morning:   { timed: [], flex: [] },
-    afternoon: { timed: [], flex: [] },
-    evening:   { timed: [], flex: [] },
+    timed: [],
+    morning:   { flex: [] },
+    afternoon: { flex: [] },
+    evening:   { flex: [] },
   };
   items.forEach(t => {
     if (prefs.rec[recKey(t)] === false) return;
@@ -288,14 +309,8 @@ function splitItems(items, navDate, prefs) {
       else buckets.none.push(t);
       return;
     }
-    // Placement par l'HEURE (pas par dayPeriod stocké) — cf. en-tête du fichier
-    const band = periodForMinutes(start);
     const dur = blockMinutes(t);
-    // `end` n'est JAMAIS clampée à la frontière de la bande (ex. 11:30→13:00
-    // dans Matin) : une tâche qui s'échelonne sur midi doit apparaître en
-    // entier, début ET fin, quitte à faire déborder la grille de sa bande
-    // au-delà de son heure nominale (cf. displayRange, qui l'englobe).
-    buckets[band].timed.push({
+    buckets.timed.push({
       t,
       start,
       end: start + dur,
@@ -306,22 +321,21 @@ function splitItems(items, navDate, prefs) {
   return buckets;
 }
 
-// Plage horaire réellement affichée par une bande : ses bornes par défaut,
-// élargies pour englober tout ce qu'elle contient (une tâche à 5h30 doit
-// rester visible), ou ouvertes en grand si le dépli « Nuit » est actif.
-function displayRange(band, timed, prefs) {
-  if (prefs.night) return { from: band.from, to: band.to };
-  let from = band.defFrom, to = band.defTo;
+// Plage horaire réellement affichée par la grille du jour : les bornes par
+// défaut du jour entier (7h→23h, cf. AGENDA_BANDS), élargies pour englober
+// toute tâche datée (une tâche à 5h30 ou qui finit après 23h doit rester
+// visible), ou ouvertes en grand si le dépli « Nuit » est actif. Une seule
+// grille pour toute la journée : plus de frontière de bande à respecter.
+function dayDisplayRange(timed, prefs) {
+  if (prefs.night) return { from: 0, to: 24 };
+  const first = AGENDA_BANDS[0], last = AGENDA_BANDS[AGENDA_BANDS.length - 1];
+  let from = first.defFrom, to = last.defTo;
   timed.forEach(b => {
     from = Math.min(from, Math.floor(b.start / 60));
     to   = Math.max(to,   Math.ceil(b.end / 60));
   });
-  // Le haut reste borné à la bande (une tâche est toujours affectée par son
-  // heure de DÉBUT, jamais avant band.from). Le bas, lui, n'est borné qu'à la
-  // journée : une tâche qui déborde de la bande (ex. 11:30→13:00 dans Matin)
-  // doit pouvoir étirer la grille au-delà de band.to pour rester visible en
-  // entier — c'est ce qui affiche son début ET sa fin.
-  return { from: Math.max(band.from, from), to: Math.min(24, Math.max(to, from + 1)) };
+  from = Math.max(0, from);
+  return { from, to: Math.min(24, Math.max(to, from + 1)) };
 }
 
 // ── Rendu d'un bloc ─────────────────────────────────────
@@ -462,21 +476,21 @@ function chipHTML(t, navDate, ds) {
 
 // ── Section de la colonne de droite (tâches sans heure D'UN MOMENT) ────
 // Matin/Après-midi/Soir seulement — cf. `unscheduledTodayHTML()` juste après
-// pour les tâches qui n'ont NI heure NI moment. `.agenda-columns` est une
-// grille CSS à 2 colonnes où chaque section partage sa LIGNE avec sa bande
-// jumelle (`grid-area`, posé ici en style inline) : même sommet, quelle que
-// soit la hauteur de l'une ou l'autre. Toujours rendue, même vide (contraire
-// à `unscheduledTodayHTML()`) : Matin/Après-midi/Soir doivent rester des
-// cibles de drop stables. Garde `.agenda-flex-strip`/`data-period` : c'est
-// la cible de drop native que `app._agendaHit()` résout par `closest()`, sa
-// position dans le DOM n'a donc aucune importance pour le drag-and-drop.
-// Pas de « + » : le bouton de l'en-tête de LEUR bande (`.agenda-band-add`,
-// à gauche, même ligne de grille) vise déjà exactement le même moment.
+// pour les tâches qui n'ont NI heure NI moment. Les 3 sections sont empilées
+// verticalement dans `.agenda-sidebar-col` (pas d'alignement ligne-à-ligne
+// avec une bande jumelle : il n'y a plus qu'UNE seule grille horaire à
+// gauche, cf. en-tête du fichier). Toujours rendue, même vide : Matin/
+// Après-midi/Soir doivent rester des cibles de drop stables. Garde
+// `.agenda-flex-strip`/`data-period` : c'est la cible de drop native que
+// `app._agendaHit()` résout par `closest()`, sa position dans le DOM n'a
+// donc aucune importance pour le drag-and-drop.
+// Pas de « + » ici : le bouton du séparateur de CE moment dans la grille
+// (`.agenda-band-add`, cf. `dayCanvasHTML()`) vise déjà le même moment.
 function sidebarSectionHTML(period, label, icon, items, navDate, ds) {
   const chips = items.map(t => chipHTML(t, navDate, ds)).join('');
   const empty = !items.length
     ? `<span class="agenda-flex-empty">déposer ici pour retirer l’heure</span>` : '';
-  return `<div class="agenda-sidebar-section" style="grid-area:side-${period}">
+  return `<div class="agenda-sidebar-section">
     <header class="agenda-band-head">
       ${icon}<span class="agenda-band-label">${label}</span>
       ${items.length ? `<span class="agenda-band-count">${items.length}</span>` : ''}
@@ -513,16 +527,40 @@ function unscheduledTodayHTML(items, navDate, ds) {
   </section>`;
 }
 
-// ── Bande de moment complète ────────────────────────────
-function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
+// ── Séparateur de moment À L'INTÉRIEUR de la grille continue ───────────
+// Remplace l'ancien en-tête de bande (`.agenda-band-head` en flux, une par
+// section séparée) par le MÊME balisage — donc le même style — mais posé en
+// overlay `position:absolute` à l'intérieur du canevas, à la hauteur exacte
+// où ce moment commence. Une tâche qui traverse cette frontière reste ainsi
+// visible en entier dans le MÊME canevas, sans jamais dupliquer les heures
+// qui suivent (cf. en-tête du fichier).
+function periodDividerHTML(band, laid, buckets, range, px) {
+  if (band.to <= range.from || band.from >= range.to) return ''; // hors plage affichée
+  const top = Math.max(0, band.from - range.from) * px;
+  const count = laid.filter(b => periodForMinutes(b.start) === band.key).length + buckets[band.key].flex.length;
+  const cls = 'agenda-band-head agenda-period-divider' + (top === 0 ? ' is-top' : '');
+  return `<div class="${cls}" style="--t:${top}px" data-period="${band.key}">
+    ${BAND_ICONS[band.key]}<span class="agenda-band-label">${band.label}</span>
+    ${count ? `<span class="agenda-band-count">${count}</span>` : ''}
+    <span class="agenda-band-line"></span>
+    <button class="agenda-band-add" title="Ajouter une tâche à ce moment" onclick="window.app.addSectionTask('${band.key}')">${_plusSVG}</button>
+  </div>`;
+}
+
+// ── Grille du jour, en entier ────────────────────────────
+function dayCanvasHTML(timed, buckets, navDate, ds, prefs, ctx) {
   const px = prefs.zoom;
   // L'étendue rendue, convertie en minutes, AVANT le regroupement : c'est elle
-  // qui décide des colonnes (cf. assignColumns).
-  bucket.timed.forEach(b => {
+  // qui décide des colonnes (cf. assignColumns). Un seul appel pour TOUTES
+  // les tâches datées de la journée — deux tâches réellement simultanées qui
+  // démarreraient dans des « moments » différents (une commence à 11h45 et
+  // finit à 12h30, une autre démarre à 12h15) sont donc bien détectées comme
+  // se chevauchant, ce qu'un calcul par bande séparée ne pouvait pas voir.
+  timed.forEach(b => {
     b.layoutEnd = b.start + (blockGeometry(b, px).layoutH / px) * 60;
   });
-  const laid = assignColumns(bucket.timed);
-  const range = displayRange(band, laid, prefs);
+  const laid = assignColumns(timed);
+  const range = dayDisplayRange(laid, prefs);
   const hours = [];
   for (let h = range.from; h <= range.to; h++) hours.push(h);
   const height = (range.to - range.from) * px;
@@ -538,9 +576,10 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
   }).join('');
 
   const blocks = laid.map(b => blockHTML(b, ds, px, range)).join('');
+  const dividers = AGENDA_BANDS.map(band => periodDividerHTML(band, laid, buckets, range, px)).join('');
 
-  // Ligne « maintenant » — seulement aujourd'hui, et seulement dans la bande
-  // qui contient l'heure courante (rafraîchie par app._agendaTickNow()).
+  // Ligne « maintenant » — seulement aujourd'hui, si l'heure courante tombe
+  // dans la plage affichée (rafraîchie par app._agendaTickNow()).
   let nowLine = '', nowAdd = '';
   if (ctx.isToday) {
     const nowMin = ctx.nowMinutes;
@@ -559,21 +598,11 @@ function bandHTML(band, bucket, navDate, ds, prefs, ctx) {
     }
   }
 
-  // Le compteur de l'en-tête reste le total du moment (avec ET sans heure) :
-  // les tâches sans heure font toujours partie de CE moment, même si elles
-  // s'affichent maintenant dans la colonne de droite plutôt qu'ici.
-  const count = bucket.timed.length + bucket.flex.length;
-  return `<section class="agenda-band" data-period="${band.key}" style="grid-area:${band.key}">
-    <header class="agenda-band-head">
-      ${BAND_ICONS[band.key]}<span class="agenda-band-label">${band.label}</span>
-      ${count ? `<span class="agenda-band-count">${count}</span>` : ''}
-      <span class="agenda-band-line"></span>
-      <button class="agenda-band-add" title="Ajouter une tâche à ce moment" onclick="window.app.addSectionTask('${band.key}')">${_plusSVG}</button>
-    </header>
+  return `<section class="agenda-day-canvas">
     <div class="agenda-grid" style="--px:${px}px;--h:${height}px">
       <div class="agenda-rail">${railHours}${nowAdd}</div>
-      <div class="agenda-canvas" data-period="${band.key}" data-from="${range.from * 60}" data-to="${range.to * 60}" data-px="${px}" style="--h:${height}px">
-        ${lines}${nowLine}${blocks}
+      <div class="agenda-canvas" data-from="${range.from * 60}" data-to="${range.to * 60}" data-px="${px}" style="--h:${height}px">
+        ${lines}${dividers}${nowLine}${blocks}
       </div>
     </div>
   </section>`;
@@ -624,15 +653,15 @@ export function renderAgendaBody(todos, navDate, ctx) {
     : all;
   const buckets = splitItems(items, navDate, prefs);
 
-  const bands = AGENDA_BANDS.map(b => bandHTML(b, buckets[b.key], navDate, ds, prefs, ctx)).join('');
+  const dayHTML = dayCanvasHTML(buckets.timed, buckets, navDate, ds, prefs, ctx);
 
-  // Colonne de droite : les tâches sans heure D'UN MOMENT, chacune alignée
-  // sur le DÉBUT de sa bande correspondante à gauche (cf. le
-  // grid-template-areas de `.agenda-columns` : chaque bande et sa section
-  // partagent la même ligne de grille, donc le même sommet, quelle que soit
-  // leur hauteur propre). Les tâches sans heure NI moment sont à part, en
-  // bandeau pleine largeur au-dessus (`unscheduledTodayHTML`) : voir sa
-  // documentation pour pourquoi elles ne peuvent pas rejoindre cette grille.
+  // Colonne de droite : les tâches sans heure D'UN MOMENT, une section par
+  // moment empilée verticalement (`.agenda-sidebar-col`) — plus d'alignement
+  // ligne-à-ligne avec une bande jumelle, puisqu'il n'y a plus qu'UNE seule
+  // grille horaire à gauche (cf. en-tête du fichier). Les tâches sans heure
+  // NI moment sont à part, en bandeau pleine largeur au-dessus
+  // (`unscheduledTodayHTML`) : voir sa documentation pour pourquoi elles ne
+  // peuvent pas rejoindre cette colonne.
   const unscheduled = unscheduledTodayHTML(buckets.none, navDate, ds);
   const sidebarBands = AGENDA_BANDS.map(b =>
     sidebarSectionHTML(b.key, b.label, BAND_ICONS[b.key], buckets[b.key].flex, navDate, ds)
@@ -643,7 +672,8 @@ export function renderAgendaBody(todos, navDate, ctx) {
     <div class="agenda-scroll" id="agendaScroll">
       ${unscheduled}
       <div class="agenda-columns">
-        ${bands}${sidebarBands}
+        ${dayHTML}
+        <div class="agenda-sidebar-col">${sidebarBands}</div>
       </div>
       <div class="agenda-hint">Glissez un bloc pour le déplacer · tirez son bord bas pour la durée · glissez sur une plage vide (ou double-cliquez) pour créer</div>
     </div>

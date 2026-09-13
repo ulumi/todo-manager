@@ -8839,9 +8839,9 @@ class TodoApp {
   }
 
   // Résout la cible sous le curseur pendant un drag : une plage horaire dans
-  // une bande (calage 15 min, 5 min avec Alt) ou une bande « sans heure ».
-  // Le hit-test remonte depuis e.target, donc survoler un autre bloc renvoie
-  // quand même la position horaire correspondante dans son canevas.
+  // la grille du jour (calage 15 min, 5 min avec Alt) ou une section « sans
+  // heure » d'un moment. Le hit-test remonte depuis e.target, donc survoler
+  // un autre bloc renvoie quand même la position horaire correspondante.
   // Minute courante — seulement si le jour AFFICHÉ est aujourd'hui. Relue à
   // chaque appel (jamais figée au rendu) pour que l'ancrage « maintenant »
   // reste juste même après une longue session sans re-render.
@@ -8868,7 +8868,7 @@ class TodoApp {
         if (!Number.isNaN(minutes)) {
           const px = parseFloat(canvas.dataset.px) || 72;
           const from = parseInt(canvas.dataset.from, 10);
-          return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from, isNow: false, syncTarget: block.dataset.id };
+          return { kind: 'time', canvas, minutes, px, from, isNow: false, syncTarget: block.dataset.id };
         }
       }
       const r = canvas.getBoundingClientRect();
@@ -8880,7 +8880,7 @@ class TodoApp {
       const bounds = [from, to - MIN_BLOCK_MIN];
       const now = this._agendaNowMinutes();
       const minutes = Math.max(bounds[0], Math.min(bounds[1], snapWithNow(raw, step, now, bounds)));
-      return { kind: 'time', canvas, minutes, period: canvas.dataset.period, px, from, isNow: now != null && minutes === now };
+      return { kind: 'time', canvas, minutes, px, from, isNow: now != null && minutes === now };
     }
     const strip = e.target.closest?.('.agenda-flex-strip');
     if (strip) return { kind: 'flex', strip, period: strip.dataset.period || '' };
@@ -9015,7 +9015,7 @@ class TodoApp {
     event?.stopPropagation();
     const now = this._agendaNowMinutes();
     if (now == null) return;
-    this._agendaCreateAt(periodForMinutes(now), now, Math.min(24 * 60 - 1, now + DEFAULT_BLOCK_MIN), { bump: !!event?.altKey });
+    this._agendaCreateAt(now, Math.min(24 * 60 - 1, now + DEFAULT_BLOCK_MIN), { bump: !!event?.altKey });
   }
 
   // Insertion : la tâche suivante repart à la fin de celle qu'on vient
@@ -9050,8 +9050,11 @@ class TodoApp {
 
   // Création par glisser sur une plage vide (ou double-clic → 30 min) :
   // saisie inline du titre à l'emplacement dessiné, jamais un prompt() natif.
-  _agendaCreateAt(period, startMin, endMin, opts = {}) {
-    const canvas = document.querySelector(`.agenda-canvas[data-period="${period}"]`);
+  // Une seule grille pour toute la journée (cf. agendaView.js) : plus besoin
+  // de retrouver un canevas par moment, `periodForMinutes(startMin)` dérive
+  // déjà le moment de l'heure de départ pour `dayPeriod`.
+  _agendaCreateAt(startMin, endMin, opts = {}) {
+    const canvas = document.querySelector('.agenda-canvas');
     if (!canvas) return;
     const px = parseFloat(canvas.dataset.px) || 72;
     const from = parseInt(canvas.dataset.from, 10);
@@ -9285,7 +9288,7 @@ class TodoApp {
         if (moved && sketch) {
           const s = parseInt(sketch.dataset.start, 10), en = parseInt(sketch.dataset.end, 10);
           sketch.remove();
-          this._agendaCreateAt(canvas.dataset.period, s, en);
+          this._agendaCreateAt(s, en);
         } else sketch?.remove();
       };
       window.addEventListener('pointermove', onMove);
@@ -9304,7 +9307,7 @@ class TodoApp {
       const to = parseInt(canvas.dataset.to, 10);
       const bounds = [from, to - MIN_BLOCK_MIN];
       const s = Math.max(bounds[0], Math.min(bounds[1], snapWithNow(from + ((e.clientY - r.top) / px) * 60, SNAP_MIN, this._agendaNowMinutes(), bounds)));
-      this._agendaCreateAt(canvas.dataset.period, s, Math.min(to, s + DEFAULT_BLOCK_MIN));
+      this._agendaCreateAt(s, Math.min(to, s + DEFAULT_BLOCK_MIN));
     });
 
     // Clic sur un bloc/une pastille → exactement le même arbitrage que la
