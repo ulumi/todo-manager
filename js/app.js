@@ -9249,6 +9249,15 @@ class TodoApp {
       const startDur = parseInt(block.dataset.dur, 10);
       let dur = startDur;
       block.classList.add('resizing');
+      // `draggable="false"` sur la poignée (blockHTML) ne suffit PAS : la
+      // recherche du nœud à draguer, au mousedown, remonte aux ANCÊTRES
+      // jusqu'au premier `draggable=true` sans s'arrêter sur un `false`
+      // explicite du descendant visé — seul le `preventDefault()` ci-dessus
+      // s'y opposait, insuffisant sur un vrai geste souris assez long pour
+      // traverser Matin/Après-midi/Soir (constaté après coup). On retire
+      // aussi le `draggable` du bloc lui-même pour toute la durée du geste :
+      // sans ancêtre draguable, aucune requête de drag natif n'a de source.
+      block.draggable = false;
       handle.setPointerCapture(e.pointerId);
       const onMove = ev => {
         const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
@@ -9266,6 +9275,7 @@ class TodoApp {
         handle.removeEventListener('pointerup', onUp);
         handle.removeEventListener('pointercancel', onUp);
         block.classList.remove('resizing');
+        block.draggable = true;
         if (dur !== startDur) this._agendaResizeCommit(block.dataset.id, block.dataset.date, dur);
       };
       handle.addEventListener('pointermove', onMove);
@@ -9296,6 +9306,11 @@ class TodoApp {
       const startY = e.clientY;
       let start = originalStart;
       block.classList.add('resizing');
+      // Même garde-fou que le resize du bas (voir son commentaire) : le
+      // `draggable=false` de la poignée n'empêche pas le navigateur de
+      // remonter jusqu'à ce bloc comme source de drag natif sur un geste
+      // assez long — on lui retire aussi son `draggable` le temps du resize.
+      block.draggable = false;
       handle.setPointerCapture(e.pointerId);
       const onMove = ev => {
         const step = ev.altKey ? FINE_SNAP_MIN : SNAP_MIN;
@@ -9314,6 +9329,7 @@ class TodoApp {
         handle.removeEventListener('pointerup', onUp);
         handle.removeEventListener('pointercancel', onUp);
         block.classList.remove('resizing');
+        block.draggable = true;
         if (start !== originalStart) this._agendaResizeTopCommit(block.dataset.id, block.dataset.date, start);
       };
       handle.addEventListener('pointermove', onMove);

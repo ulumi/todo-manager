@@ -1,5 +1,10 @@
 [
   {
+    "version": "0.4.3052",
+    "date": "2026-09-13",
+    "message": "fix(agenda): resize d'un bloc à travers la ligne des moments — le drag natif du bloc s'invitait encore malgré draggable=false sur la poignée"
+  },
+  {
     "version": "0.4.3051",
     "date": "2026-09-13",
     "message": "fix(agenda): redimensionnement fiable même en traversant les moments + poignée du haut (coin) pour ajuster le début"
